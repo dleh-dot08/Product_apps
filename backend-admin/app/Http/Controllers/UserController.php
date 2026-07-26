@@ -10,15 +10,29 @@ use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function index()
+    public function index(\Illuminate\Http\Request $request)
     {
-        $users = User::latest()->paginate(10);
-        return view('users.index', compact('users'));
+        $search = $request->input('search');
+        
+        $users = User::when($search, function($query) use ($search) {
+            $query->where('name', 'ilike', "%{$search}%")
+                  ->orWhere('email', 'ilike', "%{$search}%");
+        })->latest()->paginate(10)->withQueryString();
+
+        $divisions = \App\Models\Division::all();
+        $roles = \App\Models\Role::all();
+        return view('users.index', compact('users', 'divisions', 'roles', 'search'));
     }
 
     public function create()
     {
-        return view('users.form', ['user' => new User()]);
+        $divisions = \App\Models\Division::all();
+        $roles = \App\Models\Role::all();
+        return view('users.form', [
+            'user' => new User(),
+            'divisions' => $divisions,
+            'roles' => $roles
+        ]);
     }
 
     public function store(Request $request)
@@ -27,9 +41,8 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
-            'division' => 'nullable|string|max:255',
-            'position' => 'nullable|string|max:255',
-            'role' => 'required|string|max:50',
+            'division_id' => 'nullable|exists:divisions,id',
+            'role_id' => 'required|exists:roles,id',
         ]);
 
         $validated['password'] = Hash::make($validated['password']);
@@ -40,7 +53,9 @@ class UserController extends Controller
 
     public function edit(User $user)
     {
-        return view('users.form', compact('user'));
+        $divisions = \App\Models\Division::all();
+        $roles = \App\Models\Role::all();
+        return view('users.form', compact('user', 'divisions', 'roles'));
     }
 
     public function update(Request $request, User $user)
@@ -49,9 +64,8 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8',
-            'division' => 'nullable|string|max:255',
-            'position' => 'nullable|string|max:255',
-            'role' => 'required|string|max:50',
+            'division_id' => 'nullable|exists:divisions,id',
+            'role_id' => 'required|exists:roles,id',
         ]);
 
         if (!empty($validated['password'])) {

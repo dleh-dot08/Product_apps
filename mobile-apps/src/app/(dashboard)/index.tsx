@@ -1,19 +1,38 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../../context/AuthContext';
 
 export default function DashboardScreen() {
   const { user } = useAuth();
+  const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         
-        <View style={styles.header}>
-          <Text style={styles.greeting}>Halo, {user?.name || 'Administrator'} 👋</Text>
-          <Text style={styles.subtitle}>Selamat datang di Dashboard AQPA Indonesia</Text>
-        </View>
+        <TouchableOpacity 
+          activeOpacity={0.8} 
+          style={styles.profileCard}
+          onPress={() => router.push('/profile')}
+        >
+          <View style={styles.profileAvatarContainer}>
+            <Text style={styles.profileAvatarText}>
+              {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+            </Text>
+          </View>
+          <View style={styles.profileInfo}>
+            <Text style={styles.greeting}>Selamat datang, {user?.name || 'Administrator'} 👋</Text>
+            <View style={styles.roleBadge}>
+              <Text style={styles.roleText}>{user?.role?.name || 'Super Admin'}</Text>
+            </View>
+            <Text style={styles.divisionText}>
+              Divisi: {user?.division?.name || 'Belum Ditugaskan'}
+            </Text>
+          </View>
+        </TouchableOpacity>
 
         <View style={styles.grid}>
           <View style={[styles.card, { borderTopColor: '#3b82f6', borderTopWidth: 4 }]}>
@@ -77,9 +96,49 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 4,
   },
-  subtitle: {
-    fontSize: 14,
+  profileCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#13233a',
+    padding: 16,
+    borderRadius: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#1e293b',
+  },
+  profileAvatarContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#3b82f6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  profileAvatarText: {
+    color: '#ffffff',
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  profileInfo: {
+    flex: 1,
+  },
+  roleBadge: {
+    backgroundColor: 'rgba(59, 130, 246, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginBottom: 6,
+  },
+  roleText: {
+    color: '#60a5fa',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  divisionText: {
     color: '#94a3b8',
+    fontSize: 12,
   },
   grid: {
     flexDirection: 'row',

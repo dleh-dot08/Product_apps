@@ -24,10 +24,41 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'division',
-        'position',
-        'role',
+        'division_id',
+        'role_id',
     ];
+
+    public function division()
+    {
+        return $this->belongsTo(Division::class);
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    /**
+     * Check if user has a specific role or any of the given roles.
+     *
+     * @param string|array $roles
+     * @return bool
+     */
+    public function hasRole($roles)
+    {
+        if (!$this->role) {
+            return false;
+        }
+
+        $userRole = strtolower($this->role->name);
+
+        if (is_array($roles)) {
+            $roles = array_map('strtolower', $roles);
+            return in_array($userRole, $roles);
+        }
+
+        return $userRole === strtolower($roles);
+    }
 
     /**
      * The attributes that should be hidden for serialization.

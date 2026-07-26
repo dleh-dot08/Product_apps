@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -7,10 +7,16 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
 
   const handleLogout = () => {
-    Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin keluar?', [
-      { text: 'Batal', style: 'cancel' },
-      { text: 'Keluar', style: 'destructive', onPress: logout },
-    ]);
+    if (Platform.OS === 'web') {
+      if (window.confirm('Apakah Anda yakin ingin keluar?')) {
+        logout();
+      }
+    } else {
+      Alert.alert('Konfirmasi', 'Apakah Anda yakin ingin keluar?', [
+        { text: 'Batal', style: 'cancel' },
+        { text: 'Keluar', style: 'destructive', onPress: logout },
+      ]);
+    }
   };
 
   return (
@@ -26,8 +32,9 @@ export default function ProfileScreen() {
         <Text style={styles.userName}>{user?.name || 'Administrator'}</Text>
         <Text style={styles.userEmail}>{user?.email || 'admin@mail.com'}</Text>
         <View style={styles.badge}>
-          <Text style={styles.badgeText}>Admin</Text>
+          <Text style={styles.badgeText}>{user?.role?.name || 'Super Admin'}</Text>
         </View>
+        <Text style={styles.userDivision}>{user?.division?.name || 'Belum Ditugaskan'}</Text>
       </View>
 
       <View style={styles.actionSection}>
@@ -102,6 +109,11 @@ const styles = StyleSheet.create({
     color: '#60a5fa',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  userDivision: {
+    fontSize: 14,
+    color: '#94a3b8',
+    marginTop: 12,
   },
   actionSection: {
     padding: 20,

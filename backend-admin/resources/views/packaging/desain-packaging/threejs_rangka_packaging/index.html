@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3D Packaging Kayu – Offline</title>
+  <style>
+    :root {
+      --bg: #eef3f8;
+      --panel: #ffffff;
+      --ink: #10233f;
+      --muted: #66758a;
+      --line: #d8e1ec;
+      --brand: #113b7a;
+      --brand-2: #1f67c7;
+      --soft: #edf5ff;
+      --success: #0e8a63;
+      --danger: #c0392b;
+      --shadow: 0 18px 45px rgba(25, 49, 83, 0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+
+    button, input, select { font: inherit; }
+
+    .app {
+      height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(340px, 400px) 1fr;
+      gap: 14px;
+      padding: 14px;
+    }
+
+    .sidebar {
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border: 1px solid rgba(20, 55, 96, .08);
+      border-radius: 20px;
+      background: var(--panel);
+      box-shadow: var(--shadow);
+    }
+
+    .sidebar-header {
+      padding: 20px 20px 16px;
+      color: #fff;
+      background:
+        radial-gradient(circle at 92% 12%, rgba(255,255,255,.2), transparent 22%),
+        linear-gradient(135deg, #0b2c62, #1455a4 72%, #2877d0);
+    }
+
+    .eyebrow {
+      margin-bottom: 7px;
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      opacity: .78;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.15;
+      letter-spacing: -.025em;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: rgba(255,255,255,.82);
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .sidebar-scroll {
+      min-height: 0;
+      overflow: auto;
+      padding: 16px;
+      scrollbar-width: thin;
+    }
+
+    .section {
+      margin-bottom: 14px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      font-weight: 900;
+      letter-spacing: .04em;
+      text-transform: uppercase;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      color: var(--brand);
+      background: var(--soft);
+      font-size: 10px;
+      font-weight: 850;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .field label {
+      display: block;
+      margin: 0 0 6px;
+      color: #506176;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    .input-wrap { position: relative; }
+
+    input[type="number"], select {
+      width: 100%;
+      height: 40px;
+      padding: 0 10px;
+      border: 1px solid #cfd9e6;
+      border-radius: 10px;
+      outline: none;
+      color: var(--ink);
+      background: #fbfdff;
+      font-size: 12px;
+      font-weight: 750;
+      transition: .2s ease;
+    }
+
+    input[type="number"] { padding-right: 35px; }
+
+    input:focus, select:focus {
+      border-color: #4c8bd7;
+      box-shadow: 0 0 0 3px rgba(31, 103, 199, .11);
+      background: #fff;
+    }
+
+    .unit {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #8693a5;
+      font-size: 10px;
+      font-weight: 800;
+      pointer-events: none;
+    }
+
+    .face-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .face-card {
+      padding: 10px;
+      border: 1px solid #d7e1ed;
+      border-radius: 13px;
+      background: linear-gradient(180deg, #fff, #f8fbff);
+    }
+
+    .face-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .face-name {
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .switch {
+      position: relative;
+      width: 35px;
+      height: 20px;
+      flex: 0 0 auto;
+    }
+
+    .switch input {
+      width: 0;
+      height: 0;
+      opacity: 0;
+    }
+
+    .slider {
+      position: absolute;
+      inset: 0;
+      cursor: pointer;
+      border-radius: 999px;
+      background: #c8d2df;
+      transition: .2s;
+    }
+
+    .slider::before {
+      content: "";
+      position: absolute;
+      left: 3px;
+      top: 3px;
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #fff;
+      box-shadow: 0 2px 5px rgba(0,0,0,.2);
+      transition: .2s;
+    }
+
+    .switch input:checked + .slider { background: var(--brand-2); }
+    .switch input:checked + .slider::before { transform: translateX(15px); }
+
+    .face-card select {
+      height: 34px;
+      margin-top: 6px;
+      font-size: 10px;
+      padding: 0 7px;
+    }
+
+
+    .cover-card {
+      padding: 10px;
+      border: 1px solid #d7e1ed;
+      border-radius: 13px;
+      background: linear-gradient(180deg, #fffaf5, #fff);
+    }
+
+    .cover-card select {
+      height: 34px;
+      margin-top: 6px;
+      font-size: 10px;
+      padding: 0 7px;
+    }
+
+    .section-note {
+      margin: -3px 0 11px;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.45;
+    }
+
+    .result-strip {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .metric {
+      padding: 10px 8px;
+      border-radius: 12px;
+      background: #f3f7fc;
+      text-align: center;
+    }
+
+    .metric strong {
+      display: block;
+      color: var(--brand);
+      font-size: 16px;
+      line-height: 1.1;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    .face-summary {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px dashed #d6dfeb;
+      color: #596b80;
+      font-size: 10px;
+      line-height: 1.65;
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+    }
+
+    .btn {
+      min-height: 40px;
+      border: 0;
+      border-radius: 11px;
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 850;
+      transition: transform .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    .btn:hover { transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+
+    .btn-primary {
+      color: #fff;
+      background: linear-gradient(135deg, #123d7c, #2370c9);
+      box-shadow: 0 8px 16px rgba(24, 91, 173, .22);
+    }
+
+    .btn-secondary {
+      color: #214467;
+      border: 1px solid #cfdae7;
+      background: #fff;
+    }
+
+    .viewer {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid rgba(20, 55, 96, .08);
+      border-radius: 20px;
+      background: radial-gradient(circle at 50% 38%, #ffffff 0%, #f6f9fd 48%, #e8eef6 100%);
+      box-shadow: var(--shadow);
+    }
+
+    #canvasWrap { position: absolute; inset: 0; }
+    canvas { display: block; }
+
+    .topbar {
+      position: absolute;
+      z-index: 5;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      pointer-events: none;
+    }
+
+    .view-buttons, .display-toggles {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 7px;
+      border: 1px solid rgba(151, 170, 194, .35);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: 0 10px 25px rgba(34, 59, 90, .10);
+      backdrop-filter: blur(10px);
+      pointer-events: auto;
+    }
+
+    .mini-btn {
+      min-width: 52px;
+      height: 31px;
+      padding: 0 10px;
+      border: 1px solid #d5dfeb;
+      border-radius: 8px;
+      cursor: pointer;
+      color: #36516f;
+      background: #fff;
+      font-size: 10px;
+      font-weight: 850;
+    }
+
+    .mini-btn:hover, .mini-btn.active {
+      color: #fff;
+      border-color: #1f67c7;
+      background: #1f67c7;
+    }
+
+    .legend {
+      position: absolute;
+      z-index: 4;
+      left: 16px;
+      bottom: 16px;
+      max-width: 350px;
+      padding: 11px 13px;
+      border: 1px solid rgba(151, 170, 194, .35);
+      border-radius: 13px;
+      color: #52657a;
+      background: rgba(255,255,255,.90);
+      box-shadow: 0 10px 25px rgba(34, 59, 90, .10);
+      backdrop-filter: blur(10px);
+      font-size: 10px;
+      line-height: 1.55;
+      pointer-events: none;
+    }
+
+    .legend strong { color: #173d68; }
+
+    .status {
+      position: absolute;
+      z-index: 4;
+      right: 16px;
+      bottom: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 12px;
+      border: 1px solid rgba(151, 170, 194, .35);
+      border-radius: 999px;
+      color: #51657a;
+      background: rgba(255,255,255,.92);
+      box-shadow: 0 10px 25px rgba(34, 59, 90, .10);
+      font-size: 10px;
+      font-weight: 800;
+      pointer-events: none;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 0 4px rgba(14,138,99,.12);
+    }
+
+    .error-overlay {
+      position: absolute;
+      z-index: 20;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 30px;
+      background: rgba(238, 243, 248, .96);
+    }
+
+    .error-box {
+      max-width: 560px;
+      padding: 22px;
+      border: 1px solid #e2b5b0;
+      border-radius: 16px;
+      color: #75251c;
+      background: #fff5f4;
+      box-shadow: var(--shadow);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 940px) {
+      html, body { overflow: auto; }
+      .app { height: auto; min-height: 100vh; grid-template-columns: 1fr; }
+      .sidebar { max-height: none; }
+      .sidebar-scroll { overflow: visible; }
+      .viewer { min-height: 72vh; }
+      .topbar { align-items: flex-start; }
+    }
+
+    @media (max-width: 590px) {
+      .app { padding: 8px; gap: 8px; }
+      .face-grid, .grid-3 { grid-template-columns: 1fr; }
+      .viewer { min-height: 650px; }
+      .display-toggles { display: none; }
+      .legend { right: 16px; max-width: none; }
+      .status { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <aside class="sidebar">
+      <header class="sidebar-header">
+        <div class="eyebrow">Interactive Crate Designer</div>
+        <h1>Packaging Kayu 3D</h1>
+        <p class="subtitle">Atur rangka, penyangga, dan penutup tiap sisi. Pilihan penutup: Papan Setengah, Papan Full, atau Triplex dengan arah horizontal/vertikal.</p>
+      </header>
+
+      <div class="sidebar-scroll">
+        <section class="section">
+          <div class="section-title">Dimensi Packaging <span class="badge">mm</span></div>
+          <div class="grid-3">
+            <div class="field">
+              <label for="length">Panjang</label>
+              <div class="input-wrap"><input id="length" type="number" min="300" max="10000" step="50" value="2000" /><span class="unit">mm</span></div>
+            </div>
+            <div class="field">
+              <label for="width">Lebar</label>
+              <div class="input-wrap"><input id="width" type="number" min="300" max="10000" step="50" value="1000" /><span class="unit">mm</span></div>
+            </div>
+            <div class="field">
+              <label for="height">Tinggi</label>
+              <div class="input-wrap"><input id="height" type="number" min="300" max="10000" step="50" value="1200" /><span class="unit">mm</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Material & Perhitungan <span class="badge">Auto spacing</span></div>
+          <div class="grid-3">
+            <div class="field">
+              <label for="frameSize">Balok rangka</label>
+              <div class="input-wrap"><input id="frameSize" type="number" min="20" max="300" step="5" value="80" /><span class="unit">mm</span></div>
+            </div>
+            <div class="field">
+              <label for="supportSize">Balok penyangga</label>
+              <div class="input-wrap"><input id="supportSize" type="number" min="15" max="250" step="5" value="60" /><span class="unit">mm</span></div>
+            </div>
+            <div class="field">
+              <label for="maxSpacing">Jarak maksimum</label>
+              <div class="input-wrap"><input id="maxSpacing" type="number" min="150" max="3000" step="50" value="500" /><span class="unit">mm</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Material Penutup <span class="badge">Papan / Triplex</span></div>
+          <div class="grid-3">
+            <div class="field">
+              <label for="boardWidth">Lebar papan</label>
+              <div class="input-wrap"><input id="boardWidth" type="number" min="40" max="600" step="10" value="150" /><span class="unit">mm</span></div>
+            </div>
+            <div class="field">
+              <label for="boardThickness">Tebal papan</label>
+              <div class="input-wrap"><input id="boardThickness" type="number" min="5" max="80" step="1" value="20" /><span class="unit">mm</span></div>
+            </div>
+            <div class="field">
+              <label for="halfGap">Celah papan setengah</label>
+              <div class="input-wrap"><input id="halfGap" type="number" min="5" max="300" step="5" value="35" /><span class="unit">mm</span></div>
+            </div>
+          </div>
+          <div class="grid-3" style="margin-top:10px">
+            <div class="field">
+              <label for="plywoodThickness">Tebal triplex</label>
+              <div class="input-wrap"><input id="plywoodThickness" type="number" min="3" max="40" step="1" value="9" /><span class="unit">mm</span></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Penyangga per Sisi <span class="badge">Aktif / arah / jumlah</span></div>
+          <div class="face-grid" id="faceGrid"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Penutup per Sisi <span class="badge">Jenis / arah</span></div>
+          <p class="section-note">Horizontal/Vertikal berlaku untuk susunan papan. Triplex tetap berupa satu lembar penuh.</p>
+          <div class="face-grid" id="coverGrid"></div>
+        </section>
+
+        <section class="section">
+          <div class="section-title">Ringkasan <span class="badge" id="modeBadge">6 sisi aktif</span></div>
+          <div class="result-strip">
+            <div class="metric"><strong id="totalSupports">0</strong><span>Total penyangga</span></div>
+            <div class="metric"><strong id="totalCoverPieces">0</strong><span>Potongan penutup</span></div>
+            <div class="metric"><strong id="totalBeams">12</strong><span>Batang + panel</span></div>
+            <div class="metric"><strong id="totalLength">0.00</strong><span>Panjang kayu (m)</span></div>
+            <div class="metric"><strong id="coverArea">0.00</strong><span>Luas penutup (m²)</span></div>
+          </div>
+          <div class="face-summary" id="faceSummary"></div>
+        </section>
+
+        <div class="action-row">
+          <button class="btn btn-primary" id="applyBtn">Terapkan & Render</button>
+          <button class="btn btn-secondary" id="resetBtn">Reset Pengaturan</button>
+        </div>
+      </div>
+    </aside>
+
+    <section class="viewer">
+      <div id="canvasWrap"></div>
+
+      <div class="topbar">
+        <div class="view-buttons">
+          <button class="mini-btn active" data-view="iso">Isometrik</button>
+          <button class="mini-btn" data-view="front">Depan</button>
+          <button class="mini-btn" data-view="right">Kanan</button>
+          <button class="mini-btn" data-view="top">Atas</button>
+        </div>
+        <div class="display-toggles">
+          <button class="mini-btn active" id="dimensionBtn">Dimensi</button>
+          <button class="mini-btn active" id="gridBtn">Grid</button>
+          <button class="mini-btn" id="shotBtn">Simpan PNG</button>
+        </div>
+      </div>
+
+      <div class="legend"><strong>Kontrol 3D:</strong> klik kiri untuk memutar, scroll untuk zoom, klik kanan untuk menggeser. Atas/Bawah: Horizontal = arah panjang, Vertikal = arah lebar. Penutup dapat dipilih Papan Setengah, Papan Full, atau Triplex pada masing-masing sisi.</div>
+      <div class="status"><span class="status-dot"></span><span id="statusText">Model siap dan interaktif</span></div>
+
+      <div class="error-overlay" id="errorOverlay">
+        <div class="error-box"><strong>Renderer tidak berhasil dimuat.</strong><br />Coba buka ulang file melalui BUKA_APLIKASI.bat.</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="offline-fallback.js"></script>
+  <script>window.startOfflineFallback();</script>
+</body>
+</html>
