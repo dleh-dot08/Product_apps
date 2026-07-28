@@ -4978,7 +4978,7 @@
                 ];
             }
 
-            window.pakuDetails = {!! json_encode(isset($calculation) && $calculation->consumables->where('category', 'Paku')->isNotEmpty() ? $calculation->consumables->where('category', 'Paku')->map(function($c) {
+            window.pakuDetails = {!! json_encode(isset($calculation) ? \Illuminate\Support\Facades\DB::table('packing_job_nails')->where('job_id', $calculation->id)->get()->map(function($c) {
                 return [
                     'bagian' => $c->bagian,
                     'titik' => (int)$c->titik_paku,
@@ -5765,7 +5765,8 @@
                         perTitikCol = formatNumber(r.per_titik, 0);
                     }
 
-                    let kodeBadge = (r.kode && r.kode !== '-' && r.kode !== 'null') ? `<span class="badge bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded-pill" style="font-size:10px;">${r.kode} cm</span>` : `<span class="text-muted small">-</span>`;
+                    let rawKode = r.kode ? r.kode.toString().replace('NAIL-', '') : '-';
+                    let kodeBadge = (rawKode !== '-' && rawKode !== 'null' && rawKode !== '') ? `<span class="fw-bold text-dark">${rawKode}</span>` : `<span class="text-muted small">-</span>`;
                     html += `
                         <tr>
                             <td class="fw-semibold text-navy">${r.bagian}</td>
