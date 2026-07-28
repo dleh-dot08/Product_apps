@@ -1,3 +1,2337 @@
+<x-app-layout>
+@php
+    $settingsPath = base_path('config/packaging_settings.json');
+    $packagingSettings = file_exists($settingsPath) ? json_decode(file_get_contents($settingsPath), true) : [
+        'manpower_rate' => 10000,
+        'nails_price_per_kg' => 25000,
+        'nails_weight_per_piece' => 0.025
+    ];
+    $manpowerRate = $packagingSettings['manpower_rate'] ?? 10000;
+    $nailsPricePerKg = $packagingSettings['nails_price_per_kg'] ?? 25000;
+    $nailsWeightPerPiece = $packagingSettings['nails_weight_per_piece'] ?? 0.025;
+
+    $costRangka = isset($calculation) ? $calculation->details->whereIn('section', ['Rangka', 'Penyangga'])->sum('subtotal_price') : 0;
+    $costPenutup = isset($calculation) ? $calculation->details->filter(function($d) {
+        return $d->section === 'Penutup' || ($d->section === 'Bawah' && str_contains($d->part_name, 'Penutup'));
+    })->sum('subtotal_price') : 0;
+    $costBawah = isset($calculation) ? $calculation->details->filter(function($d) {
+        return $d->section === 'Bawah' && !str_contains($d->part_name, 'Penutup');
+    })->sum('subtotal_price') : 0;
+    $totalCost = $costRangka + $costPenutup + $costBawah;
+
+    $areaKerja = 0;
+    if (isset($calculation) && $calculation->length && $calculation->width && $calculation->height) {
+        $P_m = $calculation->length / 1000;
+        $L_m = $calculation->width / 1000;
+        $T_m = $calculation->height / 1000;
+        $areaKerja = 2 * (($P_m * $L_m) + ($P_m * $T_m) + ($L_m * $T_m));
+    }
+@endphp
+    <style>
+        .crate-page {
+            --navy: #0b2a55;
+            --navy-2: #123f78;
+            --blue: #1769e8;
+            --soft: #f4f7fb;
+            --line: #e5eaf3;
+            --text: #0f172a;
+            --muted: #64748b;
+        }
+
+        .crate-page .page-header {
+            background: #fff;
+            border: 1px solid rgba(226, 232, 240, .85);
+            border-radius: 16px;
+            box-shadow: 0 8px 22px rgba(15, 23, 42, .07);
+        }
+
+        .crate-page .btn-soft {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            border-radius: 12px;
+            border: 1px solid #d8e0ec;
+            background: #fff;
+            color: #0f172a;
+            padding: 11px 18px;
+            font-size: 12px;
+            font-weight: 800;
+            text-decoration: none;
+            box-shadow: 0 6px 14px rgba(15, 23, 42, .06);
+            transition: .2s ease;
+        }
+
+        .crate-page .btn-soft:hover {
+            transform: translateY(-1px);
+            background: #f8fafc;
+            color: #0b2a55;
+        }
+
+        .crate-page .input-card,
+        .crate-page .panel-card,
+        .crate-page .stat-card {
+            background: #fff;
+            border: 1px solid rgba(226, 232, 240, .95);
+            border-radius: 16px;
+            box-shadow: 0 10px 24px rgba(15, 23, 42, .06);
+        }
+
+        .crate-page .input-card {
+            padding: 12px;
+            min-height: 72px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .crate-page .icon-box {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #eef6ff;
+            color: #1769e8;
+            flex: 0 0 38px;
+        }
+
+        .crate-page .input-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: #64748b;
+            margin-bottom: 2px;
+        }
+
+        .crate-page .input-value {
+            font-size: 18px;
+            font-weight: 900;
+            color: #0b2a55;
+            line-height: 1;
+        }
+
+        .crate-page .input-unit {
+            font-size: 11px;
+            font-weight: 700;
+            color: #64748b;
+            margin-left: 2px;
+        }
+
+        .crate-page .stat-card {
+            padding: 16px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .crate-page .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #0b2a55;
+            background: #eaf3ff;
+            flex: 0 0 48px;
+        }
+
+        .crate-page .stat-icon.green { background: #eafaf1; color: #189a52; }
+        .crate-page .stat-icon.orange { background: #fff4e5; color: #f59e0b; }
+        .crate-page .stat-icon.purple { background: #f5ecff; color: #7c3aed; }
+
+        .crate-page .stat-label {
+            font-size: 12px;
+            font-weight: 800;
+            color: #64748b;
+            margin-bottom: 3px;
+        }
+
+        .crate-page .stat-value {
+            font-size: 22px;
+            font-weight: 900;
+            color: #0b2a55;
+            line-height: 1.1;
+        }
+
+        .crate-page .section-title {
+            font-size: 13px;
+            font-weight: 900;
+            color: #0b2a55;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .crate-page .visual-card {
+            min-height: 380px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .crate-page .visual-stage {
+            min-height: 300px;
+            background:
+                radial-gradient(circle at 50% 48%, rgba(23, 105, 232, .08), transparent 34%),
+                linear-gradient(180deg, #ffffff 0%, #f7faff 100%);
+            border-radius: 12px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .crate-page .crate-3d {
+            width: min(580px, 100%);
+            height: 260px;
+        }
+
+        .crate-page .dim-label {
+            font-size: 12px;
+            font-weight: 900;
+            fill: #0b2a55;
+        }
+
+        .crate-page .dim-small {
+            font-size: 10px;
+            font-weight: 800;
+            fill: #64748b;
+        }
+
+        .crate-page .panel-card {
+            padding: 24px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.9);
+            box-shadow: 0 8px 32px rgba(11, 42, 85, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .crate-page .panel-card:hover {
+            box-shadow: 0 12px 40px rgba(11, 42, 85, 0.08);
+        }
+
+        .crate-page .table-modern {
+            width: 100%;
+            margin: 0;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+            color: #1e293b;
+        }
+
+        .crate-page .table-modern thead th {
+            background: rgba(11, 42, 85, 0.04);
+            color: #0b2a55;
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px 10px;
+            border-bottom: 2px solid rgba(11, 42, 85, 0.1);
+            white-space: nowrap;
+        }
+
+        .crate-page .table-modern thead th:first-child { border-top-left-radius: 8px; }
+        .crate-page .table-modern thead th:last-child { border-top-right-radius: 8px; border-right: none; }
+
+        .crate-page .table-modern tbody td {
+            padding: 12px 10px;
+            border-bottom: 1px dashed rgba(11, 42, 85, 0.1);
+            vertical-align: middle;
+            white-space: nowrap;
+            background: rgba(255, 255, 255, 0.4);
+            transition: background 0.2s ease;
+        }
+
+        .crate-page .table-modern tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .crate-page .table-modern tbody tr:hover td { 
+            background: rgba(255, 255, 255, 0.8); 
+        }
+
+        .crate-page .table-total td {
+            background: rgba(11, 42, 85, 0.03) !important;
+            font-weight: 900;
+            color: #0b2a55;
+            border-top: 2px solid rgba(11, 42, 85, 0.1);
+            border-bottom: none;
+            border-bottom-left-radius: 8px;
+            border-bottom-right-radius: 8px;
+        }
+
+        .crate-page .badge-soft {
+            display: inline-flex;
+            align-items: center;
+            border-radius: 999px;
+            padding: 3px 8px;
+            background: #eaf3ff;
+            color: #1769e8;
+            font-size: 10px;
+            font-weight: 800;
+        }
+
+        .crate-page .cost-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .crate-page .cost-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            margin-bottom: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+
+        .crate-page .cost-list li:hover {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 4px 12px rgba(11, 42, 85, 0.04);
+            transform: translateY(-1px);
+        }
+
+        .crate-page .cost-list li:last-child { margin-bottom: 0; }
+
+        .crate-page .info-note {
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+
+        .crate-page .table-responsive {
+            border-radius: 10px;
+        }
+
+        @media (max-width: 991.98px) {
+            .crate-page .visual-card { min-height: auto; }
+            .crate-page .visual-stage { min-height: 240px; }
+        }
+        .crate-page .bg-navy { background-color: var(--navy) !important; color: #fff; }
+        .crate-page .text-navy { color: var(--navy) !important; }
+        
+        .crate-page .btn-navy {
+            background-color: var(--navy);
+            color: #fff;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .crate-page .btn-navy:hover {
+            background-color: var(--navy-2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(11, 42, 85, 0.2) !important;
+            color: #fff;
+        }
+        
+        .crate-page .style-card-container {
+            border-radius: 16px;
+            border: 1px solid rgba(226, 232, 240, 0.8) !important;
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .crate-page .style-card-container:hover {
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08) !important;
+        }
+        
+        .crate-page .container-input-group {
+            border-color: #e2e8f0 !important;
+            box-shadow: inset 0 2px 4px rgba(15, 23, 42, 0.01);
+            background: #fafcff !important;
+        }
+        
+        .crate-page .group-item {
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .crate-page .group-item:hover {
+            background-color: #f1f5f9;
+            border-radius: 8px;
+        }
+        
+        .crate-page .border-end-md {
+            border-right: 1px solid #e2e8f0;
+        }
+        
+        @media (max-width: 767.98px) {
+            .crate-page .border-end-md {
+                border-right: none;
+                border-bottom: 1px solid #e2e8f0;
+            }
+        }
+        
+        .crate-page .custom-input, .crate-page .custom-select {
+            background: transparent !important;
+            outline: none;
+            height: auto;
+            min-height: 24px;
+        }
+        
+        .crate-page .custom-input:focus, .crate-page .custom-select:focus {
+            box-shadow: none;
+        }
+        
+        .crate-page .custom-input::-webkit-outer-spin-button,
+        .crate-page .custom-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        .crate-page .custom-select {
+            cursor: pointer;
+            padding-right: 1.5rem !important;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0 center;
+            background-size: 12px 12px;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+        }
+
+        .crate-page .custom-input[readonly], .crate-page .custom-select:disabled {
+            color: var(--navy) !important;
+            opacity: 1; /* Fix text opacity on iOS/disabled elements */
+            cursor: default;
+        }
+
+        .crate-page .custom-select:disabled {
+            background-image: none !important; /* Hide arrow when disabled */
+        }
+
+        .crate-page .editable-mode {
+            background-color: #eef6ff !important;
+            border-bottom: 2px solid var(--blue) !important;
+            border-radius: 4px 4px 0 0;
+            padding-left: 6px !important;
+            padding-right: 6px !important;
+            color: var(--navy) !important;
+            transition: all 0.2s ease;
+        }
+
+
+
+        .crate-page .legend {
+            position: absolute;
+            z-index: 4;
+            left: 16px;
+            bottom: 16px;
+            max-width: 350px;
+            padding: 11px 13px;
+            border: 1px solid rgba(151, 170, 194, .35);
+            border-radius: 13px;
+            color: #52657a;
+            background: rgba(255,255,255,.90);
+            box-shadow: 0 10px 25px rgba(34, 59, 90, .10);
+            backdrop-filter: blur(10px);
+            font-size: 10px;
+            line-height: 1.55;
+            pointer-events: none;
+        }
+
+        .crate-page .legend strong {
+            color: #173d68;
+        }
+
+        .crate-page .status {
+            position: absolute;
+            z-index: 4;
+            right: 16px;
+            bottom: 16px;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 9px 12px;
+            border: 1px solid rgba(151, 170, 194, .35);
+            border-radius: 999px;
+            color: #51657a;
+            background: rgba(255,255,255,.92);
+            box-shadow: 0 10px 25px rgba(34, 59, 90, .10);
+            font-size: 10px;
+            font-weight: 800;
+            pointer-events: none;
+        }
+
+        .crate-page .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #0e8a63;
+            box-shadow: 0 0 0 4px rgba(14,138,99,.12);
+        }
+
+        .crate-page .table-select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230b2a55'%3E%3Cpath d='M7 10l5 5 5-5H7z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 8px center;
+            background-size: 16px;
+            background-color: #ffffff;
+            border: 1px solid rgba(11, 42, 85, 0.2);
+            border-radius: 8px;
+            color: #0b2a55;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 28px 4px 10px;
+            transition: border-color 0.25s ease, box-shadow 0.25s ease;
+            cursor: pointer;
+            box-shadow: 0 1px 2px rgba(11, 42, 85, 0.05);
+            display: inline-block;
+            width: auto;
+            min-height: 28px;
+        }
+
+        .crate-page .table-select:focus {
+            outline: none;
+            border-color: #1769e8;
+            box-shadow: 0 0 0 3px rgba(23, 105, 232, 0.15), 0 1px 2px rgba(11, 42, 85, 0.05);
+        }
+
+        .crate-page .table-select:hover {
+            border-color: rgba(11, 42, 85, 0.4);
+        }
+
+        @media print {
+            /* Hide non-printable components */
+            nav, 
+            header,
+            footer,
+            .btn,
+            .btn-soft,
+            .visual-stage,
+            .legend,
+            .status,
+            .btn-group,
+            .visual-card,
+            #btn-edit-config,
+            #btn-edit,
+            #btn-cancel,
+            #btn-save,
+            .d-flex.justify-content-end.gap-2 {
+                display: none !important;
+            }
+            
+            body, .crate-page {
+                background: #fff !important;
+                color: #000 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .container-fluid, .row, .col-12, .col-lg-7, .col-lg-5, .col-xl-2, .col-xl-7, .col-xl-3 {
+                width: 100% !important;
+                max-width: 100% !important;
+                flex: 0 0 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            .panel-card, .stat-card, .page-header {
+                box-shadow: none !important;
+                border: 1px solid #cbd5e1 !important;
+                border-radius: 8px !important;
+                margin-bottom: 15px !important;
+                page-break-inside: avoid;
+            }
+
+            .table-modern {
+                border-collapse: collapse !important;
+                width: 100% !important;
+            }
+
+            .table-modern th, .table-modern td {
+                border: 1px solid #cbd5e1 !important;
+                padding: 6px 10px !important;
+                font-size: 14px !important;
+            }
+        }
+    
+
+        /* =========================================================
+           CONFIGURATION CARD — COLOR & LAYOUT UPDATE
+           Added without removing the existing styles above.
+           ========================================================= */
+
+        .crate-page .configuration-card {
+            overflow: hidden;
+            border: 1px solid rgba(226, 232, 240, 0.95) !important;
+            border-radius: 18px;
+            background: rgba(255, 255, 255, 0.98);
+            box-shadow: 0 14px 32px rgba(15, 23, 42, 0.08) !important;
+        }
+
+        .crate-page .configuration-section {
+            min-width: 0;
+            padding: 0 18px 18px;
+            background: #ffffff;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .crate-page .configuration-section:last-child {
+            border-right: 0;
+        }
+
+        .crate-page .configuration-heading {
+            min-height: 70px;
+            margin-left: -18px;
+            margin-right: -18px;
+            margin-bottom: 14px !important;
+            padding: 18px;
+            font-size: 13px;
+            border-bottom: 1px solid rgba(226, 232, 240, 0.85);
+        }
+
+        .crate-page .configuration-section-dimension .configuration-heading {
+            background: linear-gradient(135deg, #f4f8ff 0%, #eef5ff 100%);
+        }
+
+        .crate-page .configuration-section-general .configuration-heading {
+            background: linear-gradient(135deg, #f2f7ff 0%, #eaf3ff 100%);
+        }
+
+        .crate-page .configuration-section-bottom .configuration-heading {
+            background: linear-gradient(135deg, #f4fbf7 0%, #edf9f3 100%);
+        }
+
+        .crate-page .configuration-section-top .configuration-heading {
+            background: linear-gradient(135deg, #f8f5ff 0%, #f2efff 100%);
+        }
+
+        .crate-page .configuration-section .badge {
+            width: 30px !important;
+            height: 30px !important;
+            flex: 0 0 30px;
+            font-size: 14px !important;
+            box-shadow: 0 6px 14px rgba(11, 42, 85, 0.16);
+        }
+
+        .crate-page .configuration-section-bottom .badge {
+            background: linear-gradient(135deg, #0b5ed7, #1689c9) !important;
+        }
+
+        .crate-page .configuration-section-top .badge {
+            background: linear-gradient(135deg, #2439b8, #4f46e5) !important;
+        }
+
+        .crate-page .configuration-content {
+            border: 0 !important;
+            border-radius: 0 !important;
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+
+        .crate-page .configuration-content > .group-item {
+            min-height: 57px;
+            padding-top: 11px !important;
+            padding-bottom: 11px !important;
+            border-color: #e6ebf2 !important;
+            border-radius: 0 !important;
+            background: transparent;
+        }
+
+        .crate-page .configuration-section-bottom .configuration-content > .group-item,
+        .crate-page .configuration-section-top .configuration-content > .group-item {
+            min-height: 83px;
+        }
+
+        .crate-page .configuration-content > .group-item:hover {
+            background: rgba(244, 248, 255, 0.75);
+        }
+
+        .crate-page .configuration-section-bottom .configuration-content > .group-item:hover {
+            background: rgba(237, 249, 243, 0.8);
+        }
+
+        .crate-page .configuration-section-top .configuration-content > .group-item:hover {
+            background: rgba(245, 242, 255, 0.82);
+        }
+
+        .crate-page .configuration-content .material-symbols-rounded {
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 38px;
+            border-radius: 10px;
+            color: #0b2a55 !important;
+            background: #f1f5f9;
+        }
+
+        .crate-page .configuration-section-dimension .configuration-content .material-symbols-rounded,
+        .crate-page .configuration-section-general .configuration-content .material-symbols-rounded {
+            background: #edf5ff;
+            color: #1769e8 !important;
+        }
+
+        .crate-page .configuration-section-bottom .configuration-content .material-symbols-rounded {
+            background: #edf9f3;
+            color: #149466 !important;
+        }
+
+        .crate-page .configuration-section-top .configuration-content .material-symbols-rounded {
+            background: #f2efff;
+            color: #5b4bc4 !important;
+        }
+
+        .crate-page .configuration-content small {
+            color: #475569 !important;
+            font-weight: 700;
+        }
+
+        .crate-page .configuration-content .custom-input,
+        .crate-page .configuration-content .custom-select,
+        .crate-page .configuration-content .matrix-select {
+            min-height: 38px;
+            border: 1px solid #d8e2ef !important;
+            border-radius: 8px !important;
+            background-color: #ffffff !important;
+            padding-left: 10px !important;
+            padding-right: 28px !important;
+            color: #0b2a55 !important;
+            font-weight: 700 !important;
+            box-shadow: 0 2px 5px rgba(15, 23, 42, 0.025) !important;
+        }
+
+        .crate-page .configuration-content .custom-input {
+            padding-right: 10px !important;
+        }
+
+        .crate-page .configuration-content .custom-select:disabled,
+        .crate-page .configuration-content .matrix-select:disabled {
+            opacity: 1;
+            background-color: #ffffff !important;
+            background-image: var(--bs-form-select-bg-img) !important;
+            background-repeat: no-repeat !important;
+            background-position: right .65rem center !important;
+            background-size: 12px 12px !important;
+        }
+
+        .crate-page .configuration-content .matrix-select {
+            flex: 1 1 0;
+            width: 0;
+            min-width: 0;
+            font-size: 11px !important;
+        }
+
+        .crate-page .configuration-content .d-flex.gap-1 {
+            gap: 8px !important;
+        }
+
+        .crate-page .configuration-footer {
+            padding: 0 18px 18px;
+        }
+
+        .crate-page .configuration-footer #btn-edit-config {
+            width: 190px !important;
+            border-radius: 10px !important;
+            background: linear-gradient(135deg, #123f78, #1769e8);
+            box-shadow: 0 8px 18px rgba(23, 105, 232, 0.22) !important;
+        }
+
+        .crate-page .configuration-footer #btn-edit-config:hover {
+            background: linear-gradient(135deg, #0b2a55, #155bd0);
+        }
+
+        @media (max-width: 1399.98px) {
+            .crate-page .configuration-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .crate-page .configuration-section:nth-child(2) {
+                border-right: 0;
+            }
+
+            .crate-page .configuration-section:nth-child(-n+2) {
+                border-bottom: 1px solid #e2e8f0;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .crate-page .configuration-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .crate-page .configuration-section,
+            .crate-page .configuration-section:nth-child(2) {
+                border-right: 0;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            .crate-page .configuration-section:last-child {
+                border-bottom: 0;
+            }
+
+            .crate-page .configuration-content .d-flex.gap-1 {
+                flex-wrap: wrap;
+            }
+
+            .crate-page .configuration-content .matrix-select {
+                width: 100%;
+                flex: 1 1 100%;
+            }
+        }
+
+    
+
+        /* =========================================================
+           INDUSTRIAL GREY THEME OVERRIDE
+           Hanya mengubah tampilan konfigurasi. Kode lama tetap utuh.
+           ========================================================= */
+
+        .crate-page .configuration-card {
+            border: 1px solid #cfd6de !important;
+            border-radius: 10px !important;
+            background: #f7f8fa !important;
+            box-shadow: 0 14px 30px rgba(30, 41, 59, 0.12) !important;
+        }
+
+        .crate-page .configuration-section {
+            background: #ffffff !important;
+            border-right: 1px solid #d5dbe2 !important;
+        }
+
+        .crate-page .configuration-heading {
+            min-height: 72px;
+            color: #ffffff !important;
+            background: linear-gradient(135deg, #1e3d61ff 0%, #13007eff 100%) !important;
+            border-bottom: 1px solid #515963 !important;
+            box-shadow: inset 0 4px 0 #9ea6ae;
+        }
+
+        .crate-page .configuration-section-dimension .configuration-heading {
+            box-shadow: inset 0 4px 0 #f59e0b;
+        }
+
+        .crate-page .configuration-section-general .configuration-heading {
+            box-shadow: inset 0 4px 0 #64748b;
+        }
+
+        .crate-page .configuration-section-bottom .configuration-heading {
+            box-shadow: inset 0 4px 0 #4c9a3f;
+        }
+
+        .crate-page .configuration-section-top .configuration-heading {
+            box-shadow: inset 0 4px 0 #f97316;
+        }
+
+        .crate-page .configuration-heading,
+        .crate-page .configuration-heading * {
+            color: #ffffff !important;
+        }
+
+        .crate-page .configuration-section .badge {
+            border-radius: 5px !important;
+            box-shadow: 0 4px 10px rgba(15, 23, 42, 0.22) !important;
+        }
+
+        .crate-page .configuration-section-dimension .badge {
+            background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+        }
+
+        .crate-page .configuration-section-general .badge {
+            background: linear-gradient(135deg, #64748b, #475569) !important;
+        }
+
+        .crate-page .configuration-section-bottom .badge {
+            background: linear-gradient(135deg, #55a946, #3f8535) !important;
+        }
+
+        .crate-page .configuration-section-top .badge {
+            background: linear-gradient(135deg, #f97316, #dd5d0b) !important;
+        }
+
+        .crate-page .configuration-content {
+            background:
+                linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.98)) !important;
+        }
+
+        .crate-page .configuration-content > .group-item {
+            border-color: #d8dde3 !important;
+            background: transparent !important;
+        }
+
+        .crate-page .configuration-content > .group-item:hover {
+            background: #f1f3f5 !important;
+        }
+
+        .crate-page .configuration-content .material-symbols-rounded {
+            border: 1px solid #d7dce2;
+            border-radius: 7px !important;
+            background: linear-gradient(145deg, #f2f4f6, #e4e8ec) !important;
+            color: #475569 !important;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+        }
+
+        .crate-page .configuration-section-bottom .configuration-content .material-symbols-rounded {
+            color: #3f8535 !important;
+            border-color: #d5e5d2;
+            background: linear-gradient(145deg, #f2f8f0, #e5f0e2) !important;
+        }
+
+        .crate-page .configuration-section-top .configuration-content .material-symbols-rounded {
+            color: #dd5d0b !important;
+            border-color: #f0ded2;
+            background: linear-gradient(145deg, #fff7f1, #f4e8df) !important;
+        }
+
+        .crate-page .configuration-content small {
+            color: #374151 !important;
+            font-weight: 400 !important;
+            font-size: 13px !important;
+        }
+
+        .crate-page .configuration-content .custom-input,
+        .crate-page .configuration-content .custom-select,
+        .crate-page .configuration-content .matrix-select {
+            min-height: 40px;
+            border: 1px solid #cbd2d9 !important;
+            border-radius: 6px !important;
+            background-color: #ffffff !important;
+            color: #26313d !important;
+            font-weight: 400 !important;
+            font-size: 13px !important;
+            box-shadow:
+                inset 0 1px 2px rgba(15, 23, 42, 0.04),
+                0 1px 2px rgba(15, 23, 42, 0.03) !important;
+        }
+
+        .crate-page .configuration-content .custom-input:focus,
+        .crate-page .configuration-content .custom-select:focus,
+        .crate-page .configuration-content .matrix-select:focus {
+            border-color: #7d8791 !important;
+            box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.14) !important;
+        }
+
+        .crate-page .configuration-content .custom-select:disabled,
+        .crate-page .configuration-content .matrix-select:disabled {
+            opacity: 1;
+            background-color: #ffffff !important;
+            color: #26313d !important;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: none !important;
+            padding-right: 0.5rem !important;
+        }
+
+        .crate-page .configuration-footer {
+            padding-top: 14px !important;
+            background: linear-gradient(180deg, #f3f5f7 0%, #e8ebef 100%) !important;
+            border-top: 1px solid #d3d8de !important;
+        }
+
+        .crate-page .configuration-footer #btn-edit-config {
+            border: 1px solid #606a74 !important;
+            border-bottom: 3px solid #f59e0b !important;
+            border-radius: 6px !important;
+            background: linear-gradient(135deg, #1e3d61ff 0%, #13007eff 100%) !important;
+            color: #ffffff !important;
+            box-shadow: 0 7px 14px rgba(51, 65, 85, 0.18) !important;
+        }
+
+        .crate-page .configuration-footer #btn-edit-config:hover {
+            background: linear-gradient(135deg, #1e3d61ff 0%, #13007eff 100%) !important;
+            transform: translateY(-1px);
+        }
+
+        .crate-page .configuration-footer #btn-cancel-config {
+            border-radius: 6px !important;
+            border-color: #c7cdd4 !important;
+            background: #ffffff !important;
+        }
+
+        .crate-page .configuration-footer #btn-save-config {
+            border-radius: 6px !important;
+            border-bottom: 3px solid #2f6f2a !important;
+            background: linear-gradient(135deg, #58a94a, #3f8535) !important;
+        }
+
+        @media (max-width: 1399.98px) {
+            .crate-page .configuration-section:nth-child(-n+2) {
+                border-bottom-color: #d5dbe2 !important;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .crate-page .configuration-section,
+            .crate-page .configuration-section:nth-child(2) {
+                border-bottom-color: #d5dbe2 !important;
+            }
+        }
+
+    
+
+        /* =========================================================
+           CLEAN COLOR MOCKUP OVERRIDE
+           Layout: Dimensi | Konfigurasi | Area Bawah | Area Atas
+           Kode style lain di atas tetap dipertahankan.
+           ========================================================= */
+
+        .crate-page .configuration-card {
+            overflow: hidden;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 12px !important;
+            background: #ffffff !important;
+            box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08) !important;
+        }
+
+        .crate-page .configuration-grid {
+            display: grid;
+            grid-template-columns: minmax(210px, 1.5fr) minmax(430px, 3fr) minmax(380px, 3fr) minmax(210px, 1.2fr);
+            align-items: stretch;
+            gap: 0;
+        }
+
+        .crate-page .configuration-section {
+            min-width: 0;
+            padding: 0 14px 5px;
+            background: #ffffff !important;
+            border-top: 4px solid #cbd5e1;
+            border-right: 1px solid #e2e8f0 !important;
+        }
+
+        .crate-page .configuration-section:last-child {
+            border-right: 0 !important;
+        }
+
+        .crate-page .configuration-section-dimension {
+            border-top-color: #1769e8;
+        }
+
+        .crate-page .configuration-section-general {
+            border-top-color: #64748b;
+        }
+
+        .crate-page .configuration-section-bottom {
+            border-top-color: #10b981;
+        }
+
+        .crate-page .configuration-section-top {
+            border-top-color: #f59e0b;
+        }
+
+        .crate-page .configuration-heading,
+        .crate-page .configuration-section-dimension .configuration-heading,
+        .crate-page .configuration-section-general .configuration-heading,
+        .crate-page .configuration-section-bottom .configuration-heading,
+        .crate-page .configuration-section-top .configuration-heading {
+            min-height: 44px;
+            margin: 0 -14px 6px !important;
+            padding: 10px 14px;
+            border: 0 !important;
+            border-bottom: 1px solid #f1f5f9 !important;
+            background: #ffffff !important;
+            box-shadow: none !important;
+            color: #0f2748 !important;
+            font-size: 13px;
+            line-height: 1.2;
+        }
+
+        .crate-page .configuration-heading * {
+            color: inherit !important;
+        }
+
+        .crate-page .configuration-section .badge {
+            width: 22px !important;
+            height: 22px !important;
+            flex: 0 0 22px;
+            border: 0 !important;
+            border-radius: 5px !important;
+            box-shadow: none !important;
+            color: #ffffff !important;
+            font-size: 13px !important;
+            font-weight: 800;
+        }
+
+        .crate-page .configuration-section-dimension .badge {
+            background: #1769e8 !important;
+        }
+
+        .crate-page .configuration-section-general .badge {
+            background: #64748b !important;
+        }
+
+        .crate-page .configuration-section-bottom .badge {
+            background: #10b981 !important;
+        }
+
+        .crate-page .configuration-section-top .badge {
+            background: #f59e0b !important;
+        }
+
+        .crate-page .configuration-content,
+        .crate-page .configuration-content.container-input-group {
+            overflow: visible !important;
+            border: 0 !important;
+            border-radius: 0 !important;
+            background: #ffffff !important;
+            box-shadow: none !important;
+        }
+
+        .crate-page .configuration-content > .group-item,
+        .crate-page .configuration-content-narrow > .group-item {
+            min-height: 57px;
+            padding: 0 !important;
+            border: 0 !important;
+            border-bottom: 0 !important;
+            border-radius: 8px !important;
+            background: transparent !important;
+        }
+
+        .crate-page .configuration-content > .group-item:hover,
+        .crate-page .configuration-section-bottom .configuration-content > .group-item:hover,
+        .crate-page .configuration-section-top .configuration-content > .group-item:hover {
+            background: #f8fafc !important;
+        }
+
+        .crate-page .configuration-content .material-symbols-rounded {
+            width: 30px;
+            height: 30px;
+            flex: 0 0 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 0 !important;
+            border-radius: 6px !important;
+            box-shadow: none !important;
+        }
+
+        .crate-page .configuration-section-dimension .configuration-content .material-symbols-rounded {
+            background: #eff6ff !important;
+            color: #1769e8 !important;
+        }
+
+        .crate-page .configuration-section-general .configuration-content .material-symbols-rounded {
+            background: #f1f5f9 !important;
+            color: #64748b !important;
+        }
+
+        .crate-page .configuration-section-bottom .configuration-content .material-symbols-rounded {
+            background: #ecfdf5 !important;
+            color: #10b981 !important;
+        }
+
+        .crate-page .configuration-section-top .configuration-content .material-symbols-rounded {
+            background: #fff7ed !important;
+            color: #f59e0b !important;
+        }
+
+        .crate-page .configuration-content small {
+            color: #334155 !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            line-height: 1.2;
+        }
+
+        .crate-page .configuration-unit-field {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .crate-page .configuration-unit {
+            min-width: 22px;
+            margin: 0 !important;
+            color: #64748b !important;
+            font-size: 13px !important;
+            font-weight: 700;
+            text-align: left;
+        }
+
+        .crate-page .configuration-content .custom-input,
+        .crate-page .configuration-content .custom-select,
+        .crate-page .configuration-content .matrix-select {
+            width: 100% !important;
+            min-width: 0 !important;
+            min-height: 34px;
+            height: 34px;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 5px !important;
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            line-height: 1.2;
+            padding: 6px 26px 6px 9px !important;
+            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) !important;
+        }
+
+        .crate-page .configuration-content .custom-input {
+            padding-right: 9px !important;
+        }
+
+        .crate-page .configuration-content .custom-input:focus,
+        .crate-page .configuration-content .custom-select:focus,
+        .crate-page .configuration-content .matrix-select:focus {
+            border-color: #94a3b8 !important;
+            box-shadow: 0 0 0 3px rgba(148, 163, 184, 0.14) !important;
+        }
+
+        .crate-page .configuration-content .custom-input[readonly],
+        .crate-page .configuration-content .custom-select:disabled,
+        .crate-page .configuration-content .matrix-select:disabled {
+            opacity: 1;
+            color: #0f172a !important;
+            background-color: #ffffff !important;
+        }
+
+        .crate-page .configuration-content .custom-select,
+        .crate-page .configuration-content .matrix-select,
+        .crate-page .configuration-content .custom-select:disabled,
+        .crate-page .configuration-content .matrix-select:disabled {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%2364748b' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M3 6l5 5 5-5'/%3e%3c/svg%3e") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 8px center !important;
+            background-size: 10px 10px !important;
+        }
+
+        .crate-page .configuration-content .fixed-status-select,
+        .crate-page .configuration-content .fixed-status-select:disabled {
+            color: #94a3b8 !important;
+            background-color: #f8fafc !important;
+            background-image: none !important;
+            cursor: default;
+        }
+
+        .crate-page .configuration-matrix {
+            display: block !important;
+        }
+
+        .crate-page .configuration-matrix-header,
+        .crate-page .configuration-matrix-row {
+            display: grid !important;
+            grid-template-columns: 1.1fr 1.1fr 1.3fr 1.2fr;
+            align-items: center;
+            column-gap: 9px;
+            width: 100%;
+        }
+
+        .crate-page .configuration-matrix-header {
+            min-height: 28px;
+            padding: 4px 0 5px;
+            color: #334155;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: .03em;
+            text-transform: uppercase;
+        }
+
+        .crate-page .configuration-matrix-header span {
+            min-width: 0;
+            white-space: nowrap;
+        }
+
+        .crate-page .configuration-matrix-row,
+        .crate-page .configuration-section-bottom .configuration-content > .configuration-matrix-row,
+        .crate-page .configuration-section-top .configuration-content > .configuration-matrix-row {
+            min-height: 57px;
+            padding: 0 !important;
+            border: 0 !important;
+            border-bottom: 0 !important;
+        }
+
+        .crate-page .configuration-component {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .crate-page .configuration-component small {
+            overflow: hidden;
+            color: #1e293b !important;
+            font-size: 13px !important;
+            font-weight: 700 !important;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .crate-page .configuration-cell {
+            min-width: 0;
+        }
+
+        .crate-page .configuration-footer {
+            min-height: 48px;
+            padding: 6px 14px 12px !important;
+            border: 0 !important;
+            background: #ffffff !important;
+        }
+
+        .crate-page .configuration-footer #btn-edit-config {
+            width: 138px !important;
+            min-height: 32px;
+            border: 0 !important;
+            border-radius: 4px !important;
+            background: #17375e !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(23, 55, 94, 0.16) !important;
+        }
+
+        .crate-page .configuration-footer #btn-edit-config:hover {
+            background: #102d50 !important;
+            transform: translateY(-1px);
+        }
+
+        .crate-page .configuration-footer #btn-cancel-config,
+        .crate-page .configuration-footer #btn-save-config {
+            min-height: 32px;
+            border-radius: 4px !important;
+        }
+
+        @media (max-width: 1499.98px) {
+            .crate-page .configuration-grid {
+                grid-template-columns: minmax(200px, 1fr) minmax(200px, 1fr);
+            }
+
+            .crate-page .configuration-section:nth-child(2) {
+                border-right: 0 !important;
+            }
+
+            .crate-page .configuration-section:nth-child(-n+2) {
+                border-bottom: 1px solid #e2e8f0;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .crate-page .configuration-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .crate-page .configuration-section,
+            .crate-page .configuration-section:nth-child(2) {
+                border-right: 0 !important;
+                border-bottom: 1px solid #e2e8f0;
+            }
+
+            .crate-page .configuration-section:last-child {
+                border-bottom: 0;
+            }
+
+            .crate-page .configuration-matrix-header {
+                display: none !important;
+            }
+
+            .crate-page .configuration-matrix-row,
+            .crate-page .configuration-section-bottom .configuration-content > .configuration-matrix-row,
+            .crate-page .configuration-section-top .configuration-content > .configuration-matrix-row {
+                grid-template-columns: 1fr;
+                row-gap: 7px;
+                padding: 10px 0 !important;
+                border-bottom: 1px solid #f1f5f9 !important;
+            }
+
+            .crate-page .configuration-matrix-row:last-child {
+                border-bottom: 0 !important;
+            }
+
+            .crate-page .configuration-component small {
+                white-space: normal;
+            }
+        }
+
+        /* 3D FLOATING TOOLBAR STYLES */
+        .crate-page .floating-visual-toolbar {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            right: 12px;
+            z-index: 10;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px) saturate(190%);
+            -webkit-backdrop-filter: blur(12px) saturate(190%);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 14px;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.08);
+            padding: 8px 12px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @media (max-width: 991px) {
+            .crate-page .floating-visual-toolbar {
+                position: relative;
+                top: 0;
+                left: 0;
+                right: 0;
+                margin: 12px;
+                background: #ffffff;
+                border-radius: 14px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            }
+        }
+
+        .crate-page .floating-visual-toolbar:hover {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: rgba(59, 130, 246, 0.25);
+            box-shadow: 0 12px 35px -8px rgba(0, 0, 0, 0.1);
+        }
+
+        .crate-page .toolbar-pill-group {
+            display: flex;
+            align-items: center;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 2px 4px;
+            border-radius: 100px;
+            height: 36px;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .crate-page .toolbar-pill-label {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 4px 10px;
+            border-radius: 100px;
+            margin-right: 4px;
+            user-select: none;
+        }
+
+        .crate-page .toolbar-pill-label.atas {
+            background-color: #eff6ff;
+            color: #3b82f6;
+        }
+
+        .crate-page .toolbar-pill-label.bawah {
+            background-color: #f0fdf4;
+            color: #22c55e;
+        }
+
+        .crate-page .btn-check + .btn-outline-primary.btn-xs {
+            padding: 3px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            border-radius: 100px;
+            color: #475569;
+            border: none;
+            background: transparent;
+            transition: all 0.2s ease;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .crate-page .btn-check:checked + .btn-outline-primary.btn-xs {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.1);
+        }
+
+        .crate-page .btn-check + .btn-outline-primary.btn-xs:hover {
+            color: #1e293b;
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        /* Camera and option buttons */
+        .crate-page .toolbar-btn-link {
+            border: none;
+            background: transparent;
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            padding: 3px 12px;
+            border-radius: 100px;
+            height: 28px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .crate-page .toolbar-btn-link:hover {
+            color: #0f172a;
+            background-color: rgba(0, 0, 0, 0.03);
+        }
+
+        .crate-page .toolbar-btn-link.active {
+            background-color: #ffffff !important;
+            color: #3b82f6 !important;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.1);
+        }
+
+        .crate-page .toolbar-btn-link#dimensionBtn.active,
+        .crate-page .toolbar-btn-link#gridBtn.active {
+            color: #8b5cf6 !important;
+            background-color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.1);
+        }
+
+</style>
+
+    <div class="crate-page container-fluid py-4">
+        <div class="page-header px-3 py-3 d-flex flex-col gap-3 flex-md-row align-items-md-center justify-content-md-between mb-3">
+            <div class="d-flex align-items-center gap-3">
+                <a href="{{ route('packaging.summary') }}" class="btn-soft px-3 py-2 rounded-3 shadow-none" style="border-color: #cbd5e1; height: 38px; width: 38px; display: inline-flex; align-items: center; justify-content: center;">
+                    <span class="material-symbols-rounded text-lg" style="margin-left: 2px;">arrow_back</span>
+                </a>
+                <div>
+                    <h1 class="h5 mb-0" style="color:#0f172a;font-weight:900;letter-spacing:-.01em; line-height: 1.2;">Calculation</h1>
+                    <p class="mb-0 small text-secondary d-none d-md-block" style="font-size: 11px;">Halaman kalkulasi packaging crate untuk pengiriman barang berat.</p>
+                </div>
+            </div>
+            <div class="d-flex flex-wrap align-items-center gap-2 justify-content-md-end">
+                @if(isset($calculation))
+                    @if(auth()->check() && auth()->user()->hasRole('admin'))
+                    <button type="button" data-bs-toggle="modal" data-bs-target="#validasiModal" class="btn-soft text-success border-success" style="color: #0e8a63; border-color: rgba(14, 138, 99, 0.3); background-color: rgba(14, 138, 99, 0.03); cursor: pointer; text-decoration: none;">
+                        <span class="material-symbols-rounded text-lg">fact_check</span>
+                        <span>VALIDASI</span>
+                    </button>
+                    @endif
+                <button type="button" onclick="printWith3DImage()" class="btn-soft text-primary border-primary" style="color: #1769e8; border-color: rgba(23, 105, 232, 0.3); background-color: rgba(23, 105, 232, 0.03); cursor: pointer;">
+                    <span class="material-symbols-rounded text-lg">print</span>
+                    <span>PRINT</span>
+                </button>
+                @endif
+            </div>
+        </div>
+
+        {{-- Main Row: Inputs, Visual, Stats --}}
+        <div class="container-fluid pt-4 pb-4 rounded-4" style="background-color: rgba(255, 255, 255, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+            <div class="row g-4">
+                <!-- Full Width Column: Inputs (col-12) -->
+                <div class="col-12 d-flex flex-column gap-3">
+                    
+                    <!-- PACKING INFORMATION -->
+                    <div class="card border-0 shadow-sm style-card-container">
+                        <div class="card-header bg-white border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
+                            <h6 class="fw-bold mb-0 text-navy d-flex align-items-center" style="font-size: 13px;">
+                                <div class="bg-primary bg-opacity-10 p-1 rounded me-2 d-flex align-items-center justify-content-center text-primary">
+                                    <span class="material-symbols-rounded" style="font-size: 16px;">inventory_2</span>
+                                </div>
+                                PACKING INFORMATION
+                            </h6>
+                            <span class="badge bg-primary text-primary bg-opacity-10 rounded-pill px-3 py-1 border border-primary border-opacity-25" style="font-size: 9px;"><i class="fas fa-circle me-1" style="font-size: 6px;"></i> DRAFT</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-3">
+                                <!-- Reference Number -->
+                                <div class="col-12 border-bottom pb-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded me-3 text-primary d-flex align-items-center justify-content-center">
+                                            <span class="material-symbols-rounded">description</span>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted d-block lh-1 mb-1" style="font-size: 11px;">Reference Number</small>
+                                            <h5 class="fw-bold text-navy mb-0" style="font-size: 18px;">-</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Details Row -->
+                                <div class="col-md-3 border-end">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-primary bg-opacity-10 p-2 rounded me-3 text-primary d-flex align-items-center justify-content-center">
+                                            <span class="material-symbols-rounded">receipt_long</span>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted d-block lh-1 mb-1" style="font-size: 11px;">SO Number</small>
+                                            <div class="fw-bold text-navy">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-3 border-end">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-success bg-opacity-10 p-2 rounded me-3 text-success d-flex align-items-center justify-content-center">
+                                            <span class="material-symbols-rounded">domain</span>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted d-block lh-1 mb-1" style="font-size: 11px;">Customer Name</small>
+                                            <div class="fw-bold text-navy">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-3 border-end">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-purple bg-opacity-10 p-2 rounded me-3 d-flex align-items-center justify-content-center" style="color: #8b5cf6; background-color: rgba(139, 92, 246, 0.1);">
+                                            <span class="material-symbols-rounded">engineering</span>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted d-block lh-1 mb-1" style="font-size: 11px;">Packer</small>
+                                            <div class="fw-bold text-navy">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="bg-warning bg-opacity-10 p-2 rounded me-3 text-warning d-flex align-items-center justify-content-center" style="color: #f59e0b; background-color: rgba(245, 158, 11, 0.1);">
+                                            <span class="material-symbols-rounded">person</span>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted d-block lh-1 mb-1" style="font-size: 11px;">Assigned By</small>
+                                            <div class="fw-bold text-navy">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Single Combined Card -->
+                    <div class="card border-0 shadow-sm style-card-container configuration-card">
+                        <form action="{{ isset($calculation) ? route('packaging.calculations.update', $calculation->id) : '#' }}" method="POST" id="form-edit-config">
+                            @csrf
+                            <div class="card-body p-0">
+                                <!-- Custom Grid Layout -->
+                                <div class="configuration-grid">
+
+                                    <!-- 1. Dimensi -->
+                                    <div class="d-flex flex-column h-100 configuration-section configuration-section-dimension">
+                                        <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
+                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 13px;">1</span>
+                                            Dimensi
+                                        </h6>
+                                        <style>
+                                            .container-input-group.flex-grow-1 > .group-item {
+                                                flex-grow: 1;
+                                                display: flex;
+                                                align-items: center;
+                                            }
+                                        </style>
+                                        <div class="d-flex flex-column border rounded bg-white container-input-group overflow-hidden flex-grow-1 configuration-content configuration-content-narrow">
+                                            <div class="configuration-matrix-header" style="visibility: hidden; min-height: 28px;" aria-hidden="true"><span>&nbsp;</span></div>
+                                            <!-- Panjang -->
+                                            <div class="d-flex align-items-center px-3 py-2 group-item">
+                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">swap_horiz</span>
+                                                <div class="w-100">
+                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 8px;">Panjang</small>
+                                                    <div class="configuration-unit-field">
+                                                        <input type="number" name="length" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 8px; font-weight: 500;" placeholder="0" value="{{ isset($calculation) ? $calculation->length : '' }}" readonly>
+                                                        <span class="configuration-unit text-muted">mm</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Lebar -->
+                                            <div class="d-flex align-items-center px-3 py-2 group-item">
+                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">straighten</span>
+                                                <div class="w-100">
+                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 8px;">Lebar</small>
+                                                    <div class="configuration-unit-field">
+                                                        <input type="number" name="width" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 8px; font-weight: 500;" placeholder="0" value="{{ isset($calculation) ? $calculation->width : '' }}" readonly>
+                                                        <span class="configuration-unit text-muted">mm</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Tinggi -->
+                                            <div class="d-flex align-items-center px-3 py-2 group-item">
+                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">height</span>
+                                                <div class="w-100">
+                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 8px;">Tinggi</small>
+                                                    <div class="configuration-unit-field">
+                                                        <input type="number" name="height" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 8px; font-weight: 500;" placeholder="0" value="{{ isset($calculation) ? $calculation->height : '' }}" readonly>
+                                                        <span class="configuration-unit text-muted">mm</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 2. Konfigurasi Area Bawah -->
+                                    <div class="d-flex flex-column h-100 configuration-section configuration-section-bottom configuration-section-wide">
+                                        <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
+                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 13px;">2</span>
+                                            Konfigurasi Area Bawah
+                                        </h6>
+                                        <div class="d-flex flex-column bg-white container-input-group overflow-hidden border rounded flex-grow-1 configuration-content configuration-matrix">
+                                            <div class="configuration-matrix-header" aria-hidden="true">
+                                                <span>Komponen</span>
+                                                <span>Penggunaan</span>
+                                                <span>Arah Pemasangan</span>
+                                                <span>Material</span>
+                                            </div>
+
+
+
+                                            <div class="configuration-matrix-row group-item">
+                                                <div class="configuration-component">
+                                                    <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">change_history</span>
+                                                    <small class="text-muted">Penyangga</small>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <input type="hidden" name="bawah_penyangga_include" value="1">
+                                                    <select class="form-select form-select-sm border-0 shadow-none matrix-select text-navy" style="pointer-events: none;" tabindex="-1" aria-label="Status Penyangga Bawah">
+                                                        <option selected value="1">Include</option>
+                                                    </select>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="bawah_penyangga_arah" class="form-select form-select-sm border-0 shadow-none matrix-select master-arah text-navy" disabled>
+                                                        <option value="Horizontal">Horizontal</option>
+                                                    </select>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="bawah_penyangga_material" class="form-select form-select-sm border-0 shadow-none matrix-select master-material text-navy" disabled>
+                                                        <option value="" {{ !isset($calculation) ? 'selected' : '' }} disabled>-</option>
+                                                        @foreach($materials->where('kategori', 'MASTER BALOK') as $mat)
+                                                            <option value="{{ $mat->kode }}">{{ $mat->kode }} ({{ $mat->tebal }}x{{ $mat->lebar }})</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="configuration-matrix-row group-item">
+                                                <div class="configuration-component">
+                                                    <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">grid_view</span>
+                                                    <small class="text-muted">Penutup</small>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="bawah_penutup_tipe" class="form-select form-select-sm border-0 shadow-none matrix-select master-include text-navy" disabled>
+                                                        <option value="Tanpa Penutup">Tanpa Penutup</option>
+                                                        <option value="Papan Setengah">Papan Setengah</option>
+                                                        <option value="Papan Full">Papan Full</option>
+                                                        <option value="Triplex">Triplex</option>
+                                                    </select>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="bawah_penutup_arah" class="form-select form-select-sm border-0 shadow-none matrix-select master-arah text-navy" disabled>
+                                                        <option value="Horizontal">Horizontal</option>
+                                                        <option value="Vertikal">Vertikal</option>
+                                                    </select>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="bawah_penutup_material" class="form-select form-select-sm border-0 shadow-none matrix-select master-material text-navy" disabled>
+                                                        <option value="" {{ !isset($calculation) ? 'selected' : '' }} disabled>-</option>
+                                                        @foreach($materials->where('kategori', 'MASTER TRIPLEKS') as $mat)
+                                                            <option value="{{ $mat->kode }}">{{ $mat->kode }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="configuration-matrix-row group-item">
+                                                <div class="configuration-component">
+                                                    <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">view_column_2</span>
+                                                    <small class="text-muted">Kaki Balok</small>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="include_pallet_base" class="form-select form-select-sm border-0 shadow-none matrix-select master-include text-navy" disabled>
+                                                        <option value="1" {{ isset($calculation) && $calculation->include_pallet_base ? 'selected' : '' }}>Include</option>
+                                                        <option value="0" {{ !isset($calculation) || !$calculation->include_pallet_base ? 'selected' : '' }}>Not Include</option>
+                                                    </select>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="bawah_kakibalok_arah" class="form-select form-select-sm border-0 shadow-none matrix-select master-arah text-navy" disabled>
+                                                        <option value="Horizontal">Horizontal</option>
+                                                        <option value="Vertikal">Vertikal</option>
+                                                    </select>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="bawah_kakibalok_material" class="form-select form-select-sm border-0 shadow-none matrix-select master-material text-navy" disabled>
+                                                        <option value="" {{ !isset($calculation) ? 'selected' : '' }} disabled>-</option>
+                                                        @foreach($materials->where('kategori', 'MASTER BALOK') as $mat)
+                                                            <option value="{{ $mat->kode }}">{{ $mat->kode }} ({{ $mat->tebal }}x{{ $mat->lebar }})</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- 3. Konfigurasi Area Atas -->
+                                    <div class="d-flex flex-column h-100 configuration-section configuration-section-top configuration-section-wide">
+                                        <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
+                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 13px;">3</span>
+                                            Konfigurasi Area Atas
+                                        </h6>
+                                        <div class="d-flex flex-column bg-white container-input-group overflow-hidden border rounded flex-grow-1 configuration-content configuration-matrix">
+                                            <div class="configuration-matrix-header" aria-hidden="true">
+                                                <span>Komponen</span>
+                                                <span>Penggunaan</span>
+                                                <span>Arah Pemasangan</span>
+                                                <span>Material</span>
+                                            </div>
+
+                                            <div class="configuration-matrix-row group-item">
+                                                <div class="configuration-component">
+                                                    <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">change_history</span>
+                                                    <small class="text-muted">Penyangga</small>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="atas_penyangga_include" class="form-select form-select-sm border-0 shadow-none matrix-select master-include text-navy" disabled>
+                                                        <option value="1">Include</option>
+                                                        <option value="0" {{ !isset($calculation) ? 'selected' : '' }}>Not Include</option>
+                                                    </select>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="atas_penyangga_arah" class="form-select form-select-sm border-0 shadow-none matrix-select master-arah text-navy" disabled>
+                                                        <option value="Vertikal">Vertikal</option>
+                                                    </select>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="atas_penyangga_material" class="form-select form-select-sm border-0 shadow-none matrix-select master-material text-navy" disabled>
+                                                        <option value="" {{ !isset($calculation) ? 'selected' : '' }} disabled>-</option>
+                                                        @foreach($materials->where('kategori', 'MASTER BALOK') as $mat)
+                                                            <option value="{{ $mat->kode }}">{{ $mat->kode }} ({{ $mat->tebal }}x{{ $mat->lebar }})</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div class="configuration-matrix-row group-item">
+                                                <div class="configuration-component">
+                                                    <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">grid_view</span>
+                                                    <small class="text-muted">Penutup</small>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="atas_penutup_tipe" class="form-select form-select-sm border-0 shadow-none matrix-select master-include text-navy" disabled>
+                                                        <option value="Tanpa Penutup">Tanpa Penutup</option>
+                                                        <option value="Papan Setengah">Papan Setengah</option>
+                                                        <option value="Papan Full">Papan Full</option>
+                                                        <option value="Triplex">Triplex</option>
+                                                    </select>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="atas_penutup_arah" class="form-select form-select-sm border-0 shadow-none matrix-select master-arah text-navy" disabled>
+                                                        <option value="Horizontal">Horizontal</option>
+                                                        <option value="Vertikal">Vertikal</option>
+                                                    </select>
+                                                </div>
+                                                <div class="configuration-cell">
+                                                    <select name="atas_penutup_material" class="form-select form-select-sm border-0 shadow-none matrix-select master-material text-navy" disabled>
+                                                        <option value="" {{ !isset($calculation) ? 'selected' : '' }} disabled>-</option>
+                                                        @foreach($materials->where('kategori', 'MASTER TRIPLEKS') as $mat)
+                                                            <option value="{{ $mat->kode }}">{{ $mat->kode }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- 4. Konfigurasi Tambahan -->
+                                    <div class="d-flex flex-column h-100 configuration-section configuration-section-general">
+                                        <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
+                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 13px;">4</span>
+                                            Konfigurasi
+                                        </h6>
+                                        <div class="d-flex flex-column border rounded bg-white container-input-group overflow-hidden flex-grow-1 configuration-content configuration-content-narrow">
+                                            <div class="configuration-matrix-header" style="visibility: hidden; min-height: 28px;" aria-hidden="true"><span>&nbsp;</span></div>
+
+
+                                            <!-- Jarak Penyanggah -->
+                                            <div class="d-flex align-items-center px-3 py-2 group-item">
+                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">straighten</span>
+                                                <div class="w-100">
+                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 13px;">Jarak Penyanggah</small>
+                                                    <div class="configuration-unit-field">
+                                                        <input type="number" name="distance_between_pillars" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 13px; font-weight: 500;" placeholder="0" value="{{ isset($calculation) ? $calculation->distance_between_pillars : '300' }}" readonly>
+                                                        <span class="configuration-unit text-muted">mm</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Celah Atas -->
+                                            <div class="d-flex align-items-center px-3 py-2 group-item">
+                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">vertical_align_top</span>
+                                                <div class="w-100">
+                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 13px;">Celah Atas</small>
+                                                    <div class="configuration-unit-field">
+                                                        <input type="number" name="gap_atas" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 13px; font-weight: 500;" placeholder="0" value="{{ isset($calculation) ? ($calculation->gap_atas ?? $calculation->gap) : '10' }}" readonly>
+                                                        <span class="configuration-unit text-muted">mm</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Celah Bawah -->
+                                            <div class="d-flex align-items-center px-3 py-2 group-item">
+                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">vertical_align_bottom</span>
+                                                <div class="w-100">
+                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 13px;">Celah Bawah</small>
+                                                    <div class="configuration-unit-field">
+                                                        <input type="number" name="gap_bawah" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 13px; font-weight: 500;" placeholder="0" value="{{ isset($calculation) ? ($calculation->gap_bawah ?? $calculation->gap) : '10' }}" readonly>
+                                                        <span class="configuration-unit text-muted">mm</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Jumlah Kaki Balok -->
+                                            <div class="d-flex align-items-center px-3 py-2 group-item" id="jarak_balok_additional_wrapper" style="{{ (isset($calculation) && !$calculation->include_pallet_base) ? 'opacity: 0.5; pointer-events: none; background-color: #f8f9fa;' : '' }}">
+                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">view_agenda</span>
+                                                <div class="w-100">
+                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 13px;">Jumlah Kaki Balok</small>
+                                                    <div class="configuration-unit-field">
+                                                        @php
+                                                            $kakiBalokVal = 2;
+                                                            if(isset($calculation)) {
+                                                                $bawahKakiBalok = $calculation->details->where('section', 'Bawah')->whereIn('part_name', ['Kaki Balok', 'Additional Balok'])->first();
+                                                                if ($bawahKakiBalok) {
+                                                                    $kakiBalokVal = $bawahKakiBalok->quantity;
+                                                                } else {
+                                                                    $kakiBalokVal = max(2, (int)floor($calculation->length / 800) + 1);
+                                                                }
+                                                                if (!$calculation->include_pallet_base) {
+                                                                    $kakiBalokVal = '-';
+                                                                }
+                                                            }
+                                                        @endphp
+                                                        <input type="text" name="jumlah_kaki_balok" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 13px; font-weight: 500;" placeholder="0" value="{{ $kakiBalokVal }}" readonly>
+                                                        <span class="configuration-unit text-muted">pcs</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <!-- Action / Edit Toggle -->
+                    <div class="mt-2 d-flex justify-content-end gap-2 px-0">
+                        <button type="button" id="btn-edit-config" class="btn btn-navy py-2 px-4 shadow-sm rounded-pill d-flex align-items-center gap-2 fw-bold text-white justify-content-center" style="font-size: 13px; min-width: 180px; transition: all 0.2s;">
+                            <span class="material-symbols-rounded" style="font-size: 18px;">edit</span>
+                            Edit Konfigurasi
+                        </button>
+                        <button type="button" id="btn-cancel-config" class="btn btn-light py-2 px-4 shadow-sm rounded-pill d-none align-items-center gap-2 fw-bold text-dark border justify-content-center" style="font-size: 13px; background-color: #fff; min-width: 120px;">
+                            <span class="material-symbols-rounded" style="font-size: 18px;">close</span>
+                            Batal
+                        </button>
+                        <button type="submit" form="form-edit-config" id="btn-save-config" class="btn btn-success py-2 px-4 shadow-sm rounded-pill d-none align-items-center gap-2 fw-bold text-white justify-content-center" style="font-size: 13px; background-color: #10b981; border: none; min-width: 120px;">
+                            <span class="material-symbols-rounded" style="font-size: 18px;">save</span>
+                            Simpan
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <style>
+                @media (min-width: 992px) {
+                    .col-lg-9-5 { flex: 0 0 auto; width: 79.166667%; }
+                    .col-lg-2-5 { flex: 0 0 auto; width: 20.833333%; }
+                }
+            </style>
+            {{-- Row Visual Ilustrasi --}}
+            <div class="row g-3 mb-3 mt-1">
+                <div class="col-12 col-lg-9-5">
+                    <div class="panel-card visual-card h-100 d-flex flex-column border-0 shadow-sm">
+                        <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 border-bottom pb-3">
+                            <h2 class="section-title mb-0 d-flex align-items-center gap-2">
+                                <span class="material-symbols-rounded text-primary">deployed_code</span>
+                                Ilustrasi
+                            </h2>
+                        </div>
+                        
+                        <div class="visual-stage flex-grow-1 position-relative" id="crate-canvas-container" style="min-height: 700px; background-color: #f8fafc; border-radius: 12px; overflow: hidden;">
+                            <!-- Floating CAD-Style Glassmorphic Toolbar (Line 1: Visibilitas) -->
+                            <div class="floating-visual-toolbar d-flex flex-nowrap align-items-center justify-content-between gap-2 py-1 px-2 mb-2" style="position: absolute; top: 12px; left: 12px; right: 12px; z-index: 10; background: rgba(240, 245, 255, 0.85); border: 1px solid rgba(200, 220, 240, 0.8); border-radius: 12px; box-shadow: 0 4px 15px -5px rgba(0, 0, 0, 0.05); backdrop-filter: blur(12px);">
+                                <div class="d-flex flex-nowrap align-items-center gap-2 flex-shrink-0">
+                                    <!-- Grup Atas -->
+                                    <div class="toolbar-pill-group flex-nowrap d-flex align-items-center rounded-pill px-2 py-1" id="group-atas-toggles" style="background: rgba(230, 245, 255, 0.8); border: 1px solid rgba(150, 200, 255, 0.5);">
+                                        <span class="toolbar-pill-label atas text-nowrap fw-bold me-2" style="color: #0d6efd; font-size: 0.75rem;">GRUP ATAS</span>
+                                        <div class="d-flex gap-1 flex-nowrap">
+                                            
+                                            <input type="checkbox" class="btn-check" id="vis-toggle-penyangga-atas" checked autocomplete="off">
+                                            <label class="btn btn-outline-primary btn-sm text-nowrap py-0 px-2" style="font-size: 0.75rem; border-radius: 6px;" for="vis-toggle-penyangga-atas" id="vis-toggle-penyangga-atas-lbl">Penyangga</label>
+                
+                                            <input type="checkbox" class="btn-check" id="vis-toggle-penutup-atas" checked autocomplete="off">
+                                            <label class="btn btn-outline-primary btn-sm text-nowrap py-0 px-2" style="font-size: 0.75rem; border-radius: 6px;" for="vis-toggle-penutup-atas" id="vis-toggle-penutup-atas-lbl">Penutup</label>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Grup Bawah -->
+                                    <div class="toolbar-pill-group flex-nowrap d-flex align-items-center rounded-pill px-2 py-1" id="group-bawah-toggles" style="background: rgba(235, 250, 235, 0.8); border: 1px solid rgba(180, 230, 180, 0.5);">
+                                        <span class="toolbar-pill-label bawah text-nowrap fw-bold me-2" style="color: #198754; font-size: 0.75rem;">GRUP BAWAH</span>
+                                        <div class="d-flex gap-1 flex-nowrap">
+
+                                            <input type="checkbox" class="btn-check" id="vis-toggle-penyangga-bawah" checked autocomplete="off">
+                                            <label class="btn btn-outline-success btn-sm text-nowrap py-0 px-2" style="font-size: 0.75rem; border-radius: 6px;" for="vis-toggle-penyangga-bawah" id="vis-toggle-penyangga-bawah-lbl">Penyangga</label>
+                
+                                            <input type="checkbox" class="btn-check" id="vis-toggle-penutup-bawah" checked autocomplete="off">
+                                            <label class="btn btn-outline-success btn-sm text-nowrap py-0 px-2" style="font-size: 0.75rem; border-radius: 6px;" for="vis-toggle-penutup-bawah" id="vis-toggle-penutup-bawah-lbl">Penutup</label>
+                                            
+                                            <input type="checkbox" class="btn-check" id="vis-toggle-kakibalok" checked autocomplete="off">
+                                            <label class="btn btn-outline-success btn-sm text-nowrap py-0 px-2" style="font-size: 0.75rem; border-radius: 6px;" for="vis-toggle-kakibalok" id="vis-toggle-kakibalok-lbl">Kaki Balok</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex flex-nowrap align-items-center gap-2 flex-shrink-0 pe-1">
+                                    <div class="toolbar-pill-group px-2 py-1 flex-nowrap rounded-pill d-flex align-items-center" style="background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(200, 220, 240, 0.5);">
+                                        <div class="btn-group flex-nowrap gap-1" role="group">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 active text-nowrap" style="font-size: 0.75rem; border-radius: 6px;" data-view="iso">Iso</button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 text-nowrap" style="font-size: 0.75rem; border-radius: 6px;" data-view="front">Depan</button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 text-nowrap" style="font-size: 0.75rem; border-radius: 6px;" data-view="right">Kanan</button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 text-nowrap" style="font-size: 0.75rem; border-radius: 6px;" data-view="top">Atas</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Floating CAD-Style Glassmorphic Toolbar (Line 2: Expand) -->
+                            <div class="floating-visual-toolbar d-flex flex-nowrap align-items-center justify-content-between gap-2 py-1 px-2" style="position: absolute; top: 60px; left: 12px; right: 12px; z-index: 10; background: rgba(245, 245, 245, 0.85); border: 1px solid rgba(220, 220, 220, 0.8); border-radius: 12px; box-shadow: 0 4px 15px -5px rgba(0, 0, 0, 0.05); backdrop-filter: blur(12px);">
+                                <div class="d-flex flex-nowrap align-items-center gap-2 flex-shrink-0">
+                                    <!-- Expand Atas -->
+                                    <div class="toolbar-pill-group flex-nowrap d-flex align-items-center rounded-pill px-2 py-1" id="group-atas-expand" style="background: rgba(255, 240, 230, 0.8); border: 1px solid rgba(255, 180, 150, 0.5);">
+                                        <span class="toolbar-pill-label atas text-nowrap fw-bold me-2" style="color: #fd7e14; font-size: 0.75rem;">EXPAND ATAS</span>
+                                        <div class="d-flex gap-1 flex-nowrap">
+                                            
+                                            <input type="checkbox" class="btn-check" id="vis-exp-penyangga-atas" autocomplete="off">
+                                            <label class="btn btn-outline-warning btn-sm text-nowrap py-0 px-2" style="font-size: 0.75rem; border-radius: 6px; --bs-btn-color: #fd7e14; --bs-btn-border-color: #fd7e14; --bs-btn-hover-bg: #fd7e14; --bs-btn-hover-border-color: #fd7e14;" for="vis-exp-penyangga-atas" id="vis-exp-penyangga-atas-lbl">Penyangga</label>
+                
+                                            <input type="checkbox" class="btn-check" id="vis-exp-penutup-atas" autocomplete="off">
+                                            <label class="btn btn-outline-warning btn-sm text-nowrap py-0 px-2" style="font-size: 0.75rem; border-radius: 6px; --bs-btn-color: #fd7e14; --bs-btn-border-color: #fd7e14; --bs-btn-hover-bg: #fd7e14; --bs-btn-hover-border-color: #fd7e14;" for="vis-exp-penutup-atas" id="vis-exp-penutup-atas-lbl">Penutup</label>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Expand Bawah -->
+                                    <div class="toolbar-pill-group flex-nowrap d-flex align-items-center rounded-pill px-2 py-1" id="group-bawah-expand" style="background: rgba(245, 235, 250, 0.8); border: 1px solid rgba(200, 150, 220, 0.5);">
+                                        <span class="toolbar-pill-label bawah text-nowrap fw-bold me-2" style="color: #6f42c1; font-size: 0.75rem;">EXPAND BAWAH</span>
+                                        <div class="d-flex gap-1 flex-nowrap">
+
+                                            <input type="checkbox" class="btn-check" id="vis-exp-kakibalok" autocomplete="off">
+                                            <label class="btn btn-outline-secondary btn-sm text-nowrap py-0 px-2" style="font-size: 0.75rem; border-radius: 6px; --bs-btn-color: #6f42c1; --bs-btn-border-color: #6f42c1; --bs-btn-hover-bg: #6f42c1; --bs-btn-hover-border-color: #6f42c1;" for="vis-exp-kakibalok" id="vis-exp-kakibalok-lbl">Kaki Balok</label>
+                                            
+                                            <input type="checkbox" class="btn-check" id="vis-exp-penyangga-bawah" autocomplete="off">
+                                            <label class="btn btn-outline-secondary btn-sm text-nowrap py-0 px-2" style="font-size: 0.75rem; border-radius: 6px; --bs-btn-color: #6f42c1; --bs-btn-border-color: #6f42c1; --bs-btn-hover-bg: #6f42c1; --bs-btn-hover-border-color: #6f42c1;" for="vis-exp-penyangga-bawah" id="vis-exp-penyangga-bawah-lbl">Penyangga</label>
+                
+                                            <input type="checkbox" class="btn-check" id="vis-exp-penutup-bawah" autocomplete="off">
+                                            <label class="btn btn-outline-secondary btn-sm text-nowrap py-0 px-2" style="font-size: 0.75rem; border-radius: 6px; --bs-btn-color: #6f42c1; --bs-btn-border-color: #6f42c1; --bs-btn-hover-bg: #6f42c1; --bs-btn-hover-border-color: #6f42c1;" for="vis-exp-penutup-bawah" id="vis-exp-penutup-bawah-lbl">Penutup</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-flex flex-nowrap align-items-center gap-2 flex-shrink-0 pe-1">
+                                    <div class="toolbar-pill-group px-2 py-1 flex-nowrap rounded-pill d-flex align-items-center" style="background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(220, 220, 220, 0.5);">
+                                        <div class="btn-group flex-nowrap gap-1" role="group">
+                                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 active text-nowrap" style="font-size: 0.75rem; border-radius: 6px; --bs-btn-color: #6c757d;" id="dimensionBtn">Dimensi</button>
+                                            <button type="button" class="btn btn-outline-secondary btn-sm py-0 px-2 active text-nowrap" style="font-size: 0.75rem; border-radius: 6px; --bs-btn-color: #6c757d;" id="gridBtn">Grid</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="canvas-loading" class="position-absolute top-50 start-50 translate-middle text-muted d-flex align-items-center gap-2" style="z-index: 10;">
+                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                                Preparing 3D engine...
+                            </div>
+                            <div id="canvasWrap" class="w-100 h-100 position-absolute" style="top: 0; left: 0;">
+                                <canvas id="crate-canvas" class="w-100 h-100" style="display: block;"></canvas>
+                            </div>
+
+                            <div class="legend"><strong>Kontrol 3D:</strong> klik kiri untuk memutar, scroll untuk zoom, klik kanan untuk menggeser.</div>
+                            <div class="status"><span class="status-dot"></span><span id="statusText">Model siap dan interaktif</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-2-5">
+                    @php
+                        $totalWoodLength = 0;
+                        $materialResume = [];
+                        
+                        $areaKerja = 0;
+                        if (isset($calculation)) {
+                            $P_m = (float)($calculation->length ?? 0) / 1000;
+                            $L_m = (float)($calculation->width ?? 0) / 1000;
+                            $T_m = (float)($calculation->height ?? 0) / 1000;
+                            $areaKerja = 2 * (($P_m * $L_m) + ($P_m * $T_m) + ($L_m * $T_m));
+                        }
+
+                        foreach (isset($calculation) && $calculation->details ? $calculation->details : [] as $detail) {
+                            $matKode = $detail->material->kode ?? '-';
+                            if ($matKode !== '-' && $matKode !== '') {
+                                $len = (float)($detail->total_length ?? 0);
+                                $totalWoodLength += $len;
+
+                                if (!isset($materialResume[$matKode])) {
+                                    $materialResume[$matKode] = [
+                                        'kode' => $matKode,
+                                        'nama' => $detail->material->nama ?? $matKode,
+                                        'length' => 0
+                                    ];
+                                }
+                                $materialResume[$matKode]['length'] += $len;
+                            }
+                        }
+                    @endphp
+                    <div class="panel-card h-100 d-flex flex-column border-0 shadow-sm p-4">
+                        <div class="d-flex align-items-center gap-2 mb-3 border-bottom pb-3">
+                            <span class="material-symbols-rounded text-success" style="font-size: 26px;">analytics</span>
+                            <h5 class="fw-bold mb-0 text-dark" style="font-size: 16px;">Resume Kebutuhan Kayu</h5>
+                        </div>
+
+                        <!-- KPI Widgets -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-6">
+                                <div class="p-3 rounded bg-light border d-flex flex-column h-100 justify-content-center">
+                                    <span class="text-muted fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 0.05em;">Total Panjang</span>
+                                    <div class="mt-1 d-flex align-items-baseline gap-1">
+                                        <span class="fw-extrabold text-dark" id="resume-total-panjang" style="font-size: 22px;">{{ number_format($totalWoodLength, 2, ',', '.') }}</span>
+                                        <span class="fw-bold text-muted" style="font-size: 14px;">m</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="p-3 rounded bg-light border d-flex flex-column h-100 justify-content-center" title="Total luas seluruh area kerja / box luar">
+                                    <span class="text-muted fw-bold text-uppercase" style="font-size: 11px; letter-spacing: 0.05em;">Total Luas</span>
+                                    <div class="mt-1 d-flex align-items-baseline gap-1">
+                                        <span class="fw-extrabold text-dark" id="resume-total-luas" style="font-size: 22px;">{{ number_format($areaKerja, 2, ',', '.') }}</span>
+                                        <span class="fw-bold text-muted" style="font-size: 14px;">m²</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- List Per Material -->
+                        <div class="d-flex flex-column flex-grow-1 overflow-hidden">
+                            <span class="text-muted fw-bold text-uppercase d-block mb-3 flex-shrink-0" style="font-size: 12px; letter-spacing: 0.05em;">Kebutuhan Per Material</span>
+                            
+                            <div class="flex-grow-1 overflow-auto pe-2">
+                                <div class="d-flex flex-column gap-3" id="resume-material-container">
+                                    @forelse($materialResume as $mat)
+                                    <div class="p-3 border rounded bg-white shadow-xs hover-shadow transition">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="d-flex align-items-center gap-3 overflow-hidden pe-2">
+                                                <span class="badge text-white fw-bold py-2 px-3" style="font-size: 13px; background-color: var(--navy);">{{ $mat['kode'] }}</span>
+                                                <span class="text-dark fw-bold text-truncate" style="font-size: 14px;" title="{{ $mat['nama'] }}">{{ $mat['nama'] }}</span>
+                                            </div>
+                                            <div class="text-end flex-shrink-0">
+                                                <span class="fw-extrabold text-success" style="font-size: 18px;">{{ number_format($mat['length'], 1, ',', '.') }}</span>
+                                                <span class="text-muted fw-bold ms-1" style="font-size: 14px;">m</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @empty
+                                    <div class="text-center text-muted py-4" style="font-size: 14px;">Belum ada data kebutuhan material</div>
+                                    @endforelse
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card Total Harga -->
+                        <div class="mt-3 p-3 rounded-3 border bg-white shadow-sm">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <span class="fw-bold text-dark text-uppercase" style="font-size: 13px; letter-spacing: 0.05em;">Total Packing</span>
+                                <a href="javascript:void(0)" class="badge bg-primary bg-opacity-10 text-primary text-decoration-none transition px-2 py-1" style="font-size: 10px;" data-bs-toggle="modal" data-bs-target="#costResumeModal">Detail &rsaquo;</a>
+                            </div>
+                            <div>
+                                <span class="fw-black text-success" id="cost-total-packing-resume" style="font-size: 20px;">Rp {{ number_format($totalCost, 0, ',', '.') }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        {{-- Row Material Sorting Visualizer --}}
+        <div class="row g-3 mb-3">
+            <div class="col-12">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3 bg-white">
+                    <!-- Header -->
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
+                                <span class="material-symbols-rounded fs-3">view_in_ar</span>
+                            </div>
+                            <div>
+                                <h5 class="mb-0 fw-bold">Visualisasi Potongan Material</h5>
+                                <small class="text-muted">Preview potongan material dalam skala 3D</small>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2 align-items-center">
+                            <button type="button" class="btn btn-light bg-white border shadow-sm d-flex align-items-center me-2" data-bs-toggle="modal" data-bs-target="#materialDetailModal"><span class="material-symbols-rounded fs-6 me-2">list</span>Lihat Daftar</button>
+                            <button type="button" class="btn btn-light bg-white border shadow-sm d-flex align-items-center justify-content-center" id="btn-mat-left" style="width: 38px; height: 38px; border-radius: 8px;">
+                                <span class="material-symbols-rounded">chevron_left</span>
+                            </button>
+                            <button type="button" class="btn btn-light bg-white border border-primary text-primary shadow-sm d-flex align-items-center justify-content-center" id="btn-mat-right" style="width: 38px; height: 38px; border-radius: 8px;">
+                                <span class="material-symbols-rounded">chevron_right</span>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    </div>
+                    
+                    <!-- 3D Canvas -->
+                    <div class="position-relative border-top" style="background: #f8fafc;">
+                        <div id="material-sorting-container" style="width: 100%; height: 450px; position: relative; overflow: hidden;"></div>
+                        <div id="material-labels-container" style="position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; overflow: hidden;"></div>
+                    </div>
+
+                    <!-- Legend / Categories -->
+                    <div class="px-4 py-2 bg-light border-top d-flex flex-wrap gap-4 align-items-center justify-content-center">
+                        <span class="text-muted fw-bold" style="font-size: 11px;">KATEGORI WARNA:</span>
+                        <div class="d-flex align-items-center text-muted fw-semibold" style="font-size: 12px;">
+                            <span class="d-inline-block rounded-circle me-2" style="background: #c19a6b; width: 10px; height: 10px;"></span> Kayu Papan
+                        </div>
+                        <div class="d-flex align-items-center text-muted fw-semibold" style="font-size: 12px;">
+                            <span class="d-inline-block rounded-circle me-2" style="background: #5c4033; width: 10px; height: 10px;"></span> Balok
+                        </div>
+                        <div class="d-flex align-items-center text-muted fw-semibold" style="font-size: 12px;">
+                            <span class="d-inline-block rounded-circle me-2" style="background: #f3c583; width: 10px; height: 10px;"></span> Panel / Triplek
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="bg-light px-4 pb-3 pt-2">
+                        <div class="d-flex align-items-center text-primary text-opacity-75" style="font-size: 12px;">
+                            <span class="material-symbols-rounded fs-6 me-2">info</span>
+                            <span>Dimensi dalam milimeter (mm). Visualisasi berskala untuk memperjelas perbandingan ukuran material.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+        
+        </div> <!-- End of blur container -->
+    </div>
+
+    <!-- Modal Material Detail -->
+    <div class="modal fade" id="materialDetailModal" tabindex="-1" aria-labelledby="materialDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 1380px;">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-navy" id="materialDetailModalLabel">
+                        <span class="material-symbols-rounded text-primary align-middle me-2" style="font-size: 20px;">inventory_2</span>Detail Semua Material
+                    </h5>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body pt-3 pb-4">
+                    @include('packaging_calc.partials._table-material')
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @include('packaging_calc.partials._cost_resume_modal')
+
+
+    <!-- Modal Validasi Gabungan -->
+    @if(auth()->check() && auth()->user()->hasRole('admin'))
+    <div class="modal fade" id="validasiModal" tabindex="-1" aria-labelledby="validasiModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 98vw; height: 98vh; margin: 1vh auto;">
+            <div class="modal-content border-0 shadow-sm rounded-4" style="background-color: #f8fafc; height: 100%;">
+                
+                <div class="modal-header border-bottom-0 pb-0 pt-4 px-4 bg-white rounded-top-4 flex-column align-items-start">
+                    <div class="d-flex justify-content-between w-100 align-items-center mb-3">
+                        <h5 class="modal-title fw-bold" id="validasiModalLabel" style="font-size: 16px; color: #0b2a55;">
+                            <span class="material-symbols-rounded align-middle me-2" style="color: #0e8a63;">fact_check</span>
+                            Validasi Data Packaging
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    
+                    <!-- Nav Tabs -->
+                    <ul class="nav nav-tabs border-0 w-100" id="validasiTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active fw-bold" id="material-tab" data-bs-toggle="tab" data-bs-target="#tab-material" type="button" role="tab" aria-controls="tab-material" aria-selected="true" style="font-size: 13px;">
+                                <span class="material-symbols-rounded align-middle text-sm me-1">inventory</span> Master Material
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold text-secondary" id="perhitungan-tab" data-bs-toggle="tab" data-bs-target="#tab-perhitungan" type="button" role="tab" aria-controls="tab-perhitungan" aria-selected="false" style="font-size: 13px;">
+                                <span class="material-symbols-rounded align-middle text-sm me-1">functions</span> Rumus Perhitungan
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold text-secondary" id="pendukung-tab" data-bs-toggle="tab" data-bs-target="#tab-pendukung" type="button" role="tab" aria-controls="tab-pendukung" aria-selected="false" style="font-size: 13px;">
+                                <span class="material-symbols-rounded align-middle text-sm me-1">settings</span> Data Pendukung
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold text-secondary" id="fastener-tab" data-bs-toggle="tab" data-bs-target="#tab-fastener" type="button" role="tab" aria-controls="tab-fastener" aria-selected="false" style="font-size: 13px;">
+                                <span class="material-symbols-rounded align-middle text-sm me-1">hardware</span> Fastener
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="modal-body p-0">
+                    <div class="tab-content" id="validasiTabsContent">
+                        
+                        <!-- TAB: MASTER MATERIAL -->
+                        <div class="tab-pane fade show active p-4" id="tab-material" role="tabpanel" aria-labelledby="material-tab">
+                            @include('packaging_calc.Validasi-data.partials._material')
+                        </div>
+                        
+                        <!-- TAB: RUMUS PERHITUNGAN -->
+                        <div class="tab-pane fade" id="tab-perhitungan" role="tabpanel" aria-labelledby="perhitungan-tab">
+                            @include('packaging_calc.Validasi-data.partials._perhitungan')
+                        </div>
+                        
+                        <!-- TAB: FASTENER -->
+                        <div class="tab-pane fade p-4" id="tab-fastener" role="tabpanel" aria-labelledby="fastener-tab">
+                            @include('packaging_calc.Validasi-data.partials._fastener')
+                        </div>
+                        
+                        <!-- TAB: DATA PENDUKUNG -->
+                        <div class="tab-pane fade" id="tab-pendukung" role="tabpanel" aria-labelledby="pendukung-tab">
+                            <form action="{{ route('packaging.validasi_data.settings.update') }}" method="POST">
+                                @csrf
+                                <div class="p-4 bg-white m-4 rounded-3 border">
+                                    <p class="text-secondary mb-4" style="font-size: 12px;">Ubah konfigurasi tarif dasar untuk kalkulasi packaging. Perubahan akan langsung disimpan ke sistem.</p>
+
+                                    <!-- Manpower Rate -->
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold" style="font-size: 12px; color: #0b2a55;">Rate Manpower (Rp/Jam)</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light border-end-0 fw-bold text-secondary">Rp</span>
+                                            <input type="number" step="any" name="manpower_rate" value="{{ $packagingSettings['manpower_rate'] ?? 10000 }}" class="form-control border-start-0 ps-0 fw-bold" required>
+                                        </div>
+                                    </div>
+
+                                    <!-- Harga Paku -->
+                                    <div class="mb-3">
+                                        <label class="form-label fw-bold" style="font-size: 12px; color: #0b2a55;">Harga Paku (Rp/Kg)</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light border-end-0 fw-bold text-secondary">Rp</span>
+                                            <input type="number" step="any" name="nails_price_per_kg" value="{{ $packagingSettings['nails_price_per_kg'] ?? 25000 }}" class="form-control border-start-0 ps-0 fw-bold" required>
+                                        </div>
+                                    </div>
+
+                                    <!-- Berat Paku -->
+                                    <div class="mb-4">
+                                        <label class="form-label fw-bold" style="font-size: 12px; color: #0b2a55;">Berat Paku (Kg/Pcs)</label>
+                                        <div class="input-group input-group-sm">
+                                            <input type="number" step="any" name="nails_weight_per_piece" value="{{ $packagingSettings['nails_weight_per_piece'] ?? 0.025 }}" class="form-control border-end-0 fw-bold" required>
+                                            <span class="input-group-text bg-light border-start-0 fw-bold text-secondary">Kg</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="text-end">
+                                        <button type="submit" class="btn rounded-3 px-4 fw-bold text-white shadow-sm" style="background-color: #1769e8; font-size: 12px;">Simpan Perubahan</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+
+                    </div>
+                </div>
+                
+                <div class="modal-footer border-top-0 py-3 px-4 bg-white rounded-bottom-4">
+                    <button type="button" class="btn btn-light rounded-3 px-4 fw-bold text-secondary shadow-sm" data-bs-dismiss="modal" style="font-size: 12px;">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
@@ -100,30 +2434,7 @@
                     
                     if (typeof drawCrate === 'function') drawCrate();
                 }, undefined, function(error) {
-                    console.warn("Nail GLB not found, generating mock nail...");
-                    const cylinderGeometry = new THREE.CylinderGeometry(0.005, 0.005, 0.05, 8);
-                    const headGeometry = new THREE.CylinderGeometry(0.015, 0.015, 0.002, 8);
-                    
-                    const nailMaterial = new THREE.MeshStandardMaterial({
-                        color: 0xc0c0c0,
-                        metalness: 0.8,
-                        roughness: 0.2
-                    });
-                    
-                    const body = new THREE.Mesh(cylinderGeometry, nailMaterial);
-                    body.position.y = 0; // Centered
-                    body.castShadow = true;
-                    
-                    const head = new THREE.Mesh(headGeometry, nailMaterial);
-                    head.position.y = 0.025; // Head at +Y
-                    head.castShadow = true;
-                    
-                    nailModel = new THREE.Group();
-                    nailModel.add(body);
-                    nailModel.add(head);
-                    // No rotation on Group, points +Y by default
-                    
-                    if (typeof drawCrate === 'function') drawCrate();
+                    console.error("Error loading nail model:", error);
                 });
 
                 // Controls setup
@@ -350,17 +2661,20 @@
                         // Terpasang di rangka, tidak ada yang di-expand
                     }
                     else if (window.printSequenceStep === 7) {
-                        if (isAtas && isPenyangga) expandDir(0.35); // Diperkecil jaraknya
+                        if (isAtas && isPenyangga) expandDir(0.6);
                     }
                     else if (window.printSequenceStep === 8) {
-                        if (isAtas && isPenutup) expandDir(0.35); // Diperkecil jaraknya
+                        if (isAtas && isPenutup) expandDir(0.85); // Kurangi sedikit agar tidak keluar frame
                     }
                     else if (window.printSequenceStep === 9) {
                         // FULLY EXPLODED VIEW
+                        // if (isKakiBalok) mesh.position.y -= 1.0;
+                        // if (isBawah && isPenyangga) mesh.position.y -= 0.6;
+                        // if (isBawah && isPenutup) mesh.position.y -= 0.3;
                         if (isDepanBelakang && (isPenutup || isPenyangga)) expandDir(0.4);
                         if (isKananKiri && (isPenutup || isPenyangga)) expandDir(0.8);
-                        if (isAtas && isPenyangga) expandDir(0.45); // Dibuat sama agar nyatu dengan penutup
-                        if (isAtas && isPenutup) expandDir(0.45);   // Dibuat sama agar nyatu dengan penyangga
+                        if (isAtas && isPenyangga) expandDir(0.4);
+                        if (isAtas && isPenutup) expandDir(0.85);
                     }
                 }
             }
@@ -489,7 +2803,7 @@
             const d = currentMaxDimension * 2.15 + 1.2;
             let targetPosition;
             
-            const T = parseFloat(document.getElementById('s2_height').value) || 0;
+            const T = parseFloat(document.querySelector('input[name="height"]').value) || 0;
             const centerY = (T / 1000) / 2 || currentMaxDimension * 0.38;
 
             if (view === 'front') targetPosition = new THREE.Vector3(0, centerY, d);
@@ -552,35 +2866,30 @@
                 else nz += off;
 
                 let thk = Math.min(w, h, d);
-                // The nail must pass through the horizontal beam covering this spot. 
-                // We add 0.005 so it sticks out 2cm from the vertical beam, making it visible outside the horizontal beam.
-                let offset = thk/2 + 0.005; 
                 
                 if (faceId === 'top') {
-                    ny += offset;
-                    n.rotation.set(0, 0, 0); // Normal +Y
+                    ny += thk/2; 
                 } else if (faceId === 'bottom') {
-                    ny -= offset;
-                    n.rotation.x = Math.PI; // Normal -Y
+                    ny -= thk/2;
+                    n.rotation.x = Math.PI; 
                 } else if (faceId === 'front') {
-                    nz += offset;
-                    n.rotation.x = Math.PI/2; // Normal +Z
+                    nz += thk/2;
+                    n.rotation.x = Math.PI/2;
                 } else if (faceId === 'back') {
-                    nz -= offset;
-                    n.rotation.x = -Math.PI/2; // Normal -Z
+                    nz -= thk/2;
+                    n.rotation.x = -Math.PI/2;
                 } else if (faceId === 'right') {
-                    nx += offset;
-                    n.rotation.z = -Math.PI/2; // Normal +X
+                    nx += thk/2;
+                    n.rotation.z = -Math.PI/2;
                 } else if (faceId === 'left') {
-                    nx -= offset;
-                    n.rotation.z = Math.PI/2; // Normal -X
+                    nx -= thk/2;
+                    n.rotation.z = Math.PI/2;
                 }
                 
                 if (mesh.visible === false) n.visible = false;
                 
                 n.position.set(nx, ny, nz);
                 modelGroup.add(n);
-
             });
         }
 
@@ -607,24 +2916,12 @@
             if (inset1 > sz1 / 2) inset1 = sz1 / 4;
             if (inset2 > sz2 / 2) inset2 = sz2 / 4;
 
-            let corners = [];
-            if (sz1 > sz2) {
-                // Long in ax1, so 2 points at each end of ax1, near the edges of ax2
-                corners = [
-                    { [ax1]: sz1/2 - inset1, [ax2]: sz2/2 - inset2 },
-                    { [ax1]: sz1/2 - inset1, [ax2]: -sz2/2 + inset2 },
-                    { [ax1]: -sz1/2 + inset1, [ax2]: sz2/2 - inset2 },
-                    { [ax1]: -sz1/2 + inset1, [ax2]: -sz2/2 + inset2 }
-                ];
-            } else {
-                // Long in ax2, so 2 points at each end of ax2, near the edges of ax1
-                corners = [
-                    { [ax1]: sz1/2 - inset1, [ax2]: sz2/2 - inset2 },
-                    { [ax1]: -sz1/2 + inset1, [ax2]: sz2/2 - inset2 },
-                    { [ax1]: sz1/2 - inset1, [ax2]: -sz2/2 + inset2 },
-                    { [ax1]: -sz1/2 + inset1, [ax2]: -sz2/2 + inset2 }
-                ];
-            }
+            let corners = [
+                { [ax1]: sz1/2 - inset1, [ax2]: sz2/2 - inset2 },
+                { [ax1]: -sz1/2 + inset1, [ax2]: sz2/2 - inset2 },
+                { [ax1]: sz1/2 - inset1, [ax2]: -sz2/2 + inset2 },
+                { [ax1]: -sz1/2 + inset1, [ax2]: -sz2/2 + inset2 }
+            ];
 
             corners.forEach(corner => {
                 let n = nailModel.clone();
@@ -641,25 +2938,23 @@
                 if (ax2 === 'z') nz += corner.z;
 
                 let thk = Math.min(w, h, d);
-                let offset = thk/2 - 0.015;
                 
                 if (faceId === 'top') {
-                    ny += offset;
-                    n.rotation.set(0, 0, 0);
+                    ny += thk/2; 
                 } else if (faceId === 'bottom') {
-                    ny -= offset;
-                    n.rotation.x = Math.PI;
+                    ny -= thk/2;
+                    n.rotation.x = Math.PI; 
                 } else if (faceId === 'front') {
-                    nz += offset;
+                    nz += thk/2;
                     n.rotation.x = Math.PI/2;
                 } else if (faceId === 'back') {
-                    nz -= offset;
+                    nz -= thk/2;
                     n.rotation.x = -Math.PI/2;
                 } else if (faceId === 'right') {
-                    nx += offset;
+                    nx += thk/2;
                     n.rotation.z = -Math.PI/2;
                 } else if (faceId === 'left') {
-                    nx -= offset;
+                    nx -= thk/2;
                     n.rotation.z = Math.PI/2;
                 }
                 
@@ -678,37 +2973,24 @@
                 clearGroup(modelGroup);
                 clearGroup(dimensionGroup);
 
-                // Inputs (Priority: Live HTML inputs -> PHP variables)
-                const P = parseFloat(document.getElementById('s2_length')?.value) || parseFloat({{ isset($calculation) ? ($calculation->length ?? $calculation->panjang ?? 0) : 0 }}) || 0;
-                const L = parseFloat(document.getElementById('s2_width')?.value) || parseFloat({{ isset($calculation) ? ($calculation->width ?? $calculation->lebar ?? 0) : 0 }}) || 0;
-                const T = parseFloat(document.getElementById('s2_height')?.value) || parseFloat({{ isset($calculation) ? ($calculation->height ?? $calculation->tinggi ?? 0) : 0 }}) || 0;
-                const maxSpacing = parseFloat(document.getElementById('s2_jarak_penyanggah')?.value) || parseFloat({{ isset($calculation) ? ($calculation->distance_between_pillars ?? $calculation->jarak_penyanggah ?? 500) : 500 }}) || 500;
-                const arahGlobal = 'Horizontal';
-                const celahAtas = parseFloat(document.getElementById('s2_gap_atas')?.value) || parseFloat({{ isset($calculation) ? ($calculation->gap_atas ?? $calculation->gap ?? 0) : 0 }}) || 0;
-                const celahBawah = parseFloat(document.getElementById('s2_gap_bawah')?.value) || parseFloat({{ isset($calculation) ? ($calculation->gap_bawah ?? $calculation->gap ?? 0) : 0 }}) || 0;
+                // Inputs
+                const P = parseFloat(document.querySelector('input[name="length"]').value) || 0;
+                const L = parseFloat(document.querySelector('input[name="width"]').value) || 0;
+                const T = parseFloat(document.querySelector('input[name="height"]').value) || 0;
+                const maxSpacing = parseFloat(document.querySelector('input[name="distance_between_pillars"]').value) || 500;
+                const arahGlobal = document.querySelector('select[name="arah_pemasangan"]')?.value || 'Horizontal';
+                const celahAtas = parseFloat(document.querySelector('input[name="gap_atas"]').value) || 0;
+                const celahBawah = parseFloat(document.querySelector('input[name="gap_bawah"]').value) || 0;
 
                 if (P <= 0 || L <= 0 || T <= 0) return;
 
-                @php
-                    $kb = isset($calculation->konfigurasi_bawah) ? (is_array($calculation->konfigurasi_bawah) ? $calculation->konfigurasi_bawah : json_decode($calculation->konfigurasi_bawah, true)) : [];
-                    $ka = isset($calculation->konfigurasi_atas) ? (is_array($calculation->konfigurasi_atas) ? $calculation->konfigurasi_atas : json_decode($calculation->konfigurasi_atas, true)) : [];
-                    
-                    $bawahPenutupTipe = $kb['penutup']['status'] ?? 'Tanpa Penutup';
-                    $atasPenutupTipe = $ka['penutup']['status'] ?? 'Tanpa Penutup';
-                    $includePallet = ($kb['kaki_balok']['status'] ?? 'Include') === 'Include' ? '1' : '0';
-                @endphp
-
-                let typeBawah = document.getElementById('s2_ptb_status')?.value || '{{ $bawahPenutupTipe }}';
-                let typeAtas = document.getElementById('s2_pta_status')?.value || '{{ $atasPenutupTipe }}';
-                let hasBase = document.querySelector('select[name="include_pallet_base"]')?.value === '1' || '{{ $includePallet }}' === '1';
-
-                const bawahPenutupTipe = typeBawah;
-                const atasPenutupTipe = typeAtas;
+                const bawahPenutupTipe = document.querySelector('select[name="bawah_penutup_tipe"]')?.value || 'Tanpa Penutup';
+                const atasPenutupTipe = document.querySelector('select[name="atas_penutup_tipe"]')?.value || 'Tanpa Penutup';
                 const hasBawahPenutup = (bawahPenutupTipe !== 'Tanpa Penutup' && bawahPenutupTipe !== 'Tidak makai penutup' && bawahPenutupTipe !== 'Tidak Pakai Papan' && bawahPenutupTipe !== '');
                 const hasAtasPenutup = (atasPenutupTipe !== 'Tanpa Penutup' && atasPenutupTipe !== 'Tidak makai penutup' && atasPenutupTipe !== 'Tidak Pakai Papan' && atasPenutupTipe !== '');
                 const hasCover = hasBawahPenutup || hasAtasPenutup;
 
-                const includePallet = "{{ $includePallet }}";
+                const includePallet = document.querySelector('select[name="include_pallet_base"]')?.value;
                 const isPalletEnabled = includePallet === '1' || String(includePallet).toLowerCase() === 'ya';
 
                 // Visibility checkboxes
@@ -752,18 +3034,18 @@
                 const expRangkaBawah = false;
 
                 // Determine offsets based on specific toggles
-                const getOffRangka = (isBawah) => (isBawah ? expRangkaBawah : expRangkaAtas) ? 0.35 : 0;
+                const getOffRangka = (isBawah) => (isBawah ? expRangkaBawah : expRangkaAtas) ? 0.2 : 0;
                 const getOffPenyangga = (isBawah, faceId = '') => {
-                    if (isBawah) return (expPenutupBawah ? 0.35 : (expPenyanggaBawah ? 0.35 : 0));
-                    if (faceId === 'top') return expPenyanggaAtas ? 0.35 : 0;
-                    return expPenutupAtas ? 0.35 : (expPenyanggaAtas ? 0.35 : 0);
+                    if (isBawah) return (expPenutupBawah ? 0.2 : (expPenyanggaBawah ? 0.2 : 0));
+                    if (faceId === 'top') return expPenyanggaAtas ? 0.2 : 0;
+                    return expPenutupAtas ? 0.2 : (expPenyanggaAtas ? 0.2 : 0);
                 };
                 const getOffPenutup = (isBawah, faceId = '') => {
-                    if (isBawah) return expPenutupBawah ? 0.35 : 0;
-                    if (faceId === 'top') return expPenyanggaAtas ? 0.35 : (expPenutupAtas ? 0.35 : 0);
-                    return expPenutupAtas ? 0.35 : 0;
+                    if (isBawah) return expPenutupBawah ? 0.2 : 0;
+                    if (faceId === 'top') return expPenyanggaAtas ? 0.2 : (expPenutupAtas ? 0.2 : 0);
+                    return expPenutupAtas ? 0.2 : 0;
                 };
-                const offsetBalokY = expPenutupBawah ? 0.35 : (expPenyanggaBawah ? 0.35 : (expKakiBalok ? 0.35 : 0));
+                const offsetBalokY = expPenutupBawah ? 0.2 : (expPenyanggaBawah ? 0.2 : (expKakiBalok ? 0.2 : 0));
                 
                 const maxD = typeof currentMaxDimension !== 'undefined' ? currentMaxDimension : 2;
 
@@ -785,15 +3067,6 @@
                             break;
                         }
                     }
-                    
-                    // Force 'tiduran' (laid flat) for Penyangga Bawah
-                    if (section === 'Bawah' && partNames.includes('Penyangga')) {
-                        const min = Math.min(t, w);
-                        const max = Math.max(t, w);
-                        t = min;
-                        w = max;
-                    }
-                    
                     return { t, w, ht: t/2, hw: w/2 };
                 };
 
@@ -823,25 +3096,18 @@
                 if (showPenyanggaAtas || showPenyanggaBawah) {
                     const getPenyanggaConfig = (sectionName, name, crossSpanMm) => {
                         const match = activeDetails.find(d => d.section === sectionName && d.part_name === name);
-                        let forcedOrientation = null;
-                        if (sectionName === 'Penyangga') {
-                            forcedOrientation = 'V'; // Area Atas (walls and top) always Vertikal
-                        } else if (sectionName === 'Bawah' && name === 'Penyangga') {
-                            forcedOrientation = 'H'; // Area Bawah always Horizontal
-                        }
-                        
                         if (match) {
                             if (match.material_kode === '-' || parseFloat(match.total_quantity) <= 0) {
-                                return { qty: 0, orientation: forcedOrientation || 'H' };
+                                return { qty: 0, orientation: 'H' };
                             }
                             return {
                                 qty: parseInt(match.quantity),
-                                orientation: forcedOrientation || ((match.direction || arahGlobal) === 'Horizontal' ? 'H' : 'V')
+                                orientation: (match.direction || arahGlobal) === 'Horizontal' ? 'H' : 'V'
                             };
                         }
                         return {
                             qty: Math.max(0, Math.ceil(crossSpanMm / maxSpacing) - 1),
-                            orientation: forcedOrientation || (arahGlobal === 'Horizontal' ? 'H' : 'V')
+                            orientation: arahGlobal === 'Horizontal' ? 'H' : 'V'
                         };
                     };
 
@@ -888,11 +3154,7 @@
                         let t_penyangga_b_val = 0;
                         if (typeof showPenyanggaBawah !== 'undefined' && showPenyanggaBawah) {
                             const pPeny = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga') : null;
-                            if (pPeny && pPeny.material_kode !== '-') {
-                                t_penyangga_b_val = Math.min(parseFloat(pPeny.calculated_thickness) / 1000, parseFloat(pPeny.calculated_width) / 1000);
-                            } else {
-                                t_penyangga_b_val = 0.08; // fallback matching getDim
-                            }
+                            t_penyangga_b_val = pPeny && pPeny.material_kode !== '-' ? parseFloat(pPeny.calculated_thickness) / 1000 : 0.02;
                         }
                         let t_penutup_s_val = 0;
                         if (typeof hasCover !== 'undefined' && hasCover) {
@@ -916,24 +3178,25 @@
                                     addNailsForPenyangga(bMesh, face.id);
                                 });
                             } else {
-                                let b_w = 0.05; 
+                                let b_w = 0; 
                                 if (typeof activeDetails !== 'undefined') {
                                     const pKaki = activeDetails.find(d => d.section === 'Bawah' && (d.part_name === 'Kaki Balok' || d.part_name === 'Additional Balok'));
-                                    if (pKaki && pKaki.material_kode !== '-') {
-                                        const parsed = parseFloat(pKaki.calculated_width) / 1000;
-                                        if (parsed > 0) b_w = parsed;
-                                    }
+                                    if (pKaki && pKaki.material_kode !== '-') b_w = parseFloat(pKaki.calculated_width) / 1000;
                                 }
-                                const vLen = (h_m - rTopL.t) - (topKakiBalokY - b_w); // Extend support down to bottom of kaki balok
+                                const vLen = h_m - rTopL.t - (topKakiBalokY - b_w);
                                 const yCenter = (topKakiBalokY - b_w) + (vLen / 2);
                                 const outer_span_x = l_m;
                                 let positions_x = [];
                                 if (count === 1) {
                                     positions_x = [0];
                                 } else {
-                                    let x_thk = pDim.w; // pDim.w is the X size of the vertikal Penyangga Front/Back
-                                    const start_x = -outer_span_x / 2 + x_thk / 2;
-                                    const end_x = outer_span_x / 2 - x_thk / 2;
+                                    let b_t = 0.05; 
+                                    if(typeof activeDetails !== 'undefined'){
+                                        const pKaki = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Kaki Balok');
+                                        if(pKaki) b_t = parseFloat(pKaki.calculated_thickness) / 1000;
+                                    }
+                                    const start_x = -outer_span_x / 2 + b_t / 2;
+                                    const end_x = outer_span_x / 2 - b_t / 2;
                                     for (let i = 0; i < count; i++) {
                                         positions_x.push(start_x + (end_x - start_x) * (i / (count - 1)));
                                     }
@@ -954,33 +3217,18 @@
                                     addNailsForPenyangga(bMesh, face.id);
                                 });
                             } else {
-                                let b_w = 0.05; 
+                                let b_w = 0; 
                                 if (typeof activeDetails !== 'undefined') {
                                     const pKaki = activeDetails.find(d => d.section === 'Bawah' && (d.part_name === 'Kaki Balok' || d.part_name === 'Additional Balok'));
-                                    if (pKaki && pKaki.material_kode !== '-') {
-                                        const parsed = parseFloat(pKaki.calculated_width) / 1000;
-                                        if (parsed > 0) b_w = parsed;
-                                    }
+                                    if (pKaki && pKaki.material_kode !== '-') b_w = parseFloat(pKaki.calculated_width) / 1000;
                                 }
-                                const vLen = (h_m - rTopW.t) - (topKakiBalokY - b_w); // Extend support down to bottom of kaki balok
+                                const vLen = h_m - rTopW.t - (topKakiBalokY - b_w);
                                 const yCenter = (topKakiBalokY - b_w) + (vLen / 2);
-                                const outer_span_z = w_m;
                                 let positions_z = [];
-                                if (count === 1) {
-                                    positions_z = [0];
-                                } else {
-                                    let b_t = 0.05; 
-                                    if(typeof activeDetails !== 'undefined'){
-                                        const pKaki = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Kaki Balok');
-                                        if(pKaki) b_t = parseFloat(pKaki.calculated_thickness) / 1000;
-                                    }
-                                    // pDim.w is the Z size of the vertikal Penyangga Right/Left
-                                    const z_thk = pDim.w; 
-                                    const start_z = -outer_span_z / 2 + z_thk / 2;
-                                    const end_z = outer_span_z / 2 - z_thk / 2;
-                                    for (let i = 0; i < count; i++) {
-                                        positions_z.push(start_z + (end_z - start_z) * (i / (count - 1)));
-                                    }
+                                const interval = 0.8;
+                                const start_z = -((count - 1) * interval) / 2;
+                                for (let i = 0; i < count; i++) {
+                                    positions_z.push(start_z + i * interval);
                                 }
                                 positions_z.forEach(function (z) {
                                     let bMesh = addBeam(new THREE.Vector3(pDim.t, Math.max(pDim.w, vLen), pDim.w), new THREE.Vector3(x, yCenter, z), supportMaterial, face.name + ' vertikal');
@@ -1076,21 +3324,21 @@
                                 } else if (count > 1) {
                                     const actualGap = (crossSpan - (count * safeWidth)) / (count - 1);
                                     for (let i = 0; i < count; i++) {
-                                        positions.push(crossSpan / 2 - safeWidth / 2 - i * (safeWidth + actualGap));
+                                        positions.push(-crossSpan / 2 + safeWidth / 2 + i * (safeWidth + actualGap));
                                         sizes.push(safeWidth);
                                     }
                                 }
                             } else {
-                                // Pemasangan dari atas ke bawah (sesuai permintaan "dari atas pemasanganya")
-                                let currentY = crossSpan / 2; // Mulai dari ujung atas
-                                while (currentY > -crossSpan / 2 + 0.001 && count < 80) {
+                                // Untuk Papan Setengah: mulai dari bawah, pasang papan + celah. Papan terakhir dipotong jika melebihi batas atas.
+                                let currentY = -crossSpan / 2;
+                                while (currentY < crossSpan / 2 - 0.001 && count < 80) {
                                     let boardSize = safeWidth;
-                                    if (currentY - boardSize < -crossSpan / 2) {
-                                        boardSize = currentY - (-crossSpan / 2); // Potong papan terakhir jika melebihi batas bawah
+                                    if (currentY + boardSize > crossSpan / 2) {
+                                        boardSize = (crossSpan / 2) - currentY;
                                     }
-                                    positions.push(currentY - boardSize / 2);
+                                    positions.push(currentY + boardSize / 2);
                                     sizes.push(boardSize);
-                                    currentY -= (boardSize + gap);
+                                    currentY += boardSize + gap;
                                     count++;
                                 }
                             }
@@ -1135,6 +3383,7 @@
                         }
 
                         let faceArah = (() => {
+                            if (face.id === 'front' || face.id === 'back') return 'H'; // Paksa selalu horizontal
                             if (penutupDetail && penutupDetail.direction) return penutupDetail.direction === 'Horizontal' ? 'H' : 'V';
                             return arahGlobal === 'Horizontal' ? 'H' : 'V';
                         })();
@@ -1178,26 +3427,11 @@
                         let t_penyangga_b_val_c = 0;
                         if (typeof showPenyanggaBawah !== 'undefined' && showPenyanggaBawah) {
                             const pPeny = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga') : null;
-                            if (pPeny && pPeny.material_kode !== '-') {
-                                t_penyangga_b_val_c = Math.min(parseFloat(pPeny.calculated_thickness) / 1000, parseFloat(pPeny.calculated_width) / 1000);
-                            } else {
-                                t_penyangga_b_val_c = 0.08;
-                            }
+                            t_penyangga_b_val_c = pPeny && pPeny.material_kode !== '-' ? parseFloat(pPeny.calculated_thickness) / 1000 : 0.02;
                         }
                         const offsetBalokYGlobal_c = (typeof expKakiBalok !== 'undefined' && expKakiBalok) ? 0.2 : 0;
-                        let b_w_c = 0.05;
-                        if (typeof activeDetails !== 'undefined') {
-                            const pKaki = activeDetails.find(d => d.section === 'Bawah' && (d.part_name === 'Kaki Balok' || d.part_name === 'Additional Balok'));
-                            if (pKaki && pKaki.material_kode !== '-') {
-                                const parsed = parseFloat(pKaki.calculated_width) / 1000;
-                                if (parsed > 0) b_w_c = parsed;
-                            }
-                        }
-                        
+                        // Penutup samping (Kanan, Kiri, Depan, Belakang) diletakkan di atas papan penutup bawah (Y=0)
                         const topKakiBalokY_c = 0;
-                        const bottomSpanY = 0; // Sisi samping (Kanan, Kiri, Depan, Belakang) hanya sampai Penutup Bawah (Y=0), tidak sampai Kaki Balok.
-                        const topSpanY = h_m; // Penutup samping menutupi sampai ke ujung paling atas (h_m), menutupi Rangka Atas dari luar.
-                        const sideCoverHeight = topSpanY - bottomSpanY;
 
                         let t_penyangga_atas_c = 0; // Penyangga Atas kini berada di dalam (di bawah Penutup), sehingga tidak mengganjal Penutup Atas.
                         if (typeof showPenyanggaAtas !== 'undefined' && showPenyanggaAtas) {
@@ -1232,13 +3466,13 @@
                             if (face.id === 'front' || face.id === 'back') {
                                 const z = face.id === 'front' ? w_m / 2 + t_penutup / 2 + offC : -w_m / 2 - t_penutup / 2 - offC;
                                 const frontLength = l_m;
-                                const frontHeight = sideCoverHeight;
-                                let bMesh = addBeam(new THREE.Vector3(frontLength, frontHeight, t_penutup), new THREE.Vector3(0, bottomSpanY + frontHeight / 2, z), material, face.name + ' triplex');
+                                const frontHeight = h_m - topKakiBalokY_c;
+                                let bMesh = addBeam(new THREE.Vector3(frontLength, frontHeight, t_penutup), new THREE.Vector3(0, topKakiBalokY_c + frontHeight / 2, z), material, face.name + ' triplex');
                                 addNailsForBoard(bMesh, face.id);
                             } else if (face.id === 'right' || face.id === 'left') {
                                 const x = face.id === 'right' ? l_m / 2 + t_penutup / 2 + offC : -l_m / 2 - t_penutup / 2 - offC;
-                                const sideHeight = sideCoverHeight;
-                                let bMesh = addBeam(new THREE.Vector3(t_penutup, sideHeight, w_m + extraSpanPanjangKK), new THREE.Vector3(x, bottomSpanY + sideHeight / 2, 0), material, face.name + ' triplex');
+                                const sideHeight = h_m - topKakiBalokY_c;
+                                let bMesh = addBeam(new THREE.Vector3(t_penutup, sideHeight, w_m + extraSpanPanjangKK), new THREE.Vector3(x, topKakiBalokY_c + sideHeight / 2, 0), material, face.name + ' triplex');
                                 addNailsForBoard(bMesh, face.id);
                             } else {
                                 const y = face.id === 'top' ? h_m + t_penyangga_atas_c + t_penutup / 2 + offC : -t_penutup / 2 - offC;
@@ -1257,11 +3491,12 @@
                             let crossSpan;
                             let longSpan;
                             if (face.id === 'front' || face.id === 'back') {
-                                crossSpan = (faceArah === 'H') ? sideCoverHeight : l_m;
-                                longSpan = (faceArah === 'H') ? l_m : sideCoverHeight;
+                                faceArah = 'H'; // Paksa selalu horizontal
+                                crossSpan = h_m - topKakiBalokY_c;
+                                longSpan = l_m;
                             } else if (face.id === 'right' || face.id === 'left') {
-                                crossSpan = (faceArah === 'H') ? sideCoverHeight : w_m + extraSpanPanjangKK;
-                                longSpan = (faceArah === 'H') ? w_m + extraSpanPanjangKK : sideCoverHeight;
+                                crossSpan = (faceArah === 'H') ? h_m - topKakiBalokY_c : w_m + extraSpanPanjangKK;
+                                longSpan = (faceArah === 'H') ? w_m + extraSpanPanjangKK : h_m - topKakiBalokY_c;
                             } else {
                                 const w_m_top = face.id === 'top' ? w_m + (typeof extraSpanPanjang !== 'undefined' ? extraSpanPanjang : 0) : w_m_bottom;
                                 const l_m_top = face.id === 'top' ? l_m + (typeof extraSpanLebar !== 'undefined' ? extraSpanLebar : 0) : l_m_bottom;
@@ -1276,22 +3511,17 @@
                                 const pSize = layout.sizes ? layout.sizes[index] : layout.pieceCross;
                                 if (face.id === 'front' || face.id === 'back') {
                                     const z = face.id === 'front' ? w_m / 2 + t_penutup / 2 + offC : -w_m / 2 - t_penutup / 2 - offC;
-                                    if (faceArah === 'H') {
-                                        let bMesh = addBeam(new THREE.Vector3(l_m, pSize, t_penutup), new THREE.Vector3(0, bottomSpanY + sideCoverHeight / 2 + pos, z), material, face.name + ' papan horizontal');
-                                        addNailsForBoard(bMesh, face.id);
-                                    } else {
-                                        const frontHeight = sideCoverHeight;
-                                        let bMesh = addBeam(new THREE.Vector3(pSize, frontHeight, t_penutup), new THREE.Vector3(pos, bottomSpanY + frontHeight / 2, z), material, face.name + ' papan vertikal');
-                                        addNailsForBoard(bMesh, face.id);
-                                    }
+                                    const frontLength = l_m;
+                                    let bMesh = addBeam(new THREE.Vector3(frontLength, pSize, t_penutup), new THREE.Vector3(0, topKakiBalokY_c + (h_m - topKakiBalokY_c) / 2 + pos, z), material, face.name + ' papan horizontal');
+                                    addNailsForBoard(bMesh, face.id);
                                 } else if (face.id === 'right' || face.id === 'left') {
                                     const x = face.id === 'right' ? l_m / 2 + t_penutup / 2 + offC : -l_m / 2 - t_penutup / 2 - offC;
                                     if (faceArah === 'H') {
-                                        let bMesh = addBeam(new THREE.Vector3(t_penutup, pSize, w_m + extraSpanPanjangKK), new THREE.Vector3(x, bottomSpanY + sideCoverHeight / 2 + pos, 0), material, face.name + ' papan horizontal');
+                                        let bMesh = addBeam(new THREE.Vector3(t_penutup, pSize, w_m + extraSpanPanjangKK), new THREE.Vector3(x, topKakiBalokY_c + (h_m - topKakiBalokY_c) / 2 + pos, 0), material, face.name + ' papan horizontal');
                                         addNailsForBoard(bMesh, face.id);
                                     } else {
-                                        const sideHeight = sideCoverHeight;
-                                        let bMesh = addBeam(new THREE.Vector3(t_penutup, sideHeight, pSize), new THREE.Vector3(x, bottomSpanY + sideHeight / 2, pos), material, face.name + ' papan vertikal');
+                                        const sideHeight = h_m - topKakiBalokY_c;
+                                        let bMesh = addBeam(new THREE.Vector3(t_penutup, sideHeight, pSize), new THREE.Vector3(x, topKakiBalokY_c + sideHeight / 2, pos), material, face.name + ' papan vertikal');
                                         addNailsForBoard(bMesh, face.id);
                                     }
                                 } else {
@@ -1316,7 +3546,7 @@
                     const addBalokMatch = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && (d.part_name === 'Kaki Balok' || d.part_name === 'Additional Balok')) : null;
                     if (addBalokMatch && parseFloat(addBalokMatch.total_quantity) > 0) {
                         const qty = parseInt(addBalokMatch.quantity) || 1;
-                        const direction = 'Vertikal'; // Forced to Vertikal as requested
+                        const direction = addBalokMatch.direction || 'Horizontal';
                         
                         let balok_t = 0.05; 
                         let balok_w = 0.05; 
@@ -1339,11 +3569,7 @@
                         let t_penyangga_bawah = 0;
                         if (typeof showPenyanggaBawah !== 'undefined' && showPenyanggaBawah) {
                             const pPenyangga = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga') : null;
-                            if (pPenyangga && pPenyangga.material_kode !== '-') {
-                                t_penyangga_bawah = Math.min(parseFloat(pPenyangga.calculated_thickness) / 1000, parseFloat(pPenyangga.calculated_width) / 1000);
-                            } else {
-                                t_penyangga_bawah = 0.08;
-                            }
+                            t_penyangga_bawah = pPenyangga && pPenyangga.material_kode !== '-' ? parseFloat(pPenyangga.calculated_thickness) / 1000 : 0.02;
                         }
 
                         const offsetBalokY = expPenutupBawah ? 0.2 : (expPenyanggaBawah ? 0.2 : (expKakiBalok ? 0.2 : 0));
@@ -1396,7 +3622,7 @@
                 // Update Status text
                 const statusTextEl = document.getElementById('statusText');
                 if (statusTextEl) {
-                    statusTextEl.textContent = 'Model: ' + Math.round(P) + ' Ã— ' + Math.round(L) + ' Ã— ' + Math.round(T) + ' mm';
+                    statusTextEl.textContent = 'Model: ' + Math.round(P) + ' × ' + Math.round(L) + ' × ' + Math.round(T) + ' mm';
                 }
 
                 if (resetCamera) {
@@ -1417,13 +3643,13 @@
             let bawahPenutupSelect = document.querySelector('select[name="bawah_penutup_material"]');
             let atasPenutupSelect = document.querySelector('select[name="atas_penutup_material"]');
             
-            const inputs = document.querySelectorAll('#step-2 input:not([type="hidden"])');
-            const selects = document.querySelectorAll('#step-2 select');
+            const inputs = document.querySelectorAll('.custom-input');
+            const selects = document.querySelectorAll('.custom-select, .matrix-select');
 
             // Menyimpan value asli saat masuk mode edit (untuk fungsi batal)
             let originalValues = {};
             let originalHtmls = {};
-            let isEditModeActive = {{ isset($calculation) ? 'false' : 'true' }};
+            let isEditModeActive = false;
 
             // Load materials list from server
             const availableMaterials = {!! json_encode(isset($materials) ? $materials : []) !!};
@@ -1435,8 +3661,7 @@
                     'part_name' => $d->part_name,
                     'direction' => $d->direction,
                     'tipe_penutup' => $d->tipe_penutup,
-                    'material_kode' => $d->material ? $d->material->code : '-',
-                    'material_wood_type' => $d->material ? $d->material->wood_type : 'Kayu',
+                    'material_kode' => $d->material ? $d->material->kode : '-',
                     'material_satuan_harga' => $d->material ? $d->material->satuan_harga : 'pcs',
                     'calculated_thickness' => (float)$d->calculated_thickness,
                     'calculated_width' => (float)$d->calculated_width,
@@ -1451,7 +3676,7 @@
             }) : []) !!};
 
             // Load initial calculation manpower from server
-            let activeManpower = {!! json_encode(isset($calculation) && optional($calculation->manpower)->isNotEmpty() ? $calculation->manpower->map(function($m) {
+            let activeManpower = {!! json_encode(isset($calculation) && $calculation->manpower->isNotEmpty() ? $calculation->manpower->map(function($m) {
                 return [
                     'bagian' => $m->bagian,
                     'panjang' => (float)$m->panjang,
@@ -1482,7 +3707,7 @@
                 ];
             }
 
-            window.pakuDetails = {!! json_encode(isset($calculation) && optional($calculation->consumables)->where('category', 'Paku')->isNotEmpty() ? $calculation->consumables->where('category', 'Paku')->map(function($c) {
+            window.pakuDetails = {!! json_encode(isset($calculation) && $calculation->consumables->where('category', 'Paku')->isNotEmpty() ? $calculation->consumables->where('category', 'Paku')->map(function($c) {
                 return [
                     'bagian' => $c->bagian,
                     'titik' => (int)$c->titik_paku,
@@ -1686,7 +3911,7 @@
                         let l = parseFloat(detail.calculated_length || 0);
                         let q = parseFloat(detail.total_quantity || 0);
                         lenVal = (w * l * q) / 1000000;
-                        unitStr = 'mÂ²';
+                        unitStr = 'm²';
                     }
 
                     let rowAll = `<tr>
@@ -1813,7 +4038,7 @@
 
                 let resumeLuasEl = document.getElementById('resume-total-luas');
                 if (resumeLuasEl) {
-                    resumeLuasEl.innerHTML = `${formatNumber(summary.area_kerja, 2)} <span class="fw-bold text-muted" style="font-size: 14px;">mÂ²</span>`;
+                    resumeLuasEl.innerHTML = `${formatNumber(summary.area_kerja, 2)} <span class="fw-bold text-muted" style="font-size: 14px;">m²</span>`;
                 }
 
                 let resumeContainer = document.getElementById('resume-material-container');
@@ -1825,7 +4050,7 @@
                     } else {
                         keys.forEach(key => {
                             let mat = materialResume[key];
-                            let unit = (mat.kode.includes('TR') || mat.nama.toLowerCase().includes('triplex')) ? 'mÂ²' : 'm';
+                            let unit = (mat.kode.includes('TR') || mat.nama.toLowerCase().includes('triplex')) ? 'm²' : 'm';
                             htmlList += `
                             <div class="p-3 border rounded bg-white shadow-xs hover-shadow transition">
                                 <div class="d-flex justify-content-between align-items-center">
@@ -1851,14 +4076,7 @@
                 calculateNails();
 
                 // Redraw crate
-                if (typeof window.drawCrate === 'function') {
-                    window.drawCrate();
-                }
-                
-                // Redraw Material 2D
-                if (typeof window.drawMaterialStacks === 'function') {
-                    window.drawMaterialStacks();
-                }
+                drawCrate();
             }
 
             function syncMasterDropdownsToActiveDetails() {
@@ -1922,7 +4140,7 @@
                 updatePart('Bawah', ['Kaki Balok'], getVal('include_pallet_base'), getVal('bawah_kakibalok_arah'), getVal('bawah_kakibalok_material'), false);
 
                 // Update Jumlah Kaki Balok logic in UI
-                let lengthInput = document.getElementById('s2_length');
+                let lengthInput = document.querySelector('[name="length"]');
                 let jumlahKakiInput = document.querySelector('[name="jumlah_kaki_balok"]');
                 if (lengthInput && jumlahKakiInput) {
                     let L = parseFloat(lengthInput.value) || 0;
@@ -1995,7 +4213,7 @@
                     const input = jarakBalokWrapper.querySelector('input[name="jumlah_kaki_balok"]');
                     if (input) {
                         if (isIncluded) {
-                            const lengthInput = document.getElementById('s2_length');
+                            const lengthInput = document.querySelector('input[name="length"]');
                             const P = parseFloat(lengthInput ? lengthInput.value : 0) || 0;
                             input.value = Math.max(2, Math.floor(P / 800) + 1);
                         } else {
@@ -2024,9 +4242,9 @@
                     totalSqm = rows.reduce((sum, r) => sum + r.total_luas, 0);
                     totalBiayaMp = rows.reduce((sum, r) => sum + r.total_biaya, 0);
                 } else {
-                    let lengthInput = document.getElementById('s2_length');
-                    let widthInput = document.getElementById('s2_width');
-                    let heightInput = document.getElementById('s2_height');
+                    let lengthInput = document.querySelector('input[name="length"]');
+                    let widthInput = document.querySelector('input[name="width"]');
+                    let heightInput = document.querySelector('input[name="height"]');
                     
                     P = parseFloat(lengthInput ? lengthInput.value : 0) || 0;
                     L = parseFloat(widthInput ? widthInput.value : 0) || 0;
@@ -2293,9 +4511,9 @@
                 btnSave.addEventListener('click', (e) => {
                     e.preventDefault();
                     const formEdit = document.getElementById('form-edit-config');
-                    const len = document.getElementById('s2_length').value || 0;
-                    const wid = document.getElementById('s2_width').value || 0;
-                    const hgt = document.getElementById('s2_height').value || 0;
+                    const len = document.querySelector('input[name="length"]').value || 0;
+                    const wid = document.querySelector('input[name="width"]').value || 0;
+                    const hgt = document.querySelector('input[name="height"]').value || 0;
                     const projectName = `${len} x ${wid} x ${hgt} mm`;
                     
                     let formData = {
@@ -2487,10 +4705,10 @@
                     const bawahPenutupTipe = document.querySelector('select[name="bawah_penutup_tipe"]')?.value || 'Tanpa Penutup';
                     const isHasBawahPenutup = (bawahPenutupTipe !== 'Tanpa Penutup' && bawahPenutupTipe !== 'Tidak makai penutup' && bawahPenutupTipe !== 'Tidak Pakai Papan' && bawahPenutupTipe !== '') ? '1' : '0';
                     
-                    const h_val = parseFloat(document.getElementById('s2_height').value) || 0;
+                    const h_val = parseFloat(document.querySelector('input[name="height"]').value) || 0;
                     const t_m = h_val / 1000;
-                    const l_val = parseFloat(document.getElementById('s2_length').value) || 0;
-                    const w_val = parseFloat(document.getElementById('s2_width').value) || 0;
+                    const l_val = parseFloat(document.querySelector('input[name="length"]').value) || 0;
+                    const w_val = parseFloat(document.querySelector('input[name="width"]').value) || 0;
                     const maxDim = Math.max(l_val/1000, w_val/1000, t_m) || 1;
                     
                     // The object expands by 0.6 meters per side (1.2m total). We add 1.6 to maxDim for safe padding.
@@ -2527,10 +4745,10 @@
                             controls.target.set(0, -0.4, 0); // Aim at the bottom components which are expanded downwards
                             camera.zoom = optimalBaseZoom * 1.2; // Add a little extra 1.2x boost to fill the frame
                         } else if (step === 8) {
-                            controls.target.set(0, (t_m / 2) + 0.6, 0); 
-                            camera.zoom = 1.0;
+                            controls.target.set(0, (t_m / 2) + 0.3, 0); 
+                            camera.zoom = 0.9;
                         } else {
-                            controls.target.set(0, (t_m / 2) + 0.4, 0); 
+                            controls.target.set(0, (t_m / 2) + 0.1, 0); 
                             camera.zoom = 1.0;
                         }
                         camera.updateProjectionMatrix();
@@ -2544,9 +4762,9 @@
                     
                     // Capture Full Exploded (Step 9)
                     window.printSequenceStep = 9;
-                    controls.target.set(0, (t_m / 2) + 0.6, 0);
+                    controls.target.set(0, (t_m / 2) - 0.1, 0);
                     const optimalZoom = (typeof d !== 'undefined') ? Math.max(1.0, d / ((Math.max((l_val||1)/1000, (w_val||1)/1000) + 1.6) * 2.15 + 1.2)) : 1.0;
-                    camera.zoom = optimalZoom * 1.0; 
+                    camera.zoom = optimalZoom * 1.1; // Zoom in since base is no longer exploded vertically
                     camera.updateProjectionMatrix();
                     controls.update();
                     if (typeof drawCrate === 'function') drawCrate(); else chkRangkaAtas.dispatchEvent(new Event('change'));
@@ -2555,8 +4773,8 @@
 
                     // Capture Full Assembled (Step 0)
                     window.printSequenceStep = 0;
-                    controls.target.set(0, (t_m / 2) + 0.4, 0);
-                    camera.zoom = optimalZoom * 1.1; 
+                    controls.target.set(0, (t_m / 2) + 0.1, 0);
+                    camera.zoom = optimalZoom * 1.3;
                     camera.updateProjectionMatrix();
                     controls.update();
                     if (typeof drawCrate === 'function') drawCrate(); else chkRangkaAtas.dispatchEvent(new Event('change'));
@@ -3094,11 +5312,8 @@
                 });
 
                 // --- Live Updater: 3D Visualizer & Kaki Balok ---
-                const lengthInput = document.getElementById('s2_length');
+                const lengthInput = document.querySelector('input[name="length"]');
                 const kakiBalokInput = document.querySelector('input[name="jumlah_kaki_balok"]');
-                // Ambil semua input di step 2 (kecuali yang di-disable jika ada)
-                const inputs = document.querySelectorAll('#step-2 input:not([type="hidden"])');
-                const selects = document.querySelectorAll('#step-2 select');
                 const allConfigInputs = document.querySelectorAll('#form-edit-config input, #form-edit-config select');
 
                 allConfigInputs.forEach(input => {
@@ -3141,11 +5356,8 @@
                     matScene = new THREE.Scene();
                     matScene.background = new THREE.Color(0xf8fafc);
 
-                    let cw = matContainer.clientWidth || matContainer.getBoundingClientRect().width || 800;
-                    let ch = matContainer.clientHeight || matContainer.getBoundingClientRect().height || 450;
-                    const aspect = cw / ch;
-                    
-                    window.matFrustumSize = 2.5; // Will be updated when drawing
+                    const aspect = matContainer.clientWidth / matContainer.clientHeight;
+                    window.matFrustumSize = 2.5;
                     matCamera = new THREE.OrthographicCamera(
                         window.matFrustumSize * aspect / -2,
                         window.matFrustumSize * aspect / 2,
@@ -3166,7 +5378,7 @@
                     window.matScene = matScene;
                     window.matCamera = matCamera;
                     
-                    matRenderer.setSize(cw, ch);
+                    matRenderer.setSize(matContainer.clientWidth, matContainer.clientHeight);
                     matRenderer.shadowMap.enabled = true;
                     matRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
                     matContainer.appendChild(matRenderer.domElement);
@@ -3208,15 +5420,13 @@
 
                     window.addEventListener('resize', () => {
                         if (!matContainer) return;
-                        let cw = matContainer.clientWidth || matContainer.getBoundingClientRect().width || 800;
-                        let ch = matContainer.clientHeight || matContainer.getBoundingClientRect().height || 450;
-                        const aspect = cw / ch;
+                        const aspect = matContainer.clientWidth / matContainer.clientHeight;
                         matCamera.left = window.matFrustumSize * aspect / -2;
                         matCamera.right = window.matFrustumSize * aspect / 2;
                         matCamera.top = window.matFrustumSize / 2;
                         matCamera.bottom = window.matFrustumSize / -2;
                         matCamera.updateProjectionMatrix();
-                        matRenderer.setSize(cw, ch);
+                        matRenderer.setSize(matContainer.clientWidth, matContainer.clientHeight);
                     });
                 }
 
@@ -3265,8 +5475,8 @@
                     if (!matScene || !activeDetails) return;
                     
                     // Clear old meshes (keep initial lights, grid, and plane)
-                    while(matScene.children.length > 5){ 
-                        matScene.remove(matScene.children[5]); 
+                    while(matScene.children.length > 4){ 
+                        matScene.remove(matScene.children[4]); 
                     }
                     matLabels.innerHTML = '';
                     matMeshes = [];
@@ -3275,12 +5485,9 @@
                     const cardsContainer = document.getElementById('material-cards-container');
                     if (cardsContainer) cardsContainer.innerHTML = '';
 
-                    // Make sure activeDetails is an array and safely iterate
-                    const detailsArray = Array.isArray(activeDetails) ? activeDetails : Object.values(activeDetails || {});
-
                     // 1. Group by dimensions
                     const groups = {};
-                    detailsArray.forEach(d => {
+                    activeDetails.forEach(d => {
                         const rawQty = parseFloat(d.total_quantity) || parseFloat(d.quantity) || 0;
                         const qty = Math.ceil(rawQty);
                         if (!qty || qty <= 0) return;
@@ -3288,22 +5495,20 @@
                         const t = parseFloat(d.calculated_thickness) || 0;
                         const w = parseFloat(d.calculated_width) || 0;
                         const l = parseFloat(d.calculated_length) || 0;
-                        const kode = d.material_kode || 'Kayu';
-                        const woodType = d.material_wood_type || 'Kayu';
-                        const mat = `${woodType} - ${t} mm x ${w} mm`;
+                        const mat = d.material_kode || d.material_nama || 'Kayu';
                         
                         if (t === 0 || w === 0 || l === 0) return; // Skip invalid geometries
                         
                         const key = `${t}x${w}x${l}_${mat}`;
                         if (!groups[key]) {
-                            groups[key] = { t, w, l, mat, kode, qty: 0 };
+                            groups[key] = { t, w, l, mat, qty: 0 };
                         }
                         groups[key].qty += qty;
                     });
 
                     // Helper to get category order: Balok (1) -> Papan (2) -> Triplek (3) -> Lainnya (4)
-                    function getCategoryOrder(kodeName) {
-                        const matLower = (kodeName || '').toLowerCase();
+                    function getCategoryOrder(matName) {
+                        const matLower = (matName || '').toLowerCase();
                         if (matLower.includes('bk') || matLower.includes('balok')) return 1;
                         if (matLower.includes('pn') || matLower.includes('papan')) return 2;
                         if (matLower.includes('tr') || matLower.includes('triplek') || matLower.includes('panel')) return 3;
@@ -3312,8 +5517,8 @@
 
                     // 2. Sort groups by category then by size (tinggi/length ascending)
                     const sortedGroups = Object.values(groups).sort((a, b) => {
-                        const orderA = getCategoryOrder(a.kode);
-                        const orderB = getCategoryOrder(b.kode);
+                        const orderA = getCategoryOrder(a.mat);
+                        const orderB = getCategoryOrder(b.mat);
                         if (orderA !== orderB) return orderA - orderB;
                         return a.l - b.l;
                     });
@@ -3386,9 +5591,7 @@
                     window.matFrustumSize = Math.max(2.5, maxL_m * 1.4); 
                     
                     if (matCamera && matContainer) {
-                        let cw = matContainer.clientWidth || matContainer.getBoundingClientRect().width || 800;
-                        let ch = matContainer.clientHeight || matContainer.getBoundingClientRect().height || 450;
-                        const aspect = cw / ch;
+                        const aspect = matContainer.clientWidth / matContainer.clientHeight;
                         matCamera.left = window.matFrustumSize * aspect / -2;
                         matCamera.right = window.matFrustumSize * aspect / 2;
                         matCamera.top = window.matFrustumSize / 2;
@@ -3405,7 +5608,7 @@
 
                     // 3. Draw Stacks side by side, standing up
                     const minVis = Math.max(0.015, maxL_m * 0.015); 
-                    const spacingGroup = Math.max(0.7, maxL_m * 0.05); // Moderate gap to prevent text overlap but not too wide
+                    const spacingGroup = Math.max(0.2, maxL_m * 0.05); // Moderate gap between groups
                     const spacingItem = Math.max(0.015, maxL_m * 0.01); // Moderate gap between items
                     
                     let currentX = 0;
@@ -3417,7 +5620,7 @@
                         const l_m = group.l / 1000;
 
                         let meshColor = 0xc19a6b; // default: Kayu Papan
-                        const order = getCategoryOrder(group.kode);
+                        const order = getCategoryOrder(group.mat);
                         if (order === 1) meshColor = 0x5c4033; // Balok
                         else if (order === 3) meshColor = 0xf3c583; // Triplek
 
@@ -3507,29 +5710,11 @@
                 
                 // Initialize on load
                 initMaterialVisualizer();
-                
-                if (typeof runSimulation === 'function' && !isEditModeActive) {
-                    runSimulation();
-                }
-
                 if (typeof window.drawMaterialStacks === 'function') {
-                    // Timeout ensures container DOM and ThreeJS initialization is fully complete
-                    setTimeout(() => {
-                        window.drawMaterialStacks();
-                    }, 300);
+                    window.drawMaterialStacks();
                 }
 
             }
         });
-</script>
-                    wizardModal.addEventListener('shown.bs.modal', function () {
-                        setTimeout(() => {
-                            if (typeof initMaterialVisualizer === 'function') initMaterialVisualizer();
-                            if (typeof window.drawMaterialStacks === 'function') window.drawMaterialStacks();
-                            if (typeof runSimulation === 'function') runSimulation();
-                        }, 50);
-                    });
-                }
-            }
-        });
-</script>
+    </script>
+</x-app-layout>

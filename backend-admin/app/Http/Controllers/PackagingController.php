@@ -104,6 +104,10 @@ class PackagingController extends Controller
                     'lebar' => $item['width'] ?? 0,
                     'tinggi' => $item['height'] ?? 0,
                     
+                    'gap_atas' => $item['gap_atas'] ?? 0,
+                    'gap_bawah' => $item['gap_bawah'] ?? 0,
+                    'jarak_penyanggah' => $item['jarak'] ?? 0,
+                    
                     // Konfigurasi
                     'konfigurasi_atas' => $konfigurasi_atas,
                     'konfigurasi_bawah' => $konfigurasi_bawah,
@@ -116,8 +120,25 @@ class PackagingController extends Controller
                     'status' => 'draft'
                 ]);
 
+                $extraParams = [
+                    'atas_penyangga_include' => $item['pa_status'] === 'Include' ? '1' : '0',
+                    'bawah_penyangga_include' => $item['pb_status'] === 'Include' ? '1' : '0',
+                    'bawah_penutup_tipe' => $item['ptb_status'] ?? 'Tanpa Penutup',
+                    'atas_penutup_tipe' => $item['pta_status'] ?? 'Tanpa Penutup',
+                ];
+
                 $calculator = new \App\Services\PackagingCalculatorService();
-                $calculator->calculateForJobDetail($detail);
+                $calculator->calculateForJobDetail($detail, $extraParams);
+
+                $detail->refresh();
+
+                // Log data kalkulasi lengkap (Calculation All)
+                \Illuminate\Support\Facades\Log::info('Calculation Result for Pack: ' . $packNumber, [
+                    'detail_summary' => $detail->toArray(),
+                    'calc_details' => \Illuminate\Support\Facades\DB::table('packing_job_calc_details')->where('job_id', $detail->id)->get()->toArray(),
+                    'calc_manpowers' => \Illuminate\Support\Facades\DB::table('packing_job_calc_manpowers')->where('job_id', $detail->id)->get()->toArray(),
+                    'calc_nails' => \Illuminate\Support\Facades\DB::table('packing_job_nails')->where('job_id', $detail->id)->get()->toArray(),
+                ]);
             }
 
             DB::commit();
@@ -228,6 +249,10 @@ class PackagingController extends Controller
                     'lebar' => $item['width'] ?? 0,
                     'tinggi' => $item['height'] ?? 0,
                     
+                    'gap_atas' => $item['gap_atas'] ?? 0,
+                    'gap_bawah' => $item['gap_bawah'] ?? 0,
+                    'jarak_penyanggah' => $item['jarak'] ?? 0,
+                    
                     // Konfigurasi
                     'konfigurasi_atas' => $konfigurasi_atas,
                     'konfigurasi_bawah' => $konfigurasi_bawah,
@@ -240,8 +265,17 @@ class PackagingController extends Controller
                     'status' => 'draft'
                 ]);
 
+                $extraParams = [
+                    'atas_penyangga_include' => $item['pa_status'] === 'Include' ? '1' : '0',
+                    'bawah_penyangga_include' => $item['pb_status'] === 'Include' ? '1' : '0',
+                    'bawah_penutup_tipe' => $item['ptb_status'] ?? 'Tanpa Penutup',
+                    'atas_penutup_tipe' => $item['pta_status'] ?? 'Tanpa Penutup',
+                ];
+
                 $calculator = new \App\Services\PackagingCalculatorService();
-                $calculator->calculateForJobDetail($detail);
+                $calculator->calculateForJobDetail($detail, $extraParams);
+                
+                $detail->refresh();
             }
 
             DB::commit();

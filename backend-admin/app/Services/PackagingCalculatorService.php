@@ -27,9 +27,9 @@ class PackagingCalculatorService
             $konfigBawah = is_array($detail->konfigurasi_bawah) ? $detail->konfigurasi_bawah : json_decode($detail->konfigurasi_bawah, true) ?? [];
 
             $params = [
-                'length' => (float) $detail->length,
-                'width' => (float) $detail->width,
-                'height' => (float) $detail->tinggi,
+                'length' => (float) ($detail->panjang ?? $detail->length ?? 0),
+                'width' => (float) ($detail->lebar ?? $detail->width ?? 0),
+                'height' => (float) ($detail->tinggi ?? $detail->height ?? 0),
                 'distance_between_pillars' => (float) ($konfigBawah['jarak_penyanggah'] ?? $detail->jarak_penyanggah ?? 0),
                 'gap_atas' => (float) ($konfigAtas['gap_atas'] ?? $detail->gap_atas ?? 0),
                 'gap_bawah' => (float) ($konfigBawah['gap_bawah'] ?? $detail->gap_bawah ?? 0),

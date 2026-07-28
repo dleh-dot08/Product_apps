@@ -1,7 +1,3 @@
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script>
         // Global error listener to display runtime errors in the canvas loading overlay
         window.addEventListener('error', function(e) {
             console.error("Visualizer error caught globally:", e);
@@ -100,30 +96,7 @@
                     
                     if (typeof drawCrate === 'function') drawCrate();
                 }, undefined, function(error) {
-                    console.warn("Nail GLB not found, generating mock nail...");
-                    const cylinderGeometry = new THREE.CylinderGeometry(0.005, 0.005, 0.05, 8);
-                    const headGeometry = new THREE.CylinderGeometry(0.015, 0.015, 0.002, 8);
-                    
-                    const nailMaterial = new THREE.MeshStandardMaterial({
-                        color: 0xc0c0c0,
-                        metalness: 0.8,
-                        roughness: 0.2
-                    });
-                    
-                    const body = new THREE.Mesh(cylinderGeometry, nailMaterial);
-                    body.position.y = 0; // Centered
-                    body.castShadow = true;
-                    
-                    const head = new THREE.Mesh(headGeometry, nailMaterial);
-                    head.position.y = 0.025; // Head at +Y
-                    head.castShadow = true;
-                    
-                    nailModel = new THREE.Group();
-                    nailModel.add(body);
-                    nailModel.add(head);
-                    // No rotation on Group, points +Y by default
-                    
-                    if (typeof drawCrate === 'function') drawCrate();
+                    console.error("Error loading nail model:", error);
                 });
 
                 // Controls setup
@@ -350,17 +323,20 @@
                         // Terpasang di rangka, tidak ada yang di-expand
                     }
                     else if (window.printSequenceStep === 7) {
-                        if (isAtas && isPenyangga) expandDir(0.35); // Diperkecil jaraknya
+                        if (isAtas && isPenyangga) expandDir(0.6);
                     }
                     else if (window.printSequenceStep === 8) {
-                        if (isAtas && isPenutup) expandDir(0.35); // Diperkecil jaraknya
+                        if (isAtas && isPenutup) expandDir(0.85); // Kurangi sedikit agar tidak keluar frame
                     }
                     else if (window.printSequenceStep === 9) {
                         // FULLY EXPLODED VIEW
+                        // if (isKakiBalok) mesh.position.y -= 1.0;
+                        // if (isBawah && isPenyangga) mesh.position.y -= 0.6;
+                        // if (isBawah && isPenutup) mesh.position.y -= 0.3;
                         if (isDepanBelakang && (isPenutup || isPenyangga)) expandDir(0.4);
                         if (isKananKiri && (isPenutup || isPenyangga)) expandDir(0.8);
-                        if (isAtas && isPenyangga) expandDir(0.45); // Dibuat sama agar nyatu dengan penutup
-                        if (isAtas && isPenutup) expandDir(0.45);   // Dibuat sama agar nyatu dengan penyangga
+                        if (isAtas && isPenyangga) expandDir(0.4);
+                        if (isAtas && isPenutup) expandDir(0.85);
                     }
                 }
             }
@@ -489,7 +465,7 @@
             const d = currentMaxDimension * 2.15 + 1.2;
             let targetPosition;
             
-            const T = parseFloat(document.getElementById('s2_height').value) || 0;
+            const T = parseFloat(document.querySelector('input[name="height"]').value) || 0;
             const centerY = (T / 1000) / 2 || currentMaxDimension * 0.38;
 
             if (view === 'front') targetPosition = new THREE.Vector3(0, centerY, d);
@@ -552,35 +528,30 @@
                 else nz += off;
 
                 let thk = Math.min(w, h, d);
-                // The nail must pass through the horizontal beam covering this spot. 
-                // We add 0.005 so it sticks out 2cm from the vertical beam, making it visible outside the horizontal beam.
-                let offset = thk/2 + 0.005; 
                 
                 if (faceId === 'top') {
-                    ny += offset;
-                    n.rotation.set(0, 0, 0); // Normal +Y
+                    ny += thk/2; 
                 } else if (faceId === 'bottom') {
-                    ny -= offset;
-                    n.rotation.x = Math.PI; // Normal -Y
+                    ny -= thk/2;
+                    n.rotation.x = Math.PI; 
                 } else if (faceId === 'front') {
-                    nz += offset;
-                    n.rotation.x = Math.PI/2; // Normal +Z
+                    nz += thk/2;
+                    n.rotation.x = Math.PI/2;
                 } else if (faceId === 'back') {
-                    nz -= offset;
-                    n.rotation.x = -Math.PI/2; // Normal -Z
+                    nz -= thk/2;
+                    n.rotation.x = -Math.PI/2;
                 } else if (faceId === 'right') {
-                    nx += offset;
-                    n.rotation.z = -Math.PI/2; // Normal +X
+                    nx += thk/2;
+                    n.rotation.z = -Math.PI/2;
                 } else if (faceId === 'left') {
-                    nx -= offset;
-                    n.rotation.z = Math.PI/2; // Normal -X
+                    nx -= thk/2;
+                    n.rotation.z = Math.PI/2;
                 }
                 
                 if (mesh.visible === false) n.visible = false;
                 
                 n.position.set(nx, ny, nz);
                 modelGroup.add(n);
-
             });
         }
 
@@ -607,24 +578,12 @@
             if (inset1 > sz1 / 2) inset1 = sz1 / 4;
             if (inset2 > sz2 / 2) inset2 = sz2 / 4;
 
-            let corners = [];
-            if (sz1 > sz2) {
-                // Long in ax1, so 2 points at each end of ax1, near the edges of ax2
-                corners = [
-                    { [ax1]: sz1/2 - inset1, [ax2]: sz2/2 - inset2 },
-                    { [ax1]: sz1/2 - inset1, [ax2]: -sz2/2 + inset2 },
-                    { [ax1]: -sz1/2 + inset1, [ax2]: sz2/2 - inset2 },
-                    { [ax1]: -sz1/2 + inset1, [ax2]: -sz2/2 + inset2 }
-                ];
-            } else {
-                // Long in ax2, so 2 points at each end of ax2, near the edges of ax1
-                corners = [
-                    { [ax1]: sz1/2 - inset1, [ax2]: sz2/2 - inset2 },
-                    { [ax1]: -sz1/2 + inset1, [ax2]: sz2/2 - inset2 },
-                    { [ax1]: sz1/2 - inset1, [ax2]: -sz2/2 + inset2 },
-                    { [ax1]: -sz1/2 + inset1, [ax2]: -sz2/2 + inset2 }
-                ];
-            }
+            let corners = [
+                { [ax1]: sz1/2 - inset1, [ax2]: sz2/2 - inset2 },
+                { [ax1]: -sz1/2 + inset1, [ax2]: sz2/2 - inset2 },
+                { [ax1]: sz1/2 - inset1, [ax2]: -sz2/2 + inset2 },
+                { [ax1]: -sz1/2 + inset1, [ax2]: -sz2/2 + inset2 }
+            ];
 
             corners.forEach(corner => {
                 let n = nailModel.clone();
@@ -641,25 +600,23 @@
                 if (ax2 === 'z') nz += corner.z;
 
                 let thk = Math.min(w, h, d);
-                let offset = thk/2 - 0.015;
                 
                 if (faceId === 'top') {
-                    ny += offset;
-                    n.rotation.set(0, 0, 0);
+                    ny += thk/2; 
                 } else if (faceId === 'bottom') {
-                    ny -= offset;
-                    n.rotation.x = Math.PI;
+                    ny -= thk/2;
+                    n.rotation.x = Math.PI; 
                 } else if (faceId === 'front') {
-                    nz += offset;
+                    nz += thk/2;
                     n.rotation.x = Math.PI/2;
                 } else if (faceId === 'back') {
-                    nz -= offset;
+                    nz -= thk/2;
                     n.rotation.x = -Math.PI/2;
                 } else if (faceId === 'right') {
-                    nx += offset;
+                    nx += thk/2;
                     n.rotation.z = -Math.PI/2;
                 } else if (faceId === 'left') {
-                    nx -= offset;
+                    nx -= thk/2;
                     n.rotation.z = Math.PI/2;
                 }
                 
@@ -678,37 +635,24 @@
                 clearGroup(modelGroup);
                 clearGroup(dimensionGroup);
 
-                // Inputs (Priority: Live HTML inputs -> PHP variables)
-                const P = parseFloat(document.getElementById('s2_length')?.value) || parseFloat({{ isset($calculation) ? ($calculation->length ?? $calculation->panjang ?? 0) : 0 }}) || 0;
-                const L = parseFloat(document.getElementById('s2_width')?.value) || parseFloat({{ isset($calculation) ? ($calculation->width ?? $calculation->lebar ?? 0) : 0 }}) || 0;
-                const T = parseFloat(document.getElementById('s2_height')?.value) || parseFloat({{ isset($calculation) ? ($calculation->height ?? $calculation->tinggi ?? 0) : 0 }}) || 0;
-                const maxSpacing = parseFloat(document.getElementById('s2_jarak_penyanggah')?.value) || parseFloat({{ isset($calculation) ? ($calculation->distance_between_pillars ?? $calculation->jarak_penyanggah ?? 500) : 500 }}) || 500;
-                const arahGlobal = 'Horizontal';
-                const celahAtas = parseFloat(document.getElementById('s2_gap_atas')?.value) || parseFloat({{ isset($calculation) ? ($calculation->gap_atas ?? $calculation->gap ?? 0) : 0 }}) || 0;
-                const celahBawah = parseFloat(document.getElementById('s2_gap_bawah')?.value) || parseFloat({{ isset($calculation) ? ($calculation->gap_bawah ?? $calculation->gap ?? 0) : 0 }}) || 0;
+                // Inputs
+                const P = parseFloat(document.querySelector('input[name="length"]').value) || 0;
+                const L = parseFloat(document.querySelector('input[name="width"]').value) || 0;
+                const T = parseFloat(document.querySelector('input[name="height"]').value) || 0;
+                const maxSpacing = parseFloat(document.querySelector('input[name="distance_between_pillars"]').value) || 500;
+                const arahGlobal = document.querySelector('select[name="arah_pemasangan"]')?.value || 'Horizontal';
+                const celahAtas = parseFloat(document.querySelector('input[name="gap_atas"]').value) || 0;
+                const celahBawah = parseFloat(document.querySelector('input[name="gap_bawah"]').value) || 0;
 
                 if (P <= 0 || L <= 0 || T <= 0) return;
 
-                @php
-                    $kb = isset($calculation->konfigurasi_bawah) ? (is_array($calculation->konfigurasi_bawah) ? $calculation->konfigurasi_bawah : json_decode($calculation->konfigurasi_bawah, true)) : [];
-                    $ka = isset($calculation->konfigurasi_atas) ? (is_array($calculation->konfigurasi_atas) ? $calculation->konfigurasi_atas : json_decode($calculation->konfigurasi_atas, true)) : [];
-                    
-                    $bawahPenutupTipe = $kb['penutup']['status'] ?? 'Tanpa Penutup';
-                    $atasPenutupTipe = $ka['penutup']['status'] ?? 'Tanpa Penutup';
-                    $includePallet = ($kb['kaki_balok']['status'] ?? 'Include') === 'Include' ? '1' : '0';
-                @endphp
-
-                let typeBawah = document.getElementById('s2_ptb_status')?.value || '{{ $bawahPenutupTipe }}';
-                let typeAtas = document.getElementById('s2_pta_status')?.value || '{{ $atasPenutupTipe }}';
-                let hasBase = document.querySelector('select[name="include_pallet_base"]')?.value === '1' || '{{ $includePallet }}' === '1';
-
-                const bawahPenutupTipe = typeBawah;
-                const atasPenutupTipe = typeAtas;
+                const bawahPenutupTipe = document.querySelector('select[name="bawah_penutup_tipe"]')?.value || 'Tanpa Penutup';
+                const atasPenutupTipe = document.querySelector('select[name="atas_penutup_tipe"]')?.value || 'Tanpa Penutup';
                 const hasBawahPenutup = (bawahPenutupTipe !== 'Tanpa Penutup' && bawahPenutupTipe !== 'Tidak makai penutup' && bawahPenutupTipe !== 'Tidak Pakai Papan' && bawahPenutupTipe !== '');
                 const hasAtasPenutup = (atasPenutupTipe !== 'Tanpa Penutup' && atasPenutupTipe !== 'Tidak makai penutup' && atasPenutupTipe !== 'Tidak Pakai Papan' && atasPenutupTipe !== '');
                 const hasCover = hasBawahPenutup || hasAtasPenutup;
 
-                const includePallet = "{{ $includePallet }}";
+                const includePallet = document.querySelector('select[name="include_pallet_base"]')?.value;
                 const isPalletEnabled = includePallet === '1' || String(includePallet).toLowerCase() === 'ya';
 
                 // Visibility checkboxes
@@ -752,18 +696,18 @@
                 const expRangkaBawah = false;
 
                 // Determine offsets based on specific toggles
-                const getOffRangka = (isBawah) => (isBawah ? expRangkaBawah : expRangkaAtas) ? 0.35 : 0;
+                const getOffRangka = (isBawah) => (isBawah ? expRangkaBawah : expRangkaAtas) ? 0.2 : 0;
                 const getOffPenyangga = (isBawah, faceId = '') => {
-                    if (isBawah) return (expPenutupBawah ? 0.35 : (expPenyanggaBawah ? 0.35 : 0));
-                    if (faceId === 'top') return expPenyanggaAtas ? 0.35 : 0;
-                    return expPenutupAtas ? 0.35 : (expPenyanggaAtas ? 0.35 : 0);
+                    if (isBawah) return (expPenutupBawah ? 0.2 : (expPenyanggaBawah ? 0.2 : 0));
+                    if (faceId === 'top') return expPenyanggaAtas ? 0.2 : 0;
+                    return expPenutupAtas ? 0.2 : (expPenyanggaAtas ? 0.2 : 0);
                 };
                 const getOffPenutup = (isBawah, faceId = '') => {
-                    if (isBawah) return expPenutupBawah ? 0.35 : 0;
-                    if (faceId === 'top') return expPenyanggaAtas ? 0.35 : (expPenutupAtas ? 0.35 : 0);
-                    return expPenutupAtas ? 0.35 : 0;
+                    if (isBawah) return expPenutupBawah ? 0.2 : 0;
+                    if (faceId === 'top') return expPenyanggaAtas ? 0.2 : (expPenutupAtas ? 0.2 : 0);
+                    return expPenutupAtas ? 0.2 : 0;
                 };
-                const offsetBalokY = expPenutupBawah ? 0.35 : (expPenyanggaBawah ? 0.35 : (expKakiBalok ? 0.35 : 0));
+                const offsetBalokY = expPenutupBawah ? 0.2 : (expPenyanggaBawah ? 0.2 : (expKakiBalok ? 0.2 : 0));
                 
                 const maxD = typeof currentMaxDimension !== 'undefined' ? currentMaxDimension : 2;
 
@@ -785,15 +729,6 @@
                             break;
                         }
                     }
-                    
-                    // Force 'tiduran' (laid flat) for Penyangga Bawah
-                    if (section === 'Bawah' && partNames.includes('Penyangga')) {
-                        const min = Math.min(t, w);
-                        const max = Math.max(t, w);
-                        t = min;
-                        w = max;
-                    }
-                    
                     return { t, w, ht: t/2, hw: w/2 };
                 };
 
@@ -823,25 +758,18 @@
                 if (showPenyanggaAtas || showPenyanggaBawah) {
                     const getPenyanggaConfig = (sectionName, name, crossSpanMm) => {
                         const match = activeDetails.find(d => d.section === sectionName && d.part_name === name);
-                        let forcedOrientation = null;
-                        if (sectionName === 'Penyangga') {
-                            forcedOrientation = 'V'; // Area Atas (walls and top) always Vertikal
-                        } else if (sectionName === 'Bawah' && name === 'Penyangga') {
-                            forcedOrientation = 'H'; // Area Bawah always Horizontal
-                        }
-                        
                         if (match) {
                             if (match.material_kode === '-' || parseFloat(match.total_quantity) <= 0) {
-                                return { qty: 0, orientation: forcedOrientation || 'H' };
+                                return { qty: 0, orientation: 'H' };
                             }
                             return {
                                 qty: parseInt(match.quantity),
-                                orientation: forcedOrientation || ((match.direction || arahGlobal) === 'Horizontal' ? 'H' : 'V')
+                                orientation: (match.direction || arahGlobal) === 'Horizontal' ? 'H' : 'V'
                             };
                         }
                         return {
                             qty: Math.max(0, Math.ceil(crossSpanMm / maxSpacing) - 1),
-                            orientation: forcedOrientation || (arahGlobal === 'Horizontal' ? 'H' : 'V')
+                            orientation: arahGlobal === 'Horizontal' ? 'H' : 'V'
                         };
                     };
 
@@ -888,11 +816,7 @@
                         let t_penyangga_b_val = 0;
                         if (typeof showPenyanggaBawah !== 'undefined' && showPenyanggaBawah) {
                             const pPeny = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga') : null;
-                            if (pPeny && pPeny.material_kode !== '-') {
-                                t_penyangga_b_val = Math.min(parseFloat(pPeny.calculated_thickness) / 1000, parseFloat(pPeny.calculated_width) / 1000);
-                            } else {
-                                t_penyangga_b_val = 0.08; // fallback matching getDim
-                            }
+                            t_penyangga_b_val = pPeny && pPeny.material_kode !== '-' ? parseFloat(pPeny.calculated_thickness) / 1000 : 0.02;
                         }
                         let t_penutup_s_val = 0;
                         if (typeof hasCover !== 'undefined' && hasCover) {
@@ -916,24 +840,25 @@
                                     addNailsForPenyangga(bMesh, face.id);
                                 });
                             } else {
-                                let b_w = 0.05; 
+                                let b_w = 0; 
                                 if (typeof activeDetails !== 'undefined') {
                                     const pKaki = activeDetails.find(d => d.section === 'Bawah' && (d.part_name === 'Kaki Balok' || d.part_name === 'Additional Balok'));
-                                    if (pKaki && pKaki.material_kode !== '-') {
-                                        const parsed = parseFloat(pKaki.calculated_width) / 1000;
-                                        if (parsed > 0) b_w = parsed;
-                                    }
+                                    if (pKaki && pKaki.material_kode !== '-') b_w = parseFloat(pKaki.calculated_width) / 1000;
                                 }
-                                const vLen = (h_m - rTopL.t) - (topKakiBalokY - b_w); // Extend support down to bottom of kaki balok
+                                const vLen = h_m - rTopL.t - (topKakiBalokY - b_w);
                                 const yCenter = (topKakiBalokY - b_w) + (vLen / 2);
                                 const outer_span_x = l_m;
                                 let positions_x = [];
                                 if (count === 1) {
                                     positions_x = [0];
                                 } else {
-                                    let x_thk = pDim.w; // pDim.w is the X size of the vertikal Penyangga Front/Back
-                                    const start_x = -outer_span_x / 2 + x_thk / 2;
-                                    const end_x = outer_span_x / 2 - x_thk / 2;
+                                    let b_t = 0.05; 
+                                    if(typeof activeDetails !== 'undefined'){
+                                        const pKaki = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Kaki Balok');
+                                        if(pKaki) b_t = parseFloat(pKaki.calculated_thickness) / 1000;
+                                    }
+                                    const start_x = -outer_span_x / 2 + b_t / 2;
+                                    const end_x = outer_span_x / 2 - b_t / 2;
                                     for (let i = 0; i < count; i++) {
                                         positions_x.push(start_x + (end_x - start_x) * (i / (count - 1)));
                                     }
@@ -954,33 +879,18 @@
                                     addNailsForPenyangga(bMesh, face.id);
                                 });
                             } else {
-                                let b_w = 0.05; 
+                                let b_w = 0; 
                                 if (typeof activeDetails !== 'undefined') {
                                     const pKaki = activeDetails.find(d => d.section === 'Bawah' && (d.part_name === 'Kaki Balok' || d.part_name === 'Additional Balok'));
-                                    if (pKaki && pKaki.material_kode !== '-') {
-                                        const parsed = parseFloat(pKaki.calculated_width) / 1000;
-                                        if (parsed > 0) b_w = parsed;
-                                    }
+                                    if (pKaki && pKaki.material_kode !== '-') b_w = parseFloat(pKaki.calculated_width) / 1000;
                                 }
-                                const vLen = (h_m - rTopW.t) - (topKakiBalokY - b_w); // Extend support down to bottom of kaki balok
+                                const vLen = h_m - rTopW.t - (topKakiBalokY - b_w);
                                 const yCenter = (topKakiBalokY - b_w) + (vLen / 2);
-                                const outer_span_z = w_m;
                                 let positions_z = [];
-                                if (count === 1) {
-                                    positions_z = [0];
-                                } else {
-                                    let b_t = 0.05; 
-                                    if(typeof activeDetails !== 'undefined'){
-                                        const pKaki = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Kaki Balok');
-                                        if(pKaki) b_t = parseFloat(pKaki.calculated_thickness) / 1000;
-                                    }
-                                    // pDim.w is the Z size of the vertikal Penyangga Right/Left
-                                    const z_thk = pDim.w; 
-                                    const start_z = -outer_span_z / 2 + z_thk / 2;
-                                    const end_z = outer_span_z / 2 - z_thk / 2;
-                                    for (let i = 0; i < count; i++) {
-                                        positions_z.push(start_z + (end_z - start_z) * (i / (count - 1)));
-                                    }
+                                const interval = 0.8;
+                                const start_z = -((count - 1) * interval) / 2;
+                                for (let i = 0; i < count; i++) {
+                                    positions_z.push(start_z + i * interval);
                                 }
                                 positions_z.forEach(function (z) {
                                     let bMesh = addBeam(new THREE.Vector3(pDim.t, Math.max(pDim.w, vLen), pDim.w), new THREE.Vector3(x, yCenter, z), supportMaterial, face.name + ' vertikal');
@@ -1076,21 +986,21 @@
                                 } else if (count > 1) {
                                     const actualGap = (crossSpan - (count * safeWidth)) / (count - 1);
                                     for (let i = 0; i < count; i++) {
-                                        positions.push(crossSpan / 2 - safeWidth / 2 - i * (safeWidth + actualGap));
+                                        positions.push(-crossSpan / 2 + safeWidth / 2 + i * (safeWidth + actualGap));
                                         sizes.push(safeWidth);
                                     }
                                 }
                             } else {
-                                // Pemasangan dari atas ke bawah (sesuai permintaan "dari atas pemasanganya")
-                                let currentY = crossSpan / 2; // Mulai dari ujung atas
-                                while (currentY > -crossSpan / 2 + 0.001 && count < 80) {
+                                // Untuk Papan Setengah: mulai dari bawah, pasang papan + celah. Papan terakhir dipotong jika melebihi batas atas.
+                                let currentY = -crossSpan / 2;
+                                while (currentY < crossSpan / 2 - 0.001 && count < 80) {
                                     let boardSize = safeWidth;
-                                    if (currentY - boardSize < -crossSpan / 2) {
-                                        boardSize = currentY - (-crossSpan / 2); // Potong papan terakhir jika melebihi batas bawah
+                                    if (currentY + boardSize > crossSpan / 2) {
+                                        boardSize = (crossSpan / 2) - currentY;
                                     }
-                                    positions.push(currentY - boardSize / 2);
+                                    positions.push(currentY + boardSize / 2);
                                     sizes.push(boardSize);
-                                    currentY -= (boardSize + gap);
+                                    currentY += boardSize + gap;
                                     count++;
                                 }
                             }
@@ -1135,6 +1045,7 @@
                         }
 
                         let faceArah = (() => {
+                            if (face.id === 'front' || face.id === 'back') return 'H'; // Paksa selalu horizontal
                             if (penutupDetail && penutupDetail.direction) return penutupDetail.direction === 'Horizontal' ? 'H' : 'V';
                             return arahGlobal === 'Horizontal' ? 'H' : 'V';
                         })();
@@ -1178,26 +1089,11 @@
                         let t_penyangga_b_val_c = 0;
                         if (typeof showPenyanggaBawah !== 'undefined' && showPenyanggaBawah) {
                             const pPeny = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga') : null;
-                            if (pPeny && pPeny.material_kode !== '-') {
-                                t_penyangga_b_val_c = Math.min(parseFloat(pPeny.calculated_thickness) / 1000, parseFloat(pPeny.calculated_width) / 1000);
-                            } else {
-                                t_penyangga_b_val_c = 0.08;
-                            }
+                            t_penyangga_b_val_c = pPeny && pPeny.material_kode !== '-' ? parseFloat(pPeny.calculated_thickness) / 1000 : 0.02;
                         }
                         const offsetBalokYGlobal_c = (typeof expKakiBalok !== 'undefined' && expKakiBalok) ? 0.2 : 0;
-                        let b_w_c = 0.05;
-                        if (typeof activeDetails !== 'undefined') {
-                            const pKaki = activeDetails.find(d => d.section === 'Bawah' && (d.part_name === 'Kaki Balok' || d.part_name === 'Additional Balok'));
-                            if (pKaki && pKaki.material_kode !== '-') {
-                                const parsed = parseFloat(pKaki.calculated_width) / 1000;
-                                if (parsed > 0) b_w_c = parsed;
-                            }
-                        }
-                        
+                        // Penutup samping (Kanan, Kiri, Depan, Belakang) diletakkan di atas papan penutup bawah (Y=0)
                         const topKakiBalokY_c = 0;
-                        const bottomSpanY = 0; // Sisi samping (Kanan, Kiri, Depan, Belakang) hanya sampai Penutup Bawah (Y=0), tidak sampai Kaki Balok.
-                        const topSpanY = h_m; // Penutup samping menutupi sampai ke ujung paling atas (h_m), menutupi Rangka Atas dari luar.
-                        const sideCoverHeight = topSpanY - bottomSpanY;
 
                         let t_penyangga_atas_c = 0; // Penyangga Atas kini berada di dalam (di bawah Penutup), sehingga tidak mengganjal Penutup Atas.
                         if (typeof showPenyanggaAtas !== 'undefined' && showPenyanggaAtas) {
@@ -1232,13 +1128,13 @@
                             if (face.id === 'front' || face.id === 'back') {
                                 const z = face.id === 'front' ? w_m / 2 + t_penutup / 2 + offC : -w_m / 2 - t_penutup / 2 - offC;
                                 const frontLength = l_m;
-                                const frontHeight = sideCoverHeight;
-                                let bMesh = addBeam(new THREE.Vector3(frontLength, frontHeight, t_penutup), new THREE.Vector3(0, bottomSpanY + frontHeight / 2, z), material, face.name + ' triplex');
+                                const frontHeight = h_m - topKakiBalokY_c;
+                                let bMesh = addBeam(new THREE.Vector3(frontLength, frontHeight, t_penutup), new THREE.Vector3(0, topKakiBalokY_c + frontHeight / 2, z), material, face.name + ' triplex');
                                 addNailsForBoard(bMesh, face.id);
                             } else if (face.id === 'right' || face.id === 'left') {
                                 const x = face.id === 'right' ? l_m / 2 + t_penutup / 2 + offC : -l_m / 2 - t_penutup / 2 - offC;
-                                const sideHeight = sideCoverHeight;
-                                let bMesh = addBeam(new THREE.Vector3(t_penutup, sideHeight, w_m + extraSpanPanjangKK), new THREE.Vector3(x, bottomSpanY + sideHeight / 2, 0), material, face.name + ' triplex');
+                                const sideHeight = h_m - topKakiBalokY_c;
+                                let bMesh = addBeam(new THREE.Vector3(t_penutup, sideHeight, w_m + extraSpanPanjangKK), new THREE.Vector3(x, topKakiBalokY_c + sideHeight / 2, 0), material, face.name + ' triplex');
                                 addNailsForBoard(bMesh, face.id);
                             } else {
                                 const y = face.id === 'top' ? h_m + t_penyangga_atas_c + t_penutup / 2 + offC : -t_penutup / 2 - offC;
@@ -1257,11 +1153,12 @@
                             let crossSpan;
                             let longSpan;
                             if (face.id === 'front' || face.id === 'back') {
-                                crossSpan = (faceArah === 'H') ? sideCoverHeight : l_m;
-                                longSpan = (faceArah === 'H') ? l_m : sideCoverHeight;
+                                faceArah = 'H'; // Paksa selalu horizontal
+                                crossSpan = h_m - topKakiBalokY_c;
+                                longSpan = l_m;
                             } else if (face.id === 'right' || face.id === 'left') {
-                                crossSpan = (faceArah === 'H') ? sideCoverHeight : w_m + extraSpanPanjangKK;
-                                longSpan = (faceArah === 'H') ? w_m + extraSpanPanjangKK : sideCoverHeight;
+                                crossSpan = (faceArah === 'H') ? h_m - topKakiBalokY_c : w_m + extraSpanPanjangKK;
+                                longSpan = (faceArah === 'H') ? w_m + extraSpanPanjangKK : h_m - topKakiBalokY_c;
                             } else {
                                 const w_m_top = face.id === 'top' ? w_m + (typeof extraSpanPanjang !== 'undefined' ? extraSpanPanjang : 0) : w_m_bottom;
                                 const l_m_top = face.id === 'top' ? l_m + (typeof extraSpanLebar !== 'undefined' ? extraSpanLebar : 0) : l_m_bottom;
@@ -1276,22 +1173,17 @@
                                 const pSize = layout.sizes ? layout.sizes[index] : layout.pieceCross;
                                 if (face.id === 'front' || face.id === 'back') {
                                     const z = face.id === 'front' ? w_m / 2 + t_penutup / 2 + offC : -w_m / 2 - t_penutup / 2 - offC;
-                                    if (faceArah === 'H') {
-                                        let bMesh = addBeam(new THREE.Vector3(l_m, pSize, t_penutup), new THREE.Vector3(0, bottomSpanY + sideCoverHeight / 2 + pos, z), material, face.name + ' papan horizontal');
-                                        addNailsForBoard(bMesh, face.id);
-                                    } else {
-                                        const frontHeight = sideCoverHeight;
-                                        let bMesh = addBeam(new THREE.Vector3(pSize, frontHeight, t_penutup), new THREE.Vector3(pos, bottomSpanY + frontHeight / 2, z), material, face.name + ' papan vertikal');
-                                        addNailsForBoard(bMesh, face.id);
-                                    }
+                                    const frontLength = l_m;
+                                    let bMesh = addBeam(new THREE.Vector3(frontLength, pSize, t_penutup), new THREE.Vector3(0, topKakiBalokY_c + (h_m - topKakiBalokY_c) / 2 + pos, z), material, face.name + ' papan horizontal');
+                                    addNailsForBoard(bMesh, face.id);
                                 } else if (face.id === 'right' || face.id === 'left') {
                                     const x = face.id === 'right' ? l_m / 2 + t_penutup / 2 + offC : -l_m / 2 - t_penutup / 2 - offC;
                                     if (faceArah === 'H') {
-                                        let bMesh = addBeam(new THREE.Vector3(t_penutup, pSize, w_m + extraSpanPanjangKK), new THREE.Vector3(x, bottomSpanY + sideCoverHeight / 2 + pos, 0), material, face.name + ' papan horizontal');
+                                        let bMesh = addBeam(new THREE.Vector3(t_penutup, pSize, w_m + extraSpanPanjangKK), new THREE.Vector3(x, topKakiBalokY_c + (h_m - topKakiBalokY_c) / 2 + pos, 0), material, face.name + ' papan horizontal');
                                         addNailsForBoard(bMesh, face.id);
                                     } else {
-                                        const sideHeight = sideCoverHeight;
-                                        let bMesh = addBeam(new THREE.Vector3(t_penutup, sideHeight, pSize), new THREE.Vector3(x, bottomSpanY + sideHeight / 2, pos), material, face.name + ' papan vertikal');
+                                        const sideHeight = h_m - topKakiBalokY_c;
+                                        let bMesh = addBeam(new THREE.Vector3(t_penutup, sideHeight, pSize), new THREE.Vector3(x, topKakiBalokY_c + sideHeight / 2, pos), material, face.name + ' papan vertikal');
                                         addNailsForBoard(bMesh, face.id);
                                     }
                                 } else {
@@ -1316,7 +1208,7 @@
                     const addBalokMatch = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && (d.part_name === 'Kaki Balok' || d.part_name === 'Additional Balok')) : null;
                     if (addBalokMatch && parseFloat(addBalokMatch.total_quantity) > 0) {
                         const qty = parseInt(addBalokMatch.quantity) || 1;
-                        const direction = 'Vertikal'; // Forced to Vertikal as requested
+                        const direction = addBalokMatch.direction || 'Horizontal';
                         
                         let balok_t = 0.05; 
                         let balok_w = 0.05; 
@@ -1339,11 +1231,7 @@
                         let t_penyangga_bawah = 0;
                         if (typeof showPenyanggaBawah !== 'undefined' && showPenyanggaBawah) {
                             const pPenyangga = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga') : null;
-                            if (pPenyangga && pPenyangga.material_kode !== '-') {
-                                t_penyangga_bawah = Math.min(parseFloat(pPenyangga.calculated_thickness) / 1000, parseFloat(pPenyangga.calculated_width) / 1000);
-                            } else {
-                                t_penyangga_bawah = 0.08;
-                            }
+                            t_penyangga_bawah = pPenyangga && pPenyangga.material_kode !== '-' ? parseFloat(pPenyangga.calculated_thickness) / 1000 : 0.02;
                         }
 
                         const offsetBalokY = expPenutupBawah ? 0.2 : (expPenyanggaBawah ? 0.2 : (expKakiBalok ? 0.2 : 0));
@@ -1396,7 +1284,7 @@
                 // Update Status text
                 const statusTextEl = document.getElementById('statusText');
                 if (statusTextEl) {
-                    statusTextEl.textContent = 'Model: ' + Math.round(P) + ' Ã— ' + Math.round(L) + ' Ã— ' + Math.round(T) + ' mm';
+                    statusTextEl.textContent = 'Model: ' + Math.round(P) + ' × ' + Math.round(L) + ' × ' + Math.round(T) + ' mm';
                 }
 
                 if (resetCamera) {
@@ -1417,13 +1305,13 @@
             let bawahPenutupSelect = document.querySelector('select[name="bawah_penutup_material"]');
             let atasPenutupSelect = document.querySelector('select[name="atas_penutup_material"]');
             
-            const inputs = document.querySelectorAll('#step-2 input:not([type="hidden"])');
-            const selects = document.querySelectorAll('#step-2 select');
+            const inputs = document.querySelectorAll('.custom-input');
+            const selects = document.querySelectorAll('.custom-select, .matrix-select');
 
             // Menyimpan value asli saat masuk mode edit (untuk fungsi batal)
             let originalValues = {};
             let originalHtmls = {};
-            let isEditModeActive = {{ isset($calculation) ? 'false' : 'true' }};
+            let isEditModeActive = false;
 
             // Load materials list from server
             const availableMaterials = {!! json_encode(isset($materials) ? $materials : []) !!};
@@ -1435,8 +1323,7 @@
                     'part_name' => $d->part_name,
                     'direction' => $d->direction,
                     'tipe_penutup' => $d->tipe_penutup,
-                    'material_kode' => $d->material ? $d->material->code : '-',
-                    'material_wood_type' => $d->material ? $d->material->wood_type : 'Kayu',
+                    'material_kode' => $d->material ? $d->material->kode : '-',
                     'material_satuan_harga' => $d->material ? $d->material->satuan_harga : 'pcs',
                     'calculated_thickness' => (float)$d->calculated_thickness,
                     'calculated_width' => (float)$d->calculated_width,
@@ -1451,7 +1338,7 @@
             }) : []) !!};
 
             // Load initial calculation manpower from server
-            let activeManpower = {!! json_encode(isset($calculation) && optional($calculation->manpower)->isNotEmpty() ? $calculation->manpower->map(function($m) {
+            let activeManpower = {!! json_encode(isset($calculation) && $calculation->manpower->isNotEmpty() ? $calculation->manpower->map(function($m) {
                 return [
                     'bagian' => $m->bagian,
                     'panjang' => (float)$m->panjang,
@@ -1482,7 +1369,7 @@
                 ];
             }
 
-            window.pakuDetails = {!! json_encode(isset($calculation) && optional($calculation->consumables)->where('category', 'Paku')->isNotEmpty() ? $calculation->consumables->where('category', 'Paku')->map(function($c) {
+            window.pakuDetails = {!! json_encode(isset($calculation) && $calculation->consumables->where('category', 'Paku')->isNotEmpty() ? $calculation->consumables->where('category', 'Paku')->map(function($c) {
                 return [
                     'bagian' => $c->bagian,
                     'titik' => (int)$c->titik_paku,
@@ -1686,7 +1573,7 @@
                         let l = parseFloat(detail.calculated_length || 0);
                         let q = parseFloat(detail.total_quantity || 0);
                         lenVal = (w * l * q) / 1000000;
-                        unitStr = 'mÂ²';
+                        unitStr = 'm²';
                     }
 
                     let rowAll = `<tr>
@@ -1813,7 +1700,7 @@
 
                 let resumeLuasEl = document.getElementById('resume-total-luas');
                 if (resumeLuasEl) {
-                    resumeLuasEl.innerHTML = `${formatNumber(summary.area_kerja, 2)} <span class="fw-bold text-muted" style="font-size: 14px;">mÂ²</span>`;
+                    resumeLuasEl.innerHTML = `${formatNumber(summary.area_kerja, 2)} <span class="fw-bold text-muted" style="font-size: 14px;">m²</span>`;
                 }
 
                 let resumeContainer = document.getElementById('resume-material-container');
@@ -1825,7 +1712,7 @@
                     } else {
                         keys.forEach(key => {
                             let mat = materialResume[key];
-                            let unit = (mat.kode.includes('TR') || mat.nama.toLowerCase().includes('triplex')) ? 'mÂ²' : 'm';
+                            let unit = (mat.kode.includes('TR') || mat.nama.toLowerCase().includes('triplex')) ? 'm²' : 'm';
                             htmlList += `
                             <div class="p-3 border rounded bg-white shadow-xs hover-shadow transition">
                                 <div class="d-flex justify-content-between align-items-center">
@@ -1851,14 +1738,7 @@
                 calculateNails();
 
                 // Redraw crate
-                if (typeof window.drawCrate === 'function') {
-                    window.drawCrate();
-                }
-                
-                // Redraw Material 2D
-                if (typeof window.drawMaterialStacks === 'function') {
-                    window.drawMaterialStacks();
-                }
+                drawCrate();
             }
 
             function syncMasterDropdownsToActiveDetails() {
@@ -1922,7 +1802,7 @@
                 updatePart('Bawah', ['Kaki Balok'], getVal('include_pallet_base'), getVal('bawah_kakibalok_arah'), getVal('bawah_kakibalok_material'), false);
 
                 // Update Jumlah Kaki Balok logic in UI
-                let lengthInput = document.getElementById('s2_length');
+                let lengthInput = document.querySelector('[name="length"]');
                 let jumlahKakiInput = document.querySelector('[name="jumlah_kaki_balok"]');
                 if (lengthInput && jumlahKakiInput) {
                     let L = parseFloat(lengthInput.value) || 0;
@@ -1995,7 +1875,7 @@
                     const input = jarakBalokWrapper.querySelector('input[name="jumlah_kaki_balok"]');
                     if (input) {
                         if (isIncluded) {
-                            const lengthInput = document.getElementById('s2_length');
+                            const lengthInput = document.querySelector('input[name="length"]');
                             const P = parseFloat(lengthInput ? lengthInput.value : 0) || 0;
                             input.value = Math.max(2, Math.floor(P / 800) + 1);
                         } else {
@@ -2024,9 +1904,9 @@
                     totalSqm = rows.reduce((sum, r) => sum + r.total_luas, 0);
                     totalBiayaMp = rows.reduce((sum, r) => sum + r.total_biaya, 0);
                 } else {
-                    let lengthInput = document.getElementById('s2_length');
-                    let widthInput = document.getElementById('s2_width');
-                    let heightInput = document.getElementById('s2_height');
+                    let lengthInput = document.querySelector('input[name="length"]');
+                    let widthInput = document.querySelector('input[name="width"]');
+                    let heightInput = document.querySelector('input[name="height"]');
                     
                     P = parseFloat(lengthInput ? lengthInput.value : 0) || 0;
                     L = parseFloat(widthInput ? widthInput.value : 0) || 0;
@@ -2293,9 +2173,9 @@
                 btnSave.addEventListener('click', (e) => {
                     e.preventDefault();
                     const formEdit = document.getElementById('form-edit-config');
-                    const len = document.getElementById('s2_length').value || 0;
-                    const wid = document.getElementById('s2_width').value || 0;
-                    const hgt = document.getElementById('s2_height').value || 0;
+                    const len = document.querySelector('input[name="length"]').value || 0;
+                    const wid = document.querySelector('input[name="width"]').value || 0;
+                    const hgt = document.querySelector('input[name="height"]').value || 0;
                     const projectName = `${len} x ${wid} x ${hgt} mm`;
                     
                     let formData = {
@@ -2487,10 +2367,10 @@
                     const bawahPenutupTipe = document.querySelector('select[name="bawah_penutup_tipe"]')?.value || 'Tanpa Penutup';
                     const isHasBawahPenutup = (bawahPenutupTipe !== 'Tanpa Penutup' && bawahPenutupTipe !== 'Tidak makai penutup' && bawahPenutupTipe !== 'Tidak Pakai Papan' && bawahPenutupTipe !== '') ? '1' : '0';
                     
-                    const h_val = parseFloat(document.getElementById('s2_height').value) || 0;
+                    const h_val = parseFloat(document.querySelector('input[name="height"]').value) || 0;
                     const t_m = h_val / 1000;
-                    const l_val = parseFloat(document.getElementById('s2_length').value) || 0;
-                    const w_val = parseFloat(document.getElementById('s2_width').value) || 0;
+                    const l_val = parseFloat(document.querySelector('input[name="length"]').value) || 0;
+                    const w_val = parseFloat(document.querySelector('input[name="width"]').value) || 0;
                     const maxDim = Math.max(l_val/1000, w_val/1000, t_m) || 1;
                     
                     // The object expands by 0.6 meters per side (1.2m total). We add 1.6 to maxDim for safe padding.
@@ -2527,10 +2407,10 @@
                             controls.target.set(0, -0.4, 0); // Aim at the bottom components which are expanded downwards
                             camera.zoom = optimalBaseZoom * 1.2; // Add a little extra 1.2x boost to fill the frame
                         } else if (step === 8) {
-                            controls.target.set(0, (t_m / 2) + 0.6, 0); 
-                            camera.zoom = 1.0;
+                            controls.target.set(0, (t_m / 2) + 0.3, 0); 
+                            camera.zoom = 0.9;
                         } else {
-                            controls.target.set(0, (t_m / 2) + 0.4, 0); 
+                            controls.target.set(0, (t_m / 2) + 0.1, 0); 
                             camera.zoom = 1.0;
                         }
                         camera.updateProjectionMatrix();
@@ -2544,9 +2424,9 @@
                     
                     // Capture Full Exploded (Step 9)
                     window.printSequenceStep = 9;
-                    controls.target.set(0, (t_m / 2) + 0.6, 0);
+                    controls.target.set(0, (t_m / 2) - 0.1, 0);
                     const optimalZoom = (typeof d !== 'undefined') ? Math.max(1.0, d / ((Math.max((l_val||1)/1000, (w_val||1)/1000) + 1.6) * 2.15 + 1.2)) : 1.0;
-                    camera.zoom = optimalZoom * 1.0; 
+                    camera.zoom = optimalZoom * 1.1; // Zoom in since base is no longer exploded vertically
                     camera.updateProjectionMatrix();
                     controls.update();
                     if (typeof drawCrate === 'function') drawCrate(); else chkRangkaAtas.dispatchEvent(new Event('change'));
@@ -2555,8 +2435,8 @@
 
                     // Capture Full Assembled (Step 0)
                     window.printSequenceStep = 0;
-                    controls.target.set(0, (t_m / 2) + 0.4, 0);
-                    camera.zoom = optimalZoom * 1.1; 
+                    controls.target.set(0, (t_m / 2) + 0.1, 0);
+                    camera.zoom = optimalZoom * 1.3;
                     camera.updateProjectionMatrix();
                     controls.update();
                     if (typeof drawCrate === 'function') drawCrate(); else chkRangkaAtas.dispatchEvent(new Event('change'));
@@ -3094,11 +2974,8 @@
                 });
 
                 // --- Live Updater: 3D Visualizer & Kaki Balok ---
-                const lengthInput = document.getElementById('s2_length');
+                const lengthInput = document.querySelector('input[name="length"]');
                 const kakiBalokInput = document.querySelector('input[name="jumlah_kaki_balok"]');
-                // Ambil semua input di step 2 (kecuali yang di-disable jika ada)
-                const inputs = document.querySelectorAll('#step-2 input:not([type="hidden"])');
-                const selects = document.querySelectorAll('#step-2 select');
                 const allConfigInputs = document.querySelectorAll('#form-edit-config input, #form-edit-config select');
 
                 allConfigInputs.forEach(input => {
@@ -3141,11 +3018,8 @@
                     matScene = new THREE.Scene();
                     matScene.background = new THREE.Color(0xf8fafc);
 
-                    let cw = matContainer.clientWidth || matContainer.getBoundingClientRect().width || 800;
-                    let ch = matContainer.clientHeight || matContainer.getBoundingClientRect().height || 450;
-                    const aspect = cw / ch;
-                    
-                    window.matFrustumSize = 2.5; // Will be updated when drawing
+                    const aspect = matContainer.clientWidth / matContainer.clientHeight;
+                    window.matFrustumSize = 2.5;
                     matCamera = new THREE.OrthographicCamera(
                         window.matFrustumSize * aspect / -2,
                         window.matFrustumSize * aspect / 2,
@@ -3166,7 +3040,7 @@
                     window.matScene = matScene;
                     window.matCamera = matCamera;
                     
-                    matRenderer.setSize(cw, ch);
+                    matRenderer.setSize(matContainer.clientWidth, matContainer.clientHeight);
                     matRenderer.shadowMap.enabled = true;
                     matRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
                     matContainer.appendChild(matRenderer.domElement);
@@ -3208,15 +3082,13 @@
 
                     window.addEventListener('resize', () => {
                         if (!matContainer) return;
-                        let cw = matContainer.clientWidth || matContainer.getBoundingClientRect().width || 800;
-                        let ch = matContainer.clientHeight || matContainer.getBoundingClientRect().height || 450;
-                        const aspect = cw / ch;
+                        const aspect = matContainer.clientWidth / matContainer.clientHeight;
                         matCamera.left = window.matFrustumSize * aspect / -2;
                         matCamera.right = window.matFrustumSize * aspect / 2;
                         matCamera.top = window.matFrustumSize / 2;
                         matCamera.bottom = window.matFrustumSize / -2;
                         matCamera.updateProjectionMatrix();
-                        matRenderer.setSize(cw, ch);
+                        matRenderer.setSize(matContainer.clientWidth, matContainer.clientHeight);
                     });
                 }
 
@@ -3265,8 +3137,8 @@
                     if (!matScene || !activeDetails) return;
                     
                     // Clear old meshes (keep initial lights, grid, and plane)
-                    while(matScene.children.length > 5){ 
-                        matScene.remove(matScene.children[5]); 
+                    while(matScene.children.length > 4){ 
+                        matScene.remove(matScene.children[4]); 
                     }
                     matLabels.innerHTML = '';
                     matMeshes = [];
@@ -3275,12 +3147,9 @@
                     const cardsContainer = document.getElementById('material-cards-container');
                     if (cardsContainer) cardsContainer.innerHTML = '';
 
-                    // Make sure activeDetails is an array and safely iterate
-                    const detailsArray = Array.isArray(activeDetails) ? activeDetails : Object.values(activeDetails || {});
-
                     // 1. Group by dimensions
                     const groups = {};
-                    detailsArray.forEach(d => {
+                    activeDetails.forEach(d => {
                         const rawQty = parseFloat(d.total_quantity) || parseFloat(d.quantity) || 0;
                         const qty = Math.ceil(rawQty);
                         if (!qty || qty <= 0) return;
@@ -3288,22 +3157,20 @@
                         const t = parseFloat(d.calculated_thickness) || 0;
                         const w = parseFloat(d.calculated_width) || 0;
                         const l = parseFloat(d.calculated_length) || 0;
-                        const kode = d.material_kode || 'Kayu';
-                        const woodType = d.material_wood_type || 'Kayu';
-                        const mat = `${woodType} - ${t} mm x ${w} mm`;
+                        const mat = d.material_kode || d.material_nama || 'Kayu';
                         
                         if (t === 0 || w === 0 || l === 0) return; // Skip invalid geometries
                         
                         const key = `${t}x${w}x${l}_${mat}`;
                         if (!groups[key]) {
-                            groups[key] = { t, w, l, mat, kode, qty: 0 };
+                            groups[key] = { t, w, l, mat, qty: 0 };
                         }
                         groups[key].qty += qty;
                     });
 
                     // Helper to get category order: Balok (1) -> Papan (2) -> Triplek (3) -> Lainnya (4)
-                    function getCategoryOrder(kodeName) {
-                        const matLower = (kodeName || '').toLowerCase();
+                    function getCategoryOrder(matName) {
+                        const matLower = (matName || '').toLowerCase();
                         if (matLower.includes('bk') || matLower.includes('balok')) return 1;
                         if (matLower.includes('pn') || matLower.includes('papan')) return 2;
                         if (matLower.includes('tr') || matLower.includes('triplek') || matLower.includes('panel')) return 3;
@@ -3312,8 +3179,8 @@
 
                     // 2. Sort groups by category then by size (tinggi/length ascending)
                     const sortedGroups = Object.values(groups).sort((a, b) => {
-                        const orderA = getCategoryOrder(a.kode);
-                        const orderB = getCategoryOrder(b.kode);
+                        const orderA = getCategoryOrder(a.mat);
+                        const orderB = getCategoryOrder(b.mat);
                         if (orderA !== orderB) return orderA - orderB;
                         return a.l - b.l;
                     });
@@ -3386,9 +3253,7 @@
                     window.matFrustumSize = Math.max(2.5, maxL_m * 1.4); 
                     
                     if (matCamera && matContainer) {
-                        let cw = matContainer.clientWidth || matContainer.getBoundingClientRect().width || 800;
-                        let ch = matContainer.clientHeight || matContainer.getBoundingClientRect().height || 450;
-                        const aspect = cw / ch;
+                        const aspect = matContainer.clientWidth / matContainer.clientHeight;
                         matCamera.left = window.matFrustumSize * aspect / -2;
                         matCamera.right = window.matFrustumSize * aspect / 2;
                         matCamera.top = window.matFrustumSize / 2;
@@ -3405,7 +3270,7 @@
 
                     // 3. Draw Stacks side by side, standing up
                     const minVis = Math.max(0.015, maxL_m * 0.015); 
-                    const spacingGroup = Math.max(0.7, maxL_m * 0.05); // Moderate gap to prevent text overlap but not too wide
+                    const spacingGroup = Math.max(0.2, maxL_m * 0.05); // Moderate gap between groups
                     const spacingItem = Math.max(0.015, maxL_m * 0.01); // Moderate gap between items
                     
                     let currentX = 0;
@@ -3417,7 +3282,7 @@
                         const l_m = group.l / 1000;
 
                         let meshColor = 0xc19a6b; // default: Kayu Papan
-                        const order = getCategoryOrder(group.kode);
+                        const order = getCategoryOrder(group.mat);
                         if (order === 1) meshColor = 0x5c4033; // Balok
                         else if (order === 3) meshColor = 0xf3c583; // Triplek
 
@@ -3507,29 +3372,11 @@
                 
                 // Initialize on load
                 initMaterialVisualizer();
-                
-                if (typeof runSimulation === 'function' && !isEditModeActive) {
-                    runSimulation();
-                }
-
                 if (typeof window.drawMaterialStacks === 'function') {
-                    // Timeout ensures container DOM and ThreeJS initialization is fully complete
-                    setTimeout(() => {
-                        window.drawMaterialStacks();
-                    }, 300);
+                    window.drawMaterialStacks();
                 }
 
             }
         });
-</script>
-                    wizardModal.addEventListener('shown.bs.modal', function () {
-                        setTimeout(() => {
-                            if (typeof initMaterialVisualizer === 'function') initMaterialVisualizer();
-                            if (typeof window.drawMaterialStacks === 'function') window.drawMaterialStacks();
-                            if (typeof runSimulation === 'function') runSimulation();
-                        }, 50);
-                    });
-                }
-            }
-        });
-</script>
+    </script>
+</x-app-layout>

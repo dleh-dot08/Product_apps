@@ -635,7 +635,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}">{{ $mat->wood_type }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -666,7 +666,8 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($penutupMaterials) && count($penutupMaterials) > 0)
                                     @foreach($penutupMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}">{{ $mat->wood_type }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        @php $matType = (stripos($mat->component, 'triplek') !== false) ? 'Triplek' : 'Papan'; @endphp
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -695,7 +696,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}">{{ $mat->wood_type }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -826,7 +827,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}">{{ $mat->wood_type }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -857,7 +858,8 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($penutupMaterials) && count($penutupMaterials) > 0)
                                     @foreach($penutupMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}">{{ $mat->wood_type }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        @php $matType = (stripos($mat->component, 'triplek') !== false) ? 'Triplek' : 'Papan'; @endphp
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -883,3 +885,55 @@
 
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function filterPenutupMaterial(statusSelectId, materialSelectId) {
+            const statusSelect = document.getElementById(statusSelectId);
+            const materialSelect = document.getElementById(materialSelectId);
+            if (!statusSelect || !materialSelect) return;
+
+            if (!materialSelect.originalOptions) {
+                materialSelect.originalOptions = Array.from(materialSelect.options).filter(opt => opt.value !== "");
+            }
+
+            function updateMaterialOptions() {
+                const status = statusSelect.value;
+                const currentVal = materialSelect.value;
+                
+                materialSelect.innerHTML = '<option value="">Pilih Material...</option>';
+                
+                let targetType = null;
+                if (status === 'Papan Full' || status === 'Papan Setengah') {
+                    targetType = 'Papan';
+                } else if (status === 'Tripleks' || status === 'Triplek') {
+                    targetType = 'Triplek';
+                }
+
+                materialSelect.originalOptions.forEach(opt => {
+                    if (targetType === null || opt.getAttribute('data-type') === targetType) {
+                        materialSelect.appendChild(opt.cloneNode(true));
+                    }
+                });
+
+                if (Array.from(materialSelect.options).some(o => o.value === currentVal)) {
+                    materialSelect.value = currentVal;
+                }
+                
+                if (status === 'Tanpa Penutup') {
+                    materialSelect.value = "";
+                    materialSelect.disabled = true;
+                } else {
+                    materialSelect.disabled = false;
+                }
+            }
+
+            statusSelect.addEventListener('change', updateMaterialOptions);
+            updateMaterialOptions(); // trigger on load
+        }
+
+        // Jalankan untuk Area Bawah dan Area Atas
+        filterPenutupMaterial('s2_ptb_status', 's2_ptb_material');
+        filterPenutupMaterial('s2_pta_status', 's2_pta_material');
+    });
+</script>

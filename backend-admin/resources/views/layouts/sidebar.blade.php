@@ -277,26 +277,82 @@
         <div class="sidebar-menu-container py-2">
             <nav>
                 <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu" data-accordion="false">
+    
+                    <!-- 1. Dashboard (Route Asli) -->
                     <li class="nav-item">
                         <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
-                            <i class="nav-icon fa-solid fa-gauge"></i>
+                            <i class="nav-icon fa-solid fa-chart-simple"></i>
                             <p class="ms-2 mb-0">Dashboard</p>
                         </a>
                     </li>
-                    
+
+                    <!-- 2. Delivery Order -->
                     <li class="nav-item">
-                        <a href="{{ route('packaging.index') }}" class="nav-link {{ request()->routeIs('packaging.*') ? 'active' : '' }}">
-                            <i class="nav-icon fa-solid fa-box-open"></i>
-                            <p class="ms-2 mb-0">Packaging</p>
+                        <a href="-" class="nav-link">
+                            <i class="nav-icon fa-regular fa-clipboard"></i>
+                            <p class="ms-2 mb-0">Delivery Order</p>
                         </a>
                     </li>
 
+                    <!-- 3. Pembelian -->
+                    <li class="nav-item">
+                        <a href="-" class="nav-link">
+                            <i class="nav-icon fa-solid fa-cart-shopping"></i>
+                            <p class="ms-2 mb-0">Pembelian</p>
+                        </a>
+                    </li>
+
+                    <!-- 4. Packing (Route Asli) -->
+                    <li class="nav-item">
+                        <a href="{{ route('packaging.index') }}" class="nav-link {{ request()->routeIs('packaging.*') ? 'active' : '' }}">
+                            <i class="nav-icon fa-solid fa-box"></i>
+                            <p class="ms-2 mb-0">Packing</p>
+                        </a>
+                    </li>
+
+                    <!-- 5. Tugas Driver -->
+                    <li class="nav-item">
+                        <a href="-" class="nav-link">
+                            <i class="nav-icon fa-regular fa-paper-plane"></i>
+                            <p class="ms-2 mb-0">Tugas Driver</p>
+                        </a>
+                    </li>
+
+                    <!-- 6. Riwayat Tugas (Badge angka 0) -->
+                    <li class="nav-item">
+                        <a href="-" class="nav-link d-flex align-items-center justify-content-between">
+                            <div class="d-flex align-items-center">
+                                <i class="nav-icon fa-solid fa-clipboard-list"></i>
+                                <p class="ms-2 mb-0">Riwayat Tugas</p>
+                            </div>
+                            <span class="badge bg-secondary rounded-pill px-2 py-1 fs-7">0</span>
+                        </a>
+                    </li>
+
+                    <!-- 7. HPP Ritase -->
+                    <li class="nav-item">
+                        <a href="-" class="nav-link">
+                            <i class="nav-icon fa-solid fa-dollar-sign"></i>
+                            <p class="ms-2 mb-0">HPP Ritase</p>
+                        </a>
+                    </li>
+
+                    <!-- 8. User Management (Route Asli) -->
                     <li class="nav-item">
                         <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
-                            <i class="nav-icon fa-solid fa-users-gear"></i>
+                            <i class="nav-icon fa-regular fa-user"></i>
                             <p class="ms-2 mb-0">User Management</p>
                         </a>
                     </li>
+
+                    <!-- 9. Kendaraan -->
+                    <li class="nav-item mt-1">
+                        <a href="-" class="nav-link">
+                            <i class="nav-icon fa-solid fa-truck"></i>
+                            <p class="ms-2 mb-0">Kendaraan</p>
+                        </a>
+                    </li>
+
                 </ul>
             </nav>
         </div>

@@ -1,7 +1,7 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { CustomThemeProvider, useTheme } from '../context/ThemeContext';
 import { Slot, useRouter, useSegments } from 'expo-router';
 import { useEffect } from 'react';
 
@@ -32,14 +32,21 @@ function RootLayoutNav() {
   return <Slot />;
 }
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  
+function ThemeApplier() {
+  const { theme } = useTheme();
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={theme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthProvider>
         <RootLayoutNav />
       </AuthProvider>
     </ThemeProvider>
+  );
+}
+
+export default function TabLayout() {
+  return (
+    <CustomThemeProvider>
+      <ThemeApplier />
+    </CustomThemeProvider>
   );
 }

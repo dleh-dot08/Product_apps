@@ -80,7 +80,7 @@ Route::middleware('auth')->group(function () {
                     ->where('job_id', $calculation->id)
                     ->get();
             }
-            return view('packaging.show', compact('materials', 'calculation')); 
+            return view('packaging.show', compact('materials', 'calculation', 'job')); 
         })->name('calculations.show');
         
         Route::get('/validasi/data', function() { return "Halaman Validasi Data Dummy"; })->name('validasi_data.index');

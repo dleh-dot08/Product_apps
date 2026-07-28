@@ -1,7 +1,3 @@
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script>
         // Global error listener to display runtime errors in the canvas loading overlay
         window.addEventListener('error', function(e) {
             console.error("Visualizer error caught globally:", e);
@@ -1396,7 +1392,7 @@
                 // Update Status text
                 const statusTextEl = document.getElementById('statusText');
                 if (statusTextEl) {
-                    statusTextEl.textContent = 'Model: ' + Math.round(P) + ' Ã— ' + Math.round(L) + ' Ã— ' + Math.round(T) + ' mm';
+                    statusTextEl.textContent = 'Model: ' + Math.round(P) + ' × ' + Math.round(L) + ' × ' + Math.round(T) + ' mm';
                 }
 
                 if (resetCamera) {
@@ -1686,7 +1682,7 @@
                         let l = parseFloat(detail.calculated_length || 0);
                         let q = parseFloat(detail.total_quantity || 0);
                         lenVal = (w * l * q) / 1000000;
-                        unitStr = 'mÂ²';
+                        unitStr = 'm²';
                     }
 
                     let rowAll = `<tr>
@@ -1813,7 +1809,7 @@
 
                 let resumeLuasEl = document.getElementById('resume-total-luas');
                 if (resumeLuasEl) {
-                    resumeLuasEl.innerHTML = `${formatNumber(summary.area_kerja, 2)} <span class="fw-bold text-muted" style="font-size: 14px;">mÂ²</span>`;
+                    resumeLuasEl.innerHTML = `${formatNumber(summary.area_kerja, 2)} <span class="fw-bold text-muted" style="font-size: 14px;">m²</span>`;
                 }
 
                 let resumeContainer = document.getElementById('resume-material-container');
@@ -1825,7 +1821,7 @@
                     } else {
                         keys.forEach(key => {
                             let mat = materialResume[key];
-                            let unit = (mat.kode.includes('TR') || mat.nama.toLowerCase().includes('triplex')) ? 'mÂ²' : 'm';
+                            let unit = (mat.kode.includes('TR') || mat.nama.toLowerCase().includes('triplex')) ? 'm²' : 'm';
                             htmlList += `
                             <div class="p-3 border rounded bg-white shadow-xs hover-shadow transition">
                                 <div class="d-flex justify-content-between align-items-center">
@@ -3521,15 +3517,3 @@
 
             }
         });
-</script>
-                    wizardModal.addEventListener('shown.bs.modal', function () {
-                        setTimeout(() => {
-                            if (typeof initMaterialVisualizer === 'function') initMaterialVisualizer();
-                            if (typeof window.drawMaterialStacks === 'function') window.drawMaterialStacks();
-                            if (typeof runSimulation === 'function') runSimulation();
-                        }, 50);
-                    });
-                }
-            }
-        });
-</script>

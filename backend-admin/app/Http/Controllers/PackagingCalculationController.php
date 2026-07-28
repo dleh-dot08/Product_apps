@@ -50,18 +50,40 @@ class PackagingCalculationController extends Controller
 
         try {
             $insertData = [
-                'project_name' => $request->project_name,
-                'distance_between_pillars' => $request->distance_between_pillars,
+                'packaging_job_id' => $request->packaging_job_id ?? null,
+                'no_product' => $request->no_product ?? null,
+                'desc_product' => $request->desc_product ?? null,
+                'packaging_number' => $request->packaging_number ?? null,
+                'qty_barang_dikirim' => $request->qty_barang_dikirim ?? 1,
+                'qty_packaging' => $request->qty_packaging ?? 1,
+                'qty_product_per_packaging' => $request->qty_product_per_packaging ?? 1,
+                'panjang' => $request->length,
+                'lebar' => $request->width,
+                'tinggi' => $request->height,
+                'jarak_penyanggah' => $request->distance_between_pillars,
                 'gap_atas' => $request->gap_atas,
                 'gap_bawah' => $request->gap_bawah,
-                'length' => $request->length,
-                'width' => $request->width,
-                'height' => $request->height,
-                'include_pallet_base' => $request->boolean('include_pallet_base', false),
-                'jarak_balok_additional' => null, // FORCE NULL
-                'cover_type' => $request->input('cover_type') ?: ($request->input('atas_penutup_tipe') ?: $request->input('bawah_penutup_tipe')),
-                'total_material_cost' => $request->total_material_cost,
-                'created_by' => auth()->id() ?? null,
+                'status' => 'draft',
+                'packer_id' => auth()->id() ?? null,
+                
+                // Konfigurasi Bawah
+                'bawah_penyanggah_status' => $request->has('bawah_penyangga_include') ? ($request->bawah_penyangga_include ? 'Include' : 'Exclude') : null,
+                'bawah_penyanggah_arah' => $request->bawah_penyangga_arah,
+                'bawah_penyanggah_material' => $request->bawah_penyangga_material,
+                'bawah_penutup_status' => $request->bawah_penutup_tipe,
+                'bawah_penutup_arah' => $request->bawah_penutup_arah,
+                'bawah_penutup_material' => $request->bawah_penutup_material,
+                'bawah_kaki_balok_status' => $request->has('include_pallet_base') ? ($request->include_pallet_base ? 'Include' : 'Exclude') : null,
+                'bawah_kaki_balok_arah' => $request->bawah_kakibalok_arah,
+                'bawah_kaki_balok_material' => $request->bawah_kakibalok_material,
+                
+                // Konfigurasi Atas
+                'atas_penyanggah_status' => $request->has('atas_penyangga_include') ? ($request->atas_penyangga_include ? 'Include' : 'Exclude') : null,
+                'atas_penyanggah_arah' => $request->atas_penyangga_arah,
+                'atas_penyanggah_material' => $request->atas_penyangga_material,
+                'atas_penutup_status' => $request->atas_penutup_tipe,
+                'atas_penutup_arah' => $request->atas_penutup_arah,
+                'atas_penutup_material' => $request->atas_penutup_material,
             ];
             \Log::info("Creating PackagingCalculation database row with: ", $insertData);
             $calculation = PackagingCalculation::create($insertData);
@@ -149,42 +171,6 @@ class PackagingCalculationController extends Controller
         }
 
         try {
-            // Retrieve existing configurations or read from request directly
-            $konfigurasi_atas = $request->input('konfigurasi_atas');
-            if (!$konfigurasi_atas) {
-                $konfigurasi_atas = is_array($calculation->konfigurasi_atas) ? $calculation->konfigurasi_atas : json_decode($calculation->konfigurasi_atas, true) ?? [];
-                
-                // Update gap attributes
-                $konfigurasi_atas['gap_atas'] = $request->gap_atas;
-                
-                // Update penyanggah include status if provided
-                if ($request->has('atas_penyangga_include')) {
-                    if (!isset($konfigurasi_atas['penyanggah'])) $konfigurasi_atas['penyanggah'] = [];
-                    $konfigurasi_atas['penyanggah']['status'] = $request->atas_penyangga_include ? 'Include' : 'Exclude';
-                }
-                if ($request->has('atas_penutup_tipe')) {
-                    if (!isset($konfigurasi_atas['penutup'])) $konfigurasi_atas['penutup'] = [];
-                    $konfigurasi_atas['penutup']['status'] = $request->atas_penutup_tipe;
-                }
-            }
-            
-            $konfigurasi_bawah = $request->input('konfigurasi_bawah');
-            if (!$konfigurasi_bawah) {
-                $konfigurasi_bawah = is_array($calculation->konfigurasi_bawah) ? $calculation->konfigurasi_bawah : json_decode($calculation->konfigurasi_bawah, true) ?? [];
-                
-                $konfigurasi_bawah['gap_bawah'] = $request->gap_bawah;
-                $konfigurasi_bawah['jarak_penyanggah'] = $request->distance_between_pillars;
-                
-                if ($request->has('bawah_penyangga_include')) {
-                    if (!isset($konfigurasi_bawah['penyanggah'])) $konfigurasi_bawah['penyanggah'] = [];
-                    $konfigurasi_bawah['penyanggah']['status'] = $request->bawah_penyangga_include ? 'Include' : 'Exclude';
-                }
-                if ($request->has('bawah_penutup_tipe')) {
-                    if (!isset($konfigurasi_bawah['penutup'])) $konfigurasi_bawah['penutup'] = [];
-                    $konfigurasi_bawah['penutup']['status'] = $request->bawah_penutup_tipe;
-                }
-            }
-
             $updateData = [
                 'panjang' => $request->length,
                 'lebar' => $request->width,
@@ -192,8 +178,25 @@ class PackagingCalculationController extends Controller
                 'jarak_penyanggah' => $request->distance_between_pillars,
                 'gap_atas' => $request->gap_atas,
                 'gap_bawah' => $request->gap_bawah,
-                'konfigurasi_atas' => $konfigurasi_atas,
-                'konfigurasi_bawah' => $konfigurasi_bawah,
+                
+                // Konfigurasi Bawah
+                'bawah_penyanggah_status' => $request->has('bawah_penyangga_include') ? ($request->bawah_penyangga_include ? 'Include' : 'Exclude') : $calculation->bawah_penyanggah_status,
+                'bawah_penyanggah_arah' => $request->bawah_penyangga_arah ?? $calculation->bawah_penyanggah_arah,
+                'bawah_penyanggah_material' => $request->bawah_penyangga_material ?? $calculation->bawah_penyanggah_material,
+                'bawah_penutup_status' => $request->bawah_penutup_tipe ?? $calculation->bawah_penutup_status,
+                'bawah_penutup_arah' => $request->bawah_penutup_arah ?? $calculation->bawah_penutup_arah,
+                'bawah_penutup_material' => $request->bawah_penutup_material ?? $calculation->bawah_penutup_material,
+                'bawah_kaki_balok_status' => $request->has('include_pallet_base') ? ($request->include_pallet_base ? 'Include' : 'Exclude') : $calculation->bawah_kaki_balok_status,
+                'bawah_kaki_balok_arah' => $request->bawah_kakibalok_arah ?? $calculation->bawah_kaki_balok_arah,
+                'bawah_kaki_balok_material' => $request->bawah_kakibalok_material ?? $calculation->bawah_kaki_balok_material,
+                
+                // Konfigurasi Atas
+                'atas_penyanggah_status' => $request->has('atas_penyangga_include') ? ($request->atas_penyangga_include ? 'Include' : 'Exclude') : $calculation->atas_penyanggah_status,
+                'atas_penyanggah_arah' => $request->atas_penyangga_arah ?? $calculation->atas_penyanggah_arah,
+                'atas_penyanggah_material' => $request->atas_penyangga_material ?? $calculation->atas_penyanggah_material,
+                'atas_penutup_status' => $request->atas_penutup_tipe ?? $calculation->atas_penutup_status,
+                'atas_penutup_arah' => $request->atas_penutup_arah ?? $calculation->atas_penutup_arah,
+                'atas_penutup_material' => $request->atas_penutup_material ?? $calculation->atas_penutup_material,
             ];
             \Log::info("Updating PackagingCalculation database row with: ", $updateData);
             $calculation->update($updateData);
