@@ -209,6 +209,42 @@ class PackagingCalculationController extends Controller
             \Log::info("Updating PackagingCalculation database row with: ", $updateData);
             $calculation->update($updateData);
 
+            // Sync konfigurasi JSON agar calculate() membaca data terbaru dari modal
+            $konfigBawah = is_array($calculation->konfigurasi_bawah) ? $calculation->konfigurasi_bawah : json_decode($calculation->konfigurasi_bawah, true) ?? [];
+            $konfigAtas = is_array($calculation->konfigurasi_atas) ? $calculation->konfigurasi_atas : json_decode($calculation->konfigurasi_atas, true) ?? [];
+
+            if ($request->has('bawah_penyangga_include')) {
+                $konfigBawah['penyanggah']['status'] = $request->bawah_penyangga_include ? 'Include' : 'Exclude';
+            }
+            if ($request->has('bawah_penyangga_arah')) $konfigBawah['penyanggah']['arah'] = $request->bawah_penyangga_arah;
+            if ($request->has('bawah_penyangga_material')) $konfigBawah['penyanggah']['material'] = $request->bawah_penyangga_material;
+
+            if ($request->has('bawah_penutup_tipe')) $konfigBawah['penutup']['status'] = $request->bawah_penutup_tipe;
+            if ($request->has('bawah_penutup_arah')) $konfigBawah['penutup']['arah'] = $request->bawah_penutup_arah;
+            if ($request->has('bawah_penutup_material')) $konfigBawah['penutup']['material'] = $request->bawah_penutup_material;
+
+            if ($request->has('include_pallet_base')) {
+                $konfigBawah['kaki_balok']['status'] = $request->include_pallet_base ? 'Include' : 'Exclude';
+            }
+            if ($request->has('bawah_kakibalok_arah')) $konfigBawah['kaki_balok']['arah'] = $request->bawah_kakibalok_arah;
+            if ($request->has('bawah_kakibalok_material')) $konfigBawah['kaki_balok']['material'] = $request->bawah_kakibalok_material;
+
+            if ($request->has('atas_penyangga_include')) {
+                $konfigAtas['penyanggah']['status'] = $request->atas_penyangga_include ? 'Include' : 'Exclude';
+            }
+            if ($request->has('atas_penyangga_arah')) $konfigAtas['penyanggah']['arah'] = $request->atas_penyangga_arah;
+            if ($request->has('atas_penyangga_material')) $konfigAtas['penyanggah']['material'] = $request->atas_penyangga_material;
+
+            if ($request->has('atas_penutup_tipe')) $konfigAtas['penutup']['status'] = $request->atas_penutup_tipe;
+            if ($request->has('atas_penutup_arah')) $konfigAtas['penutup']['arah'] = $request->atas_penutup_arah;
+            if ($request->has('atas_penutup_material')) $konfigAtas['penutup']['material'] = $request->atas_penutup_material;
+
+            $calculation->update([
+                'konfigurasi_bawah' => json_encode($konfigBawah),
+                'konfigurasi_atas' => json_encode($konfigAtas),
+            ]);
+            $calculation->refresh(); // Refresh agar calculate() baca JSON terbaru
+
             // Update Parent Job if no_so is provided and different
             if ($request->has('no_so') && $request->no_so !== $calculation->job->no_so) {
                 \Log::info("Updating Parent Job SO Number: " . $request->no_so);

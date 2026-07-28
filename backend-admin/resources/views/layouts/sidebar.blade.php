@@ -318,12 +318,12 @@
                         </a>
                     </li>
 
-                    <!-- 6. Riwayat Tugas (Badge angka 0) -->
+                    <!-- 6. Daftar Tugas (Badge angka 0) -->
                     <li class="nav-item">
-                        <a href="-" class="nav-link d-flex align-items-center justify-content-between">
+                        <a href="{{ route('daftar-tugas.index') }}" class="nav-link d-flex align-items-center justify-content-between {{ request()->routeIs('daftar-tugas.*') ? 'active' : '' }}">
                             <div class="d-flex align-items-center">
                                 <i class="nav-icon fa-solid fa-clipboard-list"></i>
-                                <p class="ms-2 mb-0">Riwayat Tugas</p>
+                                <p class="ms-2 mb-0">Daftar Tugas</p>
                             </div>
                             <span class="badge bg-secondary rounded-pill px-2 py-1 fs-7">0</span>
                         </a>

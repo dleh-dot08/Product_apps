@@ -1485,21 +1485,857 @@
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08), 0 0 1px rgba(0, 0, 0, 0.1);
         }
 
+        /* =========================================================
+           DARK MODE OVERRIDES (All except Visual 2D/3D)
+           ========================================================= */
+        [data-bs-theme="dark"] .crate-page {
+            --navy: #f8fafc;
+            --navy-2: #cbd5e1;
+            --blue: #3b82f6;
+            --soft: #1e293b;
+            --line: #334155;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            color: var(--text);
+        }
+
+        [data-bs-theme="dark"] .crate-page .page-header,
+        [data-bs-theme="dark"] .crate-page .input-card,
+        [data-bs-theme="dark"] .crate-page .stat-card,
+        [data-bs-theme="dark"] .crate-page .panel-card,
+        [data-bs-theme="dark"] .crate-page .configuration-card,
+        [data-bs-theme="dark"] .crate-page .configuration-section,
+        [data-bs-theme="dark"] .crate-page .legend {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .bg-white,
+        [data-bs-theme="dark"] .crate-page .btn-soft {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .text-navy,
+        [data-bs-theme="dark"] .crate-page .text-dark,
+        [data-bs-theme="dark"] .crate-page .input-value,
+        [data-bs-theme="dark"] .crate-page .stat-value,
+        [data-bs-theme="dark"] .crate-page .section-title,
+        [data-bs-theme="dark"] .crate-page .configuration-heading {
+            color: #f8fafc !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .table-modern thead th {
+            background: #0f172a !important;
+            color: #f8fafc !important;
+            border-color: #334155 !important;
+        }
+        
+        [data-bs-theme="dark"] .crate-page .table-modern tbody td {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+            color: #cbd5e1 !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .table-modern tbody tr:hover td {
+            background: #334155 !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .table-total td {
+            background: #0f172a !important;
+            color: #f8fafc !important;
+            border-color: #334155 !important;
+        }
+        
+        [data-bs-theme="dark"] .crate-page .cost-list li {
+            background: #0f172a !important;
+            border-color: #334155 !important;
+            color: #cbd5e1 !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .cost-list li:hover {
+            background: #1e293b !important;
+            border-color: #475569 !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .custom-input,
+        [data-bs-theme="dark"] .crate-page .custom-select,
+        [data-bs-theme="dark"] .crate-page .matrix-select,
+        [data-bs-theme="dark"] .crate-page .table-select {
+            background-color: #0f172a !important;
+            border-color: #334155 !important;
+            color: #f8fafc !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .configuration-heading {
+            background: #1e293b !important;
+            border-bottom: 1px solid #334155 !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .border-end-md,
+        [data-bs-theme="dark"] .crate-page .configuration-section {
+            border-color: #334155 !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .group-item:hover,
+        [data-bs-theme="dark"] .crate-page .configuration-content > .group-item:hover {
+            background-color: #334155 !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .editable-mode {
+            background-color: #0f172a !important;
+            border-color: var(--blue) !important;
+            color: #f8fafc !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .configuration-content .material-symbols-rounded,
+        [data-bs-theme="dark"] .crate-page .icon-box {
+            background: #334155 !important;
+            color: #94a3b8 !important;
+        }
+
+        [data-bs-theme="dark"] .crate-page .stat-icon {
+            background: #334155 !important;
+        }
+        [data-bs-theme="dark"] .crate-page .stat-icon.green { background: rgba(24, 154, 82, 0.2) !important; color: #4ade80 !important; }
+        [data-bs-theme="dark"] .crate-page .stat-icon.orange { background: rgba(245, 158, 11, 0.2) !important; color: #fbbf24 !important; }
+        [data-bs-theme="dark"] .crate-page .stat-icon.purple { background: rgba(124, 58, 237, 0.2) !important; color: #a78bfa !important; }
+
+        /* Ensure visual 3D and 2D stages remain intact with their default colors */
+        [data-bs-theme="dark"] .crate-page .visual-stage,
+        [data-bs-theme="dark"] .crate-page .visual-stage .dim-label,
+        [data-bs-theme="dark"] .crate-page .visual-stage .dim-small {
+            /* No dark mode overrides for visual stage internals */
+        }
+        
+        [data-bs-theme="dark"] .crate-page .visual-stage .badge,
+        [data-bs-theme="dark"] .crate-page .visual-stage .text-dark {
+            color: #0f172a !important;
+        }
+        
+        [data-bs-theme="dark"] .crate-page .visual-stage .bg-white {
+            background-color: #ffffff !important;
+        }
+        
+        [data-bs-theme="dark"] .crate-page .visual-stage .border-light {
+            border-color: #f8f9fa !important;
+        }
+
+
+        /* =========================================================
+           COMPLETE DARK MODE — CALCULATION PAGE + MODALS + 2D/3D UI
+           Supports Bootstrap, custom class themes, and JS auto mode.
+           ========================================================= */
+        .crate-page {
+            --crate-page-bg: transparent;
+            --crate-shell-bg: rgba(255, 255, 255, .42);
+            --crate-surface: #ffffff;
+            --crate-surface-2: #f8fafc;
+            --crate-surface-3: #f1f5f9;
+            --crate-text: #0f172a;
+            --crate-text-soft: #334155;
+            --crate-muted: #64748b;
+            --crate-border: #e2e8f0;
+            --crate-border-strong: #cbd5e1;
+            --crate-shadow: 0 10px 28px rgba(15, 23, 42, .07);
+            --crate-input-bg: #ffffff;
+            --crate-hover: #f8fafc;
+            --crate-modal-backdrop: rgba(15, 23, 42, .62);
+        }
+
+        .crate-page .crate-workspace-shell {
+            background: var(--crate-shell-bg);
+            border: 1px solid rgba(255, 255, 255, .52);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, .02);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+        }
+
+        .crate-page .crate-page-title {
+            color: var(--crate-text) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page,
+        .crate-page.packaging-dark {
+            --navy: #f8fafc;
+            --navy-2: #cbd5e1;
+            --blue: #60a5fa;
+            --soft: #172033;
+            --line: #334155;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+
+            --crate-page-bg: transparent;
+            --crate-shell-bg: rgba(10, 17, 30, .78);
+            --crate-surface: #111827;
+            --crate-surface-2: #172033;
+            --crate-surface-3: #1e293b;
+            --crate-text: #f8fafc;
+            --crate-text-soft: #cbd5e1;
+            --crate-muted: #94a3b8;
+            --crate-border: rgba(148, 163, 184, .20);
+            --crate-border-strong: rgba(148, 163, 184, .34);
+            --crate-shadow: 0 14px 38px rgba(0, 0, 0, .28);
+            --crate-input-bg: #0f172a;
+            --crate-hover: #1e293b;
+            color: var(--crate-text);
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page .crate-workspace-shell,
+        .crate-page.packaging-dark .crate-workspace-shell {
+            background: var(--crate-shell-bg) !important;
+            border-color: rgba(148, 163, 184, .17) !important;
+            box-shadow: 0 18px 55px rgba(0, 0, 0, .22) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(
+            .page-header,
+            .card,
+            .card-header,
+            .card-body,
+            .panel-card,
+            .stat-card,
+            .input-card,
+            .configuration-card,
+            .configuration-section,
+            .configuration-content,
+            .configuration-footer,
+            .style-card-container,
+            .material-visual-card,
+            .material-visual-header
+        ),
+        .crate-page.packaging-dark :is(
+            .page-header,
+            .card,
+            .card-header,
+            .card-body,
+            .panel-card,
+            .stat-card,
+            .input-card,
+            .configuration-card,
+            .configuration-section,
+            .configuration-content,
+            .configuration-footer,
+            .style-card-container,
+            .material-visual-card,
+            .material-visual-header
+        ) {
+            background-color: var(--crate-surface) !important;
+            border-color: var(--crate-border) !important;
+            color: var(--crate-text) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.bg-white, .bg-light),
+        .crate-page.packaging-dark :is(.bg-white, .bg-light) {
+            background-color: var(--crate-surface) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(
+            .text-dark,
+            .text-navy,
+            .section-title,
+            .input-value,
+            .stat-value,
+            .configuration-heading,
+            .configuration-content small,
+            .configuration-component small,
+            h1, h2, h3, h4, h5, h6,
+            label,
+            strong
+        ),
+        .crate-page.packaging-dark :is(
+            .text-dark,
+            .text-navy,
+            .section-title,
+            .input-value,
+            .stat-value,
+            .configuration-heading,
+            .configuration-content small,
+            .configuration-component small,
+            h1, h2, h3, h4, h5, h6,
+            label,
+            strong
+        ) {
+            color: var(--crate-text) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.text-muted, .text-secondary, small, .info-note, .input-title, .input-unit),
+        .crate-page.packaging-dark :is(.text-muted, .text-secondary, small, .info-note, .input-title, .input-unit) {
+            color: var(--crate-muted) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.border, .border-top, .border-bottom, .border-end, .border-start),
+        .crate-page.packaging-dark :is(.border, .border-top, .border-bottom, .border-end, .border-start) {
+            border-color: var(--crate-border) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.btn-soft, .btn-light, .btn-outline-secondary),
+        .crate-page.packaging-dark :is(.btn-soft, .btn-light, .btn-outline-secondary) {
+            color: var(--crate-text) !important;
+            background: var(--crate-surface-2) !important;
+            border-color: var(--crate-border-strong) !important;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, .16) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.btn-soft, .btn-light, .btn-outline-secondary):hover,
+        .crate-page.packaging-dark :is(.btn-soft, .btn-light, .btn-outline-secondary):hover {
+            color: #ffffff !important;
+            background: var(--crate-surface-3) !important;
+            border-color: #475569 !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(
+            .form-control,
+            .form-select,
+            .custom-input,
+            .custom-select,
+            .matrix-select,
+            .table-select,
+            textarea,
+            input
+        ),
+        .crate-page.packaging-dark :is(
+            .form-control,
+            .form-select,
+            .custom-input,
+            .custom-select,
+            .matrix-select,
+            .table-select,
+            textarea,
+            input
+        ) {
+            color: var(--crate-text) !important;
+            background-color: var(--crate-input-bg) !important;
+            border-color: var(--crate-border-strong) !important;
+            color-scheme: dark;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(input, textarea)::placeholder,
+        .crate-page.packaging-dark :is(input, textarea)::placeholder {
+            color: #64748b !important;
+            opacity: 1;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.form-control, .form-select, .custom-input, .custom-select, .matrix-select):focus,
+        .crate-page.packaging-dark :is(.form-control, .form-select, .custom-input, .custom-select, .matrix-select):focus {
+            border-color: #60a5fa !important;
+            box-shadow: 0 0 0 3px rgba(96, 165, 250, .16) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(input, select, textarea):disabled,
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(input, select, textarea)[readonly],
+        .crate-page.packaging-dark :is(input, select, textarea):disabled,
+        .crate-page.packaging-dark :is(input, select, textarea)[readonly] {
+            color: #cbd5e1 !important;
+            background-color: #172033 !important;
+            opacity: 1 !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page option,
+        .crate-page.packaging-dark option {
+            color: #f8fafc;
+            background: #0f172a;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page input:-webkit-autofill,
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page input:-webkit-autofill:hover,
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page input:-webkit-autofill:focus,
+        .crate-page.packaging-dark input:-webkit-autofill,
+        .crate-page.packaging-dark input:-webkit-autofill:hover,
+        .crate-page.packaging-dark input:-webkit-autofill:focus {
+            -webkit-text-fill-color: #f8fafc !important;
+            -webkit-box-shadow: 0 0 0 1000px #0f172a inset !important;
+            caret-color: #f8fafc;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page .configuration-heading,
+        .crate-page.packaging-dark .configuration-heading {
+            background: var(--crate-surface) !important;
+            border-bottom-color: var(--crate-border) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.configuration-content > .group-item:hover, .configuration-matrix-row:hover, .group-item:hover),
+        .crate-page.packaging-dark :is(.configuration-content > .group-item:hover, .configuration-matrix-row:hover, .group-item:hover) {
+            background: var(--crate-hover) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page .table-modern thead th,
+        .crate-page.packaging-dark .table-modern thead th {
+            color: #e2e8f0 !important;
+            background: #0f172a !important;
+            border-color: var(--crate-border) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page .table-modern tbody td,
+        .crate-page.packaging-dark .table-modern tbody td {
+            color: #cbd5e1 !important;
+            background: var(--crate-surface) !important;
+            border-color: var(--crate-border) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page .table-modern tbody tr:hover td,
+        .crate-page.packaging-dark .table-modern tbody tr:hover td {
+            background: var(--crate-hover) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.cost-list li, .table-total td),
+        .crate-page.packaging-dark :is(.cost-list li, .table-total td) {
+            color: #e2e8f0 !important;
+            background: #0f172a !important;
+            border-color: var(--crate-border) !important;
+        }
+
+        /* 3D main visual surface */
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page #crate-canvas-container,
+        .crate-page.packaging-dark #crate-canvas-container {
+            background: #0b1220 !important;
+            border-color: var(--crate-border) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.floating-visual-toolbar, .toolbar-pill-group),
+        .crate-page.packaging-dark :is(.floating-visual-toolbar, .toolbar-pill-group) {
+            color: #e2e8f0 !important;
+            background: rgba(15, 23, 42, .88) !important;
+            border-color: rgba(148, 163, 184, .24) !important;
+            box-shadow: 0 12px 32px rgba(0, 0, 0, .28) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.toolbar-btn-link, .btn-check + .btn-outline-primary.btn-xs),
+        .crate-page.packaging-dark :is(.toolbar-btn-link, .btn-check + .btn-outline-primary.btn-xs) {
+            color: #94a3b8 !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.toolbar-btn-link.active, .btn-check:checked + .btn-outline-primary.btn-xs),
+        .crate-page.packaging-dark :is(.toolbar-btn-link.active, .btn-check:checked + .btn-outline-primary.btn-xs) {
+            color: #ffffff !important;
+            background: #334155 !important;
+            box-shadow: 0 5px 13px rgba(0, 0, 0, .30) !important;
+        }
+
+        /* Potongan material 2D/orthographic visual */
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.material-visual-stage, #material-sorting-container),
+        .crate-page.packaging-dark :is(.material-visual-stage, #material-sorting-container) {
+            background: #0b1220 !important;
+            border-color: var(--crate-border) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page :is(.material-visual-legend, .material-visual-footer),
+        .crate-page.packaging-dark :is(.material-visual-legend, .material-visual-footer) {
+            color: #cbd5e1 !important;
+            background: #111827 !important;
+            border-color: var(--crate-border) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page #material-labels-container .bg-white,
+        .crate-page.packaging-dark #material-labels-container .bg-white {
+            color: #f8fafc !important;
+            background: rgba(17, 24, 39, .96) !important;
+            border-color: #475569 !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) .crate-page #material-labels-container .text-dark,
+        .crate-page.packaging-dark #material-labels-container .text-dark {
+            color: #f8fafc !important;
+        }
+
+        /* Included modals */
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) :is(#materialDetailModal, #validasiModal, #costResumeModal) .modal-content,
+        body.packaging-auto-dark :is(#materialDetailModal, #validasiModal, #costResumeModal) .modal-content {
+            color: #f8fafc !important;
+            background: #111827 !important;
+            border-color: rgba(148, 163, 184, .20) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) :is(#materialDetailModal, #validasiModal, #costResumeModal) :is(.modal-header, .modal-body, .modal-footer, .card, .card-header, .card-body, .bg-white, .bg-light),
+        body.packaging-auto-dark :is(#materialDetailModal, #validasiModal, #costResumeModal) :is(.modal-header, .modal-body, .modal-footer, .card, .card-header, .card-body, .bg-white, .bg-light) {
+            color: #f8fafc !important;
+            background: #111827 !important;
+            border-color: rgba(148, 163, 184, .20) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) :is(#materialDetailModal, #validasiModal, #costResumeModal) :is(.text-dark, .text-navy, h1, h2, h3, h4, h5, h6, strong),
+        body.packaging-auto-dark :is(#materialDetailModal, #validasiModal, #costResumeModal) :is(.text-dark, .text-navy, h1, h2, h3, h4, h5, h6, strong) {
+            color: #f8fafc !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) :is(#materialDetailModal, #validasiModal, #costResumeModal) :is(.text-muted, .text-secondary, small),
+        body.packaging-auto-dark :is(#materialDetailModal, #validasiModal, #costResumeModal) :is(.text-muted, .text-secondary, small) {
+            color: #94a3b8 !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) :is(#materialDetailModal, #validasiModal, #costResumeModal) :is(.form-control, .form-select, input, select, textarea),
+        body.packaging-auto-dark :is(#materialDetailModal, #validasiModal, #costResumeModal) :is(.form-control, .form-select, input, select, textarea) {
+            color: #f8fafc !important;
+            background: #0f172a !important;
+            border-color: rgba(148, 163, 184, .30) !important;
+            color-scheme: dark;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) :is(#materialDetailModal, #validasiModal, #costResumeModal) .btn-close,
+        body.packaging-auto-dark :is(#materialDetailModal, #validasiModal, #costResumeModal) .btn-close {
+            filter: invert(1) grayscale(100%) brightness(200%);
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) :is(#materialDetailModal, #validasiModal, #costResumeModal) .nav-tabs,
+        body.packaging-auto-dark :is(#materialDetailModal, #validasiModal, #costResumeModal) .nav-tabs {
+            border-color: rgba(148, 163, 184, .20) !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) :is(#materialDetailModal, #validasiModal, #costResumeModal) .nav-link,
+        body.packaging-auto-dark :is(#materialDetailModal, #validasiModal, #costResumeModal) .nav-link {
+            color: #94a3b8 !important;
+        }
+
+        :is(
+            [data-bs-theme="dark"],
+            [data-theme="dark"],
+            html.dark,
+            body.dark,
+            body.dark-mode,
+            body.theme-dark
+        ) :is(#materialDetailModal, #validasiModal, #costResumeModal) .nav-link.active,
+        body.packaging-auto-dark :is(#materialDetailModal, #validasiModal, #costResumeModal) .nav-link.active {
+            color: #ffffff !important;
+            background: #1e293b !important;
+            border-color: rgba(148, 163, 184, .20) rgba(148, 163, 184, .20) #1e293b !important;
+        }
+
+        body.packaging-auto-dark .crate-page {
+            --navy: #f8fafc;
+            --navy-2: #cbd5e1;
+            --blue: #60a5fa;
+            --soft: #172033;
+            --line: #334155;
+            --text: #f8fafc;
+            --muted: #94a3b8;
+            --crate-shell-bg: rgba(10, 17, 30, .78);
+            --crate-surface: #111827;
+            --crate-surface-2: #172033;
+            --crate-surface-3: #1e293b;
+            --crate-text: #f8fafc;
+            --crate-text-soft: #cbd5e1;
+            --crate-muted: #94a3b8;
+            --crate-border: rgba(148, 163, 184, .20);
+            --crate-border-strong: rgba(148, 163, 184, .34);
+            --crate-input-bg: #0f172a;
+            --crate-hover: #1e293b;
+            color: var(--crate-text);
+        }
+
+        @media print {
+            .crate-page,
+            .crate-page.packaging-dark,
+            body.packaging-auto-dark .crate-page {
+                --crate-surface: #ffffff;
+                --crate-text: #000000;
+                --crate-muted: #475569;
+                color: #000000 !important;
+            }
+        }
+
 </style>
 
-    <div class="crate-page container-fluid py-4">
+    <div class="crate-page crate-theme-root container-fluid py-4">
         <div class="page-header px-3 py-3 d-flex flex-col gap-3 flex-md-row align-items-md-center justify-content-md-between mb-3">
             <div class="d-flex align-items-center gap-3">
                 <a href="{{ route('packaging.index') }}" class="btn-soft px-3 py-2 rounded-3 shadow-none" style="border-color: #cbd5e1; height: 38px; width: 38px; display: inline-flex; align-items: center; justify-content: center;">
                     <span class="material-symbols-rounded text-lg" style="margin-left: 2px;">arrow_back</span>
                 </a>
                 <div>
-                    <h1 class="h5 mb-0" style="color:#0f172a;font-weight:900;letter-spacing:-.01em; line-height: 1.2;">Calculation</h1>
+                    <h1 class="h5 mb-0 crate-page-title" style="font-weight:900;letter-spacing:-.01em; line-height: 1.2;">Calculation</h1>
                     <p class="mb-0 small text-secondary d-none d-md-block" style="font-size: 11px;">Halaman kalkulasi packaging crate untuk pengiriman barang berat.</p>
                 </div>
             </div>
             <div class="d-flex flex-wrap align-items-center gap-2 justify-content-md-end">
-                @if(isset($calculation))
+                @if(!isset($calculation))
+                <button type="button" data-bs-toggle="modal" data-bs-target="#productSetupModal" class="btn-soft text-primary border-primary" style="color: #1769e8; border-color: rgba(23, 105, 232, 0.3); background-color: rgba(23, 105, 232, 0.03); cursor: pointer;">
+                    <span class="material-symbols-rounded text-lg">add_circle</span>
+                    <span>ADD DATA</span>
+                </button>
+                @else
                     @if(auth()->check() && auth()->user()->hasRole('admin'))
                     <button type="button" data-bs-toggle="modal" data-bs-target="#validasiModal" class="btn-soft text-success border-success" style="color: #0e8a63; border-color: rgba(14, 138, 99, 0.3); background-color: rgba(14, 138, 99, 0.03); cursor: pointer; text-decoration: none;">
                         <span class="material-symbols-rounded text-lg">fact_check</span>
@@ -1519,7 +2355,7 @@
         </div>
 
         {{-- Main Row: Inputs, Visual, Stats --}}
-        <div class="container-fluid pt-4 pb-4 rounded-4" style="background-color: rgba(255, 255, 255, 0.4); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.5); box-shadow: 0 4px 6px rgba(0,0,0,0.02);">
+        <div class="container-fluid pt-4 pb-4 rounded-4 crate-workspace-shell">
             <div class="row g-4">
                 <!-- Full Width Column: Inputs (col-12) -->
                 <div class="col-12 d-flex flex-column gap-3">
@@ -2391,15 +3227,22 @@
                         }
 
                         foreach (isset($calculation) && $calculation->details ? $calculation->details : [] as $detail) {
-                            $matKode = $detail->material->kode ?? '-';
+                            $matKode = $detail->material->kode ?? $detail->material->code ?? '-';
                             if ($matKode !== '-' && $matKode !== '') {
                                 $len = (float)($detail->total_length ?? 0);
                                 $totalWoodLength += $len;
 
+                                $matWoodType = $detail->material->wood_type ?? null;
+                                if ($matWoodType) {
+                                    $matNama = ucwords(strtolower($matWoodType));
+                                } else {
+                                    $matNama = $detail->material->nama ?? $matKode;
+                                }
+
                                 if (!isset($materialResume[$matKode])) {
                                     $materialResume[$matKode] = [
                                         'kode' => $matKode,
-                                        'nama' => $detail->material->nama ?? $matKode,
+                                        'nama' => $matNama,
                                         'length' => 0
                                     ];
                                 }
@@ -2443,14 +3286,18 @@
                                 <div class="d-flex flex-column gap-3" id="resume-material-container">
                                     @forelse($materialResume as $mat)
                                     <div class="p-3 border rounded bg-white shadow-xs hover-shadow transition">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="d-flex align-items-center gap-3 overflow-hidden pe-2">
-                                                <span class="badge text-white fw-bold py-2 px-3" style="font-size: 13px; background-color: var(--navy);">{{ $mat['kode'] }}</span>
-                                                <span class="text-dark fw-bold text-truncate" style="font-size: 14px;" title="{{ $mat['nama'] }}">{{ $mat['nama'] }}</span>
+                                        <div class="d-flex flex-column gap-2 w-100">
+                                            <div class="d-flex align-items-start">
+                                                <span class="badge text-white fw-bold py-2 px-3 text-wrap text-start" style="font-size: 13px; background-color: var(--navy); line-height: 1.4;">{{ $mat['nama'] }}</span>
                                             </div>
-                                            <div class="text-end flex-shrink-0">
-                                                <span class="fw-extrabold text-success" style="font-size: 18px;">{{ number_format($mat['length'], 1, ',', '.') }}</span>
-                                                <span class="text-muted fw-bold ms-1" style="font-size: 14px;">m</span>
+                                            <div class="d-flex justify-content-between align-items-end w-100">
+                                                <div class="text-dark fw-bold text-wrap pe-2" style="font-size: 14px; line-height: 1.4; word-break: break-word;" title="{{ $mat['kode'] }}">
+                                                    {{ $mat['kode'] }}
+                                                </div>
+                                                <div class="text-end flex-shrink-0">
+                                                    <span class="fw-extrabold text-success" style="font-size: 18px;">{{ number_format($mat['length'], 1, ',', '.') }}</span>
+                                                    <span class="text-muted fw-bold ms-1" style="font-size: 14px;">m</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -2478,9 +3325,9 @@
         {{-- Row Material Sorting Visualizer --}}
         <div class="row g-3 mb-3">
             <div class="col-12">
-                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3 bg-white">
+                <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-3 bg-white material-visual-card">
                     <!-- Header -->
-                    <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+                    <div class="card-header bg-white border-bottom-0 pt-4 pb-3 px-4 d-flex flex-wrap justify-content-between align-items-center gap-3 material-visual-header">
                         <div class="d-flex align-items-center gap-3">
                             <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                                 <span class="material-symbols-rounded fs-3">view_in_ar</span>
@@ -2490,7 +3337,7 @@
                                 <small class="text-muted">Preview potongan material dalam skala 3D</small>
                             </div>
                         </div>
-                        <div class="d-flex gap-2 align-items-center">
+                        <div class="d-flex gap-2 align-items-center ms-auto">
                             <button type="button" class="btn btn-light bg-white border shadow-sm d-flex align-items-center me-2" data-bs-toggle="modal" data-bs-target="#materialDetailModal"><span class="material-symbols-rounded fs-6 me-2">list</span>Lihat Daftar</button>
                             <button type="button" class="btn btn-light bg-white border shadow-sm d-flex align-items-center justify-content-center" id="btn-mat-left" style="width: 38px; height: 38px; border-radius: 8px;">
                                 <span class="material-symbols-rounded">chevron_left</span>
@@ -2504,13 +3351,13 @@
                     </div>
                     
                     <!-- 3D Canvas -->
-                    <div class="position-relative border-top" style="background: #f8fafc;">
+                    <div class="position-relative border-top material-visual-stage">
                         <div id="material-sorting-container" style="width: 100%; height: 450px; position: relative; overflow: hidden;"></div>
                         <div id="material-labels-container" style="position: absolute; top: 0; left: 0; pointer-events: none; width: 100%; height: 100%; overflow: hidden;"></div>
                     </div>
 
                     <!-- Legend / Categories -->
-                    <div class="px-4 py-2 bg-light border-top d-flex flex-wrap gap-4 align-items-center justify-content-center">
+                    <div class="px-4 py-2 bg-light border-top d-flex flex-wrap gap-4 align-items-center justify-content-center material-visual-legend">
                         <span class="text-muted fw-bold" style="font-size: 11px;">KATEGORI WARNA:</span>
                         <div class="d-flex align-items-center text-muted fw-semibold" style="font-size: 12px;">
                             <span class="d-inline-block rounded-circle me-2" style="background: #c19a6b; width: 10px; height: 10px;"></span> Kayu Papan
@@ -2524,7 +3371,7 @@
                     </div>
                     
                     <!-- Footer -->
-                    <div class="bg-light px-4 pb-3 pt-2">
+                    <div class="bg-light px-4 pb-3 pt-2 material-visual-footer">
                         <div class="d-flex align-items-center text-primary text-opacity-75" style="font-size: 12px;">
                             <span class="material-symbols-rounded fs-6 me-2">info</span>
                             <span>Dimensi dalam milimeter (mm). Visualisasi berskala untuk memperjelas perbandingan ukuran material.</span>
@@ -2541,7 +3388,7 @@
     <!-- Modal Material Detail -->
     <div class="modal fade" id="materialDetailModal" tabindex="-1" aria-labelledby="materialDetailModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 1380px;">
-            <div class="modal-content border-0 shadow-lg">
+            <div class="modal-content border-0 shadow-lg material-detail-modal-content">
                 <div class="modal-header border-0 pb-0">
                     <h5 class="modal-title fw-bold text-navy" id="materialDetailModalLabel">
                         <span class="material-symbols-rounded text-primary align-middle me-2" style="font-size: 20px;">inventory_2</span>Detail Semua Material
@@ -2563,7 +3410,7 @@
     @if(auth()->check() && auth()->user()->hasRole('admin'))
     <div class="modal fade" id="validasiModal" tabindex="-1" aria-labelledby="validasiModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width: 98vw; height: 98vh; margin: 1vh auto;">
-            <div class="modal-content border-0 shadow-sm rounded-4" style="background-color: #f8fafc; height: 100%;">
+            <div class="modal-content border-0 shadow-sm rounded-4 validation-modal-content" style="height: 100%;">
                 
                 <div class="modal-header border-bottom-0 pb-0 pt-4 px-4 bg-white rounded-top-4 flex-column align-items-start">
                     <div class="d-flex justify-content-between w-100 align-items-center mb-3">
@@ -2695,6 +3542,76 @@
             }
         }
 
+
+        function packagingIsDarkMode() {
+            const html = document.documentElement;
+            const body = document.body;
+            const explicitTheme = (
+                html.getAttribute('data-bs-theme') ||
+                html.getAttribute('data-theme') ||
+                body?.getAttribute('data-bs-theme') ||
+                body?.getAttribute('data-theme') ||
+                ''
+            ).toLowerCase();
+
+            if (explicitTheme === 'dark') return true;
+            if (explicitTheme === 'light') return false;
+
+            if (
+                html.classList.contains('dark') ||
+                body?.classList.contains('dark') ||
+                body?.classList.contains('dark-mode') ||
+                body?.classList.contains('theme-dark')
+            ) {
+                return true;
+            }
+
+            return Boolean(window.matchMedia?.('(prefers-color-scheme: dark)').matches);
+        }
+
+        function packagingThemePalette() {
+            const dark = packagingIsDarkMode();
+
+            return dark
+                ? {
+                    dark: true,
+                    sceneBackground: 0x0b1220,
+                    gridCenter: 0x475569,
+                    gridLine: 0x253247,
+                    materialSceneBackground: 0x0b1220,
+                    materialGridCenter: 0x475569,
+                    materialGridLine: 0x1e293b,
+                    dimensionLine: 0x60a5fa,
+                    dimensionText: '#93c5fd',
+                    labelBackground: 'rgba(17, 24, 39, .96)',
+                    labelBorder: '#475569',
+                    labelText: '#f8fafc',
+                }
+                : {
+                    dark: false,
+                    sceneBackground: 0xf3f7fc,
+                    gridCenter: 0xaab7c8,
+                    gridLine: 0xd5dde8,
+                    materialSceneBackground: 0xf8fafc,
+                    materialGridCenter: 0xe2e8f0,
+                    materialGridLine: 0xf1f5f9,
+                    dimensionLine: 0x3b82f6,
+                    dimensionText: '#2563eb',
+                    labelBackground: '#ffffff',
+                    labelBorder: '#e2e8f0',
+                    labelText: '#0f172a',
+                };
+        }
+
+        function syncPackagingThemeClass() {
+            const dark = packagingIsDarkMode();
+            document.querySelectorAll('.crate-page').forEach((element) => {
+                element.classList.toggle('packaging-dark', dark);
+            });
+            document.body?.classList.toggle('packaging-auto-dark', dark);
+            return dark;
+        }
+
         // Global variables for 3D Visualizer
         let scene, camera, renderer, controls, woodTexture, frameMaterial, supportMaterial, coverMaterial, plywoodMaterial;
         let modelGroup, dimensionGroup, ground, grid;
@@ -2715,7 +3632,7 @@
 
                 // Create scene
                 scene = new THREE.Scene();
-                scene.background = new THREE.Color(0xf3f7fc);
+                scene.background = new THREE.Color(packagingThemePalette().sceneBackground);
 
                 // Groups
                 modelGroup = new THREE.Group();
@@ -2805,7 +3722,8 @@
                 scene.add(ground);
 
                 // Grid helper
-                grid = new THREE.GridHelper(40, 40, 0xaab7c8, 0xd5dde8);
+                const initialTheme = packagingThemePalette();
+                grid = new THREE.GridHelper(40, 40, initialTheme.gridCenter, initialTheme.gridLine);
                 grid.position.y = 0.002;
                 grid.material.transparent = true;
                 grid.material.opacity = 0.45;
@@ -3923,9 +4841,16 @@
                         
                         // Kaki Balok disesuaikan agar sejajar presisi dengan panjang/lebar Rangka Bawah (termasuk penutup)
                         const isVert = direction === 'Vertikal';
-                        
-                        const outer_l = l_m + (typeof hasCover !== 'undefined' && hasCover ? t_penutup_samping * 2 : 0);
-                        const outer_w = w_m + (typeof hasCover !== 'undefined' && hasCover ? t_penutup_samping * 2 : 0);
+                        // Hitung tebal penutup depan/belakang dan kanan/kiri terpisah
+                        let t_cover_depan = 0, t_cover_kanan = 0;
+                        if (typeof activeDetails !== 'undefined') {
+                            const pDepan = activeDetails.find(d => d.section === 'Penutup' && d.part_name === 'Depan');
+                            const pKanan = activeDetails.find(d => d.section === 'Penutup' && (d.part_name === 'Kanan' || d.part_name === 'Kiri'));
+                            if (pDepan && pDepan.material_kode !== '-') t_cover_depan = parseFloat(pDepan.calculated_thickness) / 1000 || 0;
+                            if (pKanan && pKanan.material_kode !== '-') t_cover_kanan = parseFloat(pKanan.calculated_thickness) / 1000 || 0;
+                        }
+                        const outer_l = l_m + t_cover_kanan * 2;  // panjang + penutup kanan/kiri
+                        const outer_w = w_m + t_cover_depan * 2;  // lebar + penutup depan/belakang
                         
                         const length_m = isVert ? outer_w : outer_l;
                         const span = isVert ? outer_l : outer_w;
@@ -4007,6 +4932,7 @@
                     'direction' => $d->direction,
                     'tipe_penutup' => $d->tipe_penutup,
                     'material_kode' => $d->material ? $d->material->kode : '-',
+                    'material_wood_type' => $d->material ? $d->material->wood_type : null,
                     'material_satuan_harga' => $d->material ? $d->material->satuan_harga : 'pcs',
                     'calculated_thickness' => (float)$d->calculated_thickness,
                     'calculated_width' => (float)$d->calculated_width,
@@ -4365,10 +5291,12 @@
                         }
                         totalWoodLength += len;
 
+                        let matNama = detail.material_nama || matKode;
+
                         if (!materialResume[matKode]) {
                             materialResume[matKode] = {
                                 kode: matKode,
-                                nama: detail.material_nama || matKode,
+                                nama: matNama,
                                 length: 0
                             };
                         }
@@ -4398,14 +5326,18 @@
                             let unit = (mat.kode.includes('TR') || mat.nama.toLowerCase().includes('triplex')) ? 'm²' : 'm';
                             htmlList += `
                             <div class="p-3 border rounded bg-white shadow-xs hover-shadow transition">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div class="d-flex align-items-center gap-3 overflow-hidden pe-2">
-                                        <span class="badge text-white fw-bold py-2 px-3" style="font-size: 13px; background-color: var(--navy);">${mat.kode}</span>
-                                        <span class="text-dark fw-bold text-truncate" style="font-size: 14px;" title="${mat.nama}">${mat.nama}</span>
+                                <div class="d-flex flex-column gap-2 w-100">
+                                    <div class="d-flex align-items-start">
+                                        <span class="badge text-white fw-bold py-2 px-3 text-wrap text-start" style="font-size: 13px; background-color: var(--navy); line-height: 1.4;">${mat.nama}</span>
                                     </div>
-                                    <div class="text-end flex-shrink-0">
-                                        <span class="fw-extrabold text-success" style="font-size: 18px;">${formatNumber(mat.length, 1)}</span>
-                                        <span class="text-muted fw-bold ms-1" style="font-size: 14px;">${unit}</span>
+                                    <div class="d-flex justify-content-between align-items-end w-100">
+                                        <div class="text-dark fw-bold text-wrap pe-2" style="font-size: 14px; line-height: 1.4; word-break: break-word;" title="${mat.kode}">
+                                            ${mat.kode}
+                                        </div>
+                                        <div class="text-end flex-shrink-0">
+                                            <span class="fw-extrabold text-success" style="font-size: 18px;">${formatNumber(mat.length, 1)}</span>
+                                            <span class="text-muted fw-bold ms-1" style="font-size: 14px;">${unit}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>`;
@@ -4430,7 +5362,17 @@
                     return el ? el.value : null;
                 };
 
-                const updatePart = (section, partMatches, includeVal, arahVal, materialVal, excludeBawah = false, tipePenutupVal = null) => {
+                const getText = name => {
+                    let el = document.querySelector(`[name="${name}"]`);
+                    return el && el.options && el.selectedIndex > -1 ? el.options[el.selectedIndex].text : null;
+                };
+
+                const getWoodTypeAttr = name => {
+                    let el = document.querySelector(`[name="${name}"]`);
+                    return el && el.options && el.selectedIndex > -1 ? el.options[el.selectedIndex].getAttribute('data-wood-type') : null;
+                };
+
+                const updatePart = (section, partMatches, includeVal, arahVal, materialVal, materialText, materialWoodTypeAttr, excludeBawah = false, tipePenutupVal = null) => {
                     let partsToMatch = Array.isArray(partMatches) ? partMatches : [partMatches];
                     
                     partsToMatch.forEach(partName => {
@@ -4440,8 +5382,16 @@
                                 matchFound = true;
                                 if (includeVal === "0" || !materialVal) {
                                     d.material_kode = '-';
+                                    d.material_nama = '-';
                                 } else {
                                     d.material_kode = materialVal;
+                                    let matNama = materialWoodTypeAttr;
+                                    if (matNama) {
+                                        matNama = matNama.toLowerCase().replace(/(?:^|\s)\w/g, match => match.toUpperCase());
+                                    } else {
+                                        matNama = materialText;
+                                    }
+                                    d.material_nama = matNama;
                                 }
                                 if (arahVal) {
                                     d.direction = arahVal;
@@ -4460,6 +5410,7 @@
                                 section: section,
                                 part_name: partName,
                                 material_kode: (includeVal === "0" || !materialVal) ? '-' : materialVal,
+                                material_nama: (includeVal === "0" || !materialVal) ? '-' : materialText,
                                 direction: arahVal,
                                 tipe_penutup: tipePenutupVal,
                                 include: tipePenutupVal !== null ? ((tipePenutupVal === 'Tanpa Penutup' || tipePenutupVal === 'Tidak makai penutup' || !tipePenutupVal) ? "0" : "1") : includeVal
@@ -4475,14 +5426,14 @@
                 };
 
                 // Area Atas (Rangka Atas dan Tinggi ditiadakan)
-                updatePart('Penyangga', ['Atas', 'Kanan', 'Kiri', 'Depan', 'Belakang'], getVal('atas_penyangga_include'), getVal('atas_penyangga_arah'), getVal('atas_penyangga_material'), true);
-                updatePart('Penutup', ['Atas', 'Kanan', 'Kiri', 'Depan', 'Belakang'], getPenutupInclude('atas_penutup_tipe'), getVal('atas_penutup_arah'), getVal('atas_penutup_material'), true, getVal('atas_penutup_tipe'));
+                updatePart('Penyangga', ['Atas', 'Kanan', 'Kiri', 'Depan', 'Belakang'], getVal('atas_penyangga_include'), getVal('atas_penyangga_arah'), getVal('atas_penyangga_material'), getText('atas_penyangga_material'), getWoodTypeAttr('atas_penyangga_material'), true);
+                updatePart('Penutup', ['Atas', 'Kanan', 'Kiri', 'Depan', 'Belakang'], getPenutupInclude('atas_penutup_tipe'), getVal('atas_penutup_arah'), getVal('atas_penutup_material'), getText('atas_penutup_material'), getWoodTypeAttr('atas_penutup_material'), true, getVal('atas_penutup_tipe'));
 
                 // Area Bawah
 
-                updatePart('Bawah', ['Penyangga'], getVal('bawah_penyangga_include'), getVal('bawah_penyangga_arah'), getVal('bawah_penyangga_material'), false);
-                updatePart('Bawah', ['Penutup'], getPenutupInclude('bawah_penutup_tipe'), getVal('bawah_penutup_arah'), getVal('bawah_penutup_material'), false, getVal('bawah_penutup_tipe'));
-                updatePart('Bawah', ['Kaki Balok'], getVal('include_pallet_base'), getVal('bawah_kakibalok_arah'), getVal('bawah_kakibalok_material'), false);
+                updatePart('Bawah', ['Penyangga'], getVal('bawah_penyangga_include'), getVal('bawah_penyangga_arah'), getVal('bawah_penyangga_material'), getText('bawah_penyangga_material'), getWoodTypeAttr('bawah_penyangga_material'), false);
+                updatePart('Bawah', ['Penutup'], getPenutupInclude('bawah_penutup_tipe'), getVal('bawah_penutup_arah'), getVal('bawah_penutup_material'), getText('bawah_penutup_material'), getWoodTypeAttr('bawah_penutup_material'), false, getVal('bawah_penutup_tipe'));
+                updatePart('Bawah', ['Kaki Balok'], getVal('include_pallet_base'), getVal('bawah_kakibalok_arah'), getVal('bawah_kakibalok_material'), getText('bawah_kakibalok_material'), getWoodTypeAttr('bawah_kakibalok_material'), false);
 
                 // Update Jumlah Kaki Balok logic in UI
                 let lengthInput = document.querySelector('[name="length"]');
@@ -4677,20 +5628,50 @@
                 updateTotalPackCost();
             }
 
+            function getCurrencyElementValue(elementId) {
+                const element = document.getElementById(elementId);
+                if (!element) return null;
+
+                const numericText = String(element.textContent || '')
+                    .replace(/[^0-9]/g, '');
+
+                return numericText === '' ? 0 : (Number.parseFloat(numericText) || 0);
+            }
+
             function updateTotalPackCost() {
-                let costRangka = parseFloat(document.getElementById('cost-rangka').innerText.replace(/[^0-9]/g, '')) || 0;
-                let costPenutup = parseFloat(document.getElementById('cost-penutup').innerText.replace(/[^0-9]/g, '')) || 0;
-                let costBawah = parseFloat(document.getElementById('cost-bawah').innerText.replace(/[^0-9]/g, '')) || 0;
-                let costManpower = parseFloat(document.getElementById('cost-manpower').innerText.replace(/[^0-9]/g, '')) || 0;
-                let costPaku = parseFloat(document.getElementById('cost-paku').innerText.replace(/[^0-9]/g, '')) || 0;
-                
-                let grandTotal = costRangka + costPenutup + costBawah + costManpower + costPaku;
-                
-                let totalCostEl = document.getElementById('cost-total');
-                if (totalCostEl) totalCostEl.innerText = formatRupiah(grandTotal);
-                
-                let resumeTotalCostEl = document.getElementById('cost-total-packing-resume');
-                if (resumeTotalCostEl) resumeTotalCostEl.innerText = formatRupiah(grandTotal);
+                const sourceIds = [
+                    'cost-rangka',
+                    'cost-penutup',
+                    'cost-bawah',
+                    'cost-manpower',
+                    'cost-paku'
+                ];
+
+                const sourceValues = sourceIds.map(getCurrencyElementValue);
+
+                /*
+                 * Pada layout read-only yang baru, card rincian biaya lama dapat
+                 * tidak dirender. Jangan membaca .innerText dari elemen null dan
+                 * jangan menimpa total server menjadi Rp 0 saat semua sumber hilang.
+                 */
+                if (sourceValues.every(value => value === null)) {
+                    return;
+                }
+
+                const grandTotal = sourceValues.reduce(
+                    (total, value) => total + (value ?? 0),
+                    0
+                );
+
+                const totalCostEl = document.getElementById('cost-total');
+                if (totalCostEl) {
+                    totalCostEl.textContent = formatRupiah(grandTotal);
+                }
+
+                const resumeTotalCostEl = document.getElementById('cost-total-packing-resume');
+                if (resumeTotalCostEl) {
+                    resumeTotalCostEl.textContent = formatRupiah(grandTotal);
+                }
             }
 
             // Initial calculation on page load
@@ -4784,7 +5765,7 @@
                         perTitikCol = formatNumber(r.per_titik, 0);
                     }
 
-                    let kodeBadge = r.kode !== '-' ? `<span class="badge bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded-pill" style="font-size:10px;">${r.kode}</span>` : `<span class="text-muted small">-</span>`;
+                    let kodeBadge = (r.kode && r.kode !== '-' && r.kode !== 'null') ? `<span class="badge bg-amber-100 text-amber-800 border border-amber-200 px-2 py-1 rounded-pill" style="font-size:10px;">${r.kode} cm</span>` : `<span class="text-muted small">-</span>`;
                     html += `
                         <tr>
                             <td class="fw-semibold text-navy">${r.bagian}</td>
@@ -5303,7 +6284,9 @@
                 }
             }
 
-            if (btnEdit && btnCancel && btnSave && formEdit) {
+            // Form konfigurasi tetap menjadi induk proses.
+            // Tombol edit boleh tidak ada karena pada desain baru konfigurasi ditampilkan sebagai value/read-only.
+            if (formEdit) {
                 let initialValues = {};
                 let initialDetails = []; // Added backup for activeDetails
                 
@@ -5337,19 +6320,25 @@
                     }
                 }
                 
-                if (isNewRecord) {
+                // Pada desain lama ketiga tombol selalu tersedia. Pada desain baru tombol-tombol
+                // tersebut boleh dihapus, sehingga listener harus dipasang secara aman.
+                if (isNewRecord && btnEdit && btnCancel && btnSave) {
                     storeInitialValues();
                     toggleEdit(true);
                 }
                 
-                btnEdit.addEventListener('click', function() {
-                    storeInitialValues();
-                    toggleEdit(true);
-                });
+                if (btnEdit) {
+                    btnEdit.addEventListener('click', function() {
+                        storeInitialValues();
+                        toggleEdit(true);
+                    });
+                }
                 
-                btnCancel.addEventListener('click', function() {
-                    window.location.reload();
-                });
+                if (btnCancel) {
+                    btnCancel.addEventListener('click', function() {
+                        window.location.reload();
+                    });
+                }
                 
                 // --- Dynamic Penutup Options ---
                 const masterPapan = @json($materials->where('kategori', 'MASTER PAPAN')->values());
@@ -5688,7 +6677,7 @@
                 });
                 
                 // --- Material Sorting Visualizer ---
-                let matScene, matCamera, matCameraGroup, matRenderer;
+                let matScene, matCamera, matCameraGroup, matRenderer, matGridHelper;
                 let matContainer = document.getElementById('material-sorting-container');
                 let matLabels = document.getElementById('material-labels-container');
                 let matCamX = 0; // target X for scrolling
@@ -5696,12 +6685,24 @@
                 let matMeshes = [];
 
                 function initMaterialVisualizer() {
-                    if (!matContainer) return;
-                    
-                    matScene = new THREE.Scene();
-                    matScene.background = new THREE.Color(0xf8fafc);
+                    if (!matContainer) return false;
 
-                    const aspect = matContainer.clientWidth / matContainer.clientHeight;
+                    if (typeof THREE === 'undefined') {
+                        console.error('Three.js belum termuat. Visualisasi material tidak dapat dibuat.');
+                        return false;
+                    }
+
+                    // Hindari canvas ganda bila fungsi dipanggil kembali.
+                    if (matRenderer && matRenderer.domElement) {
+                        matRenderer.domElement.remove();
+                    }
+
+                    matScene = new THREE.Scene();
+                    matScene.background = new THREE.Color(packagingThemePalette().materialSceneBackground);
+
+                    const containerWidth = Math.max(matContainer.clientWidth, 320);
+                    const containerHeight = Math.max(matContainer.clientHeight, 300);
+                    const aspect = containerWidth / containerHeight;
                     window.matFrustumSize = 2.5;
                     matCamera = new THREE.OrthographicCamera(
                         window.matFrustumSize * aspect / -2,
@@ -5723,7 +6724,13 @@
                     window.matScene = matScene;
                     window.matCamera = matCamera;
                     
-                    matRenderer.setSize(matContainer.clientWidth, matContainer.clientHeight);
+                    matRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+                    matRenderer.setSize(containerWidth, containerHeight, false);
+                    matRenderer.domElement.style.position = 'absolute';
+                    matRenderer.domElement.style.inset = '0';
+                    matRenderer.domElement.style.width = '100%';
+                    matRenderer.domElement.style.height = '100%';
+                    matRenderer.domElement.style.display = 'block';
                     matRenderer.shadowMap.enabled = true;
                     matRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
                     matContainer.appendChild(matRenderer.domElement);
@@ -5740,9 +6747,15 @@
                     matScene.add(dirLight);
 
                     // Grid helper for the floor
-                    const gridHelper = new THREE.GridHelper(100, 100, 0xe2e8f0, 0xf1f5f9);
-                    gridHelper.position.y = 0;
-                    matScene.add(gridHelper);
+                    const materialTheme = packagingThemePalette();
+                    matGridHelper = new THREE.GridHelper(
+                        100,
+                        100,
+                        materialTheme.materialGridCenter,
+                        materialTheme.materialGridLine
+                    );
+                    matGridHelper.position.y = 0;
+                    matScene.add(matGridHelper);
                     
                     // Add an invisible plane to receive shadows
                     const planeGeom = new THREE.PlaneGeometry(100, 100);
@@ -5764,15 +6777,19 @@
                     requestAnimationFrame(animateMat);
 
                     window.addEventListener('resize', () => {
-                        if (!matContainer) return;
-                        const aspect = matContainer.clientWidth / matContainer.clientHeight;
+                        if (!matContainer || !matCamera || !matRenderer) return;
+                        const width = Math.max(matContainer.clientWidth, 320);
+                        const height = Math.max(matContainer.clientHeight, 300);
+                        const aspect = width / height;
                         matCamera.left = window.matFrustumSize * aspect / -2;
                         matCamera.right = window.matFrustumSize * aspect / 2;
                         matCamera.top = window.matFrustumSize / 2;
                         matCamera.bottom = window.matFrustumSize / -2;
                         matCamera.updateProjectionMatrix();
-                        matRenderer.setSize(matContainer.clientWidth, matContainer.clientHeight);
+                        matRenderer.setSize(width, height, false);
                     });
+
+                    return true;
                 }
 
                 function animateMat() {
@@ -5817,13 +6834,19 @@
                 }
 
                 window.drawMaterialStacks = function() {
-                    if (!matScene || !activeDetails) return;
+                    if (!matScene || !Array.isArray(activeDetails)) return;
+
+                    if (!matLabels) {
+                        matLabels = document.getElementById('material-labels-container');
+                    }
                     
                     // Clear old meshes (keep initial lights, grid, and plane)
                     while(matScene.children.length > 4){ 
                         matScene.remove(matScene.children[4]); 
                     }
-                    matLabels.innerHTML = '';
+                    if (matLabels) {
+                        matLabels.innerHTML = '';
+                    }
                     matMeshes = [];
                     matCamX = 0; // Reset scroll
 
@@ -5840,7 +6863,7 @@
                         const t = parseFloat(d.calculated_thickness) || 0;
                         const w = parseFloat(d.calculated_width) || 0;
                         const l = parseFloat(d.calculated_length) || 0;
-                        const mat = d.material_kode || d.material_nama || 'Kayu';
+                        const mat = d.material_wood_type || d.material_nama || d.material_kode || 'Kayu';
                         
                         if (t === 0 || w === 0 || l === 0) return; // Skip invalid geometries
                         
@@ -5867,6 +6890,45 @@
                         if (orderA !== orderB) return orderA - orderB;
                         return a.l - b.l;
                     });
+
+                    // Jangan biarkan area tampak blank ketika data detail belum memiliki dimensi/qty valid.
+                    const previousEmptyState = document.getElementById('material-visual-empty-state');
+                    if (previousEmptyState) previousEmptyState.remove();
+
+                    if (sortedGroups.length === 0) {
+                        const emptyState = document.createElement('div');
+                        emptyState.id = 'material-visual-empty-state';
+                        emptyState.className = 'position-absolute top-50 start-50 translate-middle text-center text-muted';
+                        emptyState.style.zIndex = '6';
+                        emptyState.style.pointerEvents = 'none';
+                        emptyState.innerHTML = `
+                            <span class="material-symbols-rounded d-block mb-2" style="font-size: 38px; opacity: .55;">view_in_ar_off</span>
+                            <div class="fw-bold text-dark">Data potongan belum dapat divisualisasikan</div>
+                            <div style="font-size: 12px; max-width: 360px;">
+                                Pastikan setiap detail memiliki calculated_width, calculated_length,
+                                calculated_thickness dan total_quantity lebih dari 0.
+                            </div>
+                        `;
+                        matContainer.appendChild(emptyState);
+                        return;
+                    }
+
+                    if (sortedGroups.length === 0) {
+                        if (matLabels) {
+                            const emptyState = document.createElement('div');
+                            emptyState.className = 'position-absolute top-50 start-50 translate-middle text-center text-muted';
+                            emptyState.innerHTML = `
+                                <span class="material-symbols-rounded d-block mb-2" style="font-size: 36px;">inventory_2</span>
+                                <div class="fw-bold">Data potongan material belum tersedia</div>
+                                <div style="font-size: 11px;">Pastikan detail material memiliki panjang, lebar, tebal, dan quantity.</div>
+                            `;
+                            matLabels.appendChild(emptyState);
+                        }
+                        window.matTotalX = 0;
+                        window.matTotalZ = 0;
+                        matMaxCamX = 0;
+                        return;
+                    }
 
                     // Helper to draw dimension lines
                     function drawDim(p1, p2, text, align) {
@@ -5900,7 +6962,8 @@
                         }
                     
                         const geo = new THREE.BufferGeometry().setFromPoints(points);
-                        const mat = new THREE.LineBasicMaterial({ color: 0x3b82f6 }); // Primary blue line
+                        const labelTheme = packagingThemePalette();
+                        const mat = new THREE.LineBasicMaterial({ color: labelTheme.dimensionLine });
                         const line = new THREE.Line(geo, mat);
                         matScene.add(line);
                     
@@ -5910,11 +6973,14 @@
                         label.className = 'fw-bold rounded shadow-sm';
                         label.style.position = 'absolute';
                         label.style.fontSize = '10px';
-                        label.style.color = '#2563eb'; // Blue text
-                        label.style.background = '#ffffff';
+                        label.style.color = labelTheme.dimensionText;
+                        label.style.background = labelTheme.labelBackground;
+                        label.style.border = `1px solid ${labelTheme.labelBorder}`;
                         label.style.padding = '1px 4px';
                         label.innerHTML = text;
-                        matLabels.appendChild(label);
+                        if (matLabels) {
+                            matLabels.appendChild(label);
+                        }
                         
                         matMeshes.push({
                             worldPos: mid,
@@ -5953,8 +7019,8 @@
 
                     // 3. Draw Stacks side by side, standing up
                     const minVis = Math.max(0.015, maxL_m * 0.015); 
-                    const spacingGroup = Math.max(0.2, maxL_m * 0.05); // Moderate gap between groups
-                    const spacingItem = Math.max(0.015, maxL_m * 0.01); // Moderate gap between items
+                    const spacingGroup = Math.max(0.5, maxL_m * 0.08); // Jarak antar grup material disesuaikan agar pas
+                    const spacingItem = Math.max(0.025, maxL_m * 0.02); // Jarak antar item agar tidak terlalu dempet
                     
                     let currentX = 0;
                     let maxX = 0;
@@ -6035,8 +7101,10 @@
                         matNameLabel.className = 'bg-white rounded shadow-sm border border-light text-center px-2 py-1';
                         matNameLabel.style.position = 'absolute';
                         matNameLabel.style.whiteSpace = 'nowrap';
-                        matNameLabel.innerHTML = `<div class="fw-bold text-dark" style="font-size: 11px;">${group.mat}</div><div class="badge bg-primary text-white mt-1" style="font-size: 10px;">Qty: ${group.qty}</div>`;
-                        matLabels.appendChild(matNameLabel);
+                        matNameLabel.innerHTML = `<div class="fw-bold text-dark" style="font-size: 11px;">${group.mat} - ${group.w} mm x ${group.l} mm</div><div class="badge bg-primary text-white mt-1" style="font-size: 10px;">Qty: ${group.qty}</div>`;
+                        if (matLabels) {
+                            matLabels.appendChild(matNameLabel);
+                        }
 
                         matMeshes.push({
                             worldPos: worldPos,
@@ -6053,13 +7121,453 @@
                     matMaxCamX = Math.max(0, maxX - spacingGroup - 2); 
                 };
                 
-                // Initialize on load
-                initMaterialVisualizer();
-                if (typeof window.drawMaterialStacks === 'function') {
-                    window.drawMaterialStacks();
+                function refreshPackagingVisuals(resetCamera = false) {
+                    try {
+                        if (typeof drawCrate === 'function') {
+                            drawCrate(resetCamera);
+                        }
+
+                        if (!matRenderer) {
+                            initMaterialVisualizer();
+                        }
+
+                        if (typeof window.drawMaterialStacks === 'function') {
+                            window.drawMaterialStacks();
+                        }
+                    } catch (error) {
+                        console.error('Gagal memperbarui visualisasi packaging:', error);
+                    }
                 }
 
+                window.refreshPackagingVisuals = refreshPackagingVisuals;
+
+                window.addEventListener('packaging:configuration-updated', function() {
+                    refreshPackagingVisuals(false);
+                });
+
+
+                function applyPackagingVisualTheme(redrawMaterial = true) {
+                    const palette = packagingThemePalette();
+                    syncPackagingThemeClass();
+
+                    if (scene) {
+                        scene.background = new THREE.Color(palette.sceneBackground);
+
+                        if (grid) {
+                            const wasVisible = grid.visible;
+                            scene.remove(grid);
+                            grid.geometry?.dispose?.();
+                            if (Array.isArray(grid.material)) {
+                                grid.material.forEach((material) => material.dispose?.());
+                            } else {
+                                grid.material?.dispose?.();
+                            }
+
+                            grid = new THREE.GridHelper(
+                                40,
+                                40,
+                                palette.gridCenter,
+                                palette.gridLine
+                            );
+                            grid.position.y = 0.002;
+                            grid.material.transparent = true;
+                            grid.material.opacity = 0.45;
+                            grid.visible = wasVisible;
+                            scene.add(grid);
+                        }
+                    }
+
+                    if (matScene) {
+                        matScene.background = new THREE.Color(
+                            palette.materialSceneBackground
+                        );
+
+                        if (matGridHelper) {
+                            matScene.remove(matGridHelper);
+                            matGridHelper.geometry?.dispose?.();
+                            if (Array.isArray(matGridHelper.material)) {
+                                matGridHelper.material.forEach((material) => material.dispose?.());
+                            } else {
+                                matGridHelper.material?.dispose?.();
+                            }
+
+                            matGridHelper = new THREE.GridHelper(
+                                100,
+                                100,
+                                palette.materialGridCenter,
+                                palette.materialGridLine
+                            );
+                            matGridHelper.position.y = 0;
+                            matScene.add(matGridHelper);
+                        }
+                    }
+
+                    if (
+                        redrawMaterial &&
+                        typeof window.drawMaterialStacks === 'function'
+                    ) {
+                        window.drawMaterialStacks();
+                    }
+                }
+
+                window.applyPackagingVisualTheme = applyPackagingVisualTheme;
+
+                const packagingThemeObserver = new MutationObserver(() => {
+                    applyPackagingVisualTheme(true);
+                });
+
+                packagingThemeObserver.observe(document.documentElement, {
+                    attributes: true,
+                    attributeFilter: ['class', 'data-bs-theme', 'data-theme'],
+                });
+
+                if (document.body) {
+                    packagingThemeObserver.observe(document.body, {
+                        attributes: true,
+                        attributeFilter: ['class', 'data-bs-theme', 'data-theme'],
+                    });
+                }
+
+                const packagingColorScheme = window.matchMedia?.(
+                    '(prefers-color-scheme: dark)'
+                );
+
+                if (packagingColorScheme?.addEventListener) {
+                    packagingColorScheme.addEventListener('change', () => {
+                        applyPackagingVisualTheme(true);
+                    });
+                }
+
+                applyPackagingVisualTheme(false);
+
+                // Tunggu satu frame supaya ukuran container sudah final sebelum WebGL dibuat.
+                window.requestAnimationFrame(function() {
+                    try {
+                        const initialized = initMaterialVisualizer();
+                        if (initialized && typeof window.drawMaterialStacks === 'function') {
+                            window.drawMaterialStacks();
+                        }
+                    } catch (error) {
+                        console.error('Gagal menginisialisasi visualisasi potongan material:', error);
+                    }
+                });
+
+                @if(request()->query('auto_open') == 'true' || request()->routeIs('packaging.calculations.create'))
+                setTimeout(function() {
+                    var productSetupModal = new bootstrap.Modal(document.getElementById('productSetupModal'));
+                    productSetupModal.show();
+                }, 300);
+                @endif
             }
         });
     </script>
+
+<style id="packaging-dark-final-hotfix">
+/* =========================================================
+   PACKAGING CALCULATION — FINAL DARK MODE HOTFIX
+   Letakkan PALING BAWAH setelah seluruh CSS/HTML konfigurasi.
+   ========================================================= */
+
+/* Semua pemicu dark mode yang mungkin dipakai aplikasi. */
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page,
+.crate-page.packaging-dark {
+    --crate-final-surface: #111827;
+    --crate-final-surface-soft: #172033;
+    --crate-final-hover: #1e293b;
+    --crate-final-border: #334155;
+    --crate-final-border-strong: #475569;
+    --crate-final-text: #f8fafc;
+    --crate-final-text-soft: #cbd5e1;
+    --crate-final-muted: #94a3b8;
+}
+
+/* =========================================================
+   1. INPUT DIMENSI DAN KONFIGURASI YANG MASIH PUTIH
+   ========================================================= */
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page .configuration-card :is(
+    input,
+    select,
+    textarea,
+    .form-control,
+    .form-select,
+    .custom-input,
+    .custom-select,
+    .matrix-select,
+    .configuration-readonly-input
+),
+.crate-page.packaging-dark .configuration-card :is(
+    input,
+    select,
+    textarea,
+    .form-control,
+    .form-select,
+    .custom-input,
+    .custom-select,
+    .matrix-select,
+    .configuration-readonly-input
+) {
+    color: var(--crate-final-text) !important;
+    -webkit-text-fill-color: var(--crate-final-text) !important;
+    background: var(--crate-final-surface-soft) !important;
+    background-color: var(--crate-final-surface-soft) !important;
+    border-color: var(--crate-final-border-strong) !important;
+    box-shadow: inset 0 0 0 1000px var(--crate-final-surface-soft) !important;
+    opacity: 1 !important;
+    color-scheme: dark;
+}
+
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page .configuration-card :is(input, select, textarea):focus,
+.crate-page.packaging-dark .configuration-card :is(input, select, textarea):focus {
+    border-color: #60a5fa !important;
+    box-shadow:
+        inset 0 0 0 1000px var(--crate-final-surface-soft),
+        0 0 0 3px rgba(96, 165, 250, .16) !important;
+}
+
+/* Chrome autofill dan number input. */
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page .configuration-card input:-webkit-autofill,
+.crate-page.packaging-dark .configuration-card input:-webkit-autofill {
+    -webkit-text-fill-color: var(--crate-final-text) !important;
+    -webkit-box-shadow: 0 0 0 1000px var(--crate-final-surface-soft) inset !important;
+    caret-color: var(--crate-final-text);
+}
+
+/* =========================================================
+   2. TEKS KONFIGURASI YANG MASIH BIRU GELAP
+   Style ini harus berada setelah style lokal .config-display-value.
+   ========================================================= */
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page .configuration-card .config-display-value,
+.crate-page.packaging-dark .configuration-card .config-display-value {
+    color: var(--crate-final-text-soft) !important;
+}
+
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page .configuration-card .config-display-muted,
+.crate-page.packaging-dark .configuration-card .config-display-muted {
+    color: #64748b !important;
+}
+
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page .configuration-card .configuration-matrix-header,
+.crate-page.packaging-dark .configuration-card .configuration-matrix-header {
+    color: var(--crate-final-muted) !important;
+}
+
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page .configuration-card :is(
+    .configuration-content,
+    .configuration-content.container-input-group,
+    .configuration-section,
+    .configuration-footer
+),
+.crate-page.packaging-dark .configuration-card :is(
+    .configuration-content,
+    .configuration-content.container-input-group,
+    .configuration-section,
+    .configuration-footer
+) {
+    background: var(--crate-final-surface) !important;
+    background-color: var(--crate-final-surface) !important;
+    border-color: var(--crate-final-border) !important;
+}
+
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page .configuration-card :is(.group-item, .configuration-matrix-row):hover,
+.crate-page.packaging-dark .configuration-card :is(.group-item, .configuration-matrix-row):hover {
+    background: var(--crate-final-hover) !important;
+}
+
+/* Mengalahkan background putih dari inline style saat komponen nonaktif. */
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page #jarak_balok_additional_wrapper,
+.crate-page.packaging-dark #jarak_balok_additional_wrapper {
+    background-color: transparent !important;
+}
+
+/* =========================================================
+   3. BADGE KODE MATERIAL YANG MENJADI KOTAK PUTIH
+   Penyebab: background menggunakan var(--navy), sementara --navy
+   di dark mode diubah menjadi putih untuk kebutuhan teks.
+   ========================================================= */
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page #resume-material-container .badge,
+.crate-page.packaging-dark #resume-material-container .badge {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background: #17375e !important;
+    background-color: #17375e !important;
+    border: 1px solid #31557f !important;
+    box-shadow: none !important;
+}
+
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page #resume-material-container > div > div,
+.crate-page.packaging-dark #resume-material-container > div > div {
+    background: var(--crate-final-surface) !important;
+    border-color: var(--crate-final-border) !important;
+}
+
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page #resume-material-container .text-dark,
+.crate-page.packaging-dark #resume-material-container .text-dark {
+    color: var(--crate-final-text-soft) !important;
+}
+
+/* KPI dan total packing tetap gelap, tidak kembali putih. */
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page .panel-card :is(.bg-white, .bg-light),
+.crate-page.packaging-dark .panel-card :is(.bg-white, .bg-light) {
+    background: var(--crate-final-surface) !important;
+    border-color: var(--crate-final-border) !important;
+}
+
+/* Menjaga badge Bootstrap lain yang memang membutuhkan teks putih. */
+:where(
+    html[data-bs-theme="dark"],
+    html[data-theme="dark"],
+    html.dark,
+    html.theme-dark,
+    body[data-bs-theme="dark"],
+    body[data-theme="dark"],
+    body.dark,
+    body.dark-mode,
+    body.theme-dark
+) .crate-page .badge.text-white,
+.crate-page.packaging-dark .badge.text-white {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+
+</style>
 </x-app-layout>

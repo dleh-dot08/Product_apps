@@ -430,7 +430,7 @@
                                         <thead>
                                             <tr>
                                                 <th>Bagian / Area</th>
-                                                <th class="text-center">Kode Material</th>
+                                                <th class="text-center">Size (Cm)</th>
                                                 <th class="text-end">Titik Paku</th>
                                                 <th class="text-end">Jml Paku/Titik</th>
                                                 <th class="text-end">Total Paku</th>

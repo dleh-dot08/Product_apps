@@ -38,7 +38,7 @@ Route::get('/packaging/search-so', function(\Illuminate\Http\Request $request) {
     $dateFrom = $request->input('date_from', now()->subMonths(6)->format('Y-m-d'));
     $dateTo = $request->input('date_to', now()->format('Y-m-d'));
     
-    $url = "https://akurasi-api.aqpa-indonesia.com/api/integration/penjualan-so?offset=0&limit=50&date_from={$dateFrom}&date_to={$dateTo}";
+    $url = "https://akurasi-api.aqpa-indonesia.com/api/integration/penjualan-so?offset=0&limit=1000&date_from={$dateFrom}&date_to={$dateTo}";
     
     try {
         $response = \Illuminate\Support\Facades\Http::withHeaders([

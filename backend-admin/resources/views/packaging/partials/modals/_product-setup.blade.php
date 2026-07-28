@@ -91,14 +91,14 @@
             ],
             'blockFeet' => [
                 'usage' => $calculation->bawah_kaki_balok_status ?? 'Tanpa Kaki Balok',
-                'direction' => $calculation->bawah_kaki_balok_arah ?? 'Horizontal',
+                'direction' => $calculation->bawah_kaki_balok_arah ?? 'Vertikal',
                 'material' => $calculation->bawah_kaki_balok_material ?? '',
             ],
         ],
         'top' => [
             'support' => [
                 'usage' => $calculation->atas_penyanggah_status ?? 'Include',
-                'direction' => $calculation->atas_penyanggah_arah ?? 'Horizontal',
+                'direction' => $calculation->atas_penyanggah_arah ?? 'Vertikal',
                 'material' => $calculation->atas_penyanggah_material ?? '',
             ],
             'cover' => [
@@ -1359,7 +1359,7 @@
                     </div>
                 </div>
 
-                <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-3 ms-auto">
                     <div class="ps-wizard" aria-label="Product setup steps">
                         <div
                             class="ps-wizard-step is-active"
@@ -1927,7 +1927,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -1959,7 +1959,7 @@
                                 @if(isset($penutupMaterials) && count($penutupMaterials) > 0)
                                     @foreach($penutupMaterials as $mat)
                                         @php $matType = (stripos($mat->component, 'triplek') !== false) ? 'Triplek' : 'Papan'; @endphp
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -1988,7 +1988,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2119,7 +2119,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2151,7 +2151,7 @@
                                 @if(isset($penutupMaterials) && count($penutupMaterials) > 0)
                                     @foreach($penutupMaterials as $mat)
                                         @php $matType = (stripos($mat->component, 'triplek') !== false) ? 'Triplek' : 'Papan'; @endphp
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2841,7 +2841,7 @@
             setVal('s2_gap_bawah', initialData.additional?.bottomGap);
 
             setVal('s2_pb_status', initialData.bottom?.support?.usage);
-            setVal('s2_pb_arah', initialData.bottom?.support?.direction);
+            // s2_pb_arah readonly = Horizontal, tidak perlu setVal
             setVal('s2_pb_material', initialData.bottom?.support?.material);
             
             setVal('s2_ptb_status', initialData.bottom?.cover?.usage);
@@ -2853,7 +2853,7 @@
             setVal('s2_kb_material', initialData.bottom?.blockFeet?.material);
             
             setVal('s2_pa_status', initialData.top?.support?.usage);
-            setVal('s2_pa_arah', initialData.top?.support?.direction);
+            // s2_pa_arah readonly = Vertikal, tidak perlu setVal
             setVal('s2_pa_material', initialData.top?.support?.material);
             
             setVal('s2_pta_status', initialData.top?.cover?.usage);
@@ -2867,7 +2867,7 @@
     // --- API HANDLING FOR MODAL ---
     document.addEventListener('DOMContentLoaded', () => {
         const searchBtn = document.getElementById('btnSearchSO');
-        const searchInput = document.getElementById('search_so_number');
+        const searchInput = document.getElementById('searchSO');
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
         
         // 1. Handle SO Search
@@ -2882,10 +2882,10 @@
                 if (window.setSOSearchLoading) window.setSOSearchLoading(true);
 
                 try {
-                    const response = await fetch(`/api/packaging/search-so?so_number=${encodeURIComponent(soNumber)}`);
+                    const response = await fetch(`/api/packaging/search-so?q=${encodeURIComponent(soNumber)}`);
                     const result = await response.json();
                     
-                    if (result.status === 'success' && result.data && result.data.length > 0) {
+                    if (result.data && result.data.length > 0) {
                         const firstItem = result.data[0];
                         
                         // Populate Header Info
@@ -2896,8 +2896,8 @@
                         setText('infoNoSO', soNumber);
                         setText('infoCustomer', firstItem.nama_pelanggan || firstItem.customer || '-');
                         // Misal kalau ada delivery date & address dari API
-                        setText('infoDeliveryDate', firstItem.delivery_date || firstItem.tanggal_delivery || '-');
-                        setText('infoShipto', firstItem.address || firstItem.alamat || '-');
+                        setText('infoDeliveryDate', firstItem.tgl_estimasi || firstItem.tgl_pengiriman || firstItem.tgl_so || '-');
+                        setText('infoShipto', firstItem.shipto || '-');
 
                         // Populate Dropdown
                         if (window.renderSOItems) {

@@ -260,43 +260,41 @@ class PackagingCalculatorService
                 }
             }
 
-            $matchedNailCode = null;
+            // Map typeFrom ke kategori nail_size_rules: Balok, Triplek
+            $nailFrom = 'Balok';
+            if (stripos($typeFrom, 'Triplek') !== false || stripos($typeFrom, 'Triplex') !== false) {
+                $nailFrom = 'Triplek';
+            }
+            $nailTo = 'Balok';
+
+            $matchedNailSize = null;
             if ($thkFrom > 0 && $thkTo > 0) {
-                $matchedValidation = DB::table('packaging_fastener_validations')
-                    ->where('is_active', true)
-                    ->whereRaw('LOWER(type_from) LIKE ?', ['%' . strtolower($typeFrom) . '%'])
-                    ->where('thk_from_min_mm', '<=', $thkFrom)
-                    ->where('thk_from_max_mm', '>=', $thkFrom)
-                    ->whereRaw('LOWER(type_to) LIKE ?', ['%' . strtolower($typeTo) . '%'])
-                    ->where('thk_to_min_mm', '<=', $thkTo)
-                    ->where('thk_to_max_mm', '>=', $thkTo)
-                    ->orderBy('nail_length_mm', 'desc')
+                // Exact match
+                $matchedRule = DB::table('nail_size_rules')
+                    ->where('from', $nailFrom)->where('to', $nailTo)
+                    ->where('thk_from', (int)$thkFrom)->where('thk_to', (int)$thkTo)
                     ->first();
-                
-                if (!$matchedValidation) {
-                    $matchedValidation = DB::table('packaging_fastener_validations')
-                        ->where('is_active', true)
-                        ->whereRaw('LOWER(type_from) LIKE ?', ['%' . strtolower($typeFrom) . '%'])
-                        ->where('thk_from_min_mm', '<=', $thkFrom)
-                        ->where('thk_from_max_mm', '>=', $thkFrom)
-                        ->whereRaw('LOWER(type_to) LIKE ?', ['%' . strtolower($typeTo) . '%'])
-                        ->orderByRaw('ABS(thk_to_min_mm - ?)', [$thkTo])
-                        ->orderBy('nail_length_mm', 'desc')
+
+                // Fallback: nearest thk_from >= actual, nearest thk_to >= actual
+                if (!$matchedRule) {
+                    $matchedRule = DB::table('nail_size_rules')
+                        ->where('from', $nailFrom)->where('to', $nailTo)
+                        ->where('thk_from', '>=', (int)$thkFrom)
+                        ->where('thk_to', '>=', (int)$thkTo)
+                        ->orderBy('thk_from')->orderBy('thk_to')
                         ->first();
                 }
 
-                if (!$matchedValidation) {
-                    $matchedValidation = DB::table('packaging_fastener_validations')
-                        ->where('is_active', true)
-                        ->whereRaw('LOWER(type_from) LIKE ?', ['%' . strtolower($typeFrom) . '%'])
-                        ->whereRaw('LOWER(type_to) LIKE ?', ['%' . strtolower($typeTo) . '%'])
-                        ->orderByRaw('ABS(thk_from_min_mm - ?) + ABS(thk_to_min_mm - ?)', [$thkFrom, $thkTo])
-                        ->orderBy('nail_length_mm', 'desc')
+                // Fallback: highest available thk_from, highest thk_to
+                if (!$matchedRule) {
+                    $matchedRule = DB::table('nail_size_rules')
+                        ->where('from', $nailFrom)->where('to', $nailTo)
+                        ->orderByDesc('thk_from')->orderByDesc('thk_to')
                         ->first();
                 }
-                
-                if ($matchedValidation) {
-                    $matchedNailCode = $matchedValidation->nail_code;
+
+                if ($matchedRule) {
+                    $matchedNailSize = $matchedRule->size_nails;
                 }
             }
 
@@ -309,7 +307,7 @@ class PackagingCalculatorService
                     'id' => \Illuminate\Support\Str::uuid()->toString(),
                     'job_id' => $detail->id,
                     'bagian' => $bagian,
-                    'kode_material' => $matchedNailCode,
+                    'kode_material' => $matchedNailSize,
                     'titik_paku' => $titik,
                     'jumlah_paku_per_titik' => $perTitik,
                     'total_paku' => $totalPaku,
@@ -449,7 +447,7 @@ class PackagingCalculatorService
                     $tipe = $konfigBawah['penutup']['status'] ?? 'Tanpa Penutup';
                     $customDetails[] = [
                         'section' => 'Bawah',
-                        'part_name' => 'Penutup Bawah',
+                        'part_name' => 'Penutup',
                         'include' => ($tipe === 'Tanpa Penutup' || empty($tipe)) ? '0' : '1',
                         'direction' => $konfigBawah['penutup']['arah'] ?? 'Horizontal',
                         'material_kode' => $konfigBawah['penutup']['material'] ?? 'PN03',
@@ -646,51 +644,41 @@ class PackagingCalculatorService
                 }
             }
 
-            $matchedNailCode = null;
+            // Map typeFrom ke kategori nail_size_rules
+            $nailFrom = 'Balok';
+            if (stripos($typeFrom, 'Triplek') !== false || stripos($typeFrom, 'Triplex') !== false) {
+                $nailFrom = 'Triplek';
+            }
+            $nailTo = 'Balok';
+
+            $matchedNailSize = null;
             if ($thkFrom > 0 && $thkTo > 0) {
-                \Illuminate\Support\Facades\Log::info("Trying to match fastener for $bagian: From $typeFrom $thkFrom mm, To $typeTo $thkTo mm");
-                
-                // Try exact match first
-                $matchedValidation = DB::table('packaging_fastener_validations')
-                    ->where('is_active', true)
-                    ->whereRaw('LOWER(type_from) LIKE ?', ['%' . strtolower($typeFrom) . '%'])
-                    ->where('thk_from_min_mm', '<=', $thkFrom)
-                    ->where('thk_from_max_mm', '>=', $thkFrom)
-                    ->whereRaw('LOWER(type_to) LIKE ?', ['%' . strtolower($typeTo) . '%'])
-                    ->where('thk_to_min_mm', '<=', $thkTo)
-                    ->where('thk_to_max_mm', '>=', $thkTo)
-                    ->orderBy('nail_length_mm', 'desc')
+                // Exact match
+                $matchedRule = DB::table('nail_size_rules')
+                    ->where('from', $nailFrom)->where('to', $nailTo)
+                    ->where('thk_from', (int)$thkFrom)->where('thk_to', (int)$thkTo)
                     ->first();
-                
-                // Fallback 1: Ignore thkTo strictness if typeTo matches
-                if (!$matchedValidation) {
-                    $matchedValidation = DB::table('packaging_fastener_validations')
-                        ->where('is_active', true)
-                        ->whereRaw('LOWER(type_from) LIKE ?', ['%' . strtolower($typeFrom) . '%'])
-                        ->where('thk_from_min_mm', '<=', $thkFrom)
-                        ->where('thk_from_max_mm', '>=', $thkFrom)
-                        ->whereRaw('LOWER(type_to) LIKE ?', ['%' . strtolower($typeTo) . '%'])
-                        ->orderByRaw('ABS(thk_to_min_mm - ?)', [$thkTo])
-                        ->orderBy('nail_length_mm', 'desc')
+
+                // Fallback: nearest thk_from >= actual, nearest thk_to >= actual
+                if (!$matchedRule) {
+                    $matchedRule = DB::table('nail_size_rules')
+                        ->where('from', $nailFrom)->where('to', $nailTo)
+                        ->where('thk_from', '>=', (int)$thkFrom)
+                        ->where('thk_to', '>=', (int)$thkTo)
+                        ->orderBy('thk_from')->orderBy('thk_to')
                         ->first();
                 }
 
-                // Fallback 2: Ignore thkFrom strictness as well, find closest From and To
-                if (!$matchedValidation) {
-                    $matchedValidation = DB::table('packaging_fastener_validations')
-                        ->where('is_active', true)
-                        ->whereRaw('LOWER(type_from) LIKE ?', ['%' . strtolower($typeFrom) . '%'])
-                        ->whereRaw('LOWER(type_to) LIKE ?', ['%' . strtolower($typeTo) . '%'])
-                        ->orderByRaw('ABS(thk_from_min_mm - ?) + ABS(thk_to_min_mm - ?)', [$thkFrom, $thkTo])
-                        ->orderBy('nail_length_mm', 'desc')
+                // Fallback: highest available
+                if (!$matchedRule) {
+                    $matchedRule = DB::table('nail_size_rules')
+                        ->where('from', $nailFrom)->where('to', $nailTo)
+                        ->orderByDesc('thk_from')->orderByDesc('thk_to')
                         ->first();
                 }
-                
-                if ($matchedValidation) {
-                    $matchedNailCode = $matchedValidation->nail_code;
-                    \Illuminate\Support\Facades\Log::info("Matched Fastener: " . $matchedNailCode);
-                } else {
-                    \Illuminate\Support\Facades\Log::info("No fastener matched for $bagian (even with fallbacks)");
+
+                if ($matchedRule) {
+                    $matchedNailSize = $matchedRule->size_nails;
                 }
             }
 
@@ -704,7 +692,7 @@ class PackagingCalculatorService
                 'job_id' => $calculation->id,
                 'category' => 'Paku',
                 'bagian' => $bagian,
-                'kode_material' => $matchedNailCode,
+                'kode_material' => $matchedNailSize,
                 'titik_paku' => $titik,
                 'jumlah_paku_per_titik' => $perTitik,
                 'total_paku' => $totalPaku,
@@ -800,7 +788,8 @@ class PackagingCalculatorService
     private function formatDetailRow($section, $partName, $material, $materialKode, $direction, $tipePenutup, $calculatedThickness, $calculatedWidth, $partLength, $qty, $sideCount) {
         $totalQty = $qty * $sideCount;
         $totalLength = ($partLength * $totalQty) / 1000;
-        $pricePerUnit = $material ? (float)$material->unit_price : 0;
+        $materialLengthM = ($material && (float)$material->length > 0) ? (float)$material->length / 1000 : 1;
+        $pricePerUnit = $material ? (float)$material->unit_price / $materialLengthM : 0;
         
         $isTripleks = stripos($tipePenutup, 'Tripleks') !== false || ($material && stripos($material->component, 'Triplek') !== false);
         
@@ -885,10 +874,19 @@ class PackagingCalculatorService
         $ptblMat = $getMat($ptblKode);
         $tebalPenutupBelakang = $ptblMat ? (float)$ptblMat->thickness : 0;
 
+        $ptkKode = $getMatKode('Penutup', 'Kanan', 'PN03');
+        $ptkMat = $getMat($ptkKode);
+        $tebalPenutupKanan = $ptkMat ? (float)$ptkMat->thickness : 0;
+
+        $ptklKode = $getMatKode('Penutup', 'Kiri', 'PN03');
+        $ptklMat = $getMat($ptklKode);
+        $tebalPenutupKiri = $ptklMat ? (float)$ptklMat->thickness : 0;
+
         $paKode = $getMatKode('Penyangga', 'Atas', 'BK02');
         $paMat = $getMat($paKode);
-        $tebalPenyanggaAtas = $paMat ? (float)$paMat->thickness : 0;
-        $lebarPenyanggaAtas = $paMat ? (float)$paMat->width : 0;
+        $paOverride = collect($customDetails)->where('section', 'Penyangga')->where('part_name', 'Atas')->first();
+        $tebalPenyanggaAtas = $paMat ? (float)$paMat->thickness : (float)($paOverride['calculated_thickness'] ?? 0);
+        $lebarPenyanggaAtas = $paMat ? (float)$paMat->width : (float)($paOverride['calculated_width'] ?? 0);
 
         $pkananKode = $getMatKode('Penyangga', 'Kanan', 'BK02');
         $pkananMat = $getMat($pkananKode);
@@ -916,8 +914,10 @@ class PackagingCalculatorService
         }
 
         if ($kbInclude == 1 || $kbInclude === '1') {
-            $panjangKB = $L + $tebalPenutupDepan + $tebalPenutupBelakang;
-            $details[] = $this->formatDetailRow('Bawah', 'Kaki Balok', $kbMat, $kbKode, 'Horizontal', '', $tebalKakiBalok, $lebarKakiBalok, $panjangKB, $qtyKB, 1);
+            $kbOverride = collect($customDetails)->where('section', 'Bawah')->where('part_name', 'Kaki Balok')->first();
+            $kbDirection = $kbOverride['direction'] ?? $arahGlobal;
+            $panjangKB = ($kbDirection === 'Vertikal') ? ($L + $tebalPenutupDepan + $tebalPenutupBelakang) : ($P + $tebalPenutupKanan + $tebalPenutupKiri);
+            $details[] = $this->formatDetailRow('Bawah', 'Kaki Balok', $kbMat, $kbKode, $kbDirection, '', $tebalKakiBalok, $lebarKakiBalok, $panjangKB, $qtyKB, 1);
         }
 
         if (($pbInclude == 1 || $pbInclude === '1') && $qtyPenyanggaBawah > 0) {
@@ -928,22 +928,27 @@ class PackagingCalculatorService
         if ($bawahPenutupOverride) {
             $ptbInclude = $bawahPenutupOverride['include'] ?? 1;
             $ptbTipe = $bawahPenutupOverride['tipe_penutup'] ?? $ptbTipe;
-            if ($ptbInclude == 1 && $ptbTipe !== 'Tanpa Penutup' && $ptbTipe !== 'Tidak makai penutup' && !empty($ptbTipe)) {
-                $isTripleks = stripos($ptbTipe, 'Tripleks') !== false;
-                $qtyBasis = $L;
-                $lebar = $ptbMat ? (float)$ptbMat->width : 0;
-                $partCelah = (stripos($ptbTipe, 'Setengah') !== false) ? $celahBawah : 0;
-                $qtyPTB = ($isTripleks || $lebar <= 0) ? 1 : $this->hitungQtyPenutup($ptbTipe, $qtyBasis, $lebar, $partCelah);
-                $partWidth = $isTripleks ? $qtyBasis : $lebar;
-                $details[] = $this->formatDetailRow('Bawah', 'Penutup', $ptbMat, $ptbKode, 'Horizontal', $ptbTipe, $tebalPenutupBawah, $partWidth, $P, $qtyPTB, 1);
-            }
+            $ptbKode = $bawahPenutupOverride['material_kode'] ?? $ptbKode;
+            $ptbMat = $getMat($ptbKode);
+            $tebalPenutupBawah = $ptbMat ? (float)$ptbMat->thickness : (float)($bawahPenutupOverride['calculated_thickness'] ?? $tebalPenutupBawah);
+        } else {
+            $ptbInclude = 1;
+        }
+        if ($ptbInclude == 1 && $ptbTipe !== 'Tanpa Penutup' && $ptbTipe !== 'Tidak makai penutup' && !empty($ptbTipe)) {
+            $isTripleks = stripos($ptbTipe, 'Tripleks') !== false;
+            $qtyBasis = $L;
+            $lebar = $ptbMat ? (float)$ptbMat->width : 0;
+            $partCelah = (stripos($ptbTipe, 'Setengah') !== false) ? $celahBawah : 0;
+            $qtyPTB = ($isTripleks || $lebar <= 0) ? 1 : $this->hitungQtyPenutup($ptbTipe, $qtyBasis, $lebar, $partCelah);
+            $partWidth = $isTripleks ? $qtyBasis : $lebar;
+            $details[] = $this->formatDetailRow('Bawah', 'Penutup', $ptbMat, $ptbKode, 'Horizontal', $ptbTipe, $tebalPenutupBawah, $partWidth, $P, $qtyPTB, 1);
         }
 
         // --- 3. HITUNG PENYANGGA VERTIKAL ---
         $atasPenyanggaInclude = collect($customDetails)->where('section', 'Penyangga')->where('part_name', 'Atas')->first()['include'] ?? ($params['atas_penyangga_include'] ?? 1);
         $penyanggaParts = ['Atas', 'Kanan', 'Kiri', 'Depan', 'Belakang'];
         
-        $tinggiTiang = $T + $tebalPenutupBawah + $tebalPenyanggaBawah + $lebarKakiBalok + $tebalPenyanggaAtas;
+        $tinggiTiang = $T + $tebalPenutupBawah + $tebalPenyanggaBawah + $lebarKakiBalok + $lebarPenyanggaAtas;
 
         foreach ($penyanggaParts as $pName) {
             $override = collect($customDetails)->where('section', 'Penyangga')->where('part_name', $pName)->first();
@@ -972,7 +977,7 @@ class PackagingCalculatorService
                 $pQty = $qtyKB; 
             }
 
-            $arah = $override['direction'] ?? ($override['arah'] ?? ($atasOverride['direction'] ?? ($atasOverride['arah'] ?? ($pName === 'Atas' ? 'Horizontal' : 'Vertikal'))));
+            $arah = $override['direction'] ?? ($override['arah'] ?? ($atasOverride['direction'] ?? ($atasOverride['arah'] ?? 'Vertikal')));
             $details[] = $this->formatDetailRow('Penyangga', $pName, $pMat, $pKode, $arah, '', $tebal, $lebar, $pPanjang, max(0, $pQty), 1);
         }
 

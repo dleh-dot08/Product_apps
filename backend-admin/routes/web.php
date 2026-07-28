@@ -20,6 +20,11 @@ Route::middleware('auth')->group(function () {
     Route::post('/divisions', [\App\Http\Controllers\DivisionController::class, 'store'])->name('divisions.store');
     Route::post('/roles', [\App\Http\Controllers\RoleController::class, 'store'])->name('roles.store');
     
+    // Route Daftar Tugas
+    Route::get('/daftar-tugas', function () {
+        return view('daftar-tugas.index');
+    })->name('daftar-tugas.index');
+    
     // Routes untuk Packaging
     Route::prefix('packaging')->name('packaging.')->group(function () {
         Route::get('/', [\App\Http\Controllers\PackagingController::class, 'index'])->name('index');

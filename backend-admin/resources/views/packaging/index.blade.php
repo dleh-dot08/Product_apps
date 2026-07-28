@@ -527,7 +527,7 @@
                     </a>
                 @endif
 
-                <a href="{{ route('packaging.calculations.create') }}"
+                <a href="{{ route('packaging.calculations.create', ['auto_open' => 'true']) }}"
                    class="btn pkg-btn-main d-inline-flex align-items-center justify-content-center gap-2 shadow" style="border-radius: 12px; padding: 10px 24px; font-size: 0.85rem;">
                     <i class="fa-solid fa-circle-plus fs-6"></i>
                     CRATE CALCULATION
