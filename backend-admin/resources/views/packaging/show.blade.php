@@ -1604,100 +1604,410 @@
 
                     <!-- Single Combined Card -->
                     <div class="card border-0 shadow-sm style-card-container configuration-card">
-                        <form action="{{ isset($calculation) ? route('packaging.calculations.update', $calculation->id) : '#' }}" method="POST" id="form-edit-config">
+                        <form
+                            action="{{ isset($calculation) ? route('packaging.calculations.update', $calculation->id) : '#' }}"
+                            method="POST"
+                            id="form-edit-config"
+                        >
                             @csrf
+                    
                             @php
-                                $c_panjang = isset($calculation) ? $calculation->panjang : '';
-                                $c_lebar = isset($calculation) ? $calculation->lebar : '';
-                                $c_tinggi = isset($calculation) ? $calculation->tinggi : '';
-                                
-                                $c_jarak = isset($calculation) ? ($calculation->jarak_penyanggah ?? '300') : '300';
-                                $c_gap_atas = isset($calculation) ? ($calculation->gap_atas ?? '10') : '10';
-                                $c_gap_bawah = isset($calculation) ? ($calculation->gap_bawah ?? '10') : '10';
-
-                                $k_b_peny_inc = isset($calculation) && $calculation->bawah_penyanggah_status == 'Exclude' ? 0 : 1;
-                                $k_b_peny_arah = isset($calculation) ? ($calculation->bawah_penyanggah_arah ?? 'Horizontal') : 'Horizontal';
-                                $k_b_peny_mat = isset($calculation) ? ($calculation->bawah_penyanggah_material ?? '') : '';
-                                
-                                $k_b_penutup_tipe = isset($calculation) ? ($calculation->bawah_penutup_status ?? 'Tanpa Penutup') : 'Tanpa Penutup';
-                                $k_b_penutup_arah = isset($calculation) ? ($calculation->bawah_penutup_arah ?? 'Horizontal') : 'Horizontal';
-                                $k_b_penutup_mat = isset($calculation) ? ($calculation->bawah_penutup_material ?? '') : '';
-
-                                $k_b_kaki_inc = isset($calculation) && $calculation->bawah_kaki_balok_status == 'Exclude' ? 0 : 1;
-                                $k_b_kaki_arah = isset($calculation) ? ($calculation->bawah_kaki_balok_arah ?? 'Horizontal') : 'Horizontal';
-                                $k_b_kaki_mat = isset($calculation) ? ($calculation->bawah_kaki_balok_material ?? '') : '';
-
-                                $k_a_peny_inc = isset($calculation) && $calculation->atas_penyanggah_status == 'Exclude' ? 0 : 1;
-                                $k_a_peny_arah = isset($calculation) ? ($calculation->atas_penyanggah_arah ?? 'Vertikal') : 'Vertikal';
-                                $k_a_peny_mat = isset($calculation) ? ($calculation->atas_penyanggah_material ?? '') : '';
-                                
-                                $k_a_penutup_tipe = isset($calculation) ? ($calculation->atas_penutup_status ?? 'Tanpa Penutup') : 'Tanpa Penutup';
-                                $k_a_penutup_arah = isset($calculation) ? ($calculation->atas_penutup_arah ?? 'Horizontal') : 'Horizontal';
-                                $k_a_penutup_mat = isset($calculation) ? ($calculation->atas_penutup_material ?? '') : '';
+                                /* =========================================================
+                                 * NILAI DIMENSI
+                                 * Mendukung nama kolom baru dan nama kolom lama.
+                                 * ========================================================= */
+                                $cPanjang = isset($calculation)
+                                    ? ($calculation->length ?? $calculation->panjang ?? 0)
+                                    : 0;
+                    
+                                $cLebar = isset($calculation)
+                                    ? ($calculation->width ?? $calculation->lebar ?? 0)
+                                    : 0;
+                    
+                                $cTinggi = isset($calculation)
+                                    ? ($calculation->height ?? $calculation->tinggi ?? 0)
+                                    : 0;
+                    
+                                $cJarak = isset($calculation)
+                                    ? ($calculation->distance_between_pillars ?? $calculation->jarak_penyanggah ?? 300)
+                                    : 300;
+                    
+                                $cGapAtas = isset($calculation)
+                                    ? ($calculation->gap_atas ?? 10)
+                                    : 10;
+                    
+                                $cGapBawah = isset($calculation)
+                                    ? ($calculation->gap_bawah ?? 10)
+                                    : 10;
+                    
+                                $details = isset($calculation) && $calculation->relationLoaded('details')
+                                    ? $calculation->details
+                                    : (isset($calculation) ? $calculation->details : collect());
+                    
+                                /* =========================================================
+                                 * HELPER DATA DETAIL
+                                 * ========================================================= */
+                                $getMaterialCode = function ($detail, $fallback = '-') {
+                                    if (!$detail) {
+                                        return filled($fallback) ? $fallback : '-';
+                                    }
+                    
+                                    return data_get($detail, 'material.kode')
+                                        ?? data_get($detail, 'material_kode')
+                                        ?? (filled($fallback) ? $fallback : '-');
+                                };
+                    
+                                $getMaterialLabel = function ($detail, $fallback = '-') use ($getMaterialCode) {
+                                    if (!$detail) {
+                                        return filled($fallback) ? $fallback : '-';
+                                    }
+                    
+                                    $code = $getMaterialCode($detail, $fallback);
+                                    $name = data_get($detail, 'material.nama')
+                                        ?? data_get($detail, 'material.name')
+                                        ?? data_get($detail, 'material.deskripsi')
+                                        ?? data_get($detail, 'material.description');
+                    
+                                    if (filled($name) && trim((string) $name) !== trim((string) $code)) {
+                                        return trim($code . ' — ' . $name);
+                                    }
+                    
+                                    return filled($code) ? $code : '-';
+                                };
+                    
+                                $detailIsIncluded = function ($detail, $default = false) use ($getMaterialCode) {
+                                    if (!$detail) {
+                                        return $default;
+                                    }
+                    
+                                    $include = data_get($detail, 'include');
+                                    if ($include !== null) {
+                                        return in_array(strtolower((string) $include), ['1', 'true', 'yes', 'ya', 'include'], true);
+                                    }
+                    
+                                    $quantity = (float) (data_get($detail, 'total_quantity')
+                                        ?? data_get($detail, 'quantity')
+                                        ?? 0);
+                    
+                                    $material = trim((string) $getMaterialCode($detail));
+                    
+                                    return $quantity > 0 && $material !== '' && $material !== '-';
+                                };
+                    
+                                $statusIsIncluded = function ($status, $default = true) {
+                                    if ($status === null || $status === '') {
+                                        return $default;
+                                    }
+                    
+                                    return !in_array(
+                                        strtolower(trim((string) $status)),
+                                        ['exclude', 'not include', '0', 'false', 'tidak', 'tidak digunakan'],
+                                        true
+                                    );
+                                };
+                    
+                                /* =========================================================
+                                 * DETAIL AREA BAWAH
+                                 * ========================================================= */
+                                $detailBawahPenyangga = $details
+                                    ->where('section', 'Bawah')
+                                    ->first(fn ($detail) => in_array($detail->part_name, ['Penyangga', 'Penyanggah'], true));
+                    
+                                $detailBawahPenutup = $details
+                                    ->where('section', 'Bawah')
+                                    ->first(fn ($detail) => $detail->part_name === 'Penutup');
+                    
+                                $detailBawahKaki = $details
+                                    ->where('section', 'Bawah')
+                                    ->first(fn ($detail) => in_array($detail->part_name, ['Kaki Balok', 'Additional Balok'], true));
+                    
+                                $fallbackBawahPenyanggaStatus = isset($calculation)
+                                    ? ($calculation->bawah_penyanggah_status ?? $calculation->bawah_penyangga_status ?? null)
+                                    : null;
+                    
+                                $fallbackBawahKakiStatus = isset($calculation)
+                                    ? ($calculation->bawah_kaki_balok_status ?? null)
+                                    : null;
+                    
+                                $bawahPenyanggaIncluded = $detailBawahPenyangga
+                                    ? $detailIsIncluded($detailBawahPenyangga, true)
+                                    : $statusIsIncluded($fallbackBawahPenyanggaStatus, true);
+                    
+                                $bawahPenyanggaArah = data_get($detailBawahPenyangga, 'direction')
+                                    ?? (isset($calculation)
+                                        ? ($calculation->bawah_penyanggah_arah ?? $calculation->bawah_penyangga_arah ?? 'Horizontal')
+                                        : 'Horizontal');
+                    
+                                $bawahPenyanggaMaterialFallback = isset($calculation)
+                                    ? ($calculation->bawah_penyanggah_material ?? $calculation->bawah_penyangga_material ?? '-')
+                                    : '-';
+                    
+                                $bawahPenyanggaMaterial = $getMaterialCode(
+                                    $detailBawahPenyangga,
+                                    $bawahPenyanggaMaterialFallback
+                                );
+                    
+                                $bawahPenyanggaMaterialLabel = $getMaterialLabel(
+                                    $detailBawahPenyangga,
+                                    $bawahPenyanggaMaterialFallback
+                                );
+                    
+                                $fallbackBawahPenutupTipe = isset($calculation)
+                                    ? ($calculation->bawah_penutup_status ?? 'Tanpa Penutup')
+                                    : 'Tanpa Penutup';
+                    
+                                $bawahPenutupIncluded = $detailBawahPenutup
+                                    ? $detailIsIncluded($detailBawahPenutup, false)
+                                    : !in_array(
+                                        strtolower(trim((string) $fallbackBawahPenutupTipe)),
+                                        ['', '0', 'tanpa penutup', 'tidak makai penutup', 'tidak pakai papan', 'exclude'],
+                                        true
+                                    );
+                    
+                                $bawahPenutupTipe = $bawahPenutupIncluded
+                                    ? (data_get($detailBawahPenutup, 'tipe_penutup') ?: $fallbackBawahPenutupTipe)
+                                    : 'Tanpa Penutup';
+                    
+                                $bawahPenutupArah = data_get($detailBawahPenutup, 'direction')
+                                    ?? (isset($calculation) ? ($calculation->bawah_penutup_arah ?? 'Horizontal') : 'Horizontal');
+                    
+                                $bawahPenutupMaterialFallback = isset($calculation)
+                                    ? ($calculation->bawah_penutup_material ?? '-')
+                                    : '-';
+                    
+                                $bawahPenutupMaterial = $getMaterialCode(
+                                    $detailBawahPenutup,
+                                    $bawahPenutupMaterialFallback
+                                );
+                    
+                                $bawahPenutupMaterialLabel = $getMaterialLabel(
+                                    $detailBawahPenutup,
+                                    $bawahPenutupMaterialFallback
+                                );
+                    
+                                $bawahKakiIncluded = $detailBawahKaki
+                                    ? $detailIsIncluded($detailBawahKaki, true)
+                                    : $statusIsIncluded($fallbackBawahKakiStatus, true);
+                    
+                                $bawahKakiArah = data_get($detailBawahKaki, 'direction')
+                                    ?? (isset($calculation) ? ($calculation->bawah_kaki_balok_arah ?? 'Horizontal') : 'Horizontal');
+                    
+                                $bawahKakiMaterialFallback = isset($calculation)
+                                    ? ($calculation->bawah_kaki_balok_material ?? '-')
+                                    : '-';
+                    
+                                $bawahKakiMaterial = $getMaterialCode(
+                                    $detailBawahKaki,
+                                    $bawahKakiMaterialFallback
+                                );
+                    
+                                $bawahKakiMaterialLabel = $getMaterialLabel(
+                                    $detailBawahKaki,
+                                    $bawahKakiMaterialFallback
+                                );
+                    
+                                /* =========================================================
+                                 * DETAIL AREA ATAS
+                                 * ========================================================= */
+                                $detailAtasPenyangga = $details
+                                    ->where('section', 'Penyangga')
+                                    ->first(fn ($detail) => $detail->part_name === 'Atas')
+                                    ?? $details->first(fn ($detail) => $detail->section === 'Penyangga');
+                    
+                                $detailAtasPenutup = $details
+                                    ->where('section', 'Penutup')
+                                    ->first(fn ($detail) => $detail->part_name === 'Atas')
+                                    ?? $details->first(fn ($detail) => $detail->section === 'Penutup');
+                    
+                                $fallbackAtasPenyanggaStatus = isset($calculation)
+                                    ? ($calculation->atas_penyanggah_status ?? $calculation->atas_penyangga_status ?? null)
+                                    : null;
+                    
+                                $atasPenyanggaIncluded = $detailAtasPenyangga
+                                    ? $detailIsIncluded($detailAtasPenyangga, true)
+                                    : $statusIsIncluded($fallbackAtasPenyanggaStatus, true);
+                    
+                                $atasPenyanggaArah = data_get($detailAtasPenyangga, 'direction')
+                                    ?? (isset($calculation)
+                                        ? ($calculation->atas_penyanggah_arah ?? $calculation->atas_penyangga_arah ?? 'Vertikal')
+                                        : 'Vertikal');
+                    
+                                $atasPenyanggaMaterialFallback = isset($calculation)
+                                    ? ($calculation->atas_penyanggah_material ?? $calculation->atas_penyangga_material ?? '-')
+                                    : '-';
+                    
+                                $atasPenyanggaMaterial = $getMaterialCode(
+                                    $detailAtasPenyangga,
+                                    $atasPenyanggaMaterialFallback
+                                );
+                    
+                                $atasPenyanggaMaterialLabel = $getMaterialLabel(
+                                    $detailAtasPenyangga,
+                                    $atasPenyanggaMaterialFallback
+                                );
+                    
+                                $fallbackAtasPenutupTipe = isset($calculation)
+                                    ? ($calculation->atas_penutup_status ?? 'Tanpa Penutup')
+                                    : 'Tanpa Penutup';
+                    
+                                $atasPenutupIncluded = $detailAtasPenutup
+                                    ? $detailIsIncluded($detailAtasPenutup, false)
+                                    : !in_array(
+                                        strtolower(trim((string) $fallbackAtasPenutupTipe)),
+                                        ['', '0', 'tanpa penutup', 'tidak makai penutup', 'tidak pakai papan', 'exclude'],
+                                        true
+                                    );
+                    
+                                $atasPenutupTipe = $atasPenutupIncluded
+                                    ? (data_get($detailAtasPenutup, 'tipe_penutup') ?: $fallbackAtasPenutupTipe)
+                                    : 'Tanpa Penutup';
+                    
+                                $atasPenutupArah = data_get($detailAtasPenutup, 'direction')
+                                    ?? (isset($calculation) ? ($calculation->atas_penutup_arah ?? 'Horizontal') : 'Horizontal');
+                    
+                                $atasPenutupMaterialFallback = isset($calculation)
+                                    ? ($calculation->atas_penutup_material ?? '-')
+                                    : '-';
+                    
+                                $atasPenutupMaterial = $getMaterialCode(
+                                    $detailAtasPenutup,
+                                    $atasPenutupMaterialFallback
+                                );
+                    
+                                $atasPenutupMaterialLabel = $getMaterialLabel(
+                                    $detailAtasPenutup,
+                                    $atasPenutupMaterialFallback
+                                );
+                    
+                                /* =========================================================
+                                 * JUMLAH KAKI BALOK
+                                 * ========================================================= */
+                                $jumlahKakiBalok = $detailBawahKaki
+                                    ? (data_get($detailBawahKaki, 'total_quantity')
+                                        ?? data_get($detailBawahKaki, 'quantity')
+                                        ?? 0)
+                                    : max(2, (int) floor(((float) $cPanjang) / 800) + 1);
+                    
+                                if (!$bawahKakiIncluded) {
+                                    $jumlahKakiBalok = '-';
+                                }
+                    
+                                $arahPemasanganGlobal = isset($calculation)
+                                    ? ($calculation->arah_pemasangan ?? 'Horizontal')
+                                    : 'Horizontal';
                             @endphp
+                    
+                            <style>
+                                .crate-page .configuration-card .config-display-value {
+                                    display: block;
+                                    width: 100%;
+                                    min-width: 0;
+                                    color: #0f2748;
+                                    font-size: 12px;
+                                    font-weight: 600;
+                                    line-height: 1.4;
+                                    white-space: normal;
+                                    overflow-wrap: anywhere;
+                                    word-break: break-word;
+                                }
+                    
+                                .crate-page .configuration-card .config-display-muted {
+                                    color: #94a3b8;
+                                }
+                    
+                                .crate-page .configuration-card .configuration-cell {
+                                    min-width: 0;
+                                    padding-right: 4px;
+                                }
+                    
+                                .crate-page .configuration-card .configuration-matrix-row {
+                                    align-items: center;
+                                }
+                    
+                                .crate-page .configuration-card .configuration-readonly-input {
+                                    cursor: default;
+                                }
+                    
+                                .crate-page .configuration-card .configuration-hidden-source {
+                                    display: none !important;
+                                }
+                            </style>
+                    
                             <div class="card-body p-0">
-                                <!-- Custom Grid Layout -->
                                 <div class="configuration-grid">
-
-                                    <!-- 1. Dimensi -->
+                    
+                                    {{-- 1. DIMENSI --}}
                                     <div class="d-flex flex-column h-100 configuration-section configuration-section-dimension">
                                         <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
-                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 13px;">1</span>
+                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center">1</span>
                                             Dimensi
                                         </h6>
-                                        <style>
-                                            .container-input-group.flex-grow-1 > .group-item {
-                                                flex-grow: 1;
-                                                display: flex;
-                                                align-items: center;
-                                            }
-                                        </style>
+                    
                                         <div class="d-flex flex-column border rounded bg-white container-input-group overflow-hidden flex-grow-1 configuration-content configuration-content-narrow">
-                                            <div class="configuration-matrix-header" style="visibility: hidden; min-height: 28px;" aria-hidden="true"><span>&nbsp;</span></div>
-                                            <!-- Panjang -->
+                                            <div class="configuration-matrix-header" style="visibility: hidden; min-height: 28px;" aria-hidden="true">
+                                                <span>&nbsp;</span>
+                                            </div>
+                    
                                             <div class="d-flex align-items-center px-3 py-2 group-item">
                                                 <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">swap_horiz</span>
-                                                <div class="w-100">
-                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 8px;">Panjang</small>
+                                                <div class="w-100 min-w-0">
+                                                    <small class="text-muted d-block lh-1 mb-1">Panjang</small>
                                                     <div class="configuration-unit-field">
-                                                        <input type="number" name="length" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 8px; font-weight: 500;" placeholder="0" value="{{ $c_panjang }}" readonly>
+                                                        <input
+                                                            type="number"
+                                                            name="length"
+                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
+                                                            value="{{ $cPanjang }}"
+                                                            readonly
+                                                        >
                                                         <span class="configuration-unit text-muted">mm</span>
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <!-- Lebar -->
+                    
                                             <div class="d-flex align-items-center px-3 py-2 group-item">
                                                 <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">straighten</span>
-                                                <div class="w-100">
-                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 8px;">Lebar</small>
+                                                <div class="w-100 min-w-0">
+                                                    <small class="text-muted d-block lh-1 mb-1">Lebar</small>
                                                     <div class="configuration-unit-field">
-                                                        <input type="number" name="width" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 8px; font-weight: 500;" placeholder="0" value="{{ $c_lebar }}" readonly>
+                                                        <input
+                                                            type="number"
+                                                            name="width"
+                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
+                                                            value="{{ $cLebar }}"
+                                                            readonly
+                                                        >
                                                         <span class="configuration-unit text-muted">mm</span>
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <!-- Tinggi -->
+                    
                                             <div class="d-flex align-items-center px-3 py-2 group-item">
                                                 <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">height</span>
-                                                <div class="w-100">
-                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 8px;">Tinggi</small>
+                                                <div class="w-100 min-w-0">
+                                                    <small class="text-muted d-block lh-1 mb-1">Tinggi</small>
                                                     <div class="configuration-unit-field">
-                                                        <input type="number" name="height" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 8px; font-weight: 500;" placeholder="0" value="{{ $c_tinggi }}" readonly>
+                                                        <input
+                                                            type="number"
+                                                            name="height"
+                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
+                                                            value="{{ $cTinggi }}"
+                                                            readonly
+                                                        >
                                                         <span class="configuration-unit text-muted">mm</span>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- 2. Konfigurasi Area Bawah -->
+                    
+                                    {{-- 2. KONFIGURASI AREA BAWAH --}}
                                     <div class="d-flex flex-column h-100 configuration-section configuration-section-bottom configuration-section-wide">
                                         <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
-                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 13px;">2</span>
+                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center">2</span>
                                             Konfigurasi Area Bawah
                                         </h6>
+                    
                                         <div class="d-flex flex-column bg-white container-input-group overflow-hidden border rounded flex-grow-1 configuration-content configuration-matrix">
                                             <div class="configuration-matrix-header" aria-hidden="true">
                                                 <span>Komponen</span>
@@ -1705,98 +2015,76 @@
                                                 <span>Arah Pemasangan</span>
                                                 <span>Material</span>
                                             </div>
-
+                    
                                             <div class="configuration-matrix-row group-item">
                                                 <div class="configuration-component">
                                                     <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">change_history</span>
                                                     <small class="text-muted">Penyangga</small>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="bawah_penyangga_include" class="form-select form-select-sm border-0 shadow-none matrix-select master-include text-navy" disabled>
-                                                        <option value="1" {{ $k_b_peny_inc ? 'selected' : '' }}>Include</option>
-                                                        <option value="0" {{ !$k_b_peny_inc ? 'selected' : '' }}>Not Include</option>
-                                                    </select>
+                                                    <span class="config-display-value">{{ $bawahPenyanggaIncluded ? 'Include' : 'Not Include' }}</span>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="bawah_penyangga_arah" class="form-select form-select-sm border-0 shadow-none matrix-select master-arah text-navy" disabled>
-                                                        <option value="Horizontal" {{ $k_b_peny_arah == 'Horizontal' ? 'selected' : '' }}>Horizontal</option>
-                                                        <option value="Vertikal" {{ $k_b_peny_arah == 'Vertikal' ? 'selected' : '' }}>Vertikal</option>
-                                                    </select>
+                                                    <span class="config-display-value {{ !$bawahPenyanggaIncluded ? 'config-display-muted' : '' }}">
+                                                        {{ $bawahPenyanggaIncluded ? ($bawahPenyanggaArah ?: '-') : '-' }}
+                                                    </span>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="bawah_penyangga_material" class="form-select form-select-sm border-0 shadow-none matrix-select master-material text-navy" disabled>
-                                                        <option value="" disabled {{ !$k_b_peny_mat ? 'selected' : '' }}>-</option>
-                                                        @foreach($materials->where('component', 'Balok') as $mat)
-                                                            <option value="{{ $mat->code }}" {{ $k_b_peny_mat == $mat->code ? 'selected' : '' }}>{{ $mat->code }} ({{ $mat->thickness }}x{{ $mat->width }})</option>
-                                                        @endforeach
-                                                    </select>
+                                                    <span class="config-display-value {{ !$bawahPenyanggaIncluded ? 'config-display-muted' : '' }}" title="{{ $bawahPenyanggaMaterialLabel }}">
+                                                        {{ $bawahPenyanggaIncluded ? ($bawahPenyanggaMaterialLabel ?: '-') : '-' }}
+                                                    </span>
                                                 </div>
                                             </div>
-
+                    
                                             <div class="configuration-matrix-row group-item">
                                                 <div class="configuration-component">
                                                     <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">grid_view</span>
                                                     <small class="text-muted">Penutup</small>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="bawah_penutup_tipe" class="form-select form-select-sm border-0 shadow-none matrix-select master-include text-navy" disabled>
-                                                        <option value="Tanpa Penutup" {{ $k_b_penutup_tipe == 'Tanpa Penutup' ? 'selected' : '' }}>Tanpa Penutup</option>
-                                                        <option value="Papan Setengah" {{ $k_b_penutup_tipe == 'Papan Setengah' ? 'selected' : '' }}>Papan Setengah</option>
-                                                        <option value="Papan Full" {{ $k_b_penutup_tipe == 'Papan Full' ? 'selected' : '' }}>Papan Full</option>
-                                                        <option value="Triplex" {{ $k_b_penutup_tipe == 'Triplex' ? 'selected' : '' }}>Triplex</option>
-                                                    </select>
+                                                    <span class="config-display-value">{{ $bawahPenutupTipe }}</span>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="bawah_penutup_arah" class="form-select form-select-sm border-0 shadow-none matrix-select master-arah text-navy" disabled>
-                                                        <option value="Horizontal" {{ $k_b_penutup_arah == 'Horizontal' ? 'selected' : '' }}>Horizontal</option>
-                                                        <option value="Vertikal" {{ $k_b_penutup_arah == 'Vertikal' ? 'selected' : '' }}>Vertikal</option>
-                                                    </select>
+                                                    <span class="config-display-value {{ !$bawahPenutupIncluded ? 'config-display-muted' : '' }}">
+                                                        {{ $bawahPenutupIncluded ? ($bawahPenutupArah ?: '-') : '-' }}
+                                                    </span>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="bawah_penutup_material" class="form-select form-select-sm border-0 shadow-none matrix-select master-material text-navy" disabled>
-                                                        <option value="" disabled {{ !$k_b_penutup_mat ? 'selected' : '' }}>-</option>
-                                                        @foreach($materials->whereIn('component', ['Triplek', 'Papan']) as $mat)
-                                                            <option value="{{ $mat->code }}" {{ $k_b_penutup_mat == $mat->code ? 'selected' : '' }}>{{ $mat->code }}</option>
-                                                        @endforeach
-                                                    </select>
+                                                    <span class="config-display-value {{ !$bawahPenutupIncluded ? 'config-display-muted' : '' }}" title="{{ $bawahPenutupMaterialLabel }}">
+                                                        {{ $bawahPenutupIncluded ? ($bawahPenutupMaterialLabel ?: '-') : '-' }}
+                                                    </span>
                                                 </div>
                                             </div>
-
+                    
                                             <div class="configuration-matrix-row group-item">
                                                 <div class="configuration-component">
                                                     <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">view_column_2</span>
                                                     <small class="text-muted">Kaki Balok</small>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="include_pallet_base" class="form-select form-select-sm border-0 shadow-none matrix-select master-include text-navy" disabled>
-                                                        <option value="1" {{ $k_b_kaki_inc ? 'selected' : '' }}>Include</option>
-                                                        <option value="0" {{ !$k_b_kaki_inc ? 'selected' : '' }}>Not Include</option>
-                                                    </select>
+                                                    <span class="config-display-value">{{ $bawahKakiIncluded ? 'Include' : 'Not Include' }}</span>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="bawah_kakibalok_arah" class="form-select form-select-sm border-0 shadow-none matrix-select master-arah text-navy" disabled>
-                                                        <option value="Horizontal" {{ $k_b_kaki_arah == 'Horizontal' ? 'selected' : '' }}>Horizontal</option>
-                                                        <option value="Vertikal" {{ $k_b_kaki_arah == 'Vertikal' ? 'selected' : '' }}>Vertikal</option>
-                                                    </select>
+                                                    <span class="config-display-value {{ !$bawahKakiIncluded ? 'config-display-muted' : '' }}">
+                                                        {{ $bawahKakiIncluded ? ($bawahKakiArah ?: '-') : '-' }}
+                                                    </span>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="bawah_kakibalok_material" class="form-select form-select-sm border-0 shadow-none matrix-select master-material text-navy" disabled>
-                                                        <option value="" disabled {{ !$k_b_kaki_mat ? 'selected' : '' }}>-</option>
-                                                        @foreach($materials->where('component', 'Balok') as $mat)
-                                                            <option value="{{ $mat->code }}" {{ $k_b_kaki_mat == $mat->code ? 'selected' : '' }}>{{ $mat->code }} ({{ $mat->thickness }}x{{ $mat->width }})</option>
-                                                        @endforeach
-                                                    </select>
+                                                    <span class="config-display-value {{ !$bawahKakiIncluded ? 'config-display-muted' : '' }}" title="{{ $bawahKakiMaterialLabel }}">
+                                                        {{ $bawahKakiIncluded ? ($bawahKakiMaterialLabel ?: '-') : '-' }}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-
-                                    <!-- 3. Konfigurasi Area Atas -->
+                    
+                                    {{-- 3. KONFIGURASI AREA ATAS --}}
                                     <div class="d-flex flex-column h-100 configuration-section configuration-section-top configuration-section-wide">
                                         <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
-                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 13px;">3</span>
+                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center">3</span>
                                             Konfigurasi Area Atas
                                         </h6>
+                    
                                         <div class="d-flex flex-column bg-white container-input-group overflow-hidden border rounded flex-grow-1 configuration-content configuration-matrix">
                                             <div class="configuration-matrix-header" aria-hidden="true">
                                                 <span>Komponen</span>
@@ -1804,131 +2092,128 @@
                                                 <span>Arah Pemasangan</span>
                                                 <span>Material</span>
                                             </div>
-
+                    
                                             <div class="configuration-matrix-row group-item">
                                                 <div class="configuration-component">
                                                     <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">change_history</span>
                                                     <small class="text-muted">Penyangga</small>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="atas_penyangga_include" class="form-select form-select-sm border-0 shadow-none matrix-select master-include text-navy" disabled>
-                                                        <option value="1" {{ $k_a_peny_inc ? 'selected' : '' }}>Include</option>
-                                                        <option value="0" {{ !$k_a_peny_inc ? 'selected' : '' }}>Not Include</option>
-                                                    </select>
+                                                    <span class="config-display-value">{{ $atasPenyanggaIncluded ? 'Include' : 'Not Include' }}</span>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="atas_penyangga_arah" class="form-select form-select-sm border-0 shadow-none matrix-select master-arah text-navy" disabled>
-                                                        <option value="Vertikal" {{ $k_a_peny_arah == 'Vertikal' ? 'selected' : '' }}>Vertikal</option>
-                                                        <option value="Horizontal" {{ $k_a_peny_arah == 'Horizontal' ? 'selected' : '' }}>Horizontal</option>
-                                                    </select>
+                                                    <span class="config-display-value {{ !$atasPenyanggaIncluded ? 'config-display-muted' : '' }}">
+                                                        {{ $atasPenyanggaIncluded ? ($atasPenyanggaArah ?: '-') : '-' }}
+                                                    </span>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="atas_penyangga_material" class="form-select form-select-sm border-0 shadow-none matrix-select master-material text-navy" disabled>
-                                                        <option value="" disabled {{ !$k_a_peny_mat ? 'selected' : '' }}>-</option>
-                                                        @foreach($materials->where('component', 'Balok') as $mat)
-                                                            <option value="{{ $mat->code }}" {{ $k_a_peny_mat == $mat->code ? 'selected' : '' }}>{{ $mat->code }} ({{ $mat->thickness }}x{{ $mat->width }})</option>
-                                                        @endforeach
-                                                    </select>
+                                                    <span class="config-display-value {{ !$atasPenyanggaIncluded ? 'config-display-muted' : '' }}" title="{{ $atasPenyanggaMaterialLabel }}">
+                                                        {{ $atasPenyanggaIncluded ? ($atasPenyanggaMaterialLabel ?: '-') : '-' }}
+                                                    </span>
                                                 </div>
                                             </div>
-
+                    
                                             <div class="configuration-matrix-row group-item">
                                                 <div class="configuration-component">
                                                     <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">grid_view</span>
                                                     <small class="text-muted">Penutup</small>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="atas_penutup_tipe" class="form-select form-select-sm border-0 shadow-none matrix-select master-include text-navy" disabled>
-                                                        <option value="Tanpa Penutup" {{ $k_a_penutup_tipe == 'Tanpa Penutup' ? 'selected' : '' }}>Tanpa Penutup</option>
-                                                        <option value="Papan Setengah" {{ $k_a_penutup_tipe == 'Papan Setengah' ? 'selected' : '' }}>Papan Setengah</option>
-                                                        <option value="Papan Full" {{ $k_a_penutup_tipe == 'Papan Full' ? 'selected' : '' }}>Papan Full</option>
-                                                        <option value="Triplex" {{ $k_a_penutup_tipe == 'Triplex' ? 'selected' : '' }}>Triplex</option>
-                                                    </select>
+                                                    <span class="config-display-value">{{ $atasPenutupTipe }}</span>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="atas_penutup_arah" class="form-select form-select-sm border-0 shadow-none matrix-select master-arah text-navy" disabled>
-                                                        <option value="Horizontal" {{ $k_a_penutup_arah == 'Horizontal' ? 'selected' : '' }}>Horizontal</option>
-                                                        <option value="Vertikal" {{ $k_a_penutup_arah == 'Vertikal' ? 'selected' : '' }}>Vertikal</option>
-                                                    </select>
+                                                    <span class="config-display-value {{ !$atasPenutupIncluded ? 'config-display-muted' : '' }}">
+                                                        {{ $atasPenutupIncluded ? ($atasPenutupArah ?: '-') : '-' }}
+                                                    </span>
                                                 </div>
                                                 <div class="configuration-cell">
-                                                    <select name="atas_penutup_material" class="form-select form-select-sm border-0 shadow-none matrix-select master-material text-navy" disabled>
-                                                        <option value="" disabled {{ !$k_a_penutup_mat ? 'selected' : '' }}>-</option>
-                                                        @foreach($materials->whereIn('component', ['Triplek', 'Papan']) as $mat)
-                                                            <option value="{{ $mat->code }}" {{ $k_a_penutup_mat == $mat->code ? 'selected' : '' }}>{{ $mat->code }}</option>
-                                                        @endforeach
-                                                    </select>
+                                                    <span class="config-display-value {{ !$atasPenutupIncluded ? 'config-display-muted' : '' }}" title="{{ $atasPenutupMaterialLabel }}">
+                                                        {{ $atasPenutupIncluded ? ($atasPenutupMaterialLabel ?: '-') : '-' }}
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- 4. Konfigurasi Tambahan -->
+                    
+                                    {{-- 4. KONFIGURASI TAMBAHAN --}}
                                     <div class="d-flex flex-column h-100 configuration-section configuration-section-general">
                                         <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
-                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center" style="width: 24px; height: 24px; font-size: 13px;">4</span>
+                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center">4</span>
                                             Konfigurasi
                                         </h6>
+                    
                                         <div class="d-flex flex-column border rounded bg-white container-input-group overflow-hidden flex-grow-1 configuration-content configuration-content-narrow">
-                                            <div class="configuration-matrix-header" style="visibility: hidden; min-height: 28px;" aria-hidden="true"><span>&nbsp;</span></div>
-
-
-                                            <!-- Jarak Penyanggah -->
+                                            <div class="configuration-matrix-header" style="visibility: hidden; min-height: 28px;" aria-hidden="true">
+                                                <span>&nbsp;</span>
+                                            </div>
+                    
                                             <div class="d-flex align-items-center px-3 py-2 group-item">
                                                 <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">straighten</span>
-                                                <div class="w-100">
-                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 13px;">Jarak Penyanggah</small>
+                                                <div class="w-100 min-w-0">
+                                                    <small class="text-muted d-block lh-1 mb-1">Jarak Penyangga</small>
                                                     <div class="configuration-unit-field">
-                                                        <input type="number" name="distance_between_pillars" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 13px; font-weight: 500;" placeholder="0" value="{{ $c_jarak }}" readonly>
+                                                        <input
+                                                            type="number"
+                                                            name="distance_between_pillars"
+                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
+                                                            value="{{ $cJarak }}"
+                                                            readonly
+                                                        >
                                                         <span class="configuration-unit text-muted">mm</span>
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <!-- Celah Atas -->
+                    
                                             <div class="d-flex align-items-center px-3 py-2 group-item">
                                                 <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">vertical_align_top</span>
-                                                <div class="w-100">
-                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 13px;">Celah Atas</small>
+                                                <div class="w-100 min-w-0">
+                                                    <small class="text-muted d-block lh-1 mb-1">Celah Atas</small>
                                                     <div class="configuration-unit-field">
-                                                        <input type="number" name="gap_atas" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 13px; font-weight: 500;" placeholder="0" value="{{ $c_gap_atas }}" readonly>
+                                                        <input
+                                                            type="number"
+                                                            name="gap_atas"
+                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
+                                                            value="{{ $cGapAtas }}"
+                                                            readonly
+                                                        >
                                                         <span class="configuration-unit text-muted">mm</span>
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <!-- Celah Bawah -->
+                    
                                             <div class="d-flex align-items-center px-3 py-2 group-item">
                                                 <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">vertical_align_bottom</span>
-                                                <div class="w-100">
-                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 13px;">Celah Bawah</small>
+                                                <div class="w-100 min-w-0">
+                                                    <small class="text-muted d-block lh-1 mb-1">Celah Bawah</small>
                                                     <div class="configuration-unit-field">
-                                                        <input type="number" name="gap_bawah" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 13px; font-weight: 500;" placeholder="0" value="{{ $c_gap_bawah }}" readonly>
+                                                        <input
+                                                            type="number"
+                                                            name="gap_bawah"
+                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
+                                                            value="{{ $cGapBawah }}"
+                                                            readonly
+                                                        >
                                                         <span class="configuration-unit text-muted">mm</span>
                                                     </div>
                                                 </div>
                                             </div>
-
-                                            <!-- Jumlah Kaki Balok -->
-                                            <div class="d-flex align-items-center px-3 py-2 group-item" id="jarak_balok_additional_wrapper" style="{{ !$k_b_kaki_inc ? 'opacity: 0.5; pointer-events: none; background-color: #f8f9fa;' : '' }}">
+                    
+                                            <div
+                                                class="d-flex align-items-center px-3 py-2 group-item"
+                                                id="jarak_balok_additional_wrapper"
+                                                style="{{ !$bawahKakiIncluded ? 'opacity: 0.5; pointer-events: none; background-color: #f8f9fa;' : '' }}"
+                                            >
                                                 <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">view_agenda</span>
-                                                <div class="w-100">
-                                                    <small class="text-muted d-block lh-1 mb-1" style="font-size: 13px;">Jumlah Kaki Balok</small>
+                                                <div class="w-100 min-w-0">
+                                                    <small class="text-muted d-block lh-1 mb-1">Jumlah Kaki Balok</small>
                                                     <div class="configuration-unit-field">
-                                                        @php
-                                                            $kakiBalokVal = 2;
-                                                            if(isset($calculation)) {
-                                                                $bawahKakiBalok = $calculation->details->where('section', 'Bawah')->whereIn('part_name', ['Kaki Balok', 'Additional Balok'])->first();
-                                                                if ($bawahKakiBalok) {
-                                                                    $kakiBalokVal = $bawahKakiBalok->quantity;
-                                                                } else {
-                                                                    $kakiBalokVal = max(2, (int)floor($c_panjang / 800) + 1);
-                                                                }
-                                                                if (!$k_b_kaki_inc) {
-                                                                    $kakiBalokVal = '-';
-                                                                }
-                                                            }
-                                                        @endphp
-                                                        <input type="text" name="jumlah_kaki_balok" class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100" style="font-size: 13px; font-weight: 500;" placeholder="0" value="{{ $kakiBalokVal }}" readonly>
+                                                        <input
+                                                            type="text"
+                                                            name="jumlah_kaki_balok"
+                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
+                                                            value="{{ $jumlahKakiBalok }}"
+                                                            readonly
+                                                        >
                                                         <span class="configuration-unit text-muted">pcs</span>
                                                     </div>
                                                 </div>
@@ -1937,23 +2222,39 @@
                                     </div>
                                 </div>
                             </div>
+                    
+                            {{--
+                                Data ini tidak terlihat di halaman.
+                                Fungsinya hanya sebagai sumber nilai bagi renderer 2D/3D dan proses JavaScript lama.
+                                Tidak ada dropdown dan tidak ada elemen option.
+                            --}}
+                            <div class="configuration-hidden-source" aria-hidden="true">
+                                <input type="hidden" name="arah_pemasangan" value="{{ $arahPemasanganGlobal }}">
+                    
+                                <input type="hidden" name="bawah_penyangga_include" value="{{ $bawahPenyanggaIncluded ? '1' : '0' }}">
+                                <input type="hidden" name="bawah_penyangga_arah" value="{{ $bawahPenyanggaArah }}">
+                                <input type="hidden" name="bawah_penyangga_material" value="{{ $bawahPenyanggaMaterial }}">
+                    
+                                <input type="hidden" name="bawah_penutup_tipe" value="{{ $bawahPenutupTipe }}">
+                                <input type="hidden" name="bawah_penutup_arah" value="{{ $bawahPenutupArah }}">
+                                <input type="hidden" name="bawah_penutup_material" value="{{ $bawahPenutupMaterial }}">
+                    
+                                <input type="hidden" name="include_pallet_base" value="{{ $bawahKakiIncluded ? '1' : '0' }}">
+                                <input type="hidden" name="bawah_kakibalok_arah" value="{{ $bawahKakiArah }}">
+                                <input type="hidden" name="bawah_kakibalok_material" value="{{ $bawahKakiMaterial }}">
+                    
+                                <input type="hidden" name="atas_penyangga_include" value="{{ $atasPenyanggaIncluded ? '1' : '0' }}">
+                                <input type="hidden" name="atas_penyangga_arah" value="{{ $atasPenyanggaArah }}">
+                                <input type="hidden" name="atas_penyangga_material" value="{{ $atasPenyanggaMaterial }}">
+                    
+                                <input type="hidden" name="atas_penutup_tipe" value="{{ $atasPenutupTipe }}">
+                                <input type="hidden" name="atas_penutup_arah" value="{{ $atasPenutupArah }}">
+                                <input type="hidden" name="atas_penutup_material" value="{{ $atasPenutupMaterial }}">
+                            </div>
                         </form>
                     </div>
-                    <!-- Action / Edit Toggle -->
-                    <div class="mt-2 d-flex justify-content-end gap-2 px-0">
-                        <button type="button" id="btn-edit-config" class="btn btn-navy py-2 px-4 shadow-sm rounded-pill d-flex align-items-center gap-2 fw-bold text-white justify-content-center" style="font-size: 13px; min-width: 180px; transition: all 0.2s;">
-                            <span class="material-symbols-rounded" style="font-size: 18px;">edit</span>
-                            Edit Konfigurasi
-                        </button>
-                        <button type="button" id="btn-cancel-config" class="btn btn-light py-2 px-4 shadow-sm rounded-pill d-none align-items-center gap-2 fw-bold text-dark border justify-content-center" style="font-size: 13px; background-color: #fff; min-width: 120px;">
-                            <span class="material-symbols-rounded" style="font-size: 18px;">close</span>
-                            Batal
-                        </button>
-                        <button type="submit" form="form-edit-config" id="btn-save-config" class="btn btn-success py-2 px-4 shadow-sm rounded-pill d-none align-items-center gap-2 fw-bold text-white justify-content-center" style="font-size: 13px; background-color: #10b981; border: none; min-width: 120px;">
-                            <span class="material-symbols-rounded" style="font-size: 18px;">save</span>
-                            Simpan
-                        </button>
-                    </div>
+                    
+                    {{-- Konfigurasi bersifat read-only. Perubahan dilakukan melalui modal ADD / EDIT DATA. --}}
                 </div>
             </div>
 
@@ -3001,6 +3302,14 @@
             });
         }
 
+        function getConfigValue(name, fallback = '') {
+            const element = document.querySelector(`[name="${name}"]`);
+            if (!element) return fallback;
+
+            const value = element.value;
+            return value === undefined || value === null || value === '' ? fallback : value;
+        }
+
         function drawCrate(resetCamera = false) {
             try {
                 if (!modelGroup || !dimensionGroup) return;
@@ -3014,19 +3323,19 @@
                 const L = parseFloat(document.querySelector('input[name="width"]').value) || 0;
                 const T = parseFloat(document.querySelector('input[name="height"]').value) || 0;
                 const maxSpacing = parseFloat(document.querySelector('input[name="distance_between_pillars"]').value) || 500;
-                const arahGlobal = document.querySelector('select[name="arah_pemasangan"]')?.value || 'Horizontal';
+                const arahGlobal = getConfigValue('arah_pemasangan', 'Horizontal');
                 const celahAtas = parseFloat(document.querySelector('input[name="gap_atas"]').value) || 0;
                 const celahBawah = parseFloat(document.querySelector('input[name="gap_bawah"]').value) || 0;
 
                 if (P <= 0 || L <= 0 || T <= 0) return;
 
-                const bawahPenutupTipe = document.querySelector('select[name="bawah_penutup_tipe"]')?.value || 'Tanpa Penutup';
-                const atasPenutupTipe = document.querySelector('select[name="atas_penutup_tipe"]')?.value || 'Tanpa Penutup';
+                const bawahPenutupTipe = getConfigValue('bawah_penutup_tipe', 'Tanpa Penutup');
+                const atasPenutupTipe = getConfigValue('atas_penutup_tipe', 'Tanpa Penutup');
                 const hasBawahPenutup = (bawahPenutupTipe !== 'Tanpa Penutup' && bawahPenutupTipe !== 'Tidak makai penutup' && bawahPenutupTipe !== 'Tidak Pakai Papan' && bawahPenutupTipe !== '');
                 const hasAtasPenutup = (atasPenutupTipe !== 'Tanpa Penutup' && atasPenutupTipe !== 'Tidak makai penutup' && atasPenutupTipe !== 'Tidak Pakai Papan' && atasPenutupTipe !== '');
                 const hasCover = hasBawahPenutup || hasAtasPenutup;
 
-                const includePallet = document.querySelector('select[name="include_pallet_base"]')?.value;
+                const includePallet = getConfigValue('include_pallet_base', '0');
                 const isPalletEnabled = includePallet === '1' || String(includePallet).toLowerCase() === 'ya';
 
                 // Visibility checkboxes
@@ -3674,8 +3983,8 @@
             const btnCancel = document.getElementById('btn-cancel-config');
             const btnSave = document.getElementById('btn-save-config');
             
-            let bawahPenutupTipe = document.querySelector('select[name="bawah_penutup_tipe"]');
-            let atasPenutupTipe = document.querySelector('select[name="atas_penutup_tipe"]');
+            let bawahPenutupTipe = document.querySelector('[name="bawah_penutup_tipe"]');
+            let atasPenutupTipe = document.querySelector('[name="atas_penutup_tipe"]');
             let bawahPenutupSelect = document.querySelector('select[name="bawah_penutup_material"]');
             let atasPenutupSelect = document.querySelector('select[name="atas_penutup_material"]');
             
@@ -4204,7 +4513,7 @@
                         formData[select.name] = val;
                     });
                     
-                    const kakibalokInc = document.querySelector('select[name="include_pallet_base"]');
+                    const kakibalokInc = document.querySelector('[name="include_pallet_base"]');
                     if (kakibalokInc) {
                         formData['include_pallet_base'] = kakibalokInc.value === '1' ? 1 : 0;
                     }
@@ -4237,7 +4546,7 @@
                 select.addEventListener('change', runSimulation);
             });
             
-            const bawahKakibalokInclude = document.querySelector('select[name="include_pallet_base"]');
+            const bawahKakibalokInclude = document.querySelector('[name="include_pallet_base"]');
             const jarakBalokWrapper = document.getElementById('jarak_balok_additional_wrapper');
             
             function toggleJumlahKakiBalokOverlay(val) {
@@ -4391,7 +4700,7 @@
 
             function calculateNails() {
                 // UPDATE pakuDetails dynamically based on activeDetails before calculation
-                let coverSelect = document.querySelector('select[name="atas_penutup_tipe"]'); // Fallback to atas for global checking if needed
+                let coverSelect = document.querySelector('[name="atas_penutup_tipe"]'); // Fallback to atas for global checking if needed
                 let skipPenutup = !coverSelect || !coverSelect.value || coverSelect.value.toLowerCase().includes('tidak') || coverSelect.value.toLowerCase().includes('tanpa');
                 
                 pakuDetails.forEach(r => {
@@ -4736,9 +5045,9 @@
                     if (typeof dimensionGroup !== 'undefined' && dimensionGroup) dimensionGroup.visible = false;
                     dimensionsVisible = false;
                     
-                    const atasPenutupTipe = document.querySelector('select[name="atas_penutup_tipe"]')?.value || 'Tanpa Penutup';
+                    const atasPenutupTipe = document.querySelector('[name="atas_penutup_tipe"]')?.value || 'Tanpa Penutup';
                     const isHasAtasPenutup = (atasPenutupTipe !== 'Tanpa Penutup' && atasPenutupTipe !== 'Tidak makai penutup' && atasPenutupTipe !== 'Tidak Pakai Papan' && atasPenutupTipe !== '') ? '1' : '0';
-                    const bawahPenutupTipe = document.querySelector('select[name="bawah_penutup_tipe"]')?.value || 'Tanpa Penutup';
+                    const bawahPenutupTipe = document.querySelector('[name="bawah_penutup_tipe"]')?.value || 'Tanpa Penutup';
                     const isHasBawahPenutup = (bawahPenutupTipe !== 'Tanpa Penutup' && bawahPenutupTipe !== 'Tidak makai penutup' && bawahPenutupTipe !== 'Tidak Pakai Papan' && bawahPenutupTipe !== '') ? '1' : '0';
                     
                     const h_val = parseFloat(document.querySelector('input[name="height"]').value) || 0;
@@ -5357,7 +5666,7 @@
                         // 1. Auto-Update Jumlah Kaki Balok based on Length
                         if (this.name === 'length' && kakiBalokInput) {
                             const pValue = parseFloat(this.value) || 0;
-                            const incPallet = document.querySelector('select[name="include_pallet_base"]')?.value;
+                            const incPallet = document.querySelector('[name="include_pallet_base"]')?.value;
                             const isIncluded = (incPallet === '1' || (typeof incPallet === 'string' && incPallet.toLowerCase() === 'ya'));
                             if (isIncluded) {
                                 kakiBalokInput.value = Math.max(2, Math.floor(pValue / 800) + 1);
