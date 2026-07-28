@@ -178,7 +178,15 @@ class PackagingCalculationController extends Controller
                 'jarak_penyanggah' => $request->distance_between_pillars,
                 'gap_atas' => $request->gap_atas,
                 'gap_bawah' => $request->gap_bawah,
+
+                // Tambahan dari modal Step 1 & Step 2
+                'no_product' => $request->no_product ?? $calculation->no_product,
+                'desc_product' => $request->desc_product ?? $calculation->desc_product,
+                'qty_packaging' => $request->qty_pack ?? $calculation->qty_packaging,
+                'qty_product_per_packaging' => $request->qty_per_pack ?? $calculation->qty_product_per_packaging,
+                'packer_id' => $request->packer_id ?? $calculation->packer_id,
                 
+
                 // Konfigurasi Bawah
                 'bawah_penyanggah_status' => $request->has('bawah_penyangga_include') ? ($request->bawah_penyangga_include ? 'Include' : 'Exclude') : $calculation->bawah_penyanggah_status,
                 'bawah_penyanggah_arah' => $request->bawah_penyangga_arah ?? $calculation->bawah_penyanggah_arah,
@@ -200,6 +208,17 @@ class PackagingCalculationController extends Controller
             ];
             \Log::info("Updating PackagingCalculation database row with: ", $updateData);
             $calculation->update($updateData);
+
+            // Update Parent Job if no_so is provided and different
+            if ($request->has('no_so') && $request->no_so !== $calculation->job->no_so) {
+                \Log::info("Updating Parent Job SO Number: " . $request->no_so);
+                $calculation->job->update([
+                    'no_so' => $request->no_so,
+                    'customer' => $request->customer ?? $calculation->job->customer,
+                    'date_delivery' => $request->date_delivery ?? $calculation->job->date_delivery,
+                    'address' => $request->address ?? $calculation->job->address,
+                ]);
+            }
 
             \Log::info("Invoking PackagingCalculatorService...");
             $extraParams = [

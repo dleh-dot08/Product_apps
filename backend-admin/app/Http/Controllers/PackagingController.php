@@ -108,6 +108,28 @@ class PackagingController extends Controller
                     'gap_bawah' => $item['gap_bawah'] ?? 0,
                     'jarak_penyanggah' => $item['jarak'] ?? 0,
                     
+                    // Kolom Konfigurasi Bawah
+                    'bawah_penyanggah_status' => $item['pb_status'] ?? 'Include',
+                    'bawah_penyanggah_arah' => $item['pb_arah'] ?? 'Horizontal',
+                    'bawah_penyanggah_material' => $item['pb_material'] ?? 'A001',
+                    
+                    'bawah_penutup_status' => $item['ptb_status'] ?? 'Tanpa Penutup',
+                    'bawah_penutup_arah' => $item['ptb_arah'] ?? 'Horizontal',
+                    'bawah_penutup_material' => $item['ptb_material'] ?? 'A001',
+                    
+                    'bawah_kaki_balok_status' => $item['kb_status'] ?? 'Include',
+                    'bawah_kaki_balok_arah' => $item['kb_arah'] ?? 'Horizontal',
+                    'bawah_kaki_balok_material' => $item['kb_material'] ?? 'A001',
+                    
+                    // Kolom Konfigurasi Atas
+                    'atas_penyanggah_status' => $item['pa_status'] ?? 'Include',
+                    'atas_penyanggah_arah' => $item['pa_arah'] ?? 'Horizontal',
+                    'atas_penyanggah_material' => $item['pa_material'] ?? 'A001',
+                    
+                    'atas_penutup_status' => $item['pta_status'] ?? 'Tanpa Penutup',
+                    'atas_penutup_arah' => $item['pta_arah'] ?? 'Horizontal',
+                    'atas_penutup_material' => $item['pta_material'] ?? 'A001',
+                    
                     // Konfigurasi
                     'konfigurasi_atas' => $konfigurasi_atas,
                     'konfigurasi_bawah' => $konfigurasi_bawah,
