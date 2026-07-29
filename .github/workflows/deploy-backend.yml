@@ -6,7 +6,7 @@ permissions:
 
 on:
   push:
-    branches: [deploy]
+    branches: [developments]
     paths:
       - backend-admin/**
       - .github/workflows/deploy-backend.yml
