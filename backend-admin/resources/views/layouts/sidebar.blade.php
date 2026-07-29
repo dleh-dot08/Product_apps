@@ -347,7 +347,7 @@
 
                     <!-- 9. Kendaraan -->
                     <li class="nav-item mt-1">
-                        <a href="-" class="nav-link">
+                        <a href="{{ route('vehicles.index') }}" class="nav-link {{ request()->routeIs('vehicles.*') ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-truck"></i>
                             <p class="ms-2 mb-0">Kendaraan</p>
                         </a>

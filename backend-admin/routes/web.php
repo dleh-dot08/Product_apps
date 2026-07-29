@@ -20,6 +20,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/divisions', [\App\Http\Controllers\DivisionController::class, 'store'])->name('divisions.store');
     Route::post('/roles', [\App\Http\Controllers\RoleController::class, 'store'])->name('roles.store');
     
+    // Master Kendaraan
+    Route::resource('vehicles', \App\Http\Controllers\VehicleController::class)->except(['create', 'show', 'edit']);
+    
     // Route Daftar Tugas
     Route::get('/daftar-tugas', function () {
         return view('daftar-tugas.index');
