@@ -2,7 +2,8 @@ FROM node:22-alpine AS assets
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm config set strict-dep-builds false \
+    && pnpm install --frozen-lockfile
 COPY resources ./resources
 COPY vite.config.js postcss.config.js tailwind.config.js ./
 RUN pnpm run build
