@@ -519,13 +519,11 @@
             </div>
 
             <div class="pkg-page-actions d-flex flex-wrap gap-3" style="position: relative; z-index: 1;">
-                @if(auth()->check() && auth()->user()->hasRole(['administrator', 'admin staff']))
-                    <a href="{{ route('packaging.validasi_data.index') }}"
+                    <button type="button" data-bs-toggle="modal" data-bs-target="#validasiDataModal"
                        class="btn btn-light pkg-btn-secondary d-inline-flex align-items-center justify-content-center gap-2 shadow-sm border" style="border-radius: 12px; padding: 10px 20px;">
                         <i class="fa-solid fa-clipboard-check text-primary"></i>
                         <span class="fw-bold">DATA VALIDASI</span>
-                    </a>
-                @endif
+                    </button>
 
                 <a href="{{ route('packaging.calculations.create', ['auto_open' => 'true']) }}"
                    class="btn pkg-btn-main d-inline-flex align-items-center justify-content-center gap-2 shadow" style="border-radius: 12px; padding: 10px 24px; font-size: 0.85rem;">
@@ -581,6 +579,7 @@
                 <div class="row g-3 mt-0">
                     <div class="col-md-5">
                         <div class="pkg-card pkg-cover-card h-100">
+
                             <img src="https://images.unsplash.com/photo-1587293852726-70cdb56c2866?auto=format&fit=crop&q=85&w=1000"
                                  alt="Warehouse packaging area">
                             <div class="pkg-cover-caption">
@@ -842,6 +841,14 @@
                         <button type="button" class="btn btn-sm btn-light border" disabled><i class="fa-solid fa-chevron-right"></i></button>
                     </div>
                 </div>
+            </div>
+        </div>
+    </div>
+    <!-- Modal Validasi Data -->
+    <div class="modal fade" id="validasiDataModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                @include('packaging.Validasi-data')
             </div>
         </div>
     </div>

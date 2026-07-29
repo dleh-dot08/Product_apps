@@ -574,7 +574,7 @@ class PackagingCalculatorService
 
         foreach ($defaults as $bagian => $titik) {
             // Find custom per_titik override sent from frontend
-            $perTitik = 1;
+            $perTitik = 3;
             foreach ($customNails as $cn) {
                 if (($cn['bagian'] ?? '') === $bagian) {
                     $perTitik = (int) ($cn['per_titik'] ?? 1);

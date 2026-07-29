@@ -5,11 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak Kalkulasi - {{ $calculation->project_name ?? 'Crate' }}</title>
     <style>
+        
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
         @page {
             size: A4 portrait;
-            margin: 5mm 10mm 10mm 10mm; /* Top Right Bottom Left */
+            margin: 4mm 10mm 10mm 10mm; /* Top Right Bottom Left */
         }
 
         body {
@@ -513,8 +514,8 @@
                         <div class="doc-header">
                             <!-- Baris Pertama: LOGO -->
                             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
-                                <img src="{{ asset('img/Logo/logo_horizontal.png') }}" style="max-height: 45px; object-fit: contain;" alt="Logo EJM">
-                                <img src="{{ asset('img/Logo/ukas_2025.jpg') }}" style="max-height: 45px; object-fit: contain;" alt="UKAS">
+                                <img src="{{ asset('logo/aqpa-indonesia-logo.png') }}" style="max-height: 35px; object-fit: contain;" alt="Logo AQPA">
+                                <img src="{{ asset('logo/tuv-logo-2025.jpg') }}" style="max-height: 35px; object-fit: contain;" alt="TUV">
                             </div>
 
                             <!-- Baris Kedua: JUDUL & TANGGAL -->
@@ -528,7 +529,7 @@
                                         Tanggal Cetak: {{ date('d M Y') }}
                                     </div>
                                     <div style="font-size: 8px; font-weight: 600; color: #475569;">
-                                        Halaman .... dari .......
+                                        Dokumen Cetak Internal
                                     </div>
                                 </div>
                             </div>
@@ -900,10 +901,10 @@
             </div>
 
         </div>
-
-        <div style="page-break-before: always;"></div>
-
-
+                    </td>
+                </tr>
+                <tr style="break-before: page; page-break-before: always;">
+                    <td style="border: none; padding: 0;">
         <!-- SECTION 2.5: VISUALISASI POTONGAN MATERIAL -->
         <div class="section-panel">
             <div class="section-header">Visualisasi Potongan Material</div>
@@ -1086,7 +1087,7 @@
                 </tr>
             </tbody>
         </table>
-    </div>    <!-- Auto Print Script -->
+    <!-- Auto Print Script -->
     <script>
         window.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => {
