@@ -43,7 +43,8 @@ Route::middleware('auth')->group(function () {
                 $item->lebar = $item->width;
                 return $item;
             });
-            return view('packaging.show', compact('materials')); 
+            $nails = \Illuminate\Support\Facades\DB::table('nail_size_rules')->orderBy('id')->get();
+            return view('packaging.show', compact('materials', 'nails')); 
         })->name('calculations.create');
         
         // Route untuk JS fetch di show.blade.php
@@ -92,7 +93,8 @@ Route::middleware('auth')->group(function () {
                     ->where('job_id', $calculation->id)
                     ->get();
             }
-            return view('packaging.show', compact('materials', 'calculation', 'job')); 
+            $nails = \Illuminate\Support\Facades\DB::table('nail_size_rules')->orderBy('id')->get();
+            return view('packaging.show', compact('materials', 'calculation', 'job', 'nails')); 
         })->name('calculations.show');
         
         Route::get('/validasi/data', function() { return "Halaman Validasi Data Dummy"; })->name('validasi_data.index');

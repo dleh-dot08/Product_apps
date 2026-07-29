@@ -2330,6 +2330,10 @@
                 </div>
             </div>
             <div class="d-flex flex-wrap align-items-center gap-2 justify-content-md-end">
+                <button type="button" data-bs-toggle="modal" data-bs-target="#validasiDataModal" class="btn-soft text-dark border-dark" style="color: #475569; border-color: rgba(71, 85, 105, 0.3); background-color: rgba(71, 85, 105, 0.03); cursor: pointer;">
+                    <span class="material-symbols-rounded text-lg">database</span>
+                    <span>DATA VALIDASI</span>
+                </button>
                 @if(!isset($calculation))
                 <button type="button" data-bs-toggle="modal" data-bs-target="#productSetupModal" class="btn-soft text-primary border-primary" style="color: #1769e8; border-color: rgba(23, 105, 232, 0.3); background-color: rgba(23, 105, 232, 0.03); cursor: pointer;">
                     <span class="material-symbols-rounded text-lg">add_circle</span>
@@ -7571,4 +7575,12 @@
 }
 
 </style>
+    <!-- Modal Validasi Data -->
+    <div class="modal fade" id="validasiDataModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content rounded-4 border-0 shadow-lg">
+                @include('packaging.Validasi-data')
+            </div>
+        </div>
+    </div>
 </x-app-layout>
