@@ -296,7 +296,7 @@
 
                     <!-- 3. Pembelian -->
                     <li class="nav-item">
-                        <a href="-" class="nav-link">
+                        <a href="{{ route('sales-orders.index') }}" class="nav-link {{ request()->routeIs('sales-orders.*') ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-cart-shopping"></i>
                             <p class="ms-2 mb-0">Pembelian</p>
                         </a>

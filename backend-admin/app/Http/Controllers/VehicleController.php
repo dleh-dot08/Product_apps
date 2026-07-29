@@ -14,7 +14,12 @@ class VehicleController extends Controller
             ->orderBy('plate_number', 'asc')
             ->get();
 
-        return view('vehicles.index', compact('vehicles'));
+        $totalVehicles = $vehicles->count();
+        $activeVehicles = $vehicles->where('active', true)->count();
+        $inactiveVehicles = $vehicles->where('active', false)->count();
+        $avgKmPerLiter = $vehicles->avg('km_per_liter') ?? 0;
+
+        return view('vehicles.index', compact('vehicles', 'totalVehicles', 'activeVehicles', 'inactiveVehicles', 'avgKmPerLiter'));
     }
 
     public function store(VehicleRequest $request)

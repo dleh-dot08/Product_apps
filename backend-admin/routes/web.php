@@ -23,6 +23,10 @@ Route::middleware('auth')->group(function () {
     // Master Kendaraan
     Route::resource('vehicles', \App\Http\Controllers\VehicleController::class)->except(['create', 'show', 'edit']);
     
+    // Pembelian / Sales Orders
+    Route::get('/sales-orders', [\App\Http\Controllers\SalesOrderController::class, 'index'])->name('sales-orders.index');
+    Route::get('/api/sales-orders', [\App\Http\Controllers\SalesOrderController::class, 'apiData'])->name('api.sales-orders');
+    
     // Route Daftar Tugas
     Route::get('/daftar-tugas', function () {
         return view('daftar-tugas.index');

@@ -13,7 +13,9 @@ class PackagingController extends Controller
     {
         // Mengambil data dari tabel packaging_jobs beserta details-nya terbaru di atas
         $packagingJobs = PackagingJob::with('details')->orderBy('created_at', 'desc')->get();
-        return view('packaging.index', compact('packagingJobs'));
+        $materials = DB::table('packing_material_prices')->orderBy('id')->get();
+        $nails = DB::table('nail_size_rules')->orderBy('id')->get();
+        return view('packaging.index', compact('packagingJobs', 'materials', 'nails'));
     }
 
     public function destroy(PackagingJob $packagingJob)
