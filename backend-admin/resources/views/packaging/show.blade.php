@@ -3657,7 +3657,7 @@
 
                 // Load Nail GLB Model
                 const gltfLoader = new THREE.GLTFLoader();
-                gltfLoader.load('{{ asset("glb-3D/cc0_-_nail.glb") }}', function(gltf) {
+                gltfLoader.load('/glb-3D/cc0_-_nail.glb', function(gltf) {
                     nailModel = gltf.scene;
                     
                     // The GLB has two nails (Nail and NailRust) and they are tilted.
@@ -4650,7 +4650,6 @@
                         }
 
                         let faceArah = (() => {
-                            if (face.id === 'front' || face.id === 'back') return 'H'; // Paksa selalu horizontal
                             if (penutupDetail && penutupDetail.direction) return penutupDetail.direction === 'Horizontal' ? 'H' : 'V';
                             return arahGlobal === 'Horizontal' ? 'H' : 'V';
                         })();
@@ -4758,9 +4757,8 @@
                             let crossSpan;
                             let longSpan;
                             if (face.id === 'front' || face.id === 'back') {
-                                faceArah = 'H'; // Paksa selalu horizontal
-                                crossSpan = h_m - topKakiBalokY_c;
-                                longSpan = l_m;
+                                crossSpan = (faceArah === 'H') ? h_m - topKakiBalokY_c : l_m;
+                                longSpan = (faceArah === 'H') ? l_m : h_m - topKakiBalokY_c;
                             } else if (face.id === 'right' || face.id === 'left') {
                                 crossSpan = (faceArah === 'H') ? h_m - topKakiBalokY_c : w_m + extraSpanPanjangKK;
                                 longSpan = (faceArah === 'H') ? w_m + extraSpanPanjangKK : h_m - topKakiBalokY_c;
@@ -4778,9 +4776,15 @@
                                 const pSize = layout.sizes ? layout.sizes[index] : layout.pieceCross;
                                 if (face.id === 'front' || face.id === 'back') {
                                     const z = face.id === 'front' ? w_m / 2 + t_penutup / 2 + offC : -w_m / 2 - t_penutup / 2 - offC;
-                                    const frontLength = l_m;
-                                    let bMesh = addBeam(new THREE.Vector3(frontLength, pSize, t_penutup), new THREE.Vector3(0, topKakiBalokY_c + (h_m - topKakiBalokY_c) / 2 + pos, z), material, face.name + ' papan horizontal');
-                                    addNailsForBoard(bMesh, face.id);
+                                    if (faceArah === 'H') {
+                                        const frontLength = l_m;
+                                        let bMesh = addBeam(new THREE.Vector3(frontLength, pSize, t_penutup), new THREE.Vector3(0, topKakiBalokY_c + (h_m - topKakiBalokY_c) / 2 + pos, z), material, face.name + ' papan horizontal');
+                                        addNailsForBoard(bMesh, face.id);
+                                    } else {
+                                        const sideHeight = h_m - topKakiBalokY_c;
+                                        let bMesh = addBeam(new THREE.Vector3(pSize, sideHeight, t_penutup), new THREE.Vector3(pos, topKakiBalokY_c + sideHeight / 2, z), material, face.name + ' papan vertikal');
+                                        addNailsForBoard(bMesh, face.id);
+                                    }
                                 } else if (face.id === 'right' || face.id === 'left') {
                                     const x = face.id === 'right' ? l_m / 2 + t_penutup / 2 + offC : -l_m / 2 - t_penutup / 2 - offC;
                                     if (faceArah === 'H') {
@@ -5449,13 +5453,16 @@
             }
 
             let debounceTimer = null;
-            function runSimulation() {
+            function runSimulation(isFromMaster = true) {
                 if (!isEditModeActive) return;
                 
                 if (debounceTimer) clearTimeout(debounceTimer);
                 
                 debounceTimer = setTimeout(() => {
-                    syncMasterDropdownsToActiveDetails();
+                    // Check if isFromMaster is true or an Event object
+                    if (isFromMaster === true || (isFromMaster && isFromMaster.target)) {
+                        syncMasterDropdownsToActiveDetails();
+                    }
                     
                     let formData = {
                         _token: '{{ csrf_token() }}'
@@ -5913,7 +5920,7 @@
                     let index = parseInt(e.target.dataset.index);
                     if (activeDetails[index]) {
                         activeDetails[index].direction = e.target.value;
-                        runSimulation();
+                        runSimulation(false);
                     }
                 }
                 if (e.target.classList.contains('table-material-select')) {
@@ -5966,7 +5973,7 @@
                             });
                         }
 
-                        runSimulation();
+                        runSimulation(false);
                     }
                 }
             });
