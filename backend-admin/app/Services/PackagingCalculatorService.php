@@ -921,7 +921,9 @@ class PackagingCalculatorService
         }
 
         if (($pbInclude == 1 || $pbInclude === '1') && $qtyPenyanggaBawah > 0) {
-            $details[] = $this->formatDetailRow('Bawah', 'Penyangga', $pbMat, $pbKode, 'Horizontal', '', $tebalPenyanggaBawah, $lebarPenyanggaBawah, $P, $qtyPenyanggaBawah, 1);
+            $pbOverride = collect($customDetails)->where('section', 'Bawah')->where('part_name', 'Penyangga')->first();
+            $pbDirection = $pbOverride['direction'] ?? ($pbOverride['arah'] ?? $arahGlobal);
+            $details[] = $this->formatDetailRow('Bawah', 'Penyangga', $pbMat, $pbKode, $pbDirection, '', $tebalPenyanggaBawah, $lebarPenyanggaBawah, $P, $qtyPenyanggaBawah, 1);
         }
 
         $bawahPenutupOverride = collect($customDetails)->where('section', 'Bawah')->where('part_name', 'Penutup')->first();
@@ -941,7 +943,8 @@ class PackagingCalculatorService
             $partCelah = (stripos($ptbTipe, 'Setengah') !== false) ? $celahBawah : 0;
             $qtyPTB = ($isTripleks || $lebar <= 0) ? 1 : $this->hitungQtyPenutup($ptbTipe, $qtyBasis, $lebar, $partCelah);
             $partWidth = $isTripleks ? $qtyBasis : $lebar;
-            $details[] = $this->formatDetailRow('Bawah', 'Penutup', $ptbMat, $ptbKode, 'Horizontal', $ptbTipe, $tebalPenutupBawah, $partWidth, $P, $qtyPTB, 1);
+            $ptbDirection = $bawahPenutupOverride['direction'] ?? ($bawahPenutupOverride['arah'] ?? $arahGlobal);
+            $details[] = $this->formatDetailRow('Bawah', 'Penutup', $ptbMat, $ptbKode, $ptbDirection, $ptbTipe, $tebalPenutupBawah, $partWidth, $P, $qtyPTB, 1);
         }
 
         // --- 3. HITUNG PENYANGGA VERTIKAL ---

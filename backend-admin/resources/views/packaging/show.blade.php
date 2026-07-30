@@ -5453,13 +5453,16 @@
             }
 
             let debounceTimer = null;
-            function runSimulation() {
+            function runSimulation(isFromMaster = true) {
                 if (!isEditModeActive) return;
                 
                 if (debounceTimer) clearTimeout(debounceTimer);
                 
                 debounceTimer = setTimeout(() => {
-                    syncMasterDropdownsToActiveDetails();
+                    // Check if isFromMaster is true or an Event object
+                    if (isFromMaster === true || (isFromMaster && isFromMaster.target)) {
+                        syncMasterDropdownsToActiveDetails();
+                    }
                     
                     let formData = {
                         _token: '{{ csrf_token() }}'
@@ -5917,7 +5920,7 @@
                     let index = parseInt(e.target.dataset.index);
                     if (activeDetails[index]) {
                         activeDetails[index].direction = e.target.value;
-                        runSimulation();
+                        runSimulation(false);
                     }
                 }
                 if (e.target.classList.contains('table-material-select')) {
@@ -5970,7 +5973,7 @@
                             });
                         }
 
-                        runSimulation();
+                        runSimulation(false);
                     }
                 }
             });

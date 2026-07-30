@@ -65,6 +65,7 @@ class PackagingCalculationController extends Controller
                 'gap_bawah' => $request->gap_bawah,
                 'status' => 'draft',
                 'packer_id' => auth()->id() ?? null,
+                'arah_pemasangan' => $request->arah_pemasangan ?? 'Horizontal',
                 
                 // Konfigurasi Bawah
                 'bawah_penyanggah_status' => $request->has('bawah_penyangga_include') ? ($request->bawah_penyangga_include ? 'Include' : 'Exclude') : null,
@@ -185,6 +186,7 @@ class PackagingCalculationController extends Controller
                 'qty_packaging' => $request->qty_pack ?? $calculation->qty_packaging,
                 'qty_product_per_packaging' => $request->qty_per_pack ?? $calculation->qty_product_per_packaging,
                 'packer_id' => $request->packer_id ?? $calculation->packer_id,
+                'arah_pemasangan' => $request->arah_pemasangan ?? $calculation->arah_pemasangan,
                 
 
                 // Konfigurasi Bawah
