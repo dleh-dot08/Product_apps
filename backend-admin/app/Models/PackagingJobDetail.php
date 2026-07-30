@@ -30,4 +30,14 @@ class PackagingJobDetail extends Model
     {
         return $this->hasMany(\App\Models\PackingJobCalcDetail::class, 'job_id');
     }
+
+    public function consumables()
+    {
+        return $this->hasMany(\App\Models\PackingJobNail::class, 'job_id');
+    }
+
+    public function manpower()
+    {
+        return $this->hasMany(\App\Models\PackingJobCalcManpower::class, 'job_id');
+    }
 }
