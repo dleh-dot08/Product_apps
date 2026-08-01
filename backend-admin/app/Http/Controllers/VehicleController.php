@@ -3,14 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\VehicleRequest;
-use App\Models\VehicleDataMaster;
+use App\Models\Vehicle;
 use Illuminate\Http\Request;
 
 class VehicleController extends Controller
 {
     public function index()
     {
-        $vehicles = VehicleDataMaster::orderBy('active', 'desc')
+        $vehicles = Vehicle::orderBy('active', 'desc')
             ->orderBy('plate_number', 'asc')
             ->get();
 
@@ -24,17 +24,17 @@ class VehicleController extends Controller
 
     public function store(VehicleRequest $request)
     {
-        VehicleDataMaster::create($request->validated());
+        Vehicle::create($request->validated());
         return redirect()->route('vehicles.index')->with('success', 'Kendaraan berhasil ditambahkan.');
     }
 
-    public function update(VehicleRequest $request, VehicleDataMaster $vehicle)
+    public function update(VehicleRequest $request, Vehicle $vehicle)
     {
         $vehicle->update($request->validated());
         return redirect()->route('vehicles.index')->with('success', 'Data kendaraan berhasil diperbarui.');
     }
 
-    public function destroy(VehicleDataMaster $vehicle)
+    public function destroy(Vehicle $vehicle)
     {
         $vehicle->update(['active' => false]);
         return redirect()->route('vehicles.index')->with('success', 'Kendaraan berhasil dinon-aktifkan.');

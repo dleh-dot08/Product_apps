@@ -36,7 +36,10 @@ class VehicleRequest extends FormRequest
         $vehicleId = $this->route('vehicle') ? $this->route('vehicle')->id : null;
 
         return [
-            'plate_number' => 'required|string|min:3|max:20|unique:vehicles_data_master,plate_number,' . $vehicleId,
+            'plate_number' => [
+                'required', 'string', 'min:3', 'max:20',
+                \Illuminate\Validation\Rule::unique('vehicles', 'plate_number')->ignore($vehicleId)
+            ],
             'name' => 'required|string|min:2|max:100',
             'fuel_price_per_liter' => 'required|numeric|min:1',
             'km_per_liter' => 'required|numeric|min:0.1',

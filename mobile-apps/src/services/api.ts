@@ -6,9 +6,9 @@ import { Platform } from 'react-native';
 // Gunakan localhost untuk iOS/Web.
 const getBaseUrl = () => {
   if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:8000/api';
+    return 'http://10.0.2.2:8001/api';
   }
-  return 'http://localhost:8000/api';
+  return 'http://localhost:8001/api';
 };
 
 const api = axios.create({

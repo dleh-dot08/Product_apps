@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\PackagingJob;
-use App\Models\PackagingJobDetail;
+use App\Models\PackagingJobItem;
 use Illuminate\Support\Facades\DB;
 
 class PackagingController extends Controller
@@ -37,133 +37,81 @@ class PackagingController extends Controller
             'items' => 'required|array',
             'items.*.no_product' => 'required|string',
             'items.*.qty_barang_dikirim' => 'nullable|integer',
+            'items.*.jarak_penyanggah_atas' => 'nullable|numeric|min:0',
+            'items.*.jarak_penyanggah_bawah' => 'nullable|numeric|min:0',
+            'items.*.gap_atas' => 'nullable|numeric|min:0',
+            'items.*.gap_bawah' => 'nullable|numeric|min:0',
         ]);
 
         try {
             DB::beginTransaction();
 
-            // 1. Simpan Parent Job
+            // Gunakan konfigurasi dari item pertama untuk membuat 1 Box Packaging
+            $items = $request->input('items', []);
+            $firstItem = reset($items);
+            
             $job = PackagingJob::create([
-                'no_so' => $request->no_so,
-                'customer' => $request->customer,
-                'date_delivery' => $request->date_delivery,
-                'address' => $request->address,
-                'daftar_iso_item_json' => $request->raw_api_data ?? null,
-                'status' => 'draft',
+                'type_packaging' => $request->packType,
+                'packaging_number' => 'PKG-' . date('Ymd') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT),
+                'packer_id' => !empty($firstItem['packer']) ? $firstItem['packer'] : null,
+                'qty_packaging' => $firstItem['qty_pack'] ?? 1,
+                'deadline' => $request->date_delivery,
+                
+                'panjang' => $firstItem['length'] ?? 0,
+                'lebar' => $firstItem['width'] ?? 0,
+                'tinggi' => $firstItem['height'] ?? 0,
+                'gap_atas' => $firstItem['gap_atas'] ?? 0,
+                'gap_bawah' => $firstItem['gap_bawah'] ?? 0,
+                'jarak_penyanggah_atas' => $firstItem['jarak_penyanggah_atas'] ?? $firstItem['jarak_atas'] ?? $firstItem['jarak'] ?? 0,
+                'jarak_penyanggah_bawah' => $firstItem['jarak_penyanggah_bawah'] ?? $firstItem['jarak_bawah'] ?? $firstItem['jarak'] ?? 0,
+                
+                'bawah_kakibalok_status' => $firstItem['kb_status'] ?? 'Include',
+                'bawah_kakibalok_material' => $firstItem['kb_material'] ?? 'A001',
+                'bawah_kakibalok_arahpemasangan' => $firstItem['kb_arah'] ?? 'Horizontal',
+                'bawah_penyanggah_status' => $firstItem['pb_status'] ?? 'Include',
+                'bawah_penyanggah_material' => $firstItem['pb_material'] ?? 'A001',
+                'bawah_penyanggah_arahpemasangan' => $firstItem['pb_arah'] ?? 'Horizontal',
+                'bawah_penutup_status' => $firstItem['ptb_status'] ?? 'Tanpa Penutup',
+                'bawah_penutup_material' => $firstItem['ptb_material'] ?? 'A001',
+                'bawah_penutup_arahpemasangan' => $firstItem['ptb_arah'] ?? 'Horizontal',
+                
+                'atas_penyanggah_status' => $firstItem['pa_status'] ?? 'Include',
+                'atas_penyanggah_material' => $firstItem['pa_material'] ?? 'A001',
+                'atas_penyanggah_arahpemasangan' => $firstItem['pa_arah'] ?? 'Horizontal',
+                'atas_penutup_status' => $firstItem['pta_status'] ?? 'Tanpa Penutup',
+                'atas_penutup_material' => $firstItem['pta_material'] ?? 'A001',
+                'atas_penutup_arahpemasangan' => $firstItem['pta_arah'] ?? 'Horizontal',
+                
+                'status' => 'draft'
             ]);
 
-            // 2. Simpan Detail Items (Barang yang dipilih beserta konfigurasinya)
-            foreach ($request->items as $index => $item) {
-                $packNumber = 'PKG-' . date('Ymd') . '-' . str_pad($job->id, 4, '0', STR_PAD_LEFT) . '-' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-                
-                $konfigurasi_bawah = [
-                    'kaki_balok' => [
-                        'status' => $item['kb_status'] ?? 'Include',
-                        'arah' => $item['kb_arah'] ?? 'Horizontal',
-                        'material' => $item['kb_material'] ?? 'A001'
-                    ],
-                    'penyanggah' => [
-                        'status' => $item['pb_status'] ?? 'Include',
-                        'arah' => $item['pb_arah'] ?? 'Horizontal',
-                        'material' => $item['pb_material'] ?? 'A001'
-                    ],
-                    'penutup' => [
-                        'status' => $item['ptb_status'] ?? 'Tanpa Penutup',
-                        'arah' => $item['ptb_arah'] ?? 'Horizontal',
-                        'material' => $item['ptb_material'] ?? 'A001'
-                    ],
-                    'jarak_penyanggah' => $item['jarak'] ?? 0,
-                    'gap_bawah' => $item['gap_bawah'] ?? 0,
-                ];
+            $job->update([
+                'packaging_number' => 'PKG-' . date('Ymd') . '-' . str_pad($job->id, 4, '0', STR_PAD_LEFT)
+            ]);
 
-                $konfigurasi_atas = [
-                    'penyanggah' => [
-                        'status' => $item['pa_status'] ?? 'Include',
-                        'arah' => $item['pa_arah'] ?? 'Horizontal',
-                        'material' => $item['pa_material'] ?? 'A001'
-                    ],
-                    'penutup' => [
-                        'status' => $item['pta_status'] ?? 'Tanpa Penutup',
-                        'arah' => $item['pta_arah'] ?? 'Horizontal',
-                        'material' => $item['pta_material'] ?? 'A001'
-                    ],
-                    'gap_atas' => $item['gap_atas'] ?? 0,
-                ];
-                
-                $detail = PackagingJobDetail::create([
-                    'packaging_job_id' => $job->id,
-                    'packaging_number' => $packNumber,
-                    'packer_id' => !empty($item['packer']) ? $item['packer'] : null,
+            // Masukkan semua produk ke dalam 1 Box ini
+            foreach ($request->items as $item) {
+                $job->items()->create([
+                    'no_so' => $request->no_so,
+                    'customer' => $request->customer,
+                    'date_delivery' => $request->date_delivery,
+                    'address' => $request->address,
                     'no_product' => $item['no_barang'] ?? $item['no_product'] ?? '',
                     'desc_product' => $item['nama_barang'] ?? $item['desc_product'] ?? '',
-                    
-                    'qty_barang_dikirim' => $item['qty_kirim'] ?? 1,
-                    'qty_packaging' => $item['qty_pack'] ?? 1,
-                    'qty_product_per_packaging' => $item['qty_per_pack'] ?? 1,
-                    
-                    // Dimensi
-                    'panjang' => $item['length'] ?? 0,
-                    'lebar' => $item['width'] ?? 0,
-                    'tinggi' => $item['height'] ?? 0,
-                    
-                    'gap_atas' => $item['gap_atas'] ?? 0,
-                    'gap_bawah' => $item['gap_bawah'] ?? 0,
-                    'jarak_penyanggah' => $item['jarak'] ?? 0,
-                    
-                    // Kolom Konfigurasi Bawah
-                    'bawah_penyanggah_status' => $item['pb_status'] ?? 'Include',
-                    'bawah_penyanggah_arah' => $item['pb_arah'] ?? 'Horizontal',
-                    'bawah_penyanggah_material' => $item['pb_material'] ?? 'A001',
-                    
-                    'bawah_penutup_status' => $item['ptb_status'] ?? 'Tanpa Penutup',
-                    'bawah_penutup_arah' => $item['ptb_arah'] ?? 'Horizontal',
-                    'bawah_penutup_material' => $item['ptb_material'] ?? 'A001',
-                    
-                    'bawah_kaki_balok_status' => $item['kb_status'] ?? 'Include',
-                    'bawah_kaki_balok_arah' => $item['kb_arah'] ?? 'Horizontal',
-                    'bawah_kaki_balok_material' => $item['kb_material'] ?? 'A001',
-                    
-                    // Kolom Konfigurasi Atas
-                    'atas_penyanggah_status' => $item['pa_status'] ?? 'Include',
-                    'atas_penyanggah_arah' => $item['pa_arah'] ?? 'Horizontal',
-                    'atas_penyanggah_material' => $item['pa_material'] ?? 'A001',
-                    
-                    'atas_penutup_status' => $item['pta_status'] ?? 'Tanpa Penutup',
-                    'atas_penutup_arah' => $item['pta_arah'] ?? 'Horizontal',
-                    'atas_penutup_material' => $item['pta_material'] ?? 'A001',
-                    
-                    // Konfigurasi
-                    'konfigurasi_atas' => $konfigurasi_atas,
-                    'konfigurasi_bawah' => $konfigurasi_bawah,
-                    
-                    // Harga default
-                    'subtotal_harga_material' => 0,
-                    'subtotal_harga_paku' => 0,
-                    'subtotal_man_power' => 0,
-                    'harga_total' => 0,
-                    'status' => 'draft'
-                ]);
-
-                $extraParams = [
-                    'atas_penyangga_include' => $item['pa_status'] === 'Include' ? '1' : '0',
-                    'bawah_penyangga_include' => $item['pb_status'] === 'Include' ? '1' : '0',
-                    'bawah_penutup_tipe' => $item['ptb_status'] ?? 'Tanpa Penutup',
-                    'atas_penutup_tipe' => $item['pta_status'] ?? 'Tanpa Penutup',
-                ];
-
-                $calculator = new \App\Services\PackagingCalculatorService();
-                $calculator->calculateForJobDetail($detail, $extraParams);
-
-                $detail->refresh();
-
-                // Log data kalkulasi lengkap (Calculation All)
-                \Illuminate\Support\Facades\Log::info('Calculation Result for Pack: ' . $packNumber, [
-                    'detail_summary' => $detail->toArray(),
-                    'calc_details' => \Illuminate\Support\Facades\DB::table('packing_job_calc_details')->where('job_id', $detail->id)->get()->toArray(),
-                    'calc_manpowers' => \Illuminate\Support\Facades\DB::table('packing_job_calc_manpowers')->where('job_id', $detail->id)->get()->toArray(),
-                    'calc_nails' => \Illuminate\Support\Facades\DB::table('packing_job_nails')->where('job_id', $detail->id)->get()->toArray(),
+                    'qty' => $item['qty_kirim'] ?? 1,
                 ]);
             }
+
+            // Hitung harga box sekali saja berdasarkan dimensi/konfigurasi box
+            $extraParams = [
+                'atas_penyangga_include' => $firstItem['pa_status'] === 'Include' ? '1' : '0',
+                'bawah_penyangga_include' => $firstItem['pb_status'] === 'Include' ? '1' : '0',
+                'bawah_penutup_tipe' => $firstItem['ptb_status'] ?? 'Tanpa Penutup',
+                'atas_penutup_tipe' => $firstItem['pta_status'] ?? 'Tanpa Penutup',
+            ];
+
+            $calculator = new \App\Services\PackagingCalculatorService();
+            $calculator->calculateForJobDetail($job, $extraParams);
 
             DB::commit();
 
@@ -200,107 +148,80 @@ class PackagingController extends Controller
             'items' => 'required|array',
             'items.*.no_product' => 'required|string',
             'items.*.qty_barang_dikirim' => 'nullable|integer',
+            'items.*.jarak_penyanggah_atas' => 'nullable|numeric|min:0',
+            'items.*.jarak_penyanggah_bawah' => 'nullable|numeric|min:0',
+            'items.*.gap_atas' => 'nullable|numeric|min:0',
+            'items.*.gap_bawah' => 'nullable|numeric|min:0',
         ]);
 
         try {
             DB::beginTransaction();
 
-            // 1. Update Parent Job
+            $items = $request->input('items', []);
+            $firstItem = reset($items);
+            
+            // Update 1 Box Packaging dengan konfigurasi dari form
             $packagingJob->update([
-                'no_so' => $request->no_so,
-                'customer' => $request->customer,
-                'date_delivery' => $request->date_delivery,
-                'address' => $request->address,
-                'daftar_iso_item_json' => $request->raw_api_data ?? $packagingJob->daftar_iso_item_json,
+                'type_packaging' => $request->packType,
+                'packer_id' => !empty($firstItem['packer']) ? $firstItem['packer'] : null,
+                'qty_packaging' => $firstItem['qty_pack'] ?? 1,
+                'deadline' => $request->date_delivery,
+                
+                'panjang' => $firstItem['length'] ?? 0,
+                'lebar' => $firstItem['width'] ?? 0,
+                'tinggi' => $firstItem['height'] ?? 0,
+                'gap_atas' => $firstItem['gap_atas'] ?? 0,
+                'gap_bawah' => $firstItem['gap_bawah'] ?? 0,
+                'jarak_penyanggah_atas' => $firstItem['jarak_penyanggah_atas'] ?? $firstItem['jarak_atas'] ?? $firstItem['jarak'] ?? $packagingJob->jarak_penyanggah_atas ?? 0,
+                'jarak_penyanggah_bawah' => $firstItem['jarak_penyanggah_bawah'] ?? $firstItem['jarak_bawah'] ?? $firstItem['jarak'] ?? $packagingJob->jarak_penyanggah_bawah ?? 0,
+                
+                'bawah_kakibalok_status' => $firstItem['kb_status'] ?? 'Include',
+                'bawah_kakibalok_material' => $firstItem['kb_material'] ?? 'A001',
+                'bawah_kakibalok_arahpemasangan' => $firstItem['kb_arah'] ?? 'Horizontal',
+                'bawah_penyanggah_status' => $firstItem['pb_status'] ?? 'Include',
+                'bawah_penyanggah_material' => $firstItem['pb_material'] ?? 'A001',
+                'bawah_penyanggah_arahpemasangan' => $firstItem['pb_arah'] ?? 'Horizontal',
+                'bawah_penutup_status' => $firstItem['ptb_status'] ?? 'Tanpa Penutup',
+                'bawah_penutup_material' => $firstItem['ptb_material'] ?? 'A001',
+                'bawah_penutup_arahpemasangan' => $firstItem['ptb_arah'] ?? 'Horizontal',
+                
+                'atas_penyanggah_status' => $firstItem['pa_status'] ?? 'Include',
+                'atas_penyanggah_material' => $firstItem['pa_material'] ?? 'A001',
+                'atas_penyanggah_arahpemasangan' => $firstItem['pa_arah'] ?? 'Horizontal',
+                'atas_penutup_status' => $firstItem['pta_status'] ?? 'Tanpa Penutup',
+                'atas_penutup_material' => $firstItem['pta_material'] ?? 'A001',
+                'atas_penutup_arahpemasangan' => $firstItem['pta_arah'] ?? 'Horizontal',
             ]);
 
-            // Hapus detail lama agar kita bisa menimpa dengan array baru yang lebih akurat (menghindari duplikasi)
-            $detailIds = $packagingJob->details()->pluck('id');
-            \App\Models\PackingJobCalcDetail::whereIn('job_id', $detailIds)->delete();
-            $packagingJob->details()->delete();
-
-            // 2. Simpan Ulang Detail Items
-            foreach ($request->items as $index => $item) {
-                $packNumber = 'PKG-' . date('Ymd') . '-' . str_pad($packagingJob->id, 4, '0', STR_PAD_LEFT) . '-' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
-                
-                $konfigurasi_bawah = [
-                    'kaki_balok' => [
-                        'status' => $item['kb_status'] ?? 'Include',
-                        'arah' => $item['kb_arah'] ?? 'Horizontal',
-                        'material' => $item['kb_material'] ?? 'A001'
-                    ],
-                    'penyanggah' => [
-                        'status' => $item['pb_status'] ?? 'Include',
-                        'arah' => $item['pb_arah'] ?? 'Horizontal',
-                        'material' => $item['pb_material'] ?? 'A001'
-                    ],
-                    'penutup' => [
-                        'status' => $item['ptb_status'] ?? 'Tanpa Penutup',
-                        'arah' => $item['ptb_arah'] ?? 'Horizontal',
-                        'material' => $item['ptb_material'] ?? 'A001'
-                    ],
-                    'jarak_penyanggah' => $item['jarak'] ?? 0,
-                    'gap_bawah' => $item['gap_bawah'] ?? 0,
-                ];
-
-                $konfigurasi_atas = [
-                    'penyanggah' => [
-                        'status' => $item['pa_status'] ?? 'Include',
-                        'arah' => $item['pa_arah'] ?? 'Horizontal',
-                        'material' => $item['pa_material'] ?? 'A001'
-                    ],
-                    'penutup' => [
-                        'status' => $item['pta_status'] ?? 'Tanpa Penutup',
-                        'arah' => $item['pta_arah'] ?? 'Horizontal',
-                        'material' => $item['pta_material'] ?? 'A001'
-                    ],
-                    'gap_atas' => $item['gap_atas'] ?? 0,
-                ];
-                
-                $detail = PackagingJobDetail::create([
-                    'packaging_job_id' => $packagingJob->id,
-                    'packaging_number' => $packNumber,
-                    'packer_id' => !empty($item['packer']) ? $item['packer'] : null,
+            // Bersihkan item produk lama dan masukkan yang baru
+            $packagingJob->items()->delete();
+            foreach ($request->items as $item) {
+                $packagingJob->items()->create([
+                    'no_so' => $request->no_so,
+                    'customer' => $request->customer,
+                    'date_delivery' => $request->date_delivery,
+                    'address' => $request->address,
                     'no_product' => $item['no_barang'] ?? $item['no_product'] ?? '',
                     'desc_product' => $item['nama_barang'] ?? $item['desc_product'] ?? '',
-                    
-                    'qty_barang_dikirim' => $item['qty_kirim'] ?? 1,
-                    'qty_packaging' => $item['qty_pack'] ?? 1,
-                    'qty_product_per_packaging' => $item['qty_per_pack'] ?? 1,
-                    
-                    // Dimensi
-                    'panjang' => $item['length'] ?? 0,
-                    'lebar' => $item['width'] ?? 0,
-                    'tinggi' => $item['height'] ?? 0,
-                    
-                    'gap_atas' => $item['gap_atas'] ?? 0,
-                    'gap_bawah' => $item['gap_bawah'] ?? 0,
-                    'jarak_penyanggah' => $item['jarak'] ?? 0,
-                    
-                    // Konfigurasi
-                    'konfigurasi_atas' => $konfigurasi_atas,
-                    'konfigurasi_bawah' => $konfigurasi_bawah,
-                    
-                    // Harga default
-                    'subtotal_harga_material' => 0,
-                    'subtotal_harga_paku' => 0,
-                    'subtotal_man_power' => 0,
-                    'harga_total' => 0,
-                    'status' => 'draft'
+                    'qty' => $item['qty_kirim'] ?? 1,
                 ]);
-
-                $extraParams = [
-                    'atas_penyangga_include' => $item['pa_status'] === 'Include' ? '1' : '0',
-                    'bawah_penyangga_include' => $item['pb_status'] === 'Include' ? '1' : '0',
-                    'bawah_penutup_tipe' => $item['ptb_status'] ?? 'Tanpa Penutup',
-                    'atas_penutup_tipe' => $item['pta_status'] ?? 'Tanpa Penutup',
-                ];
-
-                $calculator = new \App\Services\PackagingCalculatorService();
-                $calculator->calculateForJobDetail($detail, $extraParams);
-                
-                $detail->refresh();
             }
+
+            // Bersihkan kalkulasi lama
+            \App\Models\PackingJobCalcDetail::where('job_id', $packagingJob->id)->delete();
+            \Illuminate\Support\Facades\DB::table('packing_job_calc_manpowers')->where('job_id', $packagingJob->id)->delete();
+            \Illuminate\Support\Facades\DB::table('packing_job_nails')->where('job_id', $packagingJob->id)->delete();
+
+            // Hitung harga box sekali saja berdasarkan konfigurasi yang diperbarui
+            $extraParams = [
+                'atas_penyangga_include' => $firstItem['pa_status'] === 'Include' ? '1' : '0',
+                'bawah_penyangga_include' => $firstItem['pb_status'] === 'Include' ? '1' : '0',
+                'bawah_penutup_tipe' => $firstItem['ptb_status'] ?? 'Tanpa Penutup',
+                'atas_penutup_tipe' => $firstItem['pta_status'] ?? 'Tanpa Penutup',
+            ];
+
+            $calculator = new \App\Services\PackagingCalculatorService();
+            $calculator->calculateForJobDetail($packagingJob, $extraParams);
 
             DB::commit();
 
@@ -318,5 +239,18 @@ class PackagingController extends Controller
                 'message' => 'Terjadi kesalahan: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function updateStatus(Request $request, PackagingJob $packagingJob)
+    {
+        $request->validate([
+            'status' => 'required|in:draft,assigned,process,done'
+        ]);
+
+        $packagingJob->update([
+            'status' => $request->status
+        ]);
+
+        return redirect()->back()->with('success', 'Status packaging berhasil diperbarui.');
     }
 }

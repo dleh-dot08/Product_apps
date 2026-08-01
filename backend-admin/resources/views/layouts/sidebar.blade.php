@@ -288,7 +288,7 @@
 
                     <!-- 2. Delivery Order -->
                     <li class="nav-item">
-                        <a href="-" class="nav-link">
+                        <a href="#" class="nav-link">
                             <i class="nav-icon fa-regular fa-clipboard"></i>
                             <p class="ms-2 mb-0">Delivery Order</p>
                         </a>
@@ -312,7 +312,7 @@
 
                     <!-- 5. Tugas Driver -->
                     <li class="nav-item">
-                        <a href="-" class="nav-link">
+                        <a href="{{ route('pickup-tasks.index') }}" class="nav-link {{ request()->routeIs('pickup-tasks.*') ? 'active' : '' }}">
                             <i class="nav-icon fa-regular fa-paper-plane"></i>
                             <p class="ms-2 mb-0">Tugas Driver</p>
                         </a>
@@ -331,7 +331,7 @@
 
                     <!-- 7. HPP Ritase -->
                     <li class="nav-item">
-                        <a href="-" class="nav-link">
+                        <a href="#" class="nav-link">
                             <i class="nav-icon fa-solid fa-dollar-sign"></i>
                             <p class="ms-2 mb-0">HPP Ritase</p>
                         </a>

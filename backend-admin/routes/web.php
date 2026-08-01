@@ -31,6 +31,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/daftar-tugas', function () {
         return view('daftar-tugas.index');
     })->name('daftar-tugas.index');
+
+    // Route Tugas Driver
+    Route::resource('pickup-tasks', \App\Http\Controllers\PickupTaskController::class)->except(['create', 'show', 'edit']);
+    
     
     // Routes untuk Packaging
     Route::prefix('packaging')->name('packaging.')->group(function () {
@@ -56,6 +60,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/store', [\App\Http\Controllers\PackagingController::class, 'store'])->name('store');
         Route::get('/{packagingJob}/edit', [\App\Http\Controllers\PackagingController::class, 'edit'])->name('edit');
         Route::put('/{packagingJob}', [\App\Http\Controllers\PackagingController::class, 'update'])->name('update');
+        Route::patch('/{packagingJob}/status', [\App\Http\Controllers\PackagingController::class, 'updateStatus'])->name('update-status');
         Route::delete('/{packagingJob}', [\App\Http\Controllers\PackagingController::class, 'destroy'])->name('destroy');
         Route::get('/{id}', function($id) { 
             $materials = \Illuminate\Support\Facades\DB::table('packing_material_prices')->get()->map(function($item) {
@@ -65,17 +70,17 @@ Route::middleware('auth')->group(function () {
                 $item->lebar = $item->width;
                 return $item;
             });
-            $job = \App\Models\PackagingJob::with('details')->find($id);
+            $job = \App\Models\PackagingJob::with(['details.material', 'items'])->find($id);
             $calculation = null;
-            if ($job && $job->details->count() > 0) {
-                // For now, load the first detail so the view doesn't crash
-                $calculation = $job->details->first();
-                $calculation->no_so = $job->no_so;
-                $calculation->customer = $job->customer;
+            if ($job) {
+                // In the new architecture, the job IS the calculation.
+                $calculation = $job;
                 
-                // Details will be automatically loaded via the 'details' relationship defined in the model.
-                // We eager load 'material' to avoid N+1 query problems.
-                $calculation->load('details.material');
+                // Set these for backward compatibility with the view, although we should use the first item's details if we want or let the view handle it.
+                // Here we just grab the first item's SO as fallback for backward compatibility
+                $firstItem = $job->items->first();
+                $calculation->no_so = $firstItem ? $firstItem->no_so : '-';
+                $calculation->customer = $firstItem ? $firstItem->customer : '-';
                     
                 $materialsMap = $materials->keyBy('kode');
                 foreach($calculation->details as $d) {

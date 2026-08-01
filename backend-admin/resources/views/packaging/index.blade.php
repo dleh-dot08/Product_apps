@@ -778,7 +778,15 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge {{ $job->status == 'draft' ? 'bg-secondary' : 'bg-success' }} bg-opacity-10 text-{{ $job->status == 'draft' ? 'secondary' : 'success' }} px-2 py-1 rounded-pill">
+                                    @php
+                                        $statusClass = [
+                                            'draft' => 'bg-secondary text-secondary',
+                                            'assigned' => 'bg-info text-info',
+                                            'process' => 'bg-warning text-warning',
+                                            'done' => 'bg-success text-success',
+                                        ][$job->status] ?? 'bg-primary text-primary';
+                                    @endphp
+                                    <span class="badge {{ $statusClass }} bg-opacity-10 px-2 py-1 rounded-pill">
                                         {{ ucfirst($job->status) }}
                                     </span>
                                 </td>
@@ -798,6 +806,41 @@
                                                     <i class="fa-solid fa-pen-to-square text-primary"></i> Edit
                                                 </a>
                                             </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            @if($job->status === 'draft')
+                                                <li>
+                                                    <form action="{{ route('packaging.update-status', $job->id) }}" method="POST">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <input type="hidden" name="status" value="assigned">
+                                                        <button type="submit" class="dropdown-item d-flex align-items-center gap-2">
+                                                            <i class="fa-solid fa-user-check text-info"></i> Mark as Assigned
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            @elseif($job->status === 'assigned')
+                                                <li>
+                                                    <form action="{{ route('packaging.update-status', $job->id) }}" method="POST">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <input type="hidden" name="status" value="process">
+                                                        <button type="submit" class="dropdown-item d-flex align-items-center gap-2">
+                                                            <i class="fa-solid fa-gears text-warning"></i> Mark as Process
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            @elseif($job->status === 'process')
+                                                <li>
+                                                    <form action="{{ route('packaging.update-status', $job->id) }}" method="POST">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <input type="hidden" name="status" value="done">
+                                                        <button type="submit" class="dropdown-item d-flex align-items-center gap-2">
+                                                            <i class="fa-solid fa-check-double text-success"></i> Mark as Done
+                                                        </button>
+                                                    </form>
+                                                </li>
+                                            @endif
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
                                                 <form action="{{ route('packaging.destroy', $job->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">

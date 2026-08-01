@@ -629,6 +629,43 @@
             $jarak_penyanggah = $kb['jarak_penyanggah'] ?? ($calculation->distance_between_pillars ?? 300);
         @endphp
 
+        <!-- SECTION 2.5: DAFTAR BARANG SO -->
+        <div class="section-panel">
+            <div class="section-header">Daftar Barang SO</div>
+            <div class="section-body" style="padding: 0;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 10px;">
+                    <thead>
+                        <tr style="background-color: #f1f5f9;">
+                            <th style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; width: 40px; font-weight: 700;">No</th>
+                            <th style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; font-weight: 700;">No Product</th>
+                            <th style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; font-weight: 700;">Nama / Deskripsi Barang</th>
+                            <th style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; text-align: center; width: 80px; font-weight: 700;">Qty SO</th>
+                            <th style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; text-align: center; width: 80px; font-weight: 700;">Qty Pack</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if($calculation->job && $calculation->job->details)
+                            @foreach($calculation->job->details as $idx => $item)
+                                <tr>
+                                    <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #475569;">{{ $idx + 1 }}</td>
+                                    <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace; color: #0f172a; font-weight: 600;">{{ $item->no_product }}</td>
+                                    <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #334155;">{{ $item->desc_product }}</td>
+                                    <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: 600;">{{ $item->qty_barang_dikirim }}</td>
+                                    <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: 600; color: #2563eb;">{{ $item->qty_packaging }}</td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td colspan="5" style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #64748b;">
+                                    Data barang SO tidak ditemukan.
+                                </td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
         <!-- SECTION 1: KONFIGURASI AWAL -->
         <div class="config-cards">
             <!-- Card 1 -->

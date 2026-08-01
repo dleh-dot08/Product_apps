@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
-use App\Models\PackagingJobDetail as PackagingCalculation;
+use App\Models\PackagingJob as PackagingCalculation;
 use Illuminate\Support\Facades\Validator;
 
 class PackagingCalculationController extends Controller
@@ -24,6 +24,8 @@ class PackagingCalculationController extends Controller
         $validator = Validator::make($request->all(), [
             'project_name' => 'nullable|string|max:255',
             'distance_between_pillars' => 'nullable|numeric',
+            'jarak_penyanggah_atas' => 'nullable|numeric|min:0',
+            'jarak_penyanggah_bawah' => 'nullable|numeric|min:0',
             'gap_atas' => 'nullable|numeric',
             'gap_bawah' => 'nullable|numeric',
             'length' => 'nullable|numeric',
@@ -48,46 +50,69 @@ class PackagingCalculationController extends Controller
             ], 422);
         }
 
+        $bawahPenyanggaArah = $request->bawah_penyangga_arah;
+        $bawahPenutupArah = $request->bawah_penutup_arah;
+        if ($bawahPenyanggaArah && $bawahPenutupArah && $bawahPenyanggaArah !== $bawahPenutupArah) {
+            \Log::warning("Arah Penutup Bawah ({$bawahPenutupArah}) dinormalisasi agar sama dengan Arah Penyangga Bawah ({$bawahPenyanggaArah})");
+            $bawahPenutupArah = $bawahPenyanggaArah;
+        }
+
         try {
             $insertData = [
-                'packaging_job_id' => $request->packaging_job_id ?? null,
-                'no_product' => $request->no_product ?? null,
-                'desc_product' => $request->desc_product ?? null,
                 'packaging_number' => $request->packaging_number ?? null,
-                'qty_barang_dikirim' => $request->qty_barang_dikirim ?? 1,
                 'qty_packaging' => $request->qty_packaging ?? 1,
-                'qty_product_per_packaging' => $request->qty_product_per_packaging ?? 1,
                 'panjang' => $request->length,
                 'lebar' => $request->width,
                 'tinggi' => $request->height,
-                'jarak_penyanggah' => $request->distance_between_pillars,
+                'jarak_penyanggah_atas' => $request->jarak_penyanggah_atas ?? $request->distance_between_pillars ?? 0,
+                'jarak_penyanggah_bawah' => $request->jarak_penyanggah_bawah ?? $request->distance_between_pillars ?? 0,
                 'gap_atas' => $request->gap_atas,
                 'gap_bawah' => $request->gap_bawah,
                 'status' => 'draft',
                 'packer_id' => auth()->id() ?? null,
-                'arah_pemasangan' => $request->arah_pemasangan ?? 'Horizontal',
+                'type_packaging' => $request->type_packaging ?? null,
                 
                 // Konfigurasi Bawah
                 'bawah_penyanggah_status' => $request->has('bawah_penyangga_include') ? ($request->bawah_penyangga_include ? 'Include' : 'Exclude') : null,
-                'bawah_penyanggah_arah' => $request->bawah_penyangga_arah,
+                'bawah_penyanggah_arahpemasangan' => $bawahPenyanggaArah,
                 'bawah_penyanggah_material' => $request->bawah_penyangga_material,
                 'bawah_penutup_status' => $request->bawah_penutup_tipe,
-                'bawah_penutup_arah' => $request->bawah_penutup_arah,
+                'bawah_penutup_arahpemasangan' => $bawahPenutupArah,
                 'bawah_penutup_material' => $request->bawah_penutup_material,
-                'bawah_kaki_balok_status' => $request->has('include_pallet_base') ? ($request->include_pallet_base ? 'Include' : 'Exclude') : null,
-                'bawah_kaki_balok_arah' => $request->bawah_kakibalok_arah,
-                'bawah_kaki_balok_material' => $request->bawah_kakibalok_material,
+                'bawah_kakibalok_status' => $request->has('include_pallet_base') ? ($request->include_pallet_base ? 'Include' : 'Exclude') : null,
+                'bawah_kakibalok_arahpemasangan' => $request->bawah_kakibalok_arah,
+                'bawah_kakibalok_material' => $request->bawah_kakibalok_material,
                 
                 // Konfigurasi Atas
                 'atas_penyanggah_status' => $request->has('atas_penyangga_include') ? ($request->atas_penyangga_include ? 'Include' : 'Exclude') : null,
-                'atas_penyanggah_arah' => $request->atas_penyangga_arah,
+                'atas_penyanggah_arahpemasangan' => $request->atas_penyangga_arah,
                 'atas_penyanggah_material' => $request->atas_penyangga_material,
                 'atas_penutup_status' => $request->atas_penutup_tipe,
-                'atas_penutup_arah' => $request->atas_penutup_arah,
+                'atas_penutup_arahpemasangan' => $request->atas_penutup_arah,
                 'atas_penutup_material' => $request->atas_penutup_material,
             ];
             \Log::info("Creating PackagingCalculation database row with: ", $insertData);
             $calculation = PackagingCalculation::create($insertData);
+
+            if ($request->has('items') && is_array($request->items)) {
+                foreach ($request->items as $itemData) {
+                    $calculation->items()->create([
+                        'no_product' => $itemData['no_product'] ?? null,
+                        'desc_product' => $itemData['desc_product'] ?? null,
+                        'qty' => $itemData['qty'] ?? 1,
+                        'no_so' => $itemData['no_so'] ?? null,
+                        'customer' => $itemData['customer'] ?? null,
+                    ]);
+                }
+            } else {
+                $calculation->items()->create([
+                    'no_product' => $request->no_product ?? null,
+                    'desc_product' => $request->desc_product ?? null,
+                    'qty' => $request->qty_order ?? ($request->qty_barang_dikirim ?? 1),
+                    'no_so' => $request->no_so ?? null,
+                    'customer' => $request->customer ?? null,
+                ]);
+            }
 
             \Log::info("Invoking PackagingCalculatorService...");
             $extraParams = [
@@ -147,6 +172,8 @@ class PackagingCalculationController extends Controller
         $validator = Validator::make($request->all(), [
             'project_name' => 'nullable|string|max:255',
             'distance_between_pillars' => 'nullable|numeric',
+            'jarak_penyanggah_atas' => 'nullable|numeric|min:0',
+            'jarak_penyanggah_bawah' => 'nullable|numeric|min:0',
             'gap_atas' => 'nullable|numeric',
             'gap_bawah' => 'nullable|numeric',
             'length' => 'nullable|numeric',
@@ -171,91 +198,84 @@ class PackagingCalculationController extends Controller
             ], 422);
         }
 
+        $bawahPenyanggaArahUpdate = $request->bawah_penyangga_arah ?? $calculation->bawah_penyanggah_arahpemasangan;
+        $bawahPenutupArahUpdate = $request->bawah_penutup_arah ?? $calculation->bawah_penutup_arahpemasangan;
+        if ($bawahPenyanggaArahUpdate && $bawahPenutupArahUpdate && $bawahPenyanggaArahUpdate !== $bawahPenutupArahUpdate) {
+            \Log::warning("Arah Penutup Bawah ({$bawahPenutupArahUpdate}) dinormalisasi agar sama dengan Arah Penyangga Bawah ({$bawahPenyanggaArahUpdate}) pada Update");
+            $bawahPenutupArahUpdate = $bawahPenyanggaArahUpdate;
+        }
+
         try {
             $updateData = [
                 'panjang' => $request->length,
                 'lebar' => $request->width,
                 'tinggi' => $request->height,
-                'jarak_penyanggah' => $request->distance_between_pillars,
+                'jarak_penyanggah_atas' => $request->jarak_penyanggah_atas ?? $request->distance_between_pillars ?? 0,
+                'jarak_penyanggah_bawah' => $request->jarak_penyanggah_bawah ?? $request->distance_between_pillars ?? 0,
                 'gap_atas' => $request->gap_atas,
                 'gap_bawah' => $request->gap_bawah,
 
                 // Tambahan dari modal Step 1 & Step 2
-                'no_product' => $request->no_product ?? $calculation->no_product,
-                'desc_product' => $request->desc_product ?? $calculation->desc_product,
                 'qty_packaging' => $request->qty_pack ?? $calculation->qty_packaging,
-                'qty_product_per_packaging' => $request->qty_per_pack ?? $calculation->qty_product_per_packaging,
                 'packer_id' => $request->packer_id ?? $calculation->packer_id,
-                'arah_pemasangan' => $request->arah_pemasangan ?? $calculation->arah_pemasangan,
+                'type_packaging' => $request->type_packaging ?? $calculation->type_packaging,
                 
 
                 // Konfigurasi Bawah
                 'bawah_penyanggah_status' => $request->has('bawah_penyangga_include') ? ($request->bawah_penyangga_include ? 'Include' : 'Exclude') : $calculation->bawah_penyanggah_status,
-                'bawah_penyanggah_arah' => $request->bawah_penyangga_arah ?? $calculation->bawah_penyanggah_arah,
+                'bawah_penyanggah_arahpemasangan' => $bawahPenyanggaArahUpdate,
                 'bawah_penyanggah_material' => $request->bawah_penyangga_material ?? $calculation->bawah_penyanggah_material,
                 'bawah_penutup_status' => $request->bawah_penutup_tipe ?? $calculation->bawah_penutup_status,
-                'bawah_penutup_arah' => $request->bawah_penutup_arah ?? $calculation->bawah_penutup_arah,
+                'bawah_penutup_arahpemasangan' => $bawahPenutupArahUpdate,
                 'bawah_penutup_material' => $request->bawah_penutup_material ?? $calculation->bawah_penutup_material,
-                'bawah_kaki_balok_status' => $request->has('include_pallet_base') ? ($request->include_pallet_base ? 'Include' : 'Exclude') : $calculation->bawah_kaki_balok_status,
-                'bawah_kaki_balok_arah' => $request->bawah_kakibalok_arah ?? $calculation->bawah_kaki_balok_arah,
-                'bawah_kaki_balok_material' => $request->bawah_kakibalok_material ?? $calculation->bawah_kaki_balok_material,
+                'bawah_kakibalok_status' => $request->has('include_pallet_base') ? ($request->include_pallet_base ? 'Include' : 'Exclude') : $calculation->bawah_kakibalok_status,
+                'bawah_kakibalok_arahpemasangan' => $request->bawah_kakibalok_arah ?? $calculation->bawah_kakibalok_arahpemasangan,
+                'bawah_kakibalok_material' => $request->bawah_kakibalok_material ?? $calculation->bawah_kakibalok_material,
                 
                 // Konfigurasi Atas
                 'atas_penyanggah_status' => $request->has('atas_penyangga_include') ? ($request->atas_penyangga_include ? 'Include' : 'Exclude') : $calculation->atas_penyanggah_status,
-                'atas_penyanggah_arah' => $request->atas_penyangga_arah ?? $calculation->atas_penyanggah_arah,
+                'atas_penyanggah_arahpemasangan' => $request->atas_penyangga_arah ?? $calculation->atas_penyanggah_arahpemasangan,
                 'atas_penyanggah_material' => $request->atas_penyangga_material ?? $calculation->atas_penyanggah_material,
                 'atas_penutup_status' => $request->atas_penutup_tipe ?? $calculation->atas_penutup_status,
-                'atas_penutup_arah' => $request->atas_penutup_arah ?? $calculation->atas_penutup_arah,
+                'atas_penutup_arahpemasangan' => $request->atas_penutup_arah ?? $calculation->atas_penutup_arahpemasangan,
                 'atas_penutup_material' => $request->atas_penutup_material ?? $calculation->atas_penutup_material,
             ];
             \Log::info("Updating PackagingCalculation database row with: ", $updateData);
             $calculation->update($updateData);
 
-            // Sync konfigurasi JSON agar calculate() membaca data terbaru dari modal
-            $konfigBawah = is_array($calculation->konfigurasi_bawah) ? $calculation->konfigurasi_bawah : json_decode($calculation->konfigurasi_bawah, true) ?? [];
-            $konfigAtas = is_array($calculation->konfigurasi_atas) ? $calculation->konfigurasi_atas : json_decode($calculation->konfigurasi_atas, true) ?? [];
-
-            if ($request->has('bawah_penyangga_include')) {
-                $konfigBawah['penyanggah']['status'] = $request->bawah_penyangga_include ? 'Include' : 'Exclude';
-            }
-            if ($request->has('bawah_penyangga_arah')) $konfigBawah['penyanggah']['arah'] = $request->bawah_penyangga_arah;
-            if ($request->has('bawah_penyangga_material')) $konfigBawah['penyanggah']['material'] = $request->bawah_penyangga_material;
-
-            if ($request->has('bawah_penutup_tipe')) $konfigBawah['penutup']['status'] = $request->bawah_penutup_tipe;
-            if ($request->has('bawah_penutup_arah')) $konfigBawah['penutup']['arah'] = $request->bawah_penutup_arah;
-            if ($request->has('bawah_penutup_material')) $konfigBawah['penutup']['material'] = $request->bawah_penutup_material;
-
-            if ($request->has('include_pallet_base')) {
-                $konfigBawah['kaki_balok']['status'] = $request->include_pallet_base ? 'Include' : 'Exclude';
-            }
-            if ($request->has('bawah_kakibalok_arah')) $konfigBawah['kaki_balok']['arah'] = $request->bawah_kakibalok_arah;
-            if ($request->has('bawah_kakibalok_material')) $konfigBawah['kaki_balok']['material'] = $request->bawah_kakibalok_material;
-
-            if ($request->has('atas_penyangga_include')) {
-                $konfigAtas['penyanggah']['status'] = $request->atas_penyangga_include ? 'Include' : 'Exclude';
-            }
-            if ($request->has('atas_penyangga_arah')) $konfigAtas['penyanggah']['arah'] = $request->atas_penyangga_arah;
-            if ($request->has('atas_penyangga_material')) $konfigAtas['penyanggah']['material'] = $request->atas_penyangga_material;
-
-            if ($request->has('atas_penutup_tipe')) $konfigAtas['penutup']['status'] = $request->atas_penutup_tipe;
-            if ($request->has('atas_penutup_arah')) $konfigAtas['penutup']['arah'] = $request->atas_penutup_arah;
-            if ($request->has('atas_penutup_material')) $konfigAtas['penutup']['material'] = $request->atas_penutup_material;
-
-            $calculation->update([
-                'konfigurasi_bawah' => json_encode($konfigBawah),
-                'konfigurasi_atas' => json_encode($konfigAtas),
-            ]);
             $calculation->refresh(); // Refresh agar calculate() baca JSON terbaru
 
-            // Update Parent Job if no_so is provided and different
-            if ($request->has('no_so') && $request->no_so !== $calculation->job->no_so) {
-                \Log::info("Updating Parent Job SO Number: " . $request->no_so);
-                $calculation->job->update([
-                    'no_so' => $request->no_so,
-                    'customer' => $request->customer ?? $calculation->job->customer,
-                    'date_delivery' => $request->date_delivery ?? $calculation->job->date_delivery,
-                    'address' => $request->address ?? $calculation->job->address,
-                ]);
+            // Sync Item
+            if ($request->has('items') && is_array($request->items)) {
+                $calculation->items()->delete();
+                foreach ($request->items as $itemData) {
+                    $calculation->items()->create([
+                        'no_product' => $itemData['no_product'] ?? null,
+                        'desc_product' => $itemData['desc_product'] ?? null,
+                        'qty' => $itemData['qty'] ?? 1,
+                        'no_so' => $itemData['no_so'] ?? null,
+                        'customer' => $itemData['customer'] ?? null,
+                    ]);
+                }
+            } else {
+                $item = $calculation->items()->first();
+                if ($item) {
+                    $item->update([
+                        'no_product' => $request->no_product ?? $item->no_product,
+                        'desc_product' => $request->desc_product ?? $item->desc_product,
+                        'qty' => $request->qty_order ?? $item->qty,
+                        'no_so' => $request->no_so ?? $item->no_so,
+                        'customer' => $request->customer ?? $item->customer,
+                    ]);
+                } else {
+                    $calculation->items()->create([
+                        'no_product' => $request->no_product ?? null,
+                        'desc_product' => $request->desc_product ?? null,
+                        'qty' => $request->qty_order ?? 1,
+                        'no_so' => $request->no_so ?? null,
+                        'customer' => $request->customer ?? null,
+                    ]);
+                }
             }
 
             \Log::info("Invoking PackagingCalculatorService...");

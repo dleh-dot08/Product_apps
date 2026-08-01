@@ -13,61 +13,31 @@
     $initialQtyOrder = '-';
     $initialQtyRemaining = '-';
 
-    $hasJob = isset($calculation) && $calculation->job;
+    $hasJob = isset($calculation);
+    $jobItems = [];
 
     if ($hasJob) {
-        $job = $calculation->job;
+        $items = $calculation->items()->get();
 
-        $initialSO = $job->no_so ?? '';
-        $initialCustomer = $job->customer ?? '-';
-        $initialDelivery = $job->date_delivery ?? '-';
-        $initialAddress = $job->address ?? '-';
-        $initialProduct = $calculation->no_product ?? '';
-        $initialDesc = $calculation->desc_product ?? '-';
-
-        $jobItems = $job->daftar_iso_item_json ?? [];
-
-        if (is_string($jobItems)) {
-            $jobItems = json_decode($jobItems, true) ?: [];
-        }
-
-        if (is_array($jobItems)) {
-            foreach ($jobItems as $item) {
-                $itemNumber = $item['no_barang']
-                    ?? $item['item_no']
-                    ?? $item['part_no']
-                    ?? '';
-
-                if ((string) $itemNumber === (string) $initialProduct) {
-                    $initialQtyOrder = $item['qty']
-                        ?? $item['qty_order']
-                        ?? '-';
-
-                    $initialQtyRemaining = $item['sisa_kirim']
-                        ?? $item['qty_remaining']
-                        ?? '-';
-
-                    break;
-                }
-            }
+        foreach ($items as $item) {
+            $jobItems[] = [
+                'soNumber' => $item->no_so ?? '',
+                'customer' => $item->customer ?? '-',
+                'itemNumber' => $item->no_product ?? '',
+                'description' => $item->desc_product ?? '-',
+                'qty' => $item->qty ?? 0,
+            ];
         }
     }
 
     $productSetupInitialData = [
         'hasJob' => $hasJob,
-        'salesOrder' => $initialSO,
-        'product' => $initialProduct,
-        'customer' => $initialCustomer,
-        'delivery' => $initialDelivery,
-        'address' => $initialAddress,
-        'description' => $initialDesc,
-        'qtyOrder' => $initialQtyOrder,
-        'qtyRemaining' => $initialQtyRemaining,
+        'items' => $jobItems,
 
         'packagingNumber' => $calculation->packaging_number ?? 'PKG-AUTO-001',
-        'packerId' => $calculation->packer_id ?? '',
+        'packerId' => $calculation->packer_id ?? auth()->id(),
         'qtyPacking' => $calculation->qty_packaging ?? 1,
-        'qtyProductPerPacking' => $calculation->qty_product_per_packaging ?? 1,
+        'typePackaging' => $calculation->type_packaging ?? 'Box',
         'dimensions' => [
             'length' => $calculation->panjang ?? '',
             'width' => $calculation->lebar ?? '',
@@ -76,34 +46,35 @@
         'additional' => [
             'topGap' => $calculation->gap_atas ?? '',
             'bottomGap' => $calculation->gap_bawah ?? '',
-            'supportSpacing' => $calculation->jarak_penyanggah ?? '',
+            'supportSpacingAtas' => $calculation->jarak_penyanggah_atas ?? 300,
+            'supportSpacingBawah' => $calculation->jarak_penyanggah_bawah ?? 300,
         ],
         'bottom' => [
             'support' => [
                 'usage' => $calculation->bawah_penyanggah_status ?? 'Include',
-                'direction' => $calculation->bawah_penyanggah_arah ?? 'Horizontal',
+                'direction' => $calculation->bawah_penyanggah_arahpemasangan ?? 'Horizontal',
                 'material' => $calculation->bawah_penyanggah_material ?? '',
             ],
             'cover' => [
                 'usage' => $calculation->bawah_penutup_status ?? 'Tanpa Penutup',
-                'direction' => $calculation->bawah_penutup_arah ?? 'Horizontal',
+                'direction' => $calculation->bawah_penutup_arahpemasangan ?? 'Horizontal',
                 'material' => $calculation->bawah_penutup_material ?? '',
             ],
             'blockFeet' => [
-                'usage' => $calculation->bawah_kaki_balok_status ?? 'Tanpa Kaki Balok',
-                'direction' => $calculation->bawah_kaki_balok_arah ?? 'Vertikal',
-                'material' => $calculation->bawah_kaki_balok_material ?? '',
+                'usage' => $calculation->bawah_kakibalok_status ?? 'Exclude',
+                'direction' => $calculation->bawah_kakibalok_arahpemasangan ?? 'Vertikal',
+                'material' => $calculation->bawah_kakibalok_material ?? '',
             ],
         ],
         'top' => [
             'support' => [
                 'usage' => $calculation->atas_penyanggah_status ?? 'Include',
-                'direction' => $calculation->atas_penyanggah_arah ?? 'Vertikal',
+                'direction' => $calculation->atas_penyanggah_arahpemasangan ?? 'Vertikal',
                 'material' => $calculation->atas_penyanggah_material ?? '',
             ],
             'cover' => [
                 'usage' => $calculation->atas_penutup_status ?? 'Tanpa Penutup',
-                'direction' => $calculation->atas_penutup_arah ?? 'Horizontal',
+                'direction' => $calculation->atas_penutup_arahpemasangan ?? 'Horizontal',
                 'material' => $calculation->atas_penutup_material ?? '',
             ],
         ],
@@ -1335,7 +1306,7 @@
     aria-labelledby="productSetupModalLabel"
     aria-hidden="true"
 >
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
         <div class="modal-content border-0">
 
             <!-- Header -->
@@ -1430,7 +1401,7 @@
                                         <div class="row g-3 align-items-end">
 
                                             <!-- Field Nomor SO -->
-                                            <div class="col-12 col-lg-4">
+                                            <div class="col-12 col-lg-3">
                                                 <label
                                                     for="searchSO"
                                                     class="ps-label"
@@ -1468,7 +1439,7 @@
 
                                             <!-- Dropdown Product -->
                                             <div
-                                                class="col-12 col-lg-6"
+                                                class="col-12 col-lg-4"
                                                 id="itemSelectionSection"
                                             >
                                                 <label
@@ -1491,16 +1462,33 @@
                                                 </select>
                                             </div>
 
-                                            <!-- Helper -->
-                                            <div class="col-12">
-                                                <div class="ps-helper mt-0">
-                                                    <i class="fa-solid fa-circle-info"></i>
+                                            <!-- Input Qty -->
+                                            <div class="col-12 col-lg-2">
+                                                <label for="inputQtyItem" class="ps-label">
+                                                    <i class="fa-solid fa-layer-group"></i> Qty
+                                                    <span class="ps-required">*</span>
+                                                </label>
+                                                <input
+                                                    type="number"
+                                                    class="form-control ps-control"
+                                                    id="inputQtyItem"
+                                                    name="qty_item"
+                                                    placeholder="0"
+                                                    min="1"
+                                                >
+                                            </div>
 
-                                                    <span>
-                                                        Deskripsi lengkap tampil saat dropdown dibuka.
-                                                        Setelah dipilih, dropdown hanya menampilkan Part Number.
-                                                    </span>
-                                                </div>
+                                            <!-- Tombol Tambah Data -->
+                                            <div class="col-12 col-lg-1">
+                                                <label class="ps-label d-none d-lg-block">&nbsp;</label>
+                                                <button
+                                                    type="button"
+                                                    class="btn ps-fetch-button w-100"
+                                                    id="btnAddItemSO"
+                                                    title="Tambah Data"
+                                                >
+                                                    <i class="fa-solid fa-plus"></i>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -1508,199 +1496,31 @@
                             </div>
                         </div>
 
-                        <!-- Informasi SO dan Produk: 6 + 6 -->
+                        <!-- Informasi SO dan Produk: Table based -->
                         <div class="row g-3 ps-info-row">
-
-                            <!-- Informasi Sales Order -->
-                            <div class="col-12 col-lg-6 d-flex">
-                                <section class="ps-card w-100">
+                            <div class="col-12">
+                                <section class="ps-card">
                                     <div class="ps-card-header">
-                                        <div class="ps-card-heading">
-                                            <span class="ps-card-icon">
-                                                <i class="fa-solid fa-file-invoice"></i>
-                                            </span>
-
-                                            <div>
-                                                <h6 class="ps-card-title">
-                                                    Informasi Sales Order
-                                                </h6>
-
-                                                <p class="ps-card-description">
-                                                    Informasi utama dari Sales Order terpilih.
-                                                </p>
-                                            </div>
-                                        </div>
+                                        <h6 class="ps-card-title">Daftar Barang</h6>
                                     </div>
-
-                                    <div class="ps-card-body">
-                                        <div class="ps-detail-list">
-                                            <div class="ps-detail-row">
-                                                <div class="ps-detail-label">
-                                                    <i class="fa-solid fa-hashtag"></i>
-                                                    No. SO
-                                                </div>
-
-                                                <div
-                                                    class="ps-detail-value font-monospace"
-                                                    id="infoNoSO"
-                                                >
-                                                    -
-                                                </div>
-                                            </div>
-
-                                            <div class="ps-detail-row">
-                                                <div class="ps-detail-label">
-                                                    <i class="fa-regular fa-calendar-days"></i>
-                                                    Delivery Date
-                                                </div>
-
-                                                <div
-                                                    class="ps-detail-value"
-                                                    id="infoDeliveryDate"
-                                                >
-                                                    -
-                                                </div>
-                                            </div>
-
-                                            <div class="ps-detail-row">
-                                                <div class="ps-detail-label">
-                                                    <i class="fa-solid fa-building"></i>
-                                                    Customer
-                                                </div>
-
-                                                <div
-                                                    class="ps-detail-value"
-                                                    id="infoCustomer"
-                                                >
-                                                    -
-                                                </div>
-                                            </div>
-
-                                            <div class="ps-detail-row">
-                                                <div class="ps-detail-label">
-                                                    <i class="fa-solid fa-location-dot"></i>
-                                                    Alamat Pengiriman
-                                                </div>
-
-                                                <div
-                                                    class="ps-detail-value"
-                                                    id="infoShipto"
-                                                >
-                                                    -
-                                                </div>
-                                            </div>
+                                    <div class="ps-card-body p-0">
+                                        <div class="table-responsive">
+                                            <table class="table align-middle ps-table" id="productSelectionTable">
+                                                <thead>
+                                                    <tr>
+                                                        <th>SO</th>
+                                                        <th>Customer</th>
+                                                        <th>Part No</th>
+                                                        <th>Deskripsi</th>
+                                                        <th>Qty</th>
+                                                        <th>Pilih</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="productSelectionBody">
+                                                    <!-- Data akan di-render via JS -->
+                                                </tbody>
+                                            </table>
                                         </div>
-                                    </div>
-                                </section>
-                            </div>
-
-                            <!-- Informasi Barang -->
-                            <div class="col-12 col-lg-6 d-flex">
-                                <section
-                                    class="ps-card w-100"
-                                    id="selectedItemDetails"
-                                >
-                                    <div class="ps-card-header">
-                                        <div class="ps-card-heading">
-                                            <span class="ps-card-icon">
-                                                <i class="fa-solid fa-box-open"></i>
-                                            </span>
-
-                                            <div>
-                                                <h6 class="ps-card-title">
-                                                    Informasi Barang
-                                                </h6>
-
-                                                <p class="ps-card-description">
-                                                    Detail produk yang dipilih untuk packaging.
-                                                </p>
-                                            </div>
-                                        </div>
-
-                                        <span class="ps-remaining-badge">
-                                            <i class="fa-solid fa-circle-check"></i>
-                                            Produk terpilih
-                                        </span>
-                                    </div>
-
-                                    <div class="ps-card-body">
-                                        <div class="ps-detail-list">
-                                            <div class="ps-detail-row">
-                                                <div class="ps-detail-label">
-                                                    <i class="fa-solid fa-barcode"></i>
-                                                    Part Number
-                                                </div>
-
-                                                <div class="ps-detail-value">
-                                                    <div class="d-flex align-items-center justify-content-between gap-2 w-100">
-                                                        <span
-                                                            class="font-monospace flex-grow-1"
-                                                            id="detailPartNo"
-                                                        >
-                                                            -
-                                                        </span>
-
-                                                        <button
-                                                            type="button"
-                                                            class="ps-copy-button"
-                                                            id="btnCopyPartNo"
-                                                            title="Salin Part Number"
-                                                            aria-label="Salin Part Number"
-                                                        >
-                                                            <i class="fa-regular fa-copy"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div class="ps-detail-row">
-                                                <div class="ps-detail-label">
-                                                    <i class="fa-solid fa-align-left"></i>
-                                                    Description
-                                                </div>
-
-                                                <div
-                                                    class="ps-detail-value"
-                                                    id="detailDesc"
-                                                >
-                                                    -
-                                                </div>
-                                            </div>
-
-                                            <div class="ps-detail-row">
-                                                <div class="ps-detail-label">
-                                                    <i class="fa-solid fa-boxes-stacked"></i>
-                                                    Qty Product
-                                                </div>
-
-                                                <div class="ps-detail-value">
-                                                    <strong id="detailQtyOrder">-</strong>
-                                                    <span class="text-muted ms-1">Unit</span>
-                                                </div>
-                                            </div>
-
-                                            <div class="ps-detail-row">
-                                                <div class="ps-detail-label">
-                                                    <i class="fa-solid fa-layer-group"></i>
-                                                    Qty Sisa
-                                                </div>
-
-                                                <div class="ps-detail-value">
-                                                    <span class="ps-remaining-badge">
-                                                        <i class="fa-solid fa-box-open"></i>
-                                                        Sisa
-                                                        <strong id="detailQtyRemaining">-</strong>
-                                                        Unit
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <input
-                                            type="hidden"
-                                            id="itemQtyKirim"
-                                            value="1"
-                                        >
                                     </div>
                                 </section>
                             </div>
@@ -1757,7 +1577,7 @@
                         @endphp
                         @foreach($users as $user)
                             <option value="{{ $user->id }}" {{ auth()->id() == $user->id ? 'selected' : '' }}>
-                                {{ $user->name }}
+                                {{ $user->full_name ?? $user->name }}
                             </option>
                         @endforeach
                     </select>
@@ -1779,19 +1599,19 @@
                 </div>
 
                 <div class="s2-field-card">
-                    <label class="s2-label" for="s2_qty_per_pack">
-                        <i class="fa-solid fa-box-open"></i>
-                        Qty Product per Packing
+                    <label class="s2-label" for="s2_type_packaging">
+                        <i class="fa-solid fa-box"></i>
+                        Type Packing
                     </label>
 
-                    <input
-                        type="number"
-                        class="form-control"
-                        id="s2_qty_per_pack"
-                        value="1"
-                        min="1"
-                    >
+                    <select class="form-select" id="s2_type_packaging">
+                        <option value="Box">Box</option>
+                        <option value="Palet">Palet</option>
+                        <option value="Peti">Peti</option>
+                        <option value="Kerangka">Kerangka</option>
+                    </select>
                 </div>
+
             </div>
         </div>
 
@@ -1917,11 +1737,14 @@
 
                             <select class="form-select" id="s2_pb_status">
                                 <option value="Include">Include</option>
-                                <option value="Not Include">Not Include</option>
+                                <option value="Exclude">Exclude</option>
                             </select>
 
-                            <!-- Penyanggah Bawah arah Horizontal -->
-                            <input type="text" class="form-control text-center" id="s2_pb_arah" value="Horizontal" readonly style="background-color: #e9ecef; cursor: not-allowed;">
+                            <!-- Penyanggah Bawah arah -->
+                            <select class="form-select" id="s2_pb_arah">
+                                <option value="Horizontal">Horizontal</option>
+                                <option value="Vertikal">Vertikal</option>
+                            </select>
 
                             <select class="form-select" id="s2_pb_material">
                                 <option value="">Pilih Material...</option>
@@ -1976,7 +1799,7 @@
 
                             <select class="form-select" id="s2_kb_status">
                                 <option value="Include">Include</option>
-                                <option value="Not Include">Not Include</option>
+                                <option value="Exclude">Exclude</option>
                             </select>
 
                             <select class="form-select" id="s2_kb_arah">
@@ -2018,17 +1841,36 @@
                     <div class="s2-compact-stack">
 
                         <div class="s2-compact-field">
-                            <label class="s2-compact-label" for="s2_jarak">
+                            <label class="s2-compact-label" for="s2_jarak_atas">
                                 <span class="s2-compact-icon">
                                     <i class="fa-solid fa-ruler"></i>
                                 </span>
-                                Jarak Penyanggah
+                                Jarak Penyanggah Atas
                             </label>
 
                             <input
                                 type="number"
                                 class="form-control"
-                                id="s2_jarak"
+                                id="s2_jarak_atas"
+                                value="300"
+                                placeholder="0"
+                            >
+
+                            <span class="s2-unit">mm</span>
+                        </div>
+
+                        <div class="s2-compact-field">
+                            <label class="s2-compact-label" for="s2_jarak_bawah">
+                                <span class="s2-compact-icon">
+                                    <i class="fa-solid fa-ruler"></i>
+                                </span>
+                                Jarak Penyanggah Bawah
+                            </label>
+
+                            <input
+                                type="number"
+                                class="form-control"
+                                id="s2_jarak_bawah"
                                 value="300"
                                 placeholder="0"
                             >
@@ -2109,11 +1951,14 @@
 
                             <select class="form-select" id="s2_pa_status">
                                 <option value="Include">Include</option>
-                                <option value="Not Include">Not Include</option>
+                                <option value="Exclude">Exclude</option>
                             </select>
 
-                            <!-- Penyanggah Atas arah Vertikal -->
-                            <input type="text" class="form-control text-center" id="s2_pa_arah" value="Vertikal" readonly style="background-color: #e9ecef; cursor: not-allowed;">
+                            <!-- Penyanggah Atas arah -->
+                            <select class="form-select" id="s2_pa_arah">
+                                <option value="Horizontal">Horizontal</option>
+                                <option value="Vertikal">Vertikal</option>
+                            </select>
 
                             <select class="form-select" id="s2_pa_material">
                                 <option value="">Pilih Material...</option>
@@ -2232,54 +2077,20 @@
         const searchInput = document.getElementById('searchSO');
         const searchButton = document.getElementById('btnSearchSO');
         const itemDropdown = document.getElementById('itemDropdown');
-        const quantityInput = document.getElementById('itemQtyKirim');
-        const copyPartNumberButton = document.getElementById('btnCopyPartNo');
+        const inputQtyItem = document.getElementById('inputQtyItem');
+        const btnAddItemSO = document.getElementById('btnAddItemSO');
         const nextButton = document.getElementById('btn_next_step');
         const previousButton = document.getElementById('btn_prev_step');
         const statusText = document.getElementById('productSetupStatus');
+        const tableBody = document.getElementById('productSelectionBody');
 
         let currentStep = 1;
+        window.selectedItemsList = [];
+        let selectedItemIndex = -1;
 
         /* =====================================================
            HELPERS
            ===================================================== */
-        const setText = (id, value = '-') => {
-            const element = document.getElementById(id);
-
-            if (element) {
-                element.textContent = value ?? '-';
-            }
-        };
-
-        const escapeSOHtml = (value) => String(value)
-            .replaceAll('&', '&amp;')
-            .replaceAll('<', '&lt;')
-            .replaceAll('>', '&gt;')
-            .replaceAll('"', '&quot;')
-            .replaceAll("'", '&#039;');
-
-        window.formatSONumber = window.formatSONumber || ((value) => {
-            return new Intl.NumberFormat('id-ID', {
-                maximumFractionDigits: 0,
-            }).format(Number(value || 0));
-        });
-
-        const getSelectedItemData = () => {
-            const option = itemDropdown?.selectedOptions?.[0];
-
-            if (!option || !option.value) {
-                return null;
-            }
-
-            return {
-                id: option.value,
-                partNumber: option.dataset.itemNo || '-',
-                description: option.dataset.itemDesc || '-',
-                qtyOrder: Number(option.dataset.qtyOrder || 0),
-                qtyRemaining: Number(option.dataset.qtyRemaining || 0),
-            };
-        };
-
         const setStep = (step) => {
             currentStep = step;
 
@@ -2342,66 +2153,62 @@
             }
         };
 
-        const applySelectedItem = () => {
-            const item = getSelectedItemData();
+        const getSelectedItemData = () => {
+            const option = itemDropdown?.selectedOptions?.[0];
 
-            if (!item) {
-                setText('detailPartNo');
-                setText('detailDesc');
-                setText('detailQtyOrder');
-                setText('detailQtyRemaining');
-
-                if (quantityInput) {
-                    quantityInput.value = 1;
-                    quantityInput.removeAttribute('max');
-                }
-
-                return;
+            if (!option || !option.value) {
+                return null;
             }
 
-            setText('detailPartNo', item.partNumber);
-            setText('detailDesc', item.description);
-            setText(
-                'detailQtyOrder',
-                window.formatSONumber(item.qtyOrder)
-            );
-            setText(
-                'detailQtyRemaining',
-                window.formatSONumber(item.qtyRemaining)
-            );
-
-            if (quantityInput) {
-                quantityInput.max = item.qtyRemaining;
-                quantityInput.value = Math.min(
-                    1,
-                    item.qtyRemaining
-                );
-            }
+            return {
+                id: option.value,
+                partNumber: option.dataset.itemNo || '-',
+                description: option.dataset.itemDesc || '-',
+                qtyOrder: Number(option.dataset.qtyOrder || 0),
+                qtyRemaining: Number(option.dataset.qtyRemaining || 0),
+            };
         };
 
-        const restoreDropdownFullText = () => {
-            if (!itemDropdown) return;
-
-            [...itemDropdown.options].forEach((option) => {
-                if (option.value && option.dataset.fullText) {
-                    option.textContent = option.dataset.fullText;
-                }
+        const renderSelectedItemsTable = () => {
+            tableBody.innerHTML = '';
+            window.selectedItemsList.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.soNumber}</td>
+                    <td>${item.customer}</td>
+                    <td>${item.itemNumber}</td>
+                    <td>${item.description}</td>
+                    <td class="text-center fw-bold align-middle">
+                        <input type="number" class="form-control form-control-sm text-center row-qty" value="${item.qty}" min="1" data-index="${index}" style="width: 80px; margin: 0 auto;">
+                    </td>
+                    <td class="text-center align-middle">
+                        <button type="button" class="btn btn-sm btn-outline-danger btn-remove-item" data-index="${index}" style="padding: 2px 6px;">
+                            <i class="fa-solid fa-minus"></i>
+                        </button>
+                    </td>
+                `;
+                tableBody.appendChild(row);
             });
         };
 
-        const applyDropdownShortText = () => {
-            const selectedOption = itemDropdown?.selectedOptions?.[0];
-
-            if (selectedOption?.value && selectedOption.dataset.shortText) {
-                selectedOption.textContent =
-                    selectedOption.dataset.shortText;
+        tableBody?.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn-remove-item');
+            if (btn) {
+                const index = parseInt(btn.dataset.index, 10);
+                window.selectedItemsList.splice(index, 1);
+                renderSelectedItemsTable();
             }
-        };
+        });
+
+        tableBody?.addEventListener('input', (e) => {
+            if (e.target.classList.contains('row-qty')) {
+                const index = parseInt(e.target.dataset.index, 10);
+                window.selectedItemsList[index].qty = parseInt(e.target.value, 10) || 1;
+            }
+        });
 
         /* =====================================================
            PUBLIC SO FUNCTIONS
-           Tetap tersedia agar AJAX/fungsi eksternal lama dapat
-           memanggil fungsi yang sama.
            ===================================================== */
         window.setSOSearchLoading = (isLoading) => {
             if (!searchButton) return;
@@ -2419,73 +2226,35 @@
                 `;
         };
 
-        window.resetSOHeaderInfo = () => {
-            [
-                'infoNoSO',
-                'infoCustomer',
-                'infoDeliveryDate',
-                'infoShipto',
-                'detailPartNo',
-                'detailDesc',
-                'detailQtyOrder',
-                'detailQtyRemaining',
-            ].forEach((id) => setText(id));
-
-            if (itemDropdown) {
-                itemDropdown.innerHTML =
-                    '<option value="">Pilih Barang...</option>';
-
-                itemDropdown.disabled = true;
-            }
+        const escapeSOHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         };
 
-        window.showSOEmptyState = (
-            title = 'Belum Ada Data Sales Order',
-            message = 'Masukkan nomor SO kemudian tekan tombol Tarik Data.'
-        ) => {
-            window.resetSOHeaderInfo();
-
-            if (statusText) {
-                statusText.textContent = `${title}. ${message}`;
-            }
-        };
+        let rawFetchedItems = [];
 
         window.renderSOItems = (items) => {
             if (!itemDropdown) return;
 
             if (!Array.isArray(items) || items.length === 0) {
-                itemDropdown.innerHTML =
-                    '<option value="">Pilih Barang...</option>';
-
+                itemDropdown.innerHTML = '<option value="">Pilih Barang...</option>';
                 itemDropdown.disabled = true;
-                applySelectedItem();
                 return;
             }
 
+            rawFetchedItems = items;
+
             const options = items.map((item, index) => {
                 const itemId = item.id ?? index;
-
-                const itemNumber = item.no_barang
-                    ?? item.item_no
-                    ?? item.part_no
-                    ?? '-';
-
-                const description = item.deskripsi_barang
-                    ?? item.description
-                    ?? item.item_description
-                    ?? '-';
-
-                const qtyOrder = Number(
-                    item.qty
-                    ?? item.qty_order
-                    ?? 0
-                );
-
-                const qtyRemaining = Number(
-                    item.sisa_kirim
-                    ?? item.qty_remaining
-                    ?? 0
-                );
+                const itemNumber = item.no_barang ?? item.item_no ?? item.part_no ?? '-';
+                const description = item.deskripsi_barang ?? item.description ?? item.item_description ?? '-';
+                const qtyOrder = Number(item.qty ?? item.qty_order ?? 0);
+                const qtyRemaining = Number(item.sisa_kirim ?? item.qty_remaining ?? 0);
 
                 const fullText = `${itemNumber} - ${description}`;
 
@@ -2508,9 +2277,50 @@
                 <option value="">Pilih Barang...</option>
                 ${options}
             `;
-
             itemDropdown.disabled = false;
         };
+
+        itemDropdown?.addEventListener('change', () => {
+            const item = getSelectedItemData();
+            if (item && inputQtyItem) {
+                // Default input qty to remaining qty or 1
+                inputQtyItem.max = item.qtyRemaining > 0 ? item.qtyRemaining : item.qtyOrder;
+                inputQtyItem.value = inputQtyItem.max;
+            }
+        });
+
+        btnAddItemSO?.addEventListener('click', () => {
+            const item = getSelectedItemData();
+            if (!item) {
+                alert('Silakan pilih barang dari dropdown terlebih dahulu.');
+                return;
+            }
+
+            const qty = parseInt(inputQtyItem?.value) || 1;
+            
+            // Check if item already exists in table
+            const exists = window.selectedItemsList.find(i => i.itemNumber === item.partNumber);
+            if (exists) {
+                alert('Barang ini sudah ada di dalam tabel.');
+                return;
+            }
+
+            // Push to selectedItemsList
+            window.selectedItemsList.push({
+                soNumber: searchInput?.value?.trim() || '-',
+                itemNumber: item.partNumber,
+                description: item.description,
+                customer: window.currentFetchedCustomer || '-',
+                qty: qty
+            });
+
+            // Re-render
+            renderSelectedItemsTable();
+
+            // Reset selection
+            itemDropdown.value = '';
+            if (inputQtyItem) inputQtyItem.value = '';
+        });
 
         /* =====================================================
            EVENTS
@@ -2522,107 +2332,32 @@
             searchButton?.click();
         });
 
-        itemDropdown?.addEventListener(
-            'mousedown',
-            restoreDropdownFullText
-        );
-
-        itemDropdown?.addEventListener(
-            'focus',
-            restoreDropdownFullText
-        );
-
-        itemDropdown?.addEventListener(
-            'blur',
-            applyDropdownShortText
-        );
-
         itemDropdown?.addEventListener('change', () => {
-            applyDropdownShortText();
-            applySelectedItem();
-
             if (statusText) {
                 statusText.textContent = itemDropdown.value
-                    ? 'Produk terpilih. Anda dapat melanjutkan ke Step 2.'
+                    ? 'Produk terpilih. Masukkan Qty dan klik (+)'
                     : 'Pilih satu barang untuk melanjutkan.';
             }
         });
 
-        quantityInput?.addEventListener('input', function () {
+        inputQtyItem?.addEventListener('input', function () {
             const max = Number(this.max || 0);
             const value = Number(this.value || 0);
             const invalid = value <= 0 || (max > 0 && value > max);
-
             this.classList.toggle('is-invalid', invalid);
         });
 
-        copyPartNumberButton?.addEventListener('click', async function () {
-            const value = document
-                .getElementById('detailPartNo')
-                ?.textContent
-                ?.trim();
-
-            if (!value || value === '-') return;
-
-            try {
-                await navigator.clipboard.writeText(value);
-
-                const originalHtml = this.innerHTML;
-                this.innerHTML =
-                    '<i class="fa-solid fa-check text-success"></i>';
-
-                window.setTimeout(() => {
-                    this.innerHTML = originalHtml;
-                }, 1200);
-            } catch (error) {
-                console.error(
-                    'Gagal menyalin Part Number:',
-                    error
-                );
-            }
-        });
 
         nextButton?.addEventListener('click', () => {
             if (currentStep === 1) {
-                if (!itemDropdown?.value) {
-                    itemDropdown?.focus();
-                    itemDropdown?.classList.add('is-invalid');
-
+                if (window.selectedItemsList && window.selectedItemsList.length > 0) {
+                    setStep(2);
+                } else {
                     if (statusText) {
                         statusText.textContent =
-                            'Pilih barang terlebih dahulu.';
+                            'Tarik data SO dan tambahkan barang ke daftar terlebih dahulu.';
                     }
-
-                    return;
                 }
-
-                itemDropdown.classList.remove('is-invalid');
-
-                document.dispatchEvent(
-                    new CustomEvent('salesOrderItemSelected', {
-                        detail: {
-                            itemId: itemDropdown.value,
-                            partNumber: document
-                                .getElementById('detailPartNo')
-                                ?.textContent
-                                ?.trim(),
-                            description: document
-                                .getElementById('detailDesc')
-                                ?.textContent
-                                ?.trim(),
-                            qtyOrder: document
-                                .getElementById('detailQtyOrder')
-                                ?.textContent
-                                ?.trim(),
-                            qtyRemaining: document
-                                .getElementById('detailQtyRemaining')
-                                ?.textContent
-                                ?.trim(),
-                        },
-                    })
-                );
-
-                setStep(2);
                 return;
             }
 
@@ -2632,7 +2367,7 @@
 
             const payload = {
                 salesOrder: searchInput?.value?.trim() || '',
-                item: getSelectedItemData(),
+                items: window.selectedItemsList,
                 configuration: getPackagingConfiguration(),
             };
 
@@ -2676,9 +2411,7 @@
             packagingNumber: getFieldValue('s2_pkg_number'),
             packerId: getFieldValue('s2_packer'),
             qtyPacking: Number(getFieldValue('s2_qty_pack') || 0),
-            qtyProductPerPacking: Number(
-                getFieldValue('s2_qty_per_pack') || 0
-            ),
+            typePackaging: getFieldValue('s2_type_packaging'),
 
             dimensions: {
                 length: Number(getFieldValue('s2_length') || 0),
@@ -2687,8 +2420,11 @@
             },
 
             additional: {
-                supportSpacing: Number(
-                    getFieldValue('s2_jarak') || 0
+                supportSpacingAtas: Number(
+                    getFieldValue('s2_jarak_atas') || 0
+                ),
+                supportSpacingBawah: Number(
+                    getFieldValue('s2_jarak_bawah') || 0
                 ),
                 topGap: Number(
                     getFieldValue('s2_gap_atas') || 0
@@ -2734,7 +2470,7 @@
             const requiredIds = [
                 's2_packer',
                 's2_qty_pack',
-                's2_qty_per_pack',
+                's2_type_packaging',
                 's2_length',
                 's2_width',
                 's2_height',
@@ -2785,39 +2521,23 @@
            ===================================================== */
         const initialData = {!! json_encode($productSetupInitialData) !!};
 
-        if (initialData.hasJob && initialData.salesOrder) {
+        if (initialData.hasJob && initialData.items && initialData.items.length > 0) {
+            // First item's SO is used for the search box
             if (searchInput) {
-                searchInput.value = initialData.salesOrder;
+                searchInput.value = initialData.items[0].soNumber;
             }
 
-            setText('infoNoSO', initialData.salesOrder);
-            setText('infoCustomer', initialData.customer);
-            setText('infoDeliveryDate', initialData.delivery);
-            setText('infoShipto', initialData.address);
-
-            if (itemDropdown && initialData.product) {
-                const fullText =
-                    `${initialData.product} - ${initialData.description}`;
-
-                itemDropdown.disabled = false;
-
-                itemDropdown.innerHTML = `
-                    <option
-                        value="${escapeSOHtml(initialData.product)}"
-                        data-item-no="${escapeSOHtml(initialData.product)}"
-                        data-item-desc="${escapeSOHtml(initialData.description)}"
-                        data-qty-order="${escapeSOHtml(initialData.qtyOrder)}"
-                        data-qty-remaining="${escapeSOHtml(initialData.qtyRemaining)}"
-                        data-short-text="${escapeSOHtml(initialData.product)}"
-                        data-full-text="${escapeSOHtml(fullText)}"
-                        selected
-                    >
-                        ${escapeSOHtml(initialData.product)}
-                    </option>
-                `;
-
-                applySelectedItem();
-            }
+            // Populate the table directly
+            window.selectedItemsList = initialData.items.map(item => ({
+                soNumber: item.soNumber,
+                itemNumber: item.itemNumber,
+                description: item.description,
+                customer: item.customer,
+                qty: item.qty,
+            }));
+            
+            renderSelectedItemsTable();
+        }
 
             // Populasikan nilai Step 2
             const setVal = (id, val) => {
@@ -2830,18 +2550,19 @@
             setVal('s2_pkg_number', initialData.packagingNumber);
             setVal('s2_packer', initialData.packerId);
             setVal('s2_qty_pack', initialData.qtyPacking);
-            setVal('s2_qty_per_pack', initialData.qtyProductPerPacking);
+            setVal('s2_type_packaging', initialData.typePackaging);
 
             setVal('s2_length', initialData.dimensions?.length);
             setVal('s2_width', initialData.dimensions?.width);
             setVal('s2_height', initialData.dimensions?.height);
 
-            setVal('s2_jarak', initialData.additional?.supportSpacing);
+            setVal('s2_jarak_atas', initialData.additional?.supportSpacingAtas);
+            setVal('s2_jarak_bawah', initialData.additional?.supportSpacingBawah);
             setVal('s2_gap_atas', initialData.additional?.topGap);
             setVal('s2_gap_bawah', initialData.additional?.bottomGap);
 
             setVal('s2_pb_status', initialData.bottom?.support?.usage);
-            // s2_pb_arah readonly = Horizontal, tidak perlu setVal
+            setVal('s2_pb_arah', initialData.bottom?.support?.direction);
             setVal('s2_pb_material', initialData.bottom?.support?.material);
             
             setVal('s2_ptb_status', initialData.bottom?.cover?.usage);
@@ -2853,13 +2574,12 @@
             setVal('s2_kb_material', initialData.bottom?.blockFeet?.material);
             
             setVal('s2_pa_status', initialData.top?.support?.usage);
-            // s2_pa_arah readonly = Vertikal, tidak perlu setVal
+            setVal('s2_pa_arah', initialData.top?.support?.direction);
             setVal('s2_pa_material', initialData.top?.support?.material);
             
             setVal('s2_pta_status', initialData.top?.cover?.usage);
             setVal('s2_pta_arah', initialData.top?.cover?.direction);
             setVal('s2_pta_material', initialData.top?.cover?.material);
-        }
 
         setStep(1);
     });
@@ -2894,7 +2614,9 @@
                             if (el) el.textContent = text || '-';
                         };
                         setText('infoNoSO', soNumber);
-                        setText('infoCustomer', firstItem.nama_pelanggan || firstItem.customer || '-');
+                        const customerName = firstItem.nama_pelanggan || firstItem.customer || '-';
+                        setText('infoCustomer', customerName);
+                        window.currentFetchedCustomer = customerName;
                         // Misal kalau ada delivery date & address dari API
                         setText('infoDeliveryDate', firstItem.tgl_estimasi || firstItem.tgl_pengiriman || firstItem.tgl_so || '-');
                         setText('infoShipto', firstItem.shipto || '-');
@@ -2942,26 +2664,35 @@
             if (calcId) {
                 // UPDATE EXISTING CALCULATION
                 url = `/packaging/calc-update/${calcId}`;
+                let itemsList = [];
+                if (window.selectedItemsList && window.selectedItemsList.length > 0) {
+                    itemsList = window.selectedItemsList.map(item => ({
+                        no_so: item.soNumber,
+                        customer: item.customer,
+                        no_product: item.itemNumber,
+                        desc_product: item.description,
+                        qty: item.qty
+                    }));
+                } else if (payload.item) {
+                    itemsList = [{
+                        no_so: payload.salesOrder,
+                        customer: document.getElementById('infoCustomer')?.textContent,
+                        no_product: payload.item.product,
+                        desc_product: payload.item.desc,
+                        qty: payload.item.qtyOrder || 1
+                    }];
+                }
+
                 finalPayload = {
                     _token: document.querySelector('meta[name="csrf-token"]')?.content,
                     _method: 'PUT',
-                    
-                    // Step 1 Data
-                    no_so: payload.salesOrder,
-                    customer: document.getElementById('infoCustomer')?.textContent,
-                    date_delivery: document.getElementById('infoDeliveryDate')?.textContent,
-                    address: document.getElementById('infoShipto')?.textContent,
-                    no_product: payload.item?.itemId || payload.item?.partNumber,
-                    desc_product: payload.item?.description,
-        
-                    // Step 2 Data
-                    packer_id: payload.configuration.packerId,
                     qty_pack: payload.configuration.qtyPacking,
-                    qty_per_pack: payload.configuration.qtyProductPerPacking,
+                    packer_id: payload.configuration.packerId,
                     length: payload.configuration.dimensions.length,
                     width: payload.configuration.dimensions.width,
                     height: payload.configuration.dimensions.height,
-                    distance_between_pillars: payload.configuration.additional.supportSpacing,
+                    jarak_penyanggah_atas: payload.configuration.additional.supportSpacingAtas,
+                    jarak_penyanggah_bawah: payload.configuration.additional.supportSpacingBawah,
                     gap_atas: payload.configuration.additional.topGap,
                     gap_bawah: payload.configuration.additional.bottomGap,
         
@@ -2995,44 +2726,43 @@
                     date_delivery: document.getElementById('infoDeliveryDate')?.textContent,
                     address: document.getElementById('infoShipto')?.textContent,
                     packType: 'Crate', // Default
-                    items: [
-                        {
-                            packer: payload.configuration.packerId,
-                            no_product: payload.item?.itemId || payload.item?.partNumber,
-                            desc_product: payload.item?.description,
-                            qty_kirim: payload.item?.qtyOrder || 1, // Atau ambil dari input manual
-                            qty_pack: payload.configuration.qtyPacking,
-                            qty_per_pack: payload.configuration.qtyProductPerPacking,
+                    items: (payload.items || []).map(item => ({
+                        packer: payload.configuration.packerId,
+                        no_product: item.itemNumber || item.no_product,
+                        desc_product: item.description || item.desc_product,
+                        qty_kirim: item.qty || item.qty_kirim || 1,
+                        qty_pack: payload.configuration.qtyPacking,
+                        type_packaging: payload.configuration.typePackaging,
 
-                            length: payload.configuration.dimensions.length,
-                            width: payload.configuration.dimensions.width,
-                            height: payload.configuration.dimensions.height,
-                            
-                            jarak: payload.configuration.additional.supportSpacing,
-                            gap_atas: payload.configuration.additional.topGap,
-                            gap_bawah: payload.configuration.additional.bottomGap,
+                        length: payload.configuration.dimensions.length,
+                        width: payload.configuration.dimensions.width,
+                        height: payload.configuration.dimensions.height,
+                        
+                        jarak_penyanggah_atas: payload.configuration.additional.supportSpacingAtas,
+                        jarak_penyanggah_bawah: payload.configuration.additional.supportSpacingBawah,
+                        gap_atas: payload.configuration.additional.topGap,
+                        gap_bawah: payload.configuration.additional.bottomGap,
 
-                            pb_status: payload.configuration.bottom.support.usage,
-                            pb_arah: payload.configuration.bottom.support.direction,
-                            pb_material: payload.configuration.bottom.support.material,
+                        pb_status: payload.configuration.bottom.support.usage,
+                        pb_arah: payload.configuration.bottom.support.direction,
+                        pb_material: payload.configuration.bottom.support.material,
 
-                            ptb_status: payload.configuration.bottom.cover.usage,
-                            ptb_arah: payload.configuration.bottom.cover.direction,
-                            ptb_material: payload.configuration.bottom.cover.material,
+                        ptb_status: payload.configuration.bottom.cover.usage,
+                        ptb_arah: payload.configuration.bottom.cover.direction,
+                        ptb_material: payload.configuration.bottom.cover.material,
 
-                            kb_status: payload.configuration.bottom.blockFeet.usage,
-                            kb_arah: payload.configuration.bottom.blockFeet.direction,
-                            kb_material: payload.configuration.bottom.blockFeet.material,
+                        kb_status: payload.configuration.bottom.blockFeet.usage,
+                        kb_arah: payload.configuration.bottom.blockFeet.direction,
+                        kb_material: payload.configuration.bottom.blockFeet.material,
 
-                            pa_status: payload.configuration.top.support.usage,
-                            pa_arah: payload.configuration.top.support.direction,
-                            pa_material: payload.configuration.top.support.material,
+                        pa_status: payload.configuration.top.support.usage,
+                        pa_arah: payload.configuration.top.support.direction,
+                        pa_material: payload.configuration.top.support.material,
 
-                            pta_status: payload.configuration.top.cover.usage,
-                            pta_arah: payload.configuration.top.cover.direction,
-                            pta_material: payload.configuration.top.cover.material,
-                        }
-                    ]
+                        pta_status: payload.configuration.top.cover.usage,
+                        pta_arah: payload.configuration.top.cover.direction,
+                        pta_material: payload.configuration.top.cover.material,
+                    }))
                 };
             }
 

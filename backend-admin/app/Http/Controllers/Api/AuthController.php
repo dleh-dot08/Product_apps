@@ -27,8 +27,6 @@ class AuthController extends Controller
         }
 
         $token = $user->createToken($request->device_name)->plainTextToken;
-        
-        $user->load(['role', 'division']);
 
         return response()->json([
             'message' => 'Login berhasil',
