@@ -92,7 +92,9 @@ class PackagingCalculatorService
                 'length' => (float) ($detail->panjang ?? $detail->length ?? 0),
                 'width' => (float) ($detail->lebar ?? $detail->width ?? 0),
                 'height' => (float) ($detail->tinggi ?? $detail->height ?? 0),
-                'distance_between_pillars' => (float) ($detail->jarak_penyanggah_bawah ?? $detail->jarak_penyanggah ?? 0),
+                'jarak_penyanggah_atas' => (float) ($detail->jarak_penyanggah_atas ?? $detail->jarak_penyanggah ?? 300),
+                'jarak_penyanggah_bawah' => (float) ($detail->jarak_penyanggah_bawah ?? $detail->jarak_penyanggah ?? 300),
+                'distance_between_pillars' => (float) ($detail->jarak_penyanggah_bawah ?? $detail->jarak_penyanggah ?? 300),
                 'gap_atas' => (float) ($detail->gap_atas ?? 0),
                 'gap_bawah' => (float) ($detail->gap_bawah ?? 0),
                 'cover_type' => 'Tidak makai penutup', // akan ditimpa per part
@@ -467,7 +469,9 @@ class PackagingCalculatorService
                 'length' => (float) ($calculation->panjang ?? $calculation->length ?? 0),
                 'width' => (float) ($calculation->lebar ?? $calculation->width ?? 0),
                 'height' => (float) ($calculation->tinggi ?? $calculation->height ?? 0),
-                'distance_between_pillars' => (float) ($calculation->jarak_penyanggah_bawah ?? $calculation->jarak_penyanggah ?? $calculation->distance_between_pillars ?? 0),
+                'jarak_penyanggah_atas' => (float) ($calculation->jarak_penyanggah_atas ?? $calculation->distance_between_pillars_top ?? $calculation->jarak_penyanggah ?? $calculation->distance_between_pillars ?? 300),
+                'jarak_penyanggah_bawah' => (float) ($calculation->jarak_penyanggah_bawah ?? $calculation->distance_between_pillars_bottom ?? $calculation->jarak_penyanggah ?? $calculation->distance_between_pillars ?? 300),
+                'distance_between_pillars' => (float) ($calculation->jarak_penyanggah_bawah ?? $calculation->distance_between_pillars_bottom ?? $calculation->jarak_penyanggah ?? $calculation->distance_between_pillars ?? 300),
                 'gap_atas' => (float) ($calculation->gap_atas ?? 0),
                 'gap_bawah' => (float) ($calculation->gap_bawah ?? 0),
                 'cover_type' => $calculation->cover_type ?? 'Tidak makai penutup',
@@ -902,7 +906,23 @@ class PackagingCalculatorService
         $P = (float)($params['length'] ?? 0);
         $L = (float)($params['width'] ?? 0);
         $T = (float)($params['height'] ?? 0);
-        $jarakTiang = (float)($params['distance_between_pillars'] ?? 0);
+        
+        $jarakAtas = (float) (
+            $params['jarak_penyanggah_atas'] ?? 
+            $params['distance_between_pillars_top'] ?? 
+            $params['distance_between_pillars'] ?? 
+            300
+        );
+        $jarakBawah = (float) (
+            $params['jarak_penyanggah_bawah'] ?? 
+            $params['distance_between_pillars_bottom'] ?? 
+            $params['distance_between_pillars'] ?? 
+            300
+        );
+
+        if ($jarakAtas <= 0) $jarakAtas = 300;
+        if ($jarakBawah <= 0) $jarakBawah = 300;
+
         $celahAtas = (float)($params['gap_atas'] ?? 0);
         $celahBawah = (float)($params['gap_bawah'] ?? 0);
         $jenisPenutup = $params['cover_type'] ?? 'Tidak makai penutup';
@@ -968,7 +988,6 @@ class PackagingCalculatorService
         // --- 2. HITUNG AREA BAWAH ---
         $kbInclude = $params['include_pallet_base'] ?? 1;
         $pbInclude = $params['bawah_penyangga_include'] ?? 1;
-        $jarakBawah = ($jarakTiang > 0) ? $jarakTiang : 300;
 
         // Ambil ketebalan penutup atas untuk menghitung Dimensi Luar
         $ptaKode = $getMatKode('Penutup', 'Atas', 'PN03');
@@ -1050,11 +1069,13 @@ class PackagingCalculatorService
                 $pQty = $qtyKB; 
             } elseif ($pName === 'Kanan' || $pName === 'Kiri') {
                 $pPanjang = $tinggiTiang;
-                if ($qtyPenyanggaBawah <= 3) {
-                    $pQty = 1;
-                } else {
-                    $pQty = $qtyPenyanggaBawah - 2;
-                }
+                
+                $jarakSamping = $jarakAtas * 2;
+                
+                // Using outerP because Kanan and Kiri run along the length (Panjang) of the box
+                $qtySamping = $jarakSamping > 0 ? (int) floor($outerP / $jarakSamping) : 0;
+                
+                $pQty = max(1, $qtySamping);
             } else {
                 $pPanjang = $tinggiTiang;
                 $pQty = $qtyKB; 
