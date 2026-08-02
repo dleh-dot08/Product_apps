@@ -118,6 +118,9 @@
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link rounded-pill px-4 py-1.5" style="font-size: 13px;" id="tab-paku" data-bs-toggle="tab" data-bs-target="#content-paku" type="button" role="tab">Paku</button>
                             </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link rounded-pill px-4 py-1.5" style="font-size: 13px;" id="tab-waktu-proses" data-bs-toggle="tab" data-bs-target="#content-waktu-proses" type="button" role="tab">Waktu Proses</button>
+                            </li>
                         </ul>
                     </div>
 
@@ -472,6 +475,85 @@
                                         <div class="border-top pt-3 d-flex justify-content-between align-items-center">
                                             <span class="text-navy fw-black text-uppercase" style="font-size: 13px; letter-spacing: 0.5px;">Total Biaya Paku</span>
                                             <span class="fs-4 fw-black text-primary" id="paku-total-cost">Rp 0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Tab: WAKTU PROSES -->
+                            <div class="tab-pane fade" id="content-waktu-proses" role="tabpanel">
+                                @php
+                                    $volM3 = 0;
+                                    if (isset($calculation)) {
+                                        $p = $calculation->panjang ?? 0;
+                                        $l = $calculation->lebar ?? 0;
+                                        $t = $calculation->tinggi ?? 0;
+                                        $volM3 = ($p * $l * $t) / 1000000000;
+                                    }
+                                @endphp
+                                <div class="table-responsive border-bottom">
+                                    <table class="table-premium w-100 mb-0">
+                                        <thead class="bg-light">
+                                            <tr>
+                                                <th>Aktivitas</th>
+                                                <th class="text-end">Volume (m³)</th>
+                                                <th class="text-end">Waktu Proses</th>
+                                                <th class="text-center">Satuan</th>
+                                                <th class="text-end">Total Waktu Proses</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><i class="fa-solid fa-cut me-2 text-secondary"></i>Potong Kayu</td>
+                                                <td class="text-end fw-bold vol-m3-cell">{{ number_format($volM3, 3, ',', '.') }}</td>
+                                                <td class="text-end">30</td>
+                                                <td class="text-center">Menit/m³</td>
+                                                <td class="text-end fw-bold" id="waktu-potong">{{ isset($calculation) ? number_format($calculation->manpower_potong ?? 0, 2, ',', '.') : '0,00' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="fa-solid fa-layer-group me-2 text-secondary"></i>Serut Kayu</td>
+                                                <td class="text-end fw-bold vol-m3-cell">{{ number_format($volM3, 3, ',', '.') }}</td>
+                                                <td class="text-end">30</td>
+                                                <td class="text-center">Menit/m³</td>
+                                                <td class="text-end fw-bold" id="waktu-serut">{{ isset($calculation) ? number_format($calculation->manpower_serut ?? 0, 2, ',', '.') : '0,00' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="fa-solid fa-hammer me-2 text-secondary"></i>Perakitan</td>
+                                                <td class="text-end fw-bold vol-m3-cell">{{ number_format($volM3, 3, ',', '.') }}</td>
+                                                <td class="text-end">105</td>
+                                                <td class="text-center">Menit/m³</td>
+                                                <td class="text-end fw-bold" id="waktu-perakitan">{{ isset($calculation) ? number_format($calculation->manpower_perakitan ?? 0, 2, ',', '.') : '0,00' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <td><i class="fa-solid fa-boxes-packing me-2 text-secondary"></i>Prepare</td>
+                                                <td class="text-end fw-bold vol-m3-cell">{{ number_format($volM3, 3, ',', '.') }}</td>
+                                                <td class="text-end">20</td>
+                                                <td class="text-center">Menit/m³</td>
+                                                <td class="text-end fw-bold" id="waktu-prepare">{{ isset($calculation) ? number_format($calculation->manpower_prepare ?? 0, 2, ',', '.') : '0,00' }}</td>
+                                            </tr>
+                                        </tbody>
+                                        <tfoot class="bg-light border-top">
+                                            <tr>
+                                                <th colspan="4" class="text-end py-3">TOTAL WAKTU MANPOWER</th>
+                                                <th class="text-end py-3 fs-5 text-primary fw-black"><span id="waktu-total">{{ isset($calculation) ? number_format(($calculation->total_waktu_manpower ?? 0) / 60, 2, ',', '.') : '0,00' }}</span> <small class="text-muted fs-6">Jam</small></th>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+
+                                <!-- Waktu Proses Summary Card -->
+                                <div class="p-4 bg-light d-flex justify-content-end tab-footer border-top">
+                                    <div class="card-summary-premium p-4" style="width: 380px;">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <div class="d-flex align-items-center gap-2 text-muted">
+                                                <span class="material-symbols-rounded fs-5 text-blue-500" style="color: #3b82f6;">category</span>
+                                                <span class="fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 11px;">Volume Packaging</span>
+                                            </div>
+                                            <span class="fs-6 fw-black text-dark"><span id="waktu-volume-m3">{{ number_format($volM3, 3, ',', '.') }}</span> m³</span>
+                                        </div>
+                                        <div class="border-top pt-3 d-flex justify-content-between align-items-center">
+                                            <span class="text-navy fw-black text-uppercase" style="font-size: 13px; letter-spacing: 0.5px;">Total Waktu Manpower</span>
+                                            <span class="fs-4 fw-black text-primary"><span id="waktu-total-card">{{ isset($calculation) ? number_format(($calculation->total_waktu_manpower ?? 0) / 60, 2, ',', '.') : '0,00' }}</span> <span class="fs-6 text-muted">Jam</span></span>
                                         </div>
                                     </div>
                                 </div>

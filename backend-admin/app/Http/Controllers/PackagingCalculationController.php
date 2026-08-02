@@ -9,6 +9,12 @@ use Illuminate\Support\Facades\Validator;
 
 class PackagingCalculationController extends Controller
 {
+    // Konstan untuk Rate Manpower (menit/m³)
+    const RATE_POTONG = 30;
+    const RATE_SERUT = 30;
+    const RATE_PERAKITAN = 105;
+    const RATE_PREPARE = 20;
+
     public function index()
     {
         $calculations = PackagingCalculation::orderBy('created_at', 'desc')->get();
@@ -133,6 +139,29 @@ class PackagingCalculationController extends Controller
             );
             \Log::info("PackagingCalculatorService completed successfully.");
             $calculation->refresh();
+
+            // Hitung Manpower
+            $panjang = $calculation->panjang ?? 0;
+            $lebar = $calculation->lebar ?? 0;
+            $tinggi = $calculation->tinggi ?? 0;
+            
+            // Asumsi dimensi dalam mm, maka konversi ke m³ dibagi 1.000.000.000
+            $totalM3 = ($panjang * $lebar * $tinggi) / 1000000000;
+
+            $potong = $totalM3 * self::RATE_POTONG;
+            $serut = $totalM3 * self::RATE_SERUT;
+            $perakitan = $totalM3 * self::RATE_PERAKITAN;
+            $prepare = $totalM3 * self::RATE_PREPARE;
+            
+            $totalwaktuManpower = $potong + $serut + $perakitan + $prepare;
+
+            $calculation->update([
+                'manpower_potong' => $potong,
+                'manpower_serut' => $serut,
+                'manpower_perakitan' => $perakitan,
+                'manpower_prepare' => $prepare,
+                'total_waktu_manpower' => $totalwaktuManpower
+            ]);
 
             return response()->json([
                 'status' => 'success',
@@ -298,6 +327,29 @@ class PackagingCalculationController extends Controller
             \Log::info("PackagingCalculatorService completed successfully.");
             $calculation->refresh();
 
+            // Hitung Manpower
+            $panjang = $calculation->panjang ?? 0;
+            $lebar = $calculation->lebar ?? 0;
+            $tinggi = $calculation->tinggi ?? 0;
+            
+            // Asumsi dimensi dalam mm, maka konversi ke m³ dibagi 1.000.000.000
+            $totalM3 = ($panjang * $lebar * $tinggi) / 1000000000;
+
+            $potong = $totalM3 * self::RATE_POTONG;
+            $serut = $totalM3 * self::RATE_SERUT;
+            $perakitan = $totalM3 * self::RATE_PERAKITAN;
+            $prepare = $totalM3 * self::RATE_PREPARE;
+            
+            $totalwaktuManpower = $potong + $serut + $perakitan + $prepare;
+
+            $calculation->update([
+                'manpower_potong' => $potong,
+                'manpower_serut' => $serut,
+                'manpower_perakitan' => $perakitan,
+                'manpower_prepare' => $prepare,
+                'total_waktu_manpower' => $totalwaktuManpower
+            ]);
+
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data packaging calculation berhasil diperbarui.',
@@ -389,6 +441,20 @@ class PackagingCalculationController extends Controller
             $areaKerja = 2 * (($P_m * $L_m) + ($P_m * $T_m) + ($L_m * $T_m));
         }
 
+        $potong = 0;
+        $serut = 0;
+        $perakitan = 0;
+        $prepare = 0;
+        $totalM3 = 0;
+        
+        if ($P && $L && $T) {
+            $totalM3 = ($P * $L * $T) / 1000000000;
+            $potong = $totalM3 * self::RATE_POTONG;
+            $serut = $totalM3 * self::RATE_SERUT;
+            $perakitan = $totalM3 * self::RATE_PERAKITAN;
+            $prepare = $totalM3 * self::RATE_PREPARE;
+        }
+
         return response()->json([
             'status' => 'success',
             'details' => $details,
@@ -399,6 +465,12 @@ class PackagingCalculationController extends Controller
                 'cost_bawah' => $costBawah,
                 'total_cost' => $costRangka + $costPenyangga + $costPenutup + $costBawah,
                 'area_kerja' => $areaKerja,
+                'manpower_potong' => $potong,
+                'manpower_serut' => $serut,
+                'manpower_perakitan' => $perakitan,
+                'manpower_prepare' => $prepare,
+                'total_waktu_manpower' => $potong + $serut + $perakitan + $prepare,
+                'volume_m3' => $totalM3,
             ]
         ]);
     }

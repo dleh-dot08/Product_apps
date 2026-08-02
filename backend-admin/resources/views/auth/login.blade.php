@@ -55,11 +55,8 @@
 
             <!-- Top Logo Card -->
             <div class="z-10 mb-8 transform transition hover:scale-105 duration-300">
-                <div class="bg-white/10 backdrop-blur-md px-5 py-2.5 rounded-xl border border-white/10 inline-flex items-center gap-3 shadow-lg">
-                    <div class="w-8 h-8 bg-gradient-to-tr from-blue-600 to-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-inner">
-                        A
-                    </div>
-                    <span class="font-bold text-white tracking-wide text-sm">AQPA INDONESIA</span>
+                <div class="bg-white px-4 py-2 rounded-xl border border-white/20 inline-flex items-center shadow-xl">
+                    <img src="{{ asset('logo/aqpa-indonesia-logo.png') }}" alt="AQPA Logo" class="h-10 w-auto object-contain">
                 </div>
             </div>
 
@@ -73,17 +70,17 @@
                     AQPA<br>Dashboard
                 </h1>
                 <p class="text-slate-300 text-sm leading-relaxed max-w-sm font-light">
-                    Kontrol data accounting, persediaan, pembelian, penjualan, dan project dalam satu ruang kerja yang elegan.
+                    Sistem monitoring terpadu untuk mengelola proses packaging, pengiriman, dan operasional dalam satu platform yang efisien.
                 </p>
             </div>
 
             <!-- Bottom Badges -->
             <div class="z-10 mt-10 flex flex-wrap gap-3">
                 <span class="px-4 py-1.5 bg-white/5 border border-white/10 text-slate-200 text-xs font-medium rounded-full backdrop-blur-md hover:bg-white/10 transition-colors cursor-default">
-                    <i class="fa-solid fa-chart-pie mr-1.5 text-blue-400"></i> ERP
+                    <i class="fa-solid fa-box mr-1.5 text-blue-400"></i> Packaging
                 </span>
                 <span class="px-4 py-1.5 bg-white/5 border border-white/10 text-slate-200 text-xs font-medium rounded-full backdrop-blur-md hover:bg-white/10 transition-colors cursor-default">
-                    <i class="fa-solid fa-wallet mr-1.5 text-indigo-400"></i> Finance
+                    <i class="fa-solid fa-truck-fast mr-1.5 text-indigo-400"></i> Delivery
                 </span>
                 <span class="px-4 py-1.5 bg-white/5 border border-white/10 text-slate-200 text-xs font-medium rounded-full backdrop-blur-md hover:bg-white/10 transition-colors cursor-default">
                     <i class="fa-solid fa-gears mr-1.5 text-cyan-400"></i> Operations

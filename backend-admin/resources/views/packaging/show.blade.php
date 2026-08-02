@@ -4452,7 +4452,8 @@
                         } else if (child.name === 'Nail') {
                             child.position.set(0, 0, 0);
                             // Rotate the nail so its local Z axis (length) aligns with the Y axis (UP)
-                            child.rotation.set(-Math.PI / 2, 0, 0);
+                            // Flipped so the head is on top
+                            child.rotation.set(Math.PI / 2, 0, 0);
                         }
                         
                         if (child.isMesh) {
@@ -4902,6 +4903,9 @@
 
             offsets.forEach(off => {
                 let n = nailModel.clone();
+                // Scale up nails specifically for bottom area (Penyangga) so they are more visible
+                n.scale.multiplyScalar(2.5);
+                
                 let nx = mesh.position.x, ny = mesh.position.y, nz = mesh.position.z;
                 
                 if (axis === 'x') nx += off;
@@ -4968,6 +4972,9 @@
 
             corners.forEach(corner => {
                 let n = nailModel.clone();
+                // Scale up nails to make them more visible in the 3D visual
+                n.scale.multiplyScalar(2.5);
+                
                 let nx = mesh.position.x;
                 let ny = mesh.position.y;
                 let nz = mesh.position.z;
@@ -6003,6 +6010,27 @@
                 
                 let costTotalEl = document.getElementById('cost-total');
                 if (costTotalEl) costTotalEl.innerText = formatRupiah(summary.total_cost);
+                
+                // Update manpower estimates
+                let wPotong = document.getElementById('waktu-potong');
+                if (wPotong) wPotong.innerText = formatNumber(summary.manpower_potong || 0, 2);
+                let wSerut = document.getElementById('waktu-serut');
+                if (wSerut) wSerut.innerText = formatNumber(summary.manpower_serut || 0, 2);
+                let wPerakitan = document.getElementById('waktu-perakitan');
+                if (wPerakitan) wPerakitan.innerText = formatNumber(summary.manpower_perakitan || 0, 2);
+                let wPrepare = document.getElementById('waktu-prepare');
+                if (wPrepare) wPrepare.innerText = formatNumber(summary.manpower_prepare || 0, 2);
+                let wTotal = document.getElementById('waktu-total');
+                if (wTotal) wTotal.innerText = formatNumber((summary.total_waktu_manpower || 0) / 60, 2);
+                let wTotalCard = document.getElementById('waktu-total-card');
+                if (wTotalCard) wTotalCard.innerText = formatNumber((summary.total_waktu_manpower || 0) / 60, 2);
+                let wVolumeM3 = document.getElementById('waktu-volume-m3');
+                if (wVolumeM3) wVolumeM3.innerText = formatNumber(summary.volume_m3 || 0, 3);
+                
+                let volCells = document.querySelectorAll('.vol-m3-cell');
+                volCells.forEach(cell => {
+                    cell.innerText = formatNumber(summary.volume_m3 || 0, 3);
+                });
                 
                 // Rebuild tables
                 let htmlAll = '';

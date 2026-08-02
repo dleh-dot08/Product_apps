@@ -750,31 +750,31 @@
                     <tbody>
                         @forelse($packagingJobs ?? [] as $index => $job)
                             @php
-                                $firstDetail = $job->details->first();
+                                $firstItem = $job->items->first();
                             @endphp
                             <tr>
                                 <td class="text-center"><span class="pkg-number">{{ $index + 1 }}</span></td>
                                 <td>
-                                    <div class="fw-bold text-primary">{{ $firstDetail ? $firstDetail->packaging_number : '-' }}</div>
+                                    <div class="fw-bold text-primary">{{ $job->packaging_number ?? '-' }}</div>
                                 </td>
                                 <td>
-                                    <div class="fw-semibold">{{ $job->no_so }}</div>
+                                    <div class="fw-semibold">{{ $firstItem->no_so ?? '-' }}</div>
                                     <div class="text-muted" style="font-size:.65rem;">{{ $job->created_at->format('d M Y H:i') }}</div>
                                 </td>
                                 <td>
-                                    <div class="fw-semibold">{{ $job->customer ?? '-' }}</div>
+                                    <div class="fw-semibold">{{ $firstItem->customer ?? '-' }}</div>
                                 </td>
                                 <td>
                                     <div class="d-flex align-items-center gap-2">
                                         <span class="pkg-section-icon" style="width:26px;height:26px;color:var(--pkg-muted);background:var(--pkg-soft);">
                                             <i class="fa-regular fa-calendar-days" style="font-size:0.7rem;"></i>
                                         </span>
-                                        <span class="fw-semibold" style="font-size:0.75rem;">{{ $job->date_delivery ? $job->date_delivery->format('d M Y') : '-' }}</span>
+                                        <span class="fw-semibold" style="font-size:0.75rem;">{{ $job->deadline ? $job->deadline->format('d M Y') : '-' }}</span>
                                     </div>
                                 </td>
                                 <td>
                                     <div class="text-muted" style="font-size:0.8rem;">
-                                        {{ $firstDetail ? ($firstDetail->panjang ?? 0) . ' × ' . ($firstDetail->lebar ?? 0) . ' × ' . ($firstDetail->tinggi ?? 0) . ' mm' : '-' }}
+                                        {{ ($job->panjang ?? 0) . ' × ' . ($job->lebar ?? 0) . ' × ' . ($job->tinggi ?? 0) . ' mm' }}
                                     </div>
                                 </td>
                                 <td>
