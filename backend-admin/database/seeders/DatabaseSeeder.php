@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -35,6 +34,10 @@ class DatabaseSeeder extends Seeder
             'role_id' => $superAdminRole->id,
             'division_id' => $hrDivision->id,
             'active' => true,
+        $this->call([
+            MasterDataSeeder::class,
+            PackingMaterialPricesSeeder::class,
+            PackagingFastenerValidationSeeder::class,
         ]);
 
         // Buat akun Driver 1, 2, 3
