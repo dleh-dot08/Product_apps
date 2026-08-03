@@ -259,6 +259,7 @@ class PackagingCalculationController extends Controller
                 'qty_packaging' => $request->qty_pack ?? $calculation->qty_packaging,
                 'packer_id' => $request->packer_id ?? $calculation->packer_id,
                 'type_packaging' => $request->type_packaging ?? $calculation->type_packaging,
+                'tipe_penutup' => $request->tipe_penutup ?? $calculation->tipe_penutup,
                 
 
                 // Konfigurasi Bawah
