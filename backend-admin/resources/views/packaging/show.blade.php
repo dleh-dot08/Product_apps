@@ -4916,21 +4916,21 @@
                 
                 if (faceId === 'top') {
                     ny += thk/2; 
+                    n.rotation.x = Math.PI;
                 } else if (faceId === 'bottom') {
                     ny -= thk/2;
-                    n.rotation.x = Math.PI; 
                 } else if (faceId === 'front') {
                     nz += thk/2;
-                    n.rotation.x = Math.PI/2;
+                    n.rotation.x = -Math.PI/2;
                 } else if (faceId === 'back') {
                     nz -= thk/2;
-                    n.rotation.x = -Math.PI/2;
+                    n.rotation.x = Math.PI/2;
                 } else if (faceId === 'right') {
                     nx += thk/2;
-                    n.rotation.z = -Math.PI/2;
+                    n.rotation.z = Math.PI/2;
                 } else if (faceId === 'left') {
                     nx -= thk/2;
-                    n.rotation.z = Math.PI/2;
+                    n.rotation.z = -Math.PI/2;
                 }
                 
                 if (mesh.visible === false) n.visible = false;
@@ -4991,21 +4991,21 @@
                 
                 if (faceId === 'top') {
                     ny += thk/2; 
+                    n.rotation.x = Math.PI;
                 } else if (faceId === 'bottom') {
                     ny -= thk/2;
-                    n.rotation.x = Math.PI; 
                 } else if (faceId === 'front') {
                     nz += thk/2;
-                    n.rotation.x = Math.PI/2;
+                    n.rotation.x = -Math.PI/2;
                 } else if (faceId === 'back') {
                     nz -= thk/2;
-                    n.rotation.x = -Math.PI/2;
+                    n.rotation.x = Math.PI/2;
                 } else if (faceId === 'right') {
                     nx += thk/2;
-                    n.rotation.z = -Math.PI/2;
+                    n.rotation.z = Math.PI/2;
                 } else if (faceId === 'left') {
                     nx -= thk/2;
-                    n.rotation.z = Math.PI/2;
+                    n.rotation.z = -Math.PI/2;
                 }
                 
                 if (mesh.visible === false) n.visible = false;
