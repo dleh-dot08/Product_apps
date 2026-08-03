@@ -1,0 +1,21 @@
+services:
+  backend-admin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: backend-admin:local
+    container_name: backend-admin
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    env_file:
+      - .env
+    volumes:
+      - ./storage:/var/www/html/storage
+      - ./bootstrap/cache:/var/www/html/bootstrap/cache
+    networks:
+      - postgres_database
+
+networks:
+  postgres_database:
+    external: true
