@@ -33,10 +33,16 @@ class PackagingController extends Controller
             'customer' => 'nullable|string',
             'date_delivery' => 'nullable|date',
             'address' => 'nullable|string',
-            'packType' => 'required|string',
-            'items' => 'required|array',
+            'packType' => 'nullable|string',
+            'type_packaging' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.no_so' => 'nullable|string',
+            'items.*.customer' => 'nullable|string',
             'items.*.no_product' => 'required|string',
-            'items.*.qty_barang_dikirim' => 'nullable|integer',
+            'items.*.desc_product' => 'nullable|string',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.qty_kirim' => 'nullable|integer|min:1',
+            'items.*.qty_barang_dikirim' => 'nullable|integer|min:1',
             'items.*.jarak_penyanggah_atas' => 'nullable|numeric|min:0',
             'items.*.jarak_penyanggah_bawah' => 'nullable|numeric|min:0',
             'items.*.gap_atas' => 'nullable|numeric|min:0',
@@ -51,7 +57,7 @@ class PackagingController extends Controller
             $firstItem = reset($items);
             
             $job = PackagingJob::create([
-                'type_packaging' => $request->packType,
+                'type_packaging' => $request->input('type_packaging', $request->packType ?? 'Box'),
                 'packaging_number' => 'PKG-' . date('Ymd') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT),
                 'packer_id' => !empty($firstItem['packer']) ? $firstItem['packer'] : null,
                 'qty_packaging' => $firstItem['qty_pack'] ?? 1,
@@ -89,16 +95,43 @@ class PackagingController extends Controller
                 'packaging_number' => 'PKG-' . date('Ymd') . '-' . str_pad($job->id, 4, '0', STR_PAD_LEFT)
             ]);
 
-            // Masukkan semua produk ke dalam 1 Box ini
-            foreach ($request->items as $item) {
+            // Masukkan semua produk Step 1 ke dalam packaging yang sama.
+            // SO dan customer diambil per item agar tidak tertukar ketika
+            // pengguna menambahkan produk dari SO/customer berbeda.
+            foreach ($request->input('items', []) as $item) {
                 $job->items()->create([
-                    'no_so' => $request->no_so,
-                    'customer' => $request->customer,
-                    'date_delivery' => $request->date_delivery,
-                    'address' => $request->address,
-                    'no_product' => $item['no_barang'] ?? $item['no_product'] ?? '',
-                    'desc_product' => $item['nama_barang'] ?? $item['desc_product'] ?? '',
-                    'qty' => $item['qty_kirim'] ?? 1,
+                    'no_so' => trim((string) (
+                        $item['no_so'] ??
+                        $request->no_so ??
+                        ''
+                    )),
+                    'customer' => trim((string) (
+                        $item['customer'] ??
+                        $request->customer ??
+                        ''
+                    )),
+                    'date_delivery' =>
+                        $item['date_delivery'] ??
+                        $request->date_delivery,
+                    'address' =>
+                        $item['address'] ??
+                        $request->address,
+                    'no_product' => trim((string) (
+                        $item['no_product'] ??
+                        $item['no_barang'] ??
+                        ''
+                    )),
+                    'desc_product' => trim((string) (
+                        $item['desc_product'] ??
+                        $item['nama_barang'] ??
+                        ''
+                    )),
+                    'qty' => max(1, (int) (
+                        $item['qty'] ??
+                        $item['qty_kirim'] ??
+                        $item['qty_barang_dikirim'] ??
+                        1
+                    )),
                 ]);
             }
 
@@ -144,10 +177,16 @@ class PackagingController extends Controller
             'customer' => 'nullable|string',
             'date_delivery' => 'nullable|date',
             'address' => 'nullable|string',
-            'packType' => 'required|string',
-            'items' => 'required|array',
+            'packType' => 'nullable|string',
+            'type_packaging' => 'nullable|string',
+            'items' => 'required|array|min:1',
+            'items.*.no_so' => 'nullable|string',
+            'items.*.customer' => 'nullable|string',
             'items.*.no_product' => 'required|string',
-            'items.*.qty_barang_dikirim' => 'nullable|integer',
+            'items.*.desc_product' => 'nullable|string',
+            'items.*.qty' => 'required|integer|min:1',
+            'items.*.qty_kirim' => 'nullable|integer|min:1',
+            'items.*.qty_barang_dikirim' => 'nullable|integer|min:1',
             'items.*.jarak_penyanggah_atas' => 'nullable|numeric|min:0',
             'items.*.jarak_penyanggah_bawah' => 'nullable|numeric|min:0',
             'items.*.gap_atas' => 'nullable|numeric|min:0',
@@ -162,7 +201,7 @@ class PackagingController extends Controller
             
             // Update 1 Box Packaging dengan konfigurasi dari form
             $packagingJob->update([
-                'type_packaging' => $request->packType,
+                'type_packaging' => $request->input('type_packaging', $request->packType ?? 'Box'),
                 'packer_id' => !empty($firstItem['packer']) ? $firstItem['packer'] : null,
                 'qty_packaging' => $firstItem['qty_pack'] ?? 1,
                 'deadline' => $request->date_delivery,
@@ -193,17 +232,43 @@ class PackagingController extends Controller
                 'atas_penutup_arahpemasangan' => $firstItem['pta_arah'] ?? 'Horizontal',
             ]);
 
-            // Bersihkan item produk lama dan masukkan yang baru
+            // Bersihkan item lama lalu simpan isi terbaru dari Step 1.
             $packagingJob->items()->delete();
-            foreach ($request->items as $item) {
+
+            foreach ($request->input('items', []) as $item) {
                 $packagingJob->items()->create([
-                    'no_so' => $request->no_so,
-                    'customer' => $request->customer,
-                    'date_delivery' => $request->date_delivery,
-                    'address' => $request->address,
-                    'no_product' => $item['no_barang'] ?? $item['no_product'] ?? '',
-                    'desc_product' => $item['nama_barang'] ?? $item['desc_product'] ?? '',
-                    'qty' => $item['qty_kirim'] ?? 1,
+                    'no_so' => trim((string) (
+                        $item['no_so'] ??
+                        $request->no_so ??
+                        ''
+                    )),
+                    'customer' => trim((string) (
+                        $item['customer'] ??
+                        $request->customer ??
+                        ''
+                    )),
+                    'date_delivery' =>
+                        $item['date_delivery'] ??
+                        $request->date_delivery,
+                    'address' =>
+                        $item['address'] ??
+                        $request->address,
+                    'no_product' => trim((string) (
+                        $item['no_product'] ??
+                        $item['no_barang'] ??
+                        ''
+                    )),
+                    'desc_product' => trim((string) (
+                        $item['desc_product'] ??
+                        $item['nama_barang'] ??
+                        ''
+                    )),
+                    'qty' => max(1, (int) (
+                        $item['qty'] ??
+                        $item['qty_kirim'] ??
+                        $item['qty_barang_dikirim'] ??
+                        1
+                    )),
                 ]);
             }
 

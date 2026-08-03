@@ -1604,11 +1604,46 @@
                         Type Packing
                     </label>
 
-                    <select class="form-select" id="s2_type_packaging">
-                        <option value="Box">Box</option>
-                        <option value="Palet">Palet</option>
-                        <option value="Peti">Peti</option>
-                        <option value="Kerangka">Kerangka</option>
+                    @php
+                        $selectedTypePackaging = trim(
+                            (string) ($calculation->type_packaging ?? 'Box')
+                        );
+
+                        $typePackagingOptions = [
+                            'Box',
+                            'Palet',
+                            'Peti',
+                            'Kerangka',
+                        ];
+                    @endphp
+
+                    <select
+                        class="form-select"
+                        id="s2_type_packaging"
+                        name="type_packaging"
+                    >
+                        <option value="">Pilih Type Packing...</option>
+
+                        @foreach ($typePackagingOptions as $type)
+                            <option
+                                value="{{ $type }}"
+                                @selected(strcasecmp($selectedTypePackaging, $type) === 0)
+                            >
+                                {{ $type }}
+                            </option>
+                        @endforeach
+
+                        {{-- Tampilkan nilai lama jika belum ada di daftar pilihan --}}
+                        @if (
+                            $selectedTypePackaging !== '' &&
+                            !collect($typePackagingOptions)->contains(
+                                fn ($type) => strcasecmp($type, $selectedTypePackaging) === 0
+                            )
+                        )
+                            <option value="{{ $selectedTypePackaging }}" selected>
+                                {{ $selectedTypePackaging }}
+                            </option>
+                        @endif
                     </select>
                 </div>
 
@@ -2164,6 +2199,10 @@
                 id: option.value,
                 partNumber: option.dataset.itemNo || '-',
                 description: option.dataset.itemDesc || '-',
+                customer:
+                    option.dataset.customer ||
+                    window.currentFetchedCustomer ||
+                    '-',
                 qtyOrder: Number(option.dataset.qtyOrder || 0),
                 qtyRemaining: Number(option.dataset.qtyRemaining || 0),
             };
@@ -2251,8 +2290,28 @@
 
             const options = items.map((item, index) => {
                 const itemId = item.id ?? index;
-                const itemNumber = item.no_barang ?? item.item_no ?? item.part_no ?? '-';
-                const description = item.deskripsi_barang ?? item.description ?? item.item_description ?? '-';
+                const itemNumber =
+                    item.no_barang ??
+                    item.item_no ??
+                    item.part_no ??
+                    '-';
+
+                const description =
+                    item.deskripsi_barang ??
+                    item.description ??
+                    item.item_description ??
+                    '-';
+
+                const customer = String(
+                    item.nama_pelanggan ??
+                    item.nama_customer ??
+                    item.customer_name ??
+                    item.nm_customer ??
+                    item.customer ??
+                    window.currentFetchedCustomer ??
+                    '-'
+                ).trim() || '-';
+
                 const qtyOrder = Number(item.qty ?? item.qty_order ?? 0);
                 const qtyRemaining = Number(item.sisa_kirim ?? item.qty_remaining ?? 0);
 
@@ -2263,6 +2322,7 @@
                         value="${escapeSOHtml(itemId)}"
                         data-item-no="${escapeSOHtml(itemNumber)}"
                         data-item-desc="${escapeSOHtml(description)}"
+                        data-customer="${escapeSOHtml(customer)}"
                         data-qty-order="${qtyOrder}"
                         data-qty-remaining="${qtyRemaining}"
                         data-short-text="${escapeSOHtml(itemNumber)}"
@@ -2310,7 +2370,7 @@
                 soNumber: searchInput?.value?.trim() || '-',
                 itemNumber: item.partNumber,
                 description: item.description,
-                customer: window.currentFetchedCustomer || '-',
+                customer: item.customer || window.currentFetchedCustomer || '-',
                 qty: qty
             });
 
@@ -2541,10 +2601,47 @@
 
             // Populasikan nilai Step 2
             const setVal = (id, val) => {
-                const el = document.getElementById(id);
-                if (el && val !== undefined && val !== null && val !== '') {
-                    el.value = val;
+                const element = document.getElementById(id);
+
+                if (
+                    !element ||
+                    val === undefined ||
+                    val === null ||
+                    String(val).trim() === ''
+                ) {
+                    return;
                 }
+
+                const cleanValue = String(val).trim();
+
+                if (element.tagName === 'SELECT') {
+                    const matchingOption = Array.from(element.options).find(
+                        option =>
+                            String(option.value).trim().toLowerCase() ===
+                            cleanValue.toLowerCase()
+                    );
+
+                    if (matchingOption) {
+                        element.value = matchingOption.value;
+                    } else {
+                        const newOption = new Option(
+                            cleanValue,
+                            cleanValue,
+                            true,
+                            true
+                        );
+
+                        element.add(newOption);
+                    }
+
+                    element.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+
+                    return;
+                }
+
+                element.value = cleanValue;
             };
 
             setVal('s2_pkg_number', initialData.packagingNumber);
@@ -2614,7 +2711,15 @@
                             if (el) el.textContent = text || '-';
                         };
                         setText('infoNoSO', soNumber);
-                        const customerName = firstItem.nama_pelanggan || firstItem.customer || '-';
+                        const customerName = String(
+                            firstItem.nama_pelanggan ??
+                            firstItem.nama_customer ??
+                            firstItem.customer_name ??
+                            firstItem.nm_customer ??
+                            firstItem.customer ??
+                            ''
+                        ).trim() || '-';
+
                         setText('infoCustomer', customerName);
                         window.currentFetchedCustomer = customerName;
                         // Misal kalau ada delivery date & address dari API
@@ -2661,110 +2766,215 @@
             let url = '';
             let finalPayload = {};
 
+            const selectedItems = Array.isArray(window.selectedItemsList)
+                ? window.selectedItemsList
+                : [];
+
+            const itemsList = selectedItems
+                .map(item => ({
+                    no_so: String(item.soNumber || '').trim(),
+                    customer: String(item.customer || '').trim() || '-',
+                    no_product: String(item.itemNumber || '').trim(),
+                    desc_product: String(item.description || '').trim(),
+                    qty: Math.max(1, Number(item.qty || 1)),
+                }))
+                .filter(item => item.no_product !== '');
+
+            if (itemsList.length === 0) {
+                throw new Error(
+                    'Daftar barang Step 1 kosong. Tambahkan minimal satu produk.'
+                );
+            }
+
             if (calcId) {
+                // =========================================================
                 // UPDATE EXISTING CALCULATION
+                // Route: PackagingCalculationController@update
+                // =========================================================
                 url = `/packaging/calc-update/${calcId}`;
-                let itemsList = [];
-                if (window.selectedItemsList && window.selectedItemsList.length > 0) {
-                    itemsList = window.selectedItemsList.map(item => ({
-                        no_so: item.soNumber,
-                        customer: item.customer,
-                        no_product: item.itemNumber,
-                        desc_product: item.description,
-                        qty: item.qty
-                    }));
-                } else if (payload.item) {
-                    itemsList = [{
-                        no_so: payload.salesOrder,
-                        customer: document.getElementById('infoCustomer')?.textContent,
-                        no_product: payload.item.product,
-                        desc_product: payload.item.desc,
-                        qty: payload.item.qtyOrder || 1
-                    }];
-                }
 
                 finalPayload = {
-                    _token: document.querySelector('meta[name="csrf-token"]')?.content,
+                    _token: document.querySelector(
+                        'meta[name="csrf-token"]'
+                    )?.content,
                     _method: 'PUT',
+
+                    // Step 1: WAJIB dikirim agar SO, customer, produk,
+                    // penambahan/penghapusan item dan qty dapat diperbarui.
+                    items: itemsList,
+
+                    // Step 2
                     qty_pack: payload.configuration.qtyPacking,
                     packer_id: payload.configuration.packerId,
-                    length: payload.configuration.dimensions.length,
-                    width: payload.configuration.dimensions.width,
-                    height: payload.configuration.dimensions.height,
-                    jarak_penyanggah_atas: payload.configuration.additional.supportSpacingAtas,
-                    jarak_penyanggah_bawah: payload.configuration.additional.supportSpacingBawah,
-                    gap_atas: payload.configuration.additional.topGap,
-                    gap_bawah: payload.configuration.additional.bottomGap,
-        
-                    bawah_penyangga_include: payload.configuration.bottom.support.usage === 'Include' ? 1 : 0,
-                    bawah_penyangga_arah: payload.configuration.bottom.support.direction,
-                    bawah_penyangga_material: payload.configuration.bottom.support.material,
-                    
-                    bawah_penutup_tipe: payload.configuration.bottom.cover.usage,
-                    bawah_penutup_arah: payload.configuration.bottom.cover.direction,
-                    bawah_penutup_material: payload.configuration.bottom.cover.material,
-                    
-                    include_pallet_base: payload.configuration.bottom.blockFeet.usage === 'Include' ? 1 : 0,
-                    bawah_kakibalok_arah: payload.configuration.bottom.blockFeet.direction,
-                    bawah_kakibalok_material: payload.configuration.bottom.blockFeet.material,
-                    
-                    atas_penyangga_include: payload.configuration.top.support.usage === 'Include' ? 1 : 0,
-                    atas_penyangga_arah: payload.configuration.top.support.direction,
-                    atas_penyangga_material: payload.configuration.top.support.material,
-                    
-                    atas_penutup_tipe: payload.configuration.top.cover.usage,
-                    atas_penutup_arah: payload.configuration.top.cover.direction,
-                    atas_penutup_material: payload.configuration.top.cover.material,
+                    type_packaging:
+                        payload.configuration.typePackaging,
+
+                    length:
+                        payload.configuration.dimensions.length,
+                    width:
+                        payload.configuration.dimensions.width,
+                    height:
+                        payload.configuration.dimensions.height,
+
+                    jarak_penyanggah_atas:
+                        payload.configuration.additional
+                            .supportSpacingAtas,
+                    jarak_penyanggah_bawah:
+                        payload.configuration.additional
+                            .supportSpacingBawah,
+                    gap_atas:
+                        payload.configuration.additional.topGap,
+                    gap_bawah:
+                        payload.configuration.additional.bottomGap,
+
+                    bawah_penyangga_include:
+                        payload.configuration.bottom.support.usage ===
+                        'Include' ? 1 : 0,
+                    bawah_penyangga_arah:
+                        payload.configuration.bottom.support.direction,
+                    bawah_penyangga_material:
+                        payload.configuration.bottom.support.material,
+
+                    bawah_penutup_tipe:
+                        payload.configuration.bottom.cover.usage,
+                    bawah_penutup_arah:
+                        payload.configuration.bottom.cover.direction,
+                    bawah_penutup_material:
+                        payload.configuration.bottom.cover.material,
+
+                    include_pallet_base:
+                        payload.configuration.bottom.blockFeet.usage ===
+                        'Include' ? 1 : 0,
+                    bawah_kakibalok_arah:
+                        payload.configuration.bottom.blockFeet.direction,
+                    bawah_kakibalok_material:
+                        payload.configuration.bottom.blockFeet.material,
+
+                    atas_penyangga_include:
+                        payload.configuration.top.support.usage ===
+                        'Include' ? 1 : 0,
+                    atas_penyangga_arah:
+                        payload.configuration.top.support.direction,
+                    atas_penyangga_material:
+                        payload.configuration.top.support.material,
+
+                    atas_penutup_tipe:
+                        payload.configuration.top.cover.usage,
+                    atas_penutup_arah:
+                        payload.configuration.top.cover.direction,
+                    atas_penutup_material:
+                        payload.configuration.top.cover.material,
                 };
             } else {
+                // =========================================================
                 // CREATE NEW PACKAGING JOB
+                // Route: PackagingController@store
+                // =========================================================
                 url = '/packaging/store';
+
+                const firstItem = itemsList[0];
+
                 finalPayload = {
-                    _token: document.querySelector('meta[name="csrf-token"]')?.content,
-                    no_so: payload.salesOrder,
-                    customer: document.getElementById('infoCustomer')?.textContent,
-                    date_delivery: document.getElementById('infoDeliveryDate')?.textContent,
-                    address: document.getElementById('infoShipto')?.textContent,
-                    packType: 'Crate', // Default
-                    items: (payload.items || []).map(item => ({
-                        packer: payload.configuration.packerId,
-                        no_product: item.itemNumber || item.no_product,
-                        desc_product: item.description || item.desc_product,
-                        qty_kirim: item.qty || item.qty_kirim || 1,
-                        qty_pack: payload.configuration.qtyPacking,
-                        type_packaging: payload.configuration.typePackaging,
+                    _token: document.querySelector(
+                        'meta[name="csrf-token"]'
+                    )?.content,
 
-                        length: payload.configuration.dimensions.length,
-                        width: payload.configuration.dimensions.width,
-                        height: payload.configuration.dimensions.height,
-                        
-                        jarak_penyanggah_atas: payload.configuration.additional.supportSpacingAtas,
-                        jarak_penyanggah_bawah: payload.configuration.additional.supportSpacingBawah,
-                        gap_atas: payload.configuration.additional.topGap,
-                        gap_bawah: payload.configuration.additional.bottomGap,
+                    no_so: firstItem.no_so,
+                    customer: firstItem.customer,
+                    date_delivery:
+                        document.getElementById(
+                            'infoDeliveryDate'
+                        )?.textContent?.trim() || null,
+                    address:
+                        document.getElementById(
+                            'infoShipto'
+                        )?.textContent?.trim() || null,
 
-                        pb_status: payload.configuration.bottom.support.usage,
-                        pb_arah: payload.configuration.bottom.support.direction,
-                        pb_material: payload.configuration.bottom.support.material,
+                    packType:
+                        payload.configuration.typePackaging ||
+                        'Box',
+                    type_packaging:
+                        payload.configuration.typePackaging ||
+                        'Box',
 
-                        ptb_status: payload.configuration.bottom.cover.usage,
-                        ptb_arah: payload.configuration.bottom.cover.direction,
-                        ptb_material: payload.configuration.bottom.cover.material,
+                    items: itemsList.map(item => ({
+                        // Data Step 1 per produk
+                        no_so: item.no_so,
+                        customer: item.customer,
+                        no_product: item.no_product,
+                        desc_product: item.desc_product,
+                        qty: item.qty,
 
-                        kb_status: payload.configuration.bottom.blockFeet.usage,
-                        kb_arah: payload.configuration.bottom.blockFeet.direction,
-                        kb_material: payload.configuration.bottom.blockFeet.material,
+                        // Alias lama agar tetap kompatibel
+                        qty_kirim: item.qty,
 
-                        pa_status: payload.configuration.top.support.usage,
-                        pa_arah: payload.configuration.top.support.direction,
-                        pa_material: payload.configuration.top.support.material,
+                        // Data Step 2; item pertama dipakai controller
+                        // sebagai konfigurasi utama packaging.
+                        packer:
+                            payload.configuration.packerId,
+                        qty_pack:
+                            payload.configuration.qtyPacking,
+                        type_packaging:
+                            payload.configuration.typePackaging,
 
-                        pta_status: payload.configuration.top.cover.usage,
-                        pta_arah: payload.configuration.top.cover.direction,
-                        pta_material: payload.configuration.top.cover.material,
-                    }))
+                        length:
+                            payload.configuration.dimensions.length,
+                        width:
+                            payload.configuration.dimensions.width,
+                        height:
+                            payload.configuration.dimensions.height,
+
+                        jarak_penyanggah_atas:
+                            payload.configuration.additional
+                                .supportSpacingAtas,
+                        jarak_penyanggah_bawah:
+                            payload.configuration.additional
+                                .supportSpacingBawah,
+                        gap_atas:
+                            payload.configuration.additional.topGap,
+                        gap_bawah:
+                            payload.configuration.additional.bottomGap,
+
+                        pb_status:
+                            payload.configuration.bottom.support.usage,
+                        pb_arah:
+                            payload.configuration.bottom.support.direction,
+                        pb_material:
+                            payload.configuration.bottom.support.material,
+
+                        ptb_status:
+                            payload.configuration.bottom.cover.usage,
+                        ptb_arah:
+                            payload.configuration.bottom.cover.direction,
+                        ptb_material:
+                            payload.configuration.bottom.cover.material,
+
+                        kb_status:
+                            payload.configuration.bottom.blockFeet.usage,
+                        kb_arah:
+                            payload.configuration.bottom.blockFeet.direction,
+                        kb_material:
+                            payload.configuration.bottom.blockFeet.material,
+
+                        pa_status:
+                            payload.configuration.top.support.usage,
+                        pa_arah:
+                            payload.configuration.top.support.direction,
+                        pa_material:
+                            payload.configuration.top.support.material,
+
+                        pta_status:
+                            payload.configuration.top.cover.usage,
+                        pta_arah:
+                            payload.configuration.top.cover.direction,
+                        pta_material:
+                            payload.configuration.top.cover.material,
+                    })),
                 };
             }
+
+            console.log('FINAL STEP 1 ITEMS:', itemsList);
+            console.log('FINAL SAVE PAYLOAD:', finalPayload);
 
             const response = await fetch(url, {
                 method: 'POST', // Walaupun _method = PUT untuk calc-update, tetap pakai POST karena HTML form limits
@@ -2785,11 +2995,23 @@
                     window.location.reload(); // Reload halaman untuk memuat data terbaru
                 }
             } else {
-                alert('Gagal menyimpan: ' + (result.message || 'Unknown error'));
+                console.error('Save validation/error response:', result);
+
+                const validationMessages = result.errors
+                    ? Object.values(result.errors).flat().join('\n')
+                    : '';
+
+                alert(
+                    'Gagal menyimpan: ' +
+                    (result.message || 'Unknown error') +
+                    (validationMessages
+                        ? `\n\n${validationMessages}`
+                        : '')
+                );
             }
         } catch (error) {
             console.error('Save error:', error);
-            alert('Terjadi kesalahan jaringan.');
+            alert(error.message || 'Terjadi kesalahan jaringan.');
         } finally {
             if (submitBtn) {
                 submitBtn.disabled = false;
