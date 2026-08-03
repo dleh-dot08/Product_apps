@@ -58,6 +58,7 @@ class PackagingController extends Controller
             
             $job = PackagingJob::create([
                 'type_packaging' => $request->input('type_packaging', $request->packType ?? 'Box'),
+                'tipe_penutup' => $request->input('tipe_penutup'),
                 'packaging_number' => 'PKG-' . date('Ymd') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT),
                 'packer_id' => !empty($firstItem['packer']) ? $firstItem['packer'] : null,
                 'qty_packaging' => $firstItem['qty_pack'] ?? 1,
