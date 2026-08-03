@@ -12,12 +12,18 @@ class PackagingJob extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'daftar_iso_item_json' => 'array',
-        'date_delivery' => 'date',
+        'start_date' => 'date',
+        'deadline' => 'date',
+        'completion_date' => 'date',
     ];
+
+    public function items()
+    {
+        return $this->hasMany(PackagingJobItem::class, 'packaging_job_id');
+    }
 
     public function details()
     {
-        return $this->hasMany(PackagingJobDetail::class, 'packaging_job_id');
+        return $this->hasMany(PackingJobCalcDetail::class, 'job_id');
     }
 }

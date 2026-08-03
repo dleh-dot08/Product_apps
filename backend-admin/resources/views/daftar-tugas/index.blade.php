@@ -1,7 +1,7 @@
 <x-app-layout>
     @php
         $dbJobs = \App\Models\PackagingJob::latest()->get();
-        $tasks = $dbJobs->map(function($job) {
+        $packagingTasks = $dbJobs->map(function($job) {
             return [
                 'id' => $job->id,
                 'type' => 'packaging',
@@ -18,6 +18,39 @@
                 'progress' => $job->status === 'completed' ? 100 : 0,
             ];
         })->toArray();
+
+        $dbPickups = \App\Models\PickupTask::with(['driver'])->latest()->get();
+        $deliveryTasks = $dbPickups->map(function($pt) {
+            // Mapping status
+            $mappedStatus = 'pending';
+            $progress = 0;
+            if (in_array($pt->status, ['on_route', 'arrived'])) {
+                $mappedStatus = 'in_progress';
+                $progress = 50;
+            } elseif ($pt->status === 'delivered') {
+                $mappedStatus = 'completed';
+                $progress = 100;
+            }
+
+            return [
+                'id' => $pt->id,
+                'type' => 'delivery',
+                'number' => $pt->reference_number ?? 'DLV-'.substr($pt->id, 0, 4),
+                'reference' => $pt->so_number ?? '-',
+                'title' => 'Pengiriman: ' . ($pt->item_name ?? 'Barang'),
+                'customer' => $pt->customer_name ?? '-',
+                'description' => $pt->address ?? '-',
+                'assignee' => $pt->driver ? $pt->driver->full_name : 'Driver',
+                'initial' => $pt->driver ? strtoupper(substr($pt->driver->full_name, 0, 2)) : 'DR',
+                'due_date' => $pt->created_at ? \Carbon\Carbon::parse($pt->created_at)->format('d M Y') : '-',
+                'priority' => 'normal',
+                'status' => $mappedStatus,
+                'progress' => $progress,
+            ];
+        })->toArray();
+
+        $tasks = array_merge($packagingTasks, $deliveryTasks);
+
 
         $summary = [
             'total' => count($tasks),

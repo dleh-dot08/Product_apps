@@ -2,55 +2,45 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasUuids;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
-        'name',
+        'username',
         'email',
         'password',
+        'full_name',
+        'role',
         'division_id',
         'role_id',
+        'manpower_rate_per_hour',
+        'manpower_count',
+        'active',
     ];
 
-    public function division()
+    protected $hidden = [
+        'password',
+    ];
+
+    protected function casts(): array
     {
-        return $this->belongsTo(Division::class);
+        return [
+            'password' => 'hashed',
+            'active' => 'boolean',
+            'manpower_rate_per_hour' => 'decimal:2',
+        ];
     }
 
-    public function role()
-    {
-        return $this->belongsTo(Role::class);
-    }
-
-    /**
-     * Check if user has a specific role or any of the given roles.
-     *
-     * @param string|array $roles
-     * @return bool
-     */
     public function hasRole($roles)
     {
-        if (!$this->role) {
-            return false;
-        }
-
-        $userRole = strtolower($this->role->name);
+        $userRole = strtolower($this->role);
 
         if (is_array($roles)) {
             $roles = array_map('strtolower', $roles);
@@ -60,26 +50,13 @@ class User extends Authenticatable
         return $userRole === strtolower($roles);
     }
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public function division()
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->belongsTo(Division::class, 'division_id');
+    }
+
+    public function roleRelation()
+    {
+        return $this->belongsTo(Role::class, 'role_id');
     }
 }

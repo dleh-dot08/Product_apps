@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('packaging_job_details', function (Blueprint $table) {
-            $table->foreignId('packer_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignUuid('packer_id')->nullable()->constrained('users')->onDelete('set null');
             
             // Ubah tipe data menggunakan string sementara jika DB engine tidak mendukung direct json ubah. 
             // Karena ini SQLite/MySQL, biasanya drop dan recreate bisa jika masih development.

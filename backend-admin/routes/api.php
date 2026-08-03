@@ -8,6 +8,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 });
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PickupTaskController;
 
 Route::post('/login', [AuthController::class, 'login']);
 
@@ -28,6 +29,11 @@ Route::middleware('auth:sanctum')->group(function () {
     ]);
     
     Route::post('/logout', [AuthController::class, 'logout']);
+    
+    // Pickup Tasks API
+    Route::get('/pickup', [PickupTaskController::class, 'index']);
+    Route::post('/pickup', [PickupTaskController::class, 'store']);
+    Route::patch('/pickup/{id}/status', [PickupTaskController::class, 'updateStatus']);
 });
 
 // Proxy API untuk pencarian SO

@@ -560,7 +560,7 @@
                         <!-- REST OF PACKING INFORMATION (Only on Page 1) -->
                         <div class="section-panel" style="margin-top: -5px; margin-bottom: 10px; border-top: 1px dashed #cbd5e1; border-top-left-radius: 0; border-top-right-radius: 0;">
                             <div style="padding: 10px 12px; background-color: #ffffff; border-radius: 0 0 8px 8px;">
-                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                                <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
                                     @php
                                         $packerData = $calculation->packer ?? ($calculation->job->packer ?? null);
                                         $packerName = '-';
@@ -589,35 +589,70 @@
                                         }
                                     @endphp
                                     <div style="border-right: 1px solid #e2e8f0;">
-                                        <div style="font-size: 8px; color: #64748b; margin-bottom: 2px;">SO Number</div>
-                                        <div style="font-size: 9px; font-weight: 800; color: #0f3566;">{{ $calculation->no_so ?? ($calculation->job->no_so ?? '-') }}</div>
-                                    </div>
-                                    <div style="border-right: 1px solid #e2e8f0;">
-                                        <div style="font-size: 8px; color: #64748b; margin-bottom: 2px;">Customer Name</div>
-                                        <div style="font-size: 9px; font-weight: 800; color: #0f3566;">{{ $calculation->customer ?? ($calculation->job->customer ?? '-') }}</div>
-                                    </div>
-                                    <div style="border-right: 1px solid #e2e8f0;">
-                                        <div style="font-size: 8px; color: #64748b; margin-bottom: 2px;">Packer</div>
+                                        <div style="font-size: 8px; color: #64748b; margin-bottom: 2px;">
+                                            Packer By
+                                        </div>
                                         <div style="font-size: 9px; font-weight: 800; color: #0f3566;">{{ $packerName }}</div>
                                     </div>
-                                    <div>
-                                        <div style="font-size: 8px; color: #64748b; margin-bottom: 2px;">Assigned By</div>
+                                    <div style="border-right: 1px solid #e2e8f0;">
+                                        <div style="font-size: 8px; color: #64748b; margin-bottom: 2px;">
+                                            <span style="font-family: 'Material Symbols Rounded', sans-serif; font-size: 9px; vertical-align: middle;">person</span> Approved By
+                                        </div>
                                         <div style="font-size: 9px; font-weight: 800; color: #0f3566;">{{ $assignedName }}</div>
+                                    </div>
+                                    <div style="border-right: 1px solid #e2e8f0;">
+                                        <div style="font-size: 8px; color: #64748b; margin-bottom: 2px;">Packaging Type</div>
+                                        <div style="font-size: 9px; font-weight: 800; color: #0f3566;">{{ $calculation->type_packaging ?? '-' }}</div>
+                                    </div>
+                                    <div style="border-right: 1px solid #e2e8f0;">
+                                        <div style="font-size: 8px; color: #64748b; margin-bottom: 2px;">Status</div>
+                                        <div style="font-size: 9px; font-weight: 800; color: #0f3566;">{{ $calculation->status ?? '-' }}</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size: 8px; color: #64748b; margin-bottom: 2px;">
+                                            <span style="font-family: 'Material Symbols Rounded', sans-serif; font-size: 9px; vertical-align: middle;"> Delivery Date
+                                        </div>
+                                        @php
+                                            $deliveryDates = $calculation->items && $calculation->items->count() > 0 
+                                                ? $calculation->items->pluck('date_delivery')->filter()->unique()->map(function($d) {
+                                                    return \Carbon\Carbon::parse($d)->format('d-m-Y');
+                                                })->implode(', ') 
+                                                : null;
+                                            $deliveryDates = $deliveryDates ?: ($calculation->deadline ? \Carbon\Carbon::parse($calculation->deadline)->format('d-m-Y') : '-');
+                                        @endphp
+                                        <div style="font-size: 9px; font-weight: 800; color: #0f3566;">{{ $deliveryDates }}</div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
         @php
-            $ka = is_array($calculation->konfigurasi_atas) ? $calculation->konfigurasi_atas : json_decode($calculation->konfigurasi_atas ?? '{}', true);
-            $kb = is_array($calculation->konfigurasi_bawah) ? $calculation->konfigurasi_bawah : json_decode($calculation->konfigurasi_bawah ?? '{}', true);
-
-            $b_kaki = $kb['kaki_balok'] ?? ['status' => '-', 'arah' => '-', 'material' => '-'];
-            $b_penyangga = $kb['penyanggah'] ?? ['status' => '-', 'arah' => '-', 'material' => '-'];
-            $b_penutup = $kb['penutup'] ?? ['status' => '-', 'arah' => '-', 'material' => '-'];
+            $b_kaki = [
+                'status' => $calculation->bawah_kakibalok_status ?? '-',
+                'arah' => $calculation->bawah_kakibalok_arahpemasangan ?? '-',
+                'material' => $calculation->bawah_kakibalok_material ?? '-'
+            ];
+            $b_penyangga = [
+                'status' => $calculation->bawah_penyanggah_status ?? '-',
+                'arah' => $calculation->bawah_penyanggah_arahpemasangan ?? '-',
+                'material' => $calculation->bawah_penyanggah_material ?? '-'
+            ];
+            $b_penutup = [
+                'status' => $calculation->bawah_penutup_status ?? '-',
+                'arah' => $calculation->bawah_penutup_arahpemasangan ?? '-',
+                'material' => $calculation->bawah_penutup_material ?? '-'
+            ];
             
-            $a_penyangga = $ka['penyanggah'] ?? ['status' => '-', 'arah' => '-', 'material' => '-'];
-            $a_penutup = $ka['penutup'] ?? ['status' => '-', 'arah' => '-', 'material' => '-'];
+            $a_penyangga = [
+                'status' => $calculation->atas_penyanggah_status ?? '-',
+                'arah' => $calculation->atas_penyanggah_arahpemasangan ?? '-',
+                'material' => $calculation->atas_penyanggah_material ?? '-'
+            ];
+            $a_penutup = [
+                'status' => $calculation->atas_penutup_status ?? '-',
+                'arah' => $calculation->atas_penutup_arahpemasangan ?? '-',
+                'material' => $calculation->atas_penutup_material ?? '-'
+            ];
 
             // Safely get dimension properties (panjang/length, dll)
             $dim_P = $calculation->panjang ?? $calculation->length ?? 0;
@@ -629,6 +664,45 @@
             $jarak_penyanggah = $kb['jarak_penyanggah'] ?? ($calculation->distance_between_pillars ?? 300);
         @endphp
 
+        <!-- SECTION 2.5: DAFTAR BARANG SO -->
+        <div class="section-panel">
+            <div class="section-header">Daftar Barang SO</div>
+            <div class="section-body" style="padding: 0;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 10px;">
+                    <thead>
+                        <tr style="background-color: #f1f5f9;">
+                            <th style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; width: 40px; font-weight: 700;">No</th>
+                            <th style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; font-weight: 700;">No SO</th>
+                            <th style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; font-weight: 700;">Customer</th>
+                            <th style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; font-weight: 700;">No Product</th>
+                            <th style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; font-weight: 700;">Deskripsi Barang</th>
+                            <th style="padding: 6px 10px; border-bottom: 1px solid #cbd5e1; text-align: center; width: 80px; font-weight: 700;">Qty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if($calculation->items && $calculation->items->count() > 0)
+                            @foreach($calculation->items as $idx => $item)
+                                <tr>
+                                    <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #475569;">{{ $idx + 1 }}</td>
+                                    <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #0f172a; font-weight: 600;">{{ $item->no_so ?? '-' }}</td>
+                                    <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #334155;">{{ $item->customer ?? '-' }}</td>
+                                    <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; font-family: monospace; color: #0f172a; font-weight: 600;">{{ $item->no_product ?? '-' }}</td>
+                                    <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; color: #334155;">{{ $item->desc_product ?? '-' }}</td>
+                                    <td style="padding: 6px 10px; border-bottom: 1px solid #e2e8f0; text-align: center; font-weight: 600; color: #2563eb;">{{ $item->qty ?? 0 }}</td>
+                                </tr>
+                            @endforeach
+                        @else
+                            <tr>
+                                <td colspan="6" style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #64748b;">
+                                    Data barang SO tidak ditemukan.
+                                </td>
+                            </tr>
+                        @endif
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
         <!-- SECTION 1: KONFIGURASI AWAL -->
         <div class="config-cards">
             <!-- Card 1 -->
@@ -669,19 +743,19 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td><span style="color: {{ ($b_penyangga['status'] != '-' && $b_penyangga['status'] != 'Exclude' && $b_penyangga['status'] != '0') ? '#15803d' : '#94a3b8' }};">&#x2714;</span> Peyanggah</td>
+                                <td><span style="color: {{ ($b_penyangga['status'] != '-' && $b_penyangga['status'] != 'Exclude' && $b_penyangga['status'] != '0' && $b_penyangga['status'] != 'Not Include') ? '#15803d' : '#94a3b8' }};">&#x2714;</span> Peyanggah</td>
                                 <td><span class="val-box">{{ $b_penyangga['status'] == '1' ? 'Include' : ($b_penyangga['status'] == '0' ? 'Exclude' : $b_penyangga['status']) }}</span></td>
                                 <td><span class="val-box">{{ $b_penyangga['arah'] ?? '-' }}</span></td>
                                 <td><span class="val-box">{{ $b_penyangga['material'] ?? '-' }}</span></td>
                             </tr>
                             <tr>
-                                <td><span style="color: {{ ($b_penutup['status'] != '-' && $b_penutup['status'] != 'Tanpa Penutup' && $b_penutup['status'] != '0') ? '#15803d' : '#94a3b8' }};">&#x2714;</span> Penutup</td>
+                                <td><span style="color: {{ ($b_penutup['status'] != '-' && $b_penutup['status'] != 'Tanpa Penutup' && $b_penutup['status'] != '0' && $b_penutup['status'] != 'Not Include') ? '#15803d' : '#94a3b8' }};">&#x2714;</span> Penutup</td>
                                 <td><span class="val-box">{{ $b_penutup['status'] ?? 'Tanpa Penutup' }}</span></td>
                                 <td><span class="val-box">{{ $b_penutup['arah'] ?? '-' }}</span></td>
                                 <td><span class="val-box">{{ $b_penutup['material'] ?? '-' }}</span></td>
                             </tr>
                             <tr>
-                                <td><span style="color: {{ ($b_kaki['status'] != '-' && $b_kaki['status'] != 'Exclude' && $b_kaki['status'] != '0') ? '#15803d' : '#94a3b8' }};">&#x2714;</span> Kaki Balok</td>
+                                <td><span style="color: {{ ($b_kaki['status'] != '-' && $b_kaki['status'] != 'Exclude' && $b_kaki['status'] != '0' && $b_kaki['status'] != 'Not Include') ? '#15803d' : '#94a3b8' }};">&#x2714;</span> Kaki Balok</td>
                                 <td><span class="val-box">{{ $b_kaki['status'] == '1' ? 'Include' : ($b_kaki['status'] == '0' ? 'Exclude' : $b_kaki['status']) }}</span></td>
                                 <td><span class="val-box">{{ $b_kaki['arah'] ?? '-' }}</span></td>
                                 <td><span class="val-box">{{ $b_kaki['material'] ?? '-' }}</span></td>
@@ -731,16 +805,20 @@
                 </div>
                 <div class="cfg-body">
                     <div class="cfg-list-item">
-                        <span class="cfg-label">Jarak Penyanggah</span>
-                        <span class="cfg-val-box">{{ number_format($jarak_penyanggah, 0, ',', '.') }} <span class="cfg-unit">mm</span></span>
+                        <span class="cfg-label">Jarak Penyanggah Atas</span>
+                        <span class="cfg-val-box">{{ number_format($calculation->jarak_penyanggah_atas ?? 0, 0, ',', '.') }} <span class="cfg-unit">mm</span></span>
+                    </div>
+                    <div class="cfg-list-item">
+                        <span class="cfg-label">Jarak Penyanggah Bawah</span>
+                        <span class="cfg-val-box">{{ number_format($calculation->jarak_penyanggah_bawah ?? 0, 0, ',', '.') }} <span class="cfg-unit">mm</span></span>
                     </div>
                     <div class="cfg-list-item">
                         <span class="cfg-label">Celah Atas</span>
-                        <span class="cfg-val-box">{{ number_format($gap_atas, 0, ',', '.') }} <span class="cfg-unit">mm</span></span>
+                        <span class="cfg-val-box">{{ number_format($calculation->gap_atas ?? 0, 0, ',', '.') }} <span class="cfg-unit">mm</span></span>
                     </div>
                     <div class="cfg-list-item">
                         <span class="cfg-label">Celah Bawah</span>
-                        <span class="cfg-val-box">{{ number_format($gap_bawah, 0, ',', '.') }} <span class="cfg-unit">mm</span></span>
+                        <span class="cfg-val-box">{{ number_format($calculation->gap_bawah ?? 0, 0, ',', '.') }} <span class="cfg-unit">mm</span></span>
                     </div>
                 </div>
             </div>
@@ -851,50 +929,7 @@
 
         <!-- SPLIT ROW: SUMMARY & SIGNATURE -->
         <div class="split-row">
-            
-            <!-- SECTION 6: RINGKASAN BIAYA -->
-            <div class="summary-box" style="flex: 1;">
-                @php
-                    $costRangka = 0;
-                    $costPenutup = 0;
-                    $costBawah = 0;
-                    foreach($woodDetails as $d) {
-                        if (in_array($d->section, ['Rangka', 'Penyangga'])) {
-                            $costRangka += $d->subtotal_price;
-                        } elseif ($d->section === 'Penutup' || ($d->section === 'Bawah' && str_contains($d->part_name, 'Penutup'))) {
-                            $costPenutup += $d->subtotal_price;
-                        } elseif ($d->section === 'Bawah' && !str_contains($d->part_name, 'Penutup')) {
-                            $costBawah += $d->subtotal_price;
-                        }
-                    }
-                @endphp
-                <div class="summary-item">
-                    <span class="summary-label">Biaya Kayu (Rangka)</span>
-                    <span class="summary-val">Rp {{ number_format($costRangka, 0, ',', '.') }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Biaya Kayu (Penutup)</span>
-                    <span class="summary-val">Rp {{ number_format($costPenutup, 0, ',', '.') }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Biaya Kayu (Bawah)</span>
-                    <span class="summary-val">Rp {{ number_format($costBawah, 0, ',', '.') }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Biaya Manpower</span>
-                    <span class="summary-val">Rp {{ number_format($totalManpowerCost ?? 0, 0, ',', '.') }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Biaya Paku</span>
-                    <span class="summary-val">Rp {{ number_format($totalNailsCost ?? 0, 0, ',', '.') }}</span>
-                </div>
-                
-                <div class="summary-grand-total">
-                    <span class="label">GRAND TOTAL BIAYA</span>
-                    <span class="val">Rp {{ number_format($grandTotal, 0, ',', '.') }}</span>
-                </div>
-            </div>
-
+        
             <!-- SECTION 7: TANDA TANGAN -->
             <div class="signature-area">
               

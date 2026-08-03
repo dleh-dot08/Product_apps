@@ -48,9 +48,11 @@ class MasterDataSeeder extends Seeder
         // Check if admin user exists, if not create one
         if (!User::where('email', 'admin@aqpa.co.id')->exists()) {
             User::create([
-                'name' => 'Super Administrator',
+                'username' => 'superadmin',
+                'full_name' => 'Super Administrator',
                 'email' => 'admin@aqpa.co.id',
                 'password' => Hash::make('password123'),
+                'role' => 'super_admin',
                 'role_id' => $superAdminRole->id ?? null,
                 'division_id' => $hrDivision->id ?? null,
             ]);

@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\PackagingJobDetail as PackagingCalculation;
+use App\Models\PackagingJob as PackagingCalculation;
 use App\Models\PackingMaterialPrice;
-use App\Models\PackagingJobDetail;
+use App\Models\PackagingJob;
 use Illuminate\Support\Facades\DB;
 
 class PackagingCalculatorService
@@ -12,10 +12,10 @@ class PackagingCalculatorService
     /**
      * Calculate and store breakdown details for the new JobDetail system.
      *
-     * @param PackagingJobDetail $detail
-     * @return PackagingJobDetail
+     * @param PackagingJob $detail
+     * @return PackagingJob
      */
-    public function calculateForJobDetail(PackagingJobDetail $detail, array $extraParams = [])
+    public function calculateForJobDetail(PackagingJob $detail, array $extraParams = [])
     {
         return DB::transaction(function () use ($detail, $extraParams) {
             // Hapus data lama terkait job detail ini
@@ -23,88 +23,87 @@ class PackagingCalculatorService
             DB::table('packing_job_calc_manpowers')->where('job_id', $detail->id)->delete();
             DB::table('packing_job_nails')->where('job_id', $detail->id)->delete();
 
-            $konfigAtas = is_array($detail->konfigurasi_atas) ? $detail->konfigurasi_atas : json_decode($detail->konfigurasi_atas, true) ?? [];
-            $konfigBawah = is_array($detail->konfigurasi_bawah) ? $detail->konfigurasi_bawah : json_decode($detail->konfigurasi_bawah, true) ?? [];
-
-            $params = [
-                'length' => (float) ($detail->panjang ?? $detail->length ?? 0),
-                'width' => (float) ($detail->lebar ?? $detail->width ?? 0),
-                'height' => (float) ($detail->tinggi ?? $detail->height ?? 0),
-                'distance_between_pillars' => (float) ($konfigBawah['jarak_penyanggah'] ?? $detail->jarak_penyanggah ?? 0),
-                'gap_atas' => (float) ($konfigAtas['gap_atas'] ?? $detail->gap_atas ?? 0),
-                'gap_bawah' => (float) ($konfigBawah['gap_bawah'] ?? $detail->gap_bawah ?? 0),
-                'cover_type' => 'Tidak makai penutup', // akan ditimpa per part
-                'include_pallet_base' => strtolower($konfigBawah['kaki_balok']['status'] ?? 'include') === 'include' ? 1 : 0,
-                'jarak_balok_additional' => 0,
-                'bawah_penyangga_include' => strtolower($konfigBawah['penyanggah']['status'] ?? 'include') === 'include' ? '1' : '0',
-                'bawah_penutup_tipe' => $konfigBawah['penutup']['status'] ?? 'Tanpa Penutup',
-            ];
-            $params = array_merge($params, $extraParams);
-
             $customDetails = [];
             
             // Penyangga (Atas, Kanan, Kiri, Depan, Belakang)
-            if (isset($konfigAtas['penyanggah'])) {
+            if ($detail->atas_penyanggah_status !== null) {
                 foreach (['Atas', 'Kanan', 'Kiri', 'Depan', 'Belakang'] as $partName) {
                     $customDetails[] = [
                         'section' => 'Penyangga',
                         'part_name' => $partName,
-                        'include' => strtolower($konfigAtas['penyanggah']['status'] ?? 'include') === 'include' ? '1' : '0',
-                        'direction' => $konfigAtas['penyanggah']['arah'] ?? 'Vertikal',
-                        'material_kode' => $konfigAtas['penyanggah']['material'] ?? 'BK02',
+                        'include' => strtolower($detail->atas_penyanggah_status ?? 'include') === 'include' ? '1' : '0',
+                        'direction' => $detail->atas_penyanggah_arahpemasangan ?? 'Vertikal',
+                        'material_kode' => $detail->atas_penyanggah_material ?? 'BK02',
                     ];
                 }
             }
             
             // Penutup (Atas, Kanan, Kiri, Depan, Belakang)
-            if (isset($konfigAtas['penutup'])) {
-                $tipe = $konfigAtas['penutup']['status'] ?? 'Tanpa Penutup';
+            if ($detail->atas_penutup_status !== null) {
+                $tipe = $detail->atas_penutup_status ?? 'Tanpa Penutup';
                 foreach (['Atas', 'Kanan', 'Kiri', 'Depan', 'Belakang'] as $partName) {
                     $customDetails[] = [
                         'section' => 'Penutup',
                         'part_name' => $partName,
                         'include' => ($tipe === 'Tanpa Penutup' || empty($tipe)) ? '0' : '1',
-                        'direction' => $konfigAtas['penutup']['arah'] ?? 'Horizontal',
-                        'material_kode' => $konfigAtas['penutup']['material'] ?? 'PN03',
+                        'direction' => $detail->atas_penutup_arahpemasangan ?? 'Horizontal',
+                        'material_kode' => $detail->atas_penutup_material ?? 'PN03',
                         'tipe_penutup' => $tipe,
                     ];
                 }
             }
 
             // Bawah Penyangga
-            if (isset($konfigBawah['penyanggah'])) {
+            if ($detail->bawah_penyanggah_status !== null) {
                 $customDetails[] = [
                     'section' => 'Bawah',
                     'part_name' => 'Penyangga',
-                    'include' => strtolower($konfigBawah['penyanggah']['status'] ?? 'include') === 'include' ? '1' : '0',
-                    'direction' => 'Horizontal',
-                    'material_kode' => $konfigBawah['penyanggah']['material'] ?? 'BK02',
+                    'include' => strtolower($detail->bawah_penyanggah_status ?? 'include') === 'include' ? '1' : '0',
+                    'direction' => $detail->bawah_penyanggah_arahpemasangan ?? 'Horizontal',
+                    'material_kode' => $detail->bawah_penyanggah_material ?? 'BK02',
                 ];
             }
             
             // Bawah Kaki Balok
-            if (isset($konfigBawah['kaki_balok'])) {
+            if ($detail->bawah_kakibalok_status !== null) {
                 $customDetails[] = [
                     'section' => 'Bawah',
                     'part_name' => 'Kaki Balok',
-                    'include' => strtolower($konfigBawah['kaki_balok']['status'] ?? 'include') === 'include' ? '1' : '0',
-                    'direction' => $konfigBawah['kaki_balok']['arah'] ?? 'Vertikal',
-                    'material_kode' => $konfigBawah['kaki_balok']['material'] ?? 'BK02',
+                    'include' => strtolower($detail->bawah_kakibalok_status ?? 'include') === 'include' ? '1' : '0',
+                    'direction' => $detail->bawah_kakibalok_arahpemasangan ?? 'Vertikal',
+                    'material_kode' => $detail->bawah_kakibalok_material ?? 'BK02',
                 ];
             }
             
             // Bawah Penutup
-            if (isset($konfigBawah['penutup'])) {
-                $tipe = $konfigBawah['penutup']['status'] ?? 'Tanpa Penutup';
+            if ($detail->bawah_penutup_status !== null) {
+                $tipe = $detail->bawah_penutup_status ?? 'Tanpa Penutup';
                 $customDetails[] = [
                     'section' => 'Bawah',
                     'part_name' => 'Penutup',
                     'include' => ($tipe === 'Tanpa Penutup' || empty($tipe)) ? '0' : '1',
-                    'direction' => $konfigBawah['penutup']['arah'] ?? 'Horizontal',
-                    'material_kode' => $konfigBawah['penutup']['material'] ?? 'PN03',
+                    'direction' => $detail->bawah_penutup_arahpemasangan ?? 'Horizontal',
+                    'material_kode' => $detail->bawah_penutup_material ?? 'PN03',
                     'tipe_penutup' => $tipe,
                 ];
             }
+
+            $params = [
+                'length' => (float) ($detail->panjang ?? $detail->length ?? 0),
+                'width' => (float) ($detail->lebar ?? $detail->width ?? 0),
+                'height' => (float) ($detail->tinggi ?? $detail->height ?? 0),
+                'jarak_penyanggah_atas' => (float) ($detail->jarak_penyanggah_atas ?? $detail->jarak_penyanggah ?? 300),
+                'jarak_penyanggah_bawah' => (float) ($detail->jarak_penyanggah_bawah ?? $detail->jarak_penyanggah ?? 300),
+                'distance_between_pillars' => (float) ($detail->jarak_penyanggah_bawah ?? $detail->jarak_penyanggah ?? 300),
+                'gap_atas' => (float) ($detail->gap_atas ?? 0),
+                'gap_bawah' => (float) ($detail->gap_bawah ?? 0),
+                'cover_type' => 'Tidak makai penutup', // akan ditimpa per part
+                'include_pallet_base' => strtolower($detail->bawah_kakibalok_status ?? 'include') === 'include' ? 1 : 0,
+                'jarak_balok_additional' => 0,
+                'bawah_penyangga_include' => strtolower($detail->bawah_penyanggah_status ?? 'include') === 'include' ? '1' : '0',
+                'bawah_penutup_tipe' => $detail->bawah_penutup_status ?? 'Tanpa Penutup',
+            ];
+            $params = array_merge($params, $extraParams);
 
             $detailsToInsert = $this->buildDetailsArray($params, 'Horizontal', $customDetails);
 
@@ -158,7 +157,7 @@ class PackagingCalculatorService
     /**
      * Save nails for job detail
      */
-    public function saveNailsForJobDetail(PackagingJobDetail $detail, array $customDetails = [])
+    public function saveNailsForJobDetail(PackagingJob $detail, array $customDetails = [])
     {
         $settingsPath = base_path('config/packaging_settings.json');
         $packagingSettings = file_exists($settingsPath) ? json_decode(file_get_contents($settingsPath), true) : [
@@ -327,7 +326,7 @@ class PackagingCalculatorService
     /**
      * Save manpower for job detail
      */
-    public function saveManpowerForJobDetail(PackagingJobDetail $detail)
+    public function saveManpowerForJobDetail(PackagingJob $detail)
     {
         $settingsPath = base_path('config/packaging_settings.json');
         $packagingSettings = file_exists($settingsPath) ? json_decode(file_get_contents($settingsPath), true) : ['manpower_rate' => 10000];
@@ -402,55 +401,65 @@ class PackagingCalculatorService
             DB::table('packing_job_calc_details')->where('job_id', $calculation->id)->delete();
 
             if (empty($customDetails)) {
-                $konfigAtas = is_string($calculation->konfigurasi_atas) ? json_decode($calculation->konfigurasi_atas, true) : ($calculation->konfigurasi_atas ?? []);
-                $konfigBawah = is_string($calculation->konfigurasi_bawah) ? json_decode($calculation->konfigurasi_bawah, true) : ($calculation->konfigurasi_bawah ?? []);
+                // Penyangga (Atas, Kanan, Kiri, Depan, Belakang)
+                if ($calculation->atas_penyanggah_status !== null) {
+                    foreach (['Atas', 'Kanan', 'Kiri', 'Depan', 'Belakang'] as $partName) {
+                        $customDetails[] = [
+                            'section' => 'Penyangga',
+                            'part_name' => $partName,
+                            'include' => strtolower($calculation->atas_penyanggah_status ?? 'include') === 'include' ? '1' : '0',
+                            'direction' => $calculation->atas_penyanggah_arahpemasangan ?? $calculation->atas_penyanggah_arah ?? 'Vertikal',
+                            'material_kode' => $calculation->atas_penyanggah_material ?? 'BK02',
+                        ];
+                    }
+                }
+                
+                // Penutup (Atas, Kanan, Kiri, Depan, Belakang)
+                if ($calculation->atas_penutup_status !== null) {
+                    $tipe = $calculation->atas_penutup_status ?? 'Tanpa Penutup';
+                    foreach (['Atas', 'Kanan', 'Kiri', 'Depan', 'Belakang'] as $partName) {
+                        $customDetails[] = [
+                            'section' => 'Penutup',
+                            'part_name' => $partName,
+                            'include' => ($tipe === 'Tanpa Penutup' || empty($tipe)) ? '0' : '1',
+                            'direction' => $calculation->atas_penutup_arahpemasangan ?? $calculation->atas_penutup_arah ?? 'Horizontal',
+                            'material_kode' => $calculation->atas_penutup_material ?? 'PN03',
+                            'tipe_penutup' => $tipe,
+                        ];
+                    }
+                }
 
-                if (isset($konfigAtas['penyanggah'])) {
-                    $customDetails[] = [
-                        'section' => 'Penyangga',
-                        'part_name' => 'Atas',
-                        'include' => strtolower($konfigAtas['penyanggah']['status'] ?? 'include') === 'include' ? '1' : '0',
-                        'direction' => $konfigAtas['penyanggah']['arah'] ?? 'Vertikal',
-                        'material_kode' => $konfigAtas['penyanggah']['material'] ?? 'BK02',
-                    ];
-                }
-                if (isset($konfigAtas['penutup'])) {
-                    $tipe = $konfigAtas['penutup']['status'] ?? 'Tanpa Penutup';
-                    $customDetails[] = [
-                        'section' => 'Penutup',
-                        'part_name' => 'Atas',
-                        'include' => ($tipe === 'Tanpa Penutup' || empty($tipe)) ? '0' : '1',
-                        'direction' => $konfigAtas['penutup']['arah'] ?? 'Horizontal',
-                        'material_kode' => $konfigAtas['penutup']['material'] ?? 'PN03',
-                        'tipe_penutup' => $tipe,
-                    ];
-                }
-                if (isset($konfigBawah['penyanggah'])) {
+                // Bawah Penyangga
+                if ($calculation->bawah_penyanggah_status !== null) {
                     $customDetails[] = [
                         'section' => 'Bawah',
                         'part_name' => 'Penyangga',
-                        'include' => strtolower($konfigBawah['penyanggah']['status'] ?? 'include') === 'include' ? '1' : '0',
-                        'direction' => 'Horizontal',
-                        'material_kode' => $konfigBawah['penyanggah']['material'] ?? 'BK02',
+                        'include' => strtolower($calculation->bawah_penyanggah_status ?? 'include') === 'include' ? '1' : '0',
+                        'direction' => $calculation->bawah_penyanggah_arahpemasangan ?? $calculation->bawah_penyanggah_arah ?? 'Horizontal',
+                        'material_kode' => $calculation->bawah_penyanggah_material ?? 'BK02',
                     ];
                 }
-                if (isset($konfigBawah['kaki_balok'])) {
+                
+                // Bawah Kaki Balok
+                if ($calculation->bawah_kakibalok_status !== null || $calculation->bawah_kaki_balok_status !== null) {
                     $customDetails[] = [
                         'section' => 'Bawah',
                         'part_name' => 'Kaki Balok',
-                        'include' => strtolower($konfigBawah['kaki_balok']['status'] ?? 'include') === 'include' ? '1' : '0',
-                        'direction' => $konfigBawah['kaki_balok']['arah'] ?? 'Vertikal',
-                        'material_kode' => $konfigBawah['kaki_balok']['material'] ?? 'BK02',
+                        'include' => strtolower($calculation->bawah_kakibalok_status ?? $calculation->bawah_kaki_balok_status ?? 'include') === 'include' ? '1' : '0',
+                        'direction' => $calculation->bawah_kakibalok_arahpemasangan ?? $calculation->bawah_kakibalok_arah ?? $calculation->bawah_kaki_balok_arah ?? 'Vertikal',
+                        'material_kode' => $calculation->bawah_kakibalok_material ?? $calculation->bawah_kaki_balok_material ?? 'BK02',
                     ];
                 }
-                if (isset($konfigBawah['penutup'])) {
-                    $tipe = $konfigBawah['penutup']['status'] ?? 'Tanpa Penutup';
+                
+                // Bawah Penutup
+                if ($calculation->bawah_penutup_status !== null) {
+                    $tipe = $calculation->bawah_penutup_status ?? 'Tanpa Penutup';
                     $customDetails[] = [
                         'section' => 'Bawah',
                         'part_name' => 'Penutup',
                         'include' => ($tipe === 'Tanpa Penutup' || empty($tipe)) ? '0' : '1',
-                        'direction' => $konfigBawah['penutup']['arah'] ?? 'Horizontal',
-                        'material_kode' => $konfigBawah['penutup']['material'] ?? 'PN03',
+                        'direction' => $calculation->bawah_penutup_arahpemasangan ?? $calculation->bawah_penutup_arah ?? 'Horizontal',
+                        'material_kode' => $calculation->bawah_penutup_material ?? 'PN03',
                         'tipe_penutup' => $tipe,
                     ];
                 }
@@ -460,7 +469,9 @@ class PackagingCalculatorService
                 'length' => (float) ($calculation->panjang ?? $calculation->length ?? 0),
                 'width' => (float) ($calculation->lebar ?? $calculation->width ?? 0),
                 'height' => (float) ($calculation->tinggi ?? $calculation->height ?? 0),
-                'distance_between_pillars' => (float) ($calculation->jarak_penyanggah ?? $calculation->distance_between_pillars ?? 0),
+                'jarak_penyanggah_atas' => (float) ($calculation->jarak_penyanggah_atas ?? $calculation->distance_between_pillars_top ?? $calculation->jarak_penyanggah ?? $calculation->distance_between_pillars ?? 300),
+                'jarak_penyanggah_bawah' => (float) ($calculation->jarak_penyanggah_bawah ?? $calculation->distance_between_pillars_bottom ?? $calculation->jarak_penyanggah ?? $calculation->distance_between_pillars ?? 300),
+                'distance_between_pillars' => (float) ($calculation->jarak_penyanggah_bawah ?? $calculation->distance_between_pillars_bottom ?? $calculation->jarak_penyanggah ?? $calculation->distance_between_pillars ?? 300),
                 'gap_atas' => (float) ($calculation->gap_atas ?? 0),
                 'gap_bawah' => (float) ($calculation->gap_bawah ?? 0),
                 'cover_type' => $calculation->cover_type ?? 'Tidak makai penutup',
@@ -828,12 +839,90 @@ class PackagingCalculatorService
         ];
     }
 
+    private function calculateOuterDimensions($P, $L, $tebalPenutupAtas) {
+        return [
+            'outerP' => $P + (2 * $tebalPenutupAtas),
+            'outerL' => $L + (2 * $tebalPenutupAtas)
+        ];
+    }
+
+    private function calculateBottomLegLayout($outerP, $outerL, $arah, $include) {
+        if ($include == 0 || $include === '0' || $include === 'Exclude' || strtolower($include) === 'exclude') {
+            return ['qty' => 0, 'length' => 0];
+        }
+        $dimensiSusun = ($arah === 'Horizontal') ? $outerP : $outerL;
+        $qty = max(0, ceil($dimensiSusun / 800));
+        $length = ($arah === 'Horizontal') ? $outerL : $outerP;
+        return ['qty' => $qty, 'length' => $length];
+    }
+
+    private function calculateBottomSupportLayout($outerP, $outerL, $arah, $lebarPenyangga, $celahPenyangga, $include) {
+        if ($include == 0 || $include === '0' || $include === 'Exclude' || strtolower($include) === 'exclude' || $lebarPenyangga <= 0) {
+            return ['qty' => 0, 'length' => 0, 'sisa_ujung' => 0];
+        }
+        $dimensiSusun = ($arah === 'Horizontal') ? $outerP : $outerL;
+        $length = ($arah === 'Horizontal') ? $outerL : $outerP;
+        
+        $areaPerSisi = ($dimensiSusun - $lebarPenyangga) / 2;
+        $langkahPenyangga = $celahPenyangga + $lebarPenyangga;
+        
+        $qtyPerSisi = ($langkahPenyangga > 0) ? floor($areaPerSisi / $langkahPenyangga) : 0;
+        
+        $totalQty = 1 + (2 * $qtyPerSisi);
+        $sisaUjungTotal = $dimensiSusun - ($totalQty * $lebarPenyangga) - (($totalQty - 1) * $celahPenyangga);
+        $sisaUjung = max(0, $sisaUjungTotal / 2);
+        
+        return ['qty' => $totalQty, 'length' => $length, 'sisa_ujung' => $sisaUjung];
+    }
+
+    private function calculateBottomCoverLayout($qtyPenyangga, $arah, $outerP, $outerL, $celahPenyangga, $celahPenutup, $lebarPenutup, $include, $tipePenutup, $isTripleks) {
+        if ($include == 0 || $include === '0' || $include === 'Exclude' || strtolower($include) === 'exclude' || empty($tipePenutup) || $tipePenutup === 'Tanpa Penutup' || $tipePenutup === 'Tidak makai penutup') {
+            return ['qty' => 0, 'length' => 0];
+        }
+        
+        $length = ($arah === 'Horizontal') ? $outerL : $outerP;
+        
+        if ($isTripleks || $lebarPenutup <= 0) {
+            return ['qty' => 1, 'length' => $length];
+        }
+        
+        $qtyTotal = 0;
+        if ($qtyPenyangga > 1) {
+            $totalSpaces = $qtyPenyangga - 1;
+            $langkahPenutup = $lebarPenutup + $celahPenutup;
+            $qtyCoverPerSpace = ($langkahPenutup > 0) ? floor(($celahPenyangga + $celahPenutup) / $langkahPenutup) : 0;
+            $qtyTotal = 2 + ($totalSpaces * $qtyCoverPerSpace);
+        } elseif ($qtyPenyangga == 1) {
+            $qtyTotal = 2; // only left and right ends
+        } else {
+            $qtyTotal = 0;
+        }
+
+        return ['qty' => $qtyTotal, 'length' => $length];
+    }
+
     public function buildDetailsArray(array $params, string $arahGlobal = 'Horizontal', array $customDetails = [])
     {
         $P = (float)($params['length'] ?? 0);
         $L = (float)($params['width'] ?? 0);
         $T = (float)($params['height'] ?? 0);
-        $jarakTiang = (float)($params['distance_between_pillars'] ?? 0);
+        
+        $jarakAtas = (float) (
+            $params['jarak_penyanggah_atas'] ?? 
+            $params['distance_between_pillars_top'] ?? 
+            $params['distance_between_pillars'] ?? 
+            300
+        );
+        $jarakBawah = (float) (
+            $params['jarak_penyanggah_bawah'] ?? 
+            $params['distance_between_pillars_bottom'] ?? 
+            $params['distance_between_pillars'] ?? 
+            300
+        );
+
+        if ($jarakAtas <= 0) $jarakAtas = 300;
+        if ($jarakBawah <= 0) $jarakBawah = 300;
+
         $celahAtas = (float)($params['gap_atas'] ?? 0);
         $celahBawah = (float)($params['gap_bawah'] ?? 0);
         $jenisPenutup = $params['cover_type'] ?? 'Tidak makai penutup';
@@ -900,32 +989,38 @@ class PackagingCalculatorService
         $kbInclude = $params['include_pallet_base'] ?? 1;
         $pbInclude = $params['bawah_penyangga_include'] ?? 1;
 
-        $qtyPenyanggaBawah = 0;
-        if ($pbInclude == 1 || $pbInclude === '1') {
-            $jarakBawah = ($jarakTiang > 0) ? $jarakTiang : 300;
-            $qtyPenyanggaBawah = max(0, (int)ceil($L / $jarakBawah) - 1);
+        // Ambil ketebalan penutup atas untuk menghitung Dimensi Luar
+        $ptaKode = $getMatKode('Penutup', 'Atas', 'PN03');
+        $ptaMat = $getMat($ptaKode);
+        $tebalPenutupAtas = $ptaMat ? (float)$ptaMat->thickness : 0;
+        
+        $outerDims = $this->calculateOuterDimensions($P, $L, $tebalPenutupAtas);
+        $outerP = $outerDims['outerP'];
+        $outerL = $outerDims['outerL'];
+
+        // Kaki Balok
+        $kbOverride = collect($customDetails)->where('section', 'Bawah')->where('part_name', 'Kaki Balok')->first();
+        $kbDirection = $kbOverride['direction'] ?? $arahGlobal;
+        $kbIncludeVal = $kbOverride['include'] ?? $kbInclude;
+        $kbLayout = $this->calculateBottomLegLayout($outerP, $outerL, $kbDirection, $kbIncludeVal);
+        
+        $qtyKB = $kbLayout['qty'];
+        if ($kbLayout['qty'] > 0) {
+            $details[] = $this->formatDetailRow('Bawah', 'Kaki Balok', $kbMat, $kbKode, $kbDirection, '', $tebalKakiBalok, $lebarKakiBalok, $kbLayout['length'], $kbLayout['qty'], 1);
         }
 
-        $qtyKB = 0;
-        if ($P < 1600) {
-            $qtyKB = 2;
-        } else {
-            $qtyKB = max(2, (int)ceil($P / 800));
+        // Penyangga Bawah
+        $pbOverride = collect($customDetails)->where('section', 'Bawah')->where('part_name', 'Penyangga')->first();
+        $pbDirection = $pbOverride['direction'] ?? ($pbOverride['arah'] ?? $arahGlobal);
+        $pbIncludeVal = $pbOverride['include'] ?? $pbInclude;
+        $pbLayout = $this->calculateBottomSupportLayout($outerP, $outerL, $pbDirection, $lebarPenyanggaBawah, $jarakBawah, $pbIncludeVal);
+        
+        $qtyPenyanggaBawah = $pbLayout['qty'];
+        if ($pbLayout['qty'] > 0) {
+            $details[] = $this->formatDetailRow('Bawah', 'Penyangga', $pbMat, $pbKode, $pbDirection, '', $tebalPenyanggaBawah, $lebarPenyanggaBawah, $pbLayout['length'], $pbLayout['qty'], 1);
         }
 
-        if ($kbInclude == 1 || $kbInclude === '1') {
-            $kbOverride = collect($customDetails)->where('section', 'Bawah')->where('part_name', 'Kaki Balok')->first();
-            $kbDirection = $kbOverride['direction'] ?? $arahGlobal;
-            $panjangKB = ($kbDirection === 'Vertikal') ? ($L + $tebalPenutupDepan + $tebalPenutupBelakang) : ($P + $tebalPenutupKanan + $tebalPenutupKiri);
-            $details[] = $this->formatDetailRow('Bawah', 'Kaki Balok', $kbMat, $kbKode, $kbDirection, '', $tebalKakiBalok, $lebarKakiBalok, $panjangKB, $qtyKB, 1);
-        }
-
-        if (($pbInclude == 1 || $pbInclude === '1') && $qtyPenyanggaBawah > 0) {
-            $pbOverride = collect($customDetails)->where('section', 'Bawah')->where('part_name', 'Penyangga')->first();
-            $pbDirection = $pbOverride['direction'] ?? ($pbOverride['arah'] ?? $arahGlobal);
-            $details[] = $this->formatDetailRow('Bawah', 'Penyangga', $pbMat, $pbKode, $pbDirection, '', $tebalPenyanggaBawah, $lebarPenyanggaBawah, $P, $qtyPenyanggaBawah, 1);
-        }
-
+        // Penutup Bawah
         $bawahPenutupOverride = collect($customDetails)->where('section', 'Bawah')->where('part_name', 'Penutup')->first();
         if ($bawahPenutupOverride) {
             $ptbInclude = $bawahPenutupOverride['include'] ?? 1;
@@ -936,15 +1031,19 @@ class PackagingCalculatorService
         } else {
             $ptbInclude = 1;
         }
-        if ($ptbInclude == 1 && $ptbTipe !== 'Tanpa Penutup' && $ptbTipe !== 'Tidak makai penutup' && !empty($ptbTipe)) {
-            $isTripleks = stripos($ptbTipe, 'Tripleks') !== false;
-            $qtyBasis = $L;
-            $lebar = $ptbMat ? (float)$ptbMat->width : 0;
-            $partCelah = (stripos($ptbTipe, 'Setengah') !== false) ? $celahBawah : 0;
-            $qtyPTB = ($isTripleks || $lebar <= 0) ? 1 : $this->hitungQtyPenutup($ptbTipe, $qtyBasis, $lebar, $partCelah);
-            $partWidth = $isTripleks ? $qtyBasis : $lebar;
-            $ptbDirection = $bawahPenutupOverride['direction'] ?? ($bawahPenutupOverride['arah'] ?? $arahGlobal);
-            $details[] = $this->formatDetailRow('Bawah', 'Penutup', $ptbMat, $ptbKode, $ptbDirection, $ptbTipe, $tebalPenutupBawah, $partWidth, $P, $qtyPTB, 1);
+        
+        $isTripleks = stripos($ptbTipe, 'Tripleks') !== false;
+        $lebarPB = $ptbMat ? (float)$ptbMat->width : 0;
+        
+        // Celah penutup mengikuti gap_bawah, atau jika 'Setengah' pakai $celahBawah
+        $celahPB = (stripos($ptbTipe, 'Setengah') !== false) ? $celahBawah : $celahBawah; // menggunakan gap_bawah yang dipassing
+        
+        $ptbDirection = $bawahPenutupOverride['direction'] ?? ($bawahPenutupOverride['arah'] ?? $arahGlobal);
+        $ptbLayout = $this->calculateBottomCoverLayout($qtyPenyanggaBawah, $ptbDirection, $outerP, $outerL, $jarakBawah, $celahPB, $lebarPB, $ptbInclude, $ptbTipe, $isTripleks);
+        
+        if ($ptbLayout['qty'] > 0) {
+            $partWidth = $isTripleks ? (($ptbDirection === 'Horizontal') ? $outerP : $outerL) : $lebarPB; // Jika tripleks, lebar disesuaikan dengan sisi menyilang
+            $details[] = $this->formatDetailRow('Bawah', 'Penutup', $ptbMat, $ptbKode, $ptbDirection, $ptbTipe, $tebalPenutupBawah, $partWidth, $ptbLayout['length'], $ptbLayout['qty'], 1);
         }
 
         // --- 3. HITUNG PENYANGGA VERTIKAL ---
@@ -970,11 +1069,13 @@ class PackagingCalculatorService
                 $pQty = $qtyKB; 
             } elseif ($pName === 'Kanan' || $pName === 'Kiri') {
                 $pPanjang = $tinggiTiang;
-                if ($qtyPenyanggaBawah <= 3) {
-                    $pQty = 1;
-                } else {
-                    $pQty = $qtyPenyanggaBawah - 2;
-                }
+                
+                $jarakSamping = $jarakAtas * 2;
+                
+                // Using outerP because Kanan and Kiri run along the length (Panjang) of the box
+                $qtySamping = $jarakSamping > 0 ? (int) floor($outerP / $jarakSamping) : 0;
+                
+                $pQty = max(1, $qtySamping);
             } else {
                 $pPanjang = $tinggiTiang;
                 $pQty = $qtyKB; 

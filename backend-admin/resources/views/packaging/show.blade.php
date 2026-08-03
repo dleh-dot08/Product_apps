@@ -20,11 +20,16 @@
     $totalCost = $costRangka + $costPenutup + $costBawah;
 
     $areaKerja = 0;
-    if (isset($calculation) && $calculation->length && $calculation->width && $calculation->height) {
-        $P_m = $calculation->length / 1000;
-        $L_m = $calculation->width / 1000;
-        $T_m = $calculation->height / 1000;
-        $areaKerja = 2 * (($P_m * $L_m) + ($P_m * $T_m) + ($L_m * $T_m));
+    if (isset($calculation)) {
+        $calcPanjang = $calculation->length ?? $calculation->panjang ?? 0;
+        $calcLebar = $calculation->width ?? $calculation->lebar ?? 0;
+        $calcTinggi = $calculation->height ?? $calculation->tinggi ?? 0;
+        if ($calcPanjang && $calcLebar && $calcTinggi) {
+            $P_m = $calcPanjang / 1000;
+            $L_m = $calcLebar / 1000;
+            $T_m = $calcTinggi / 1000;
+            $areaKerja = 2 * (($P_m * $L_m) + ($P_m * $T_m) + ($L_m * $T_m));
+        }
     }
 @endphp
     <!-- Include Material Symbols for icons -->
@@ -2316,6 +2321,328 @@
             }
         }
 
+
+        /* =========================================================
+           PACKING INFORMATION — VISUAL CARD + TABLE COLLAPSE
+           ========================================================= */
+        .crate-page .packing-information-card {
+            overflow: hidden;
+            border: 1px solid #e2e8f0 !important;
+            border-radius: 18px !important;
+            background: #ffffff;
+            box-shadow: 0 12px 30px rgba(15, 23, 42, .07) !important;
+        }
+
+        .crate-page .packing-header-icon,
+        .crate-page .packing-reference-icon,
+        .crate-page .packing-meta-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex: 0 0 auto;
+        }
+
+        .crate-page .packing-header-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 9px;
+            color: #1769e8;
+            background: #eef6ff;
+        }
+
+        .crate-page .packing-header-icon .material-symbols-rounded {
+            font-size: 18px;
+        }
+
+        .crate-page .packing-reference-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 18px;
+            padding: 8px 6px 10px;
+        }
+
+        .crate-page .packing-reference-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            color: #1769e8;
+            background: #eef6ff;
+        }
+
+        .crate-page .packing-table-toggle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 38px;
+            padding: 8px 12px;
+            border: 1px solid #cdd9e8;
+            border-radius: 10px;
+            color: #1769e8;
+            background: #ffffff;
+            font-size: 11px;
+            font-weight: 800;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: .2s ease;
+        }
+
+        .crate-page .packing-table-toggle:hover {
+            border-color: #1769e8;
+            background: #f7fbff;
+            box-shadow: 0 6px 14px rgba(23, 105, 232, .10);
+            transform: translateY(-1px);
+        }
+
+        .crate-page .packing-table-toggle .material-symbols-rounded {
+            font-size: 18px;
+            transition: transform .2s ease;
+        }
+
+        .crate-page .packing-item-count {
+            padding: 3px 7px;
+            border-radius: 999px;
+            color: #475569;
+            background: #f1f5f9;
+            font-size: 10px;
+        }
+
+        .crate-page .packing-table-shell {
+            overflow: hidden;
+            border: 1px solid #dbe3ee;
+            border-radius: 12px;
+            background: #ffffff;
+        }
+
+        .crate-page .packing-detail-table {
+            width: 100%;
+            color: #172033;
+            font-size: 12px;
+        }
+
+        .crate-page .packing-detail-table thead th {
+            padding: 13px 14px;
+            border: 0;
+            border-right: 1px solid #e2e8f0;
+            border-bottom: 1px solid #dbe3ee;
+            color: #102443;
+            background: #f8fafc;
+            font-size: 11px;
+            font-weight: 900;
+            text-transform: none;
+            white-space: nowrap;
+        }
+
+        .crate-page .packing-detail-table thead th:last-child,
+        .crate-page .packing-detail-table tbody td:last-child {
+            border-right: 0;
+        }
+
+        .crate-page .packing-detail-table tbody td {
+            padding: 14px;
+            border: 0;
+            border-right: 1px solid #edf1f6;
+            border-bottom: 1px solid #edf1f6;
+            background: #ffffff;
+            vertical-align: middle;
+        }
+
+        .crate-page .packing-detail-table tbody tr:last-child td {
+            border-bottom: 0;
+        }
+
+        .crate-page .packing-detail-table tbody tr:hover td {
+            background: #fbfdff;
+        }
+
+        .crate-page .packing-number-column { width: 68px; }
+        .crate-page .packing-qty-column { width: 90px; }
+        .crate-page .packing-customer-cell { min-width: 280px; }
+
+        .crate-page .packing-row-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            color: #172033;
+            background: #f1f5f9;
+            font-weight: 900;
+        }
+
+        .crate-page .packing-meta-grid {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            margin-top: 10px;
+            padding: 18px 8px;
+            border: 1px solid #e5eaf1;
+            border-radius: 12px;
+            background: #ffffff;
+            box-shadow: 0 6px 18px rgba(15, 23, 42, .035);
+        }
+
+        .crate-page .packing-meta-item {
+            min-width: 0;
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 0 16px;
+            border-right: 1px solid #e2e8f0;
+        }
+
+        .crate-page .packing-meta-item:last-child {
+            border-right: 0;
+        }
+
+        .crate-page .packing-meta-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+        }
+
+        .crate-page .packing-meta-icon .material-symbols-rounded { font-size: 23px; }
+        .crate-page .packing-meta-icon.is-purple { color: #8b5cf6; background: #f4edff; }
+        .crate-page .packing-meta-icon.is-orange { color: #f59e0b; background: #fff6e5; }
+        .crate-page .packing-meta-icon.is-blue { color: #1769e8; background: #eef6ff; }
+        .crate-page .packing-meta-icon.is-green { color: #10b981; background: #eafaf4; }
+        .crate-page .packing-meta-icon.is-blue-soft { color: #1769e8; background: #eff6ff; }
+
+        .crate-page .packing-meta-item small {
+            display: block;
+            margin-bottom: 4px;
+            color: #64748b;
+            font-size: 10px;
+            font-weight: 700;
+            line-height: 1.1;
+        }
+
+        .crate-page .packing-meta-item strong {
+            display: block;
+            overflow: hidden;
+            color: #102443;
+            font-size: 12px;
+            font-weight: 900;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .crate-page .packing-status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            width: fit-content;
+            padding: 5px 10px;
+            border: 1px solid transparent;
+            border-radius: 999px;
+            font-size: 9px;
+            font-weight: 900;
+            line-height: 1;
+            white-space: nowrap;
+        }
+
+        .crate-page .packing-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        .crate-page .packing-status-badge.is-ready {
+            color: #059669;
+            border-color: #bbf7d0;
+            background: #ecfdf5;
+        }
+
+        .crate-page .packing-status-badge.is-progress {
+            color: #d97706;
+            border-color: #fde68a;
+            background: #fffbeb;
+        }
+
+        .crate-page .packing-status-badge.is-danger {
+            color: #dc2626;
+            border-color: #fecaca;
+            background: #fef2f2;
+        }
+
+        .crate-page .packing-status-badge.is-draft {
+            color: #1769e8;
+            border-color: #bfdbfe;
+            background: #eff6ff;
+        }
+
+        .crate-page .min-w-0 { min-width: 0; }
+
+        @media (max-width: 1199.98px) {
+            .crate-page .packing-meta-grid {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                row-gap: 18px;
+            }
+
+            .crate-page .packing-meta-item {
+                border-right: 0;
+            }
+        }
+
+        @media (max-width: 767.98px) {
+            .crate-page .packing-reference-row {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .crate-page .packing-table-toggle {
+                width: 100%;
+            }
+
+            .crate-page .packing-meta-grid {
+                grid-template-columns: 1fr;
+                row-gap: 0;
+                padding: 4px 14px;
+            }
+
+            .crate-page .packing-meta-item {
+                padding: 14px 0;
+                border-bottom: 1px solid #edf1f6;
+            }
+
+            .crate-page .packing-meta-item:last-child {
+                border-bottom: 0;
+            }
+        }
+
+        /* Dark mode support for new packing card */
+        :is([data-bs-theme="dark"], [data-theme="dark"], html.dark, body.dark, body.dark-mode, body.theme-dark)
+        .crate-page :is(.packing-information-card, .packing-table-shell, .packing-meta-grid),
+        .crate-page.packaging-dark :is(.packing-information-card, .packing-table-shell, .packing-meta-grid) {
+            color: var(--crate-text) !important;
+            background: var(--crate-surface) !important;
+            border-color: var(--crate-border) !important;
+        }
+
+        :is([data-bs-theme="dark"], [data-theme="dark"], html.dark, body.dark, body.dark-mode, body.theme-dark)
+        .crate-page .packing-detail-table :is(thead th, tbody td),
+        .crate-page.packaging-dark .packing-detail-table :is(thead th, tbody td) {
+            color: var(--crate-text-soft) !important;
+            background: var(--crate-surface) !important;
+            border-color: var(--crate-border) !important;
+        }
+
+        :is([data-bs-theme="dark"], [data-theme="dark"], html.dark, body.dark, body.dark-mode, body.theme-dark)
+        .crate-page .packing-table-toggle,
+        .crate-page.packaging-dark .packing-table-toggle {
+            color: #60a5fa !important;
+            background: var(--crate-surface-2) !important;
+            border-color: var(--crate-border-strong) !important;
+        }
+
+        :is([data-bs-theme="dark"], [data-theme="dark"], html.dark, body.dark, body.dark-mode, body.theme-dark)
+        .crate-page .packing-meta-item strong,
+        .crate-page.packaging-dark .packing-meta-item strong {
+            color: var(--crate-text) !important;
+        }
+
 </style>
 
     <div class="crate-page crate-theme-root container-fluid py-4">
@@ -2365,77 +2692,207 @@
                 <div class="col-12 d-flex flex-column gap-3">
                     
                     <!-- PACKING INFORMATION -->
-                    <div class="card border-0 shadow-sm style-card-container">
+                    @php
+                        $packingNumber = isset($calculation)
+                            ? ($calculation->packaging_number ?? '-')
+                            : '-';
+
+                        $packingType = isset($calculation)
+                            ? ($calculation->packaging_type
+                                ?? $calculation->packing_type
+                                ?? $calculation->package_type
+                                ?? 'Wooden Crate')
+                            : 'Wooden Crate';
+
+                        $packingStatus = isset($calculation)
+                            ? ($calculation->status ?? $calculation->packing_status ?? 'Draft')
+                            : 'Draft';
+
+                        $normalizedPackingStatus = strtolower((string) $packingStatus);
+                        $statusClass = match (true) {
+                            in_array($normalizedPackingStatus, ['ready', 'approved', 'complete', 'completed']) => 'is-ready',
+                            in_array($normalizedPackingStatus, ['rejected', 'cancelled', 'canceled']) => 'is-danger',
+                            in_array($normalizedPackingStatus, ['process', 'processing', 'in progress', 'in-progress']) => 'is-progress',
+                            default => 'is-draft',
+                        };
+
+                        $deliveryDateRaw = isset($calculation)
+                            ? ($calculation->delivery_date
+                                ?? $calculation->shipping_date
+                                ?? $calculation->tanggal_pengiriman
+                                ?? null)
+                            : null;
+
+                        try {
+                            $deliveryDate = $deliveryDateRaw
+                                ? \Carbon\Carbon::parse($deliveryDateRaw)->format('d M Y')
+                                : '-';
+                        } catch (\Throwable $e) {
+                            $deliveryDate = $deliveryDateRaw ?: '-';
+                        }
+
+                        $packerName = '-';
+                        if (isset($calculation) && $calculation->packer_id) {
+                            $packerName = optional(\App\Models\User::find($calculation->packer_id))->name ?? '-';
+                        }
+
+                        $approvedById = isset($calculation)
+                            ? ($calculation->approved_by
+                                ?? $calculation->approver_id
+                                ?? $calculation->assigned_by
+                                ?? $calculation->created_by
+                                ?? null)
+                            : null;
+
+                        $approvedByName = $approvedById
+                            ? (optional(\App\Models\User::find($approvedById))->name ?? '-')
+                            : '-';
+
+                        $packingItemCount = isset($job) && $job->items
+                            ? $job->items->count()
+                            : 0;
+                    @endphp
+
+                    <div class="card border-0 shadow-sm style-card-container packing-information-card">
                         <div class="card-header bg-white border-bottom-0 pt-3 pb-0 d-flex justify-content-between align-items-center">
                             <h6 class="fw-bold mb-0 text-navy d-flex align-items-center" style="font-size: 13px;">
-                                <div class="bg-primary bg-opacity-10 p-1 rounded me-2 d-flex align-items-center justify-content-center text-primary">
-                                    <span class="material-symbols-rounded" style="font-size: 16px;">inventory_2</span>
-                                </div>
+                                <span class="packing-header-icon me-2">
+                                    <span class="material-symbols-rounded">inventory_2</span>
+                                </span>
                                 PACKING INFORMATION
                             </h6>
-                            <span class="badge bg-primary text-primary bg-opacity-10 rounded-pill px-3 py-1 border border-primary border-opacity-25 ms-auto" style="font-size: 9px;"><i class="fas fa-circle me-1" style="font-size: 6px;"></i> DRAFT</span>
+
+                            <span class="packing-status-badge {{ $statusClass }}">
+                                <span class="packing-status-dot"></span>
+                                {{ strtoupper($packingStatus) }}
+                            </span>
                         </div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                <!-- Reference Number -->
-                                <div class="col-12 border-bottom pb-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 p-2 rounded me-3 text-primary d-flex align-items-center justify-content-center">
-                                            <span class="material-symbols-rounded">description</span>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block lh-1 mb-1" style="font-size: 11px;">Reference Number</small>
-                                            <h5 class="fw-bold text-navy mb-0" style="font-size: 18px;">{{ isset($calculation) && $calculation->packaging_number ? $calculation->packaging_number : '-' }}</h5>
-                                        </div>
+
+                        <div class="card-body pt-3">
+                            <!-- Packaging Number + Table Toggle -->
+                            <div class="packing-reference-row">
+                                <div class="d-flex align-items-center min-w-0">
+                                    <div class="packing-reference-icon me-3">
+                                        <span class="material-symbols-rounded">description</span>
+                                    </div>
+
+                                    <div class="min-w-0">
+                                        <small class="text-muted d-block lh-1 mb-1" style="font-size: 11px;">
+                                            Packaging Number
+                                        </small>
+                                        <h5 class="fw-bold text-navy mb-0 text-truncate" style="font-size: 18px;">
+                                            {{ $packingNumber }}
+                                        </h5>
                                     </div>
                                 </div>
-                                
-                                <!-- Details Row -->
-                                <div class="col-md-3 border-end">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-primary bg-opacity-10 p-2 rounded me-3 text-primary d-flex align-items-center justify-content-center">
-                                            <span class="material-symbols-rounded">receipt_long</span>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block lh-1 mb-1" style="font-size: 11px;">SO Number</small>
-                                            <div class="fw-bold text-navy">{{ isset($job) ? $job->no_so : (isset($calculation) ? $calculation->no_so ?? '-' : '-') }}</div>
-                                        </div>
+
+                                <button
+                                    id="packingTableToggle"
+                                    class="packing-table-toggle"
+                                    type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#packingDetailTable"
+                                    aria-expanded="true"
+                                    aria-controls="packingDetailTable"
+                                >
+                                    <span class="packing-item-count">{{ $packingItemCount }} Items</span>
+                                    <span id="packingToggleLabel">Hide Table</span>
+                                    <span id="packingToggleIcon" class="material-symbols-rounded">expand_less</span>
+                                </button>
+                            </div>
+
+                            <!-- Only this table can be hidden -->
+                            <div id="packingDetailTable" class="collapse show">
+                                <div class="packing-table-shell">
+                                    <div class="table-responsive">
+                                        <table class="table packing-detail-table mb-0 align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th class="packing-number-column">No</th>
+                                                    <th>SO Number</th>
+                                                    <th>Customer</th>
+                                                    <th>Part Number</th>
+                                                    <th class="text-center packing-qty-column">Qty</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @if(isset($job) && $job->items && $job->items->count() > 0)
+                                                    @foreach($job->items as $item)
+                                                        <tr>
+                                                            <td class="text-center">
+                                                                <span class="packing-row-number">{{ $loop->iteration }}</span>
+                                                            </td>
+                                                            <td>{{ $item->no_so ?? '-' }}</td>
+                                                            <td class="packing-customer-cell">{{ $item->customer ?? '-' }}</td>
+                                                            <td>{{ $item->no_product ?? '-' }}</td>
+                                                            <td class="text-center fw-semibold">{{ $item->qty ?? 0 }}</td>
+                                                        </tr>
+                                                    @endforeach
+                                                @else
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted py-4">
+                                                            No items found
+                                                        </td>
+                                                    </tr>
+                                                @endif
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
-                                
-                                <div class="col-md-3 border-end">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-success bg-opacity-10 p-2 rounded me-3 text-success d-flex align-items-center justify-content-center">
-                                            <span class="material-symbols-rounded">domain</span>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block lh-1 mb-1" style="font-size: 11px;">Customer Name</small>
-                                            <div class="fw-bold text-navy">{{ isset($job) ? $job->customer : '-' }}</div>
-                                        </div>
+                            </div>
+
+                            <!-- This information always remains visible -->
+                            <div class="packing-meta-grid">
+                                <div class="packing-meta-item">
+                                    <span class="packing-meta-icon is-purple">
+                                        <span class="material-symbols-rounded">engineering</span>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <small>Packer By</small>
+                                        <strong title="{{ $packerName }}">{{ $packerName }}</strong>
                                     </div>
                                 </div>
-                                
-                                <div class="col-md-3 border-end">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-purple bg-opacity-10 p-2 rounded me-3 d-flex align-items-center justify-content-center" style="color: #8b5cf6; background-color: rgba(139, 92, 246, 0.1);">
-                                            <span class="material-symbols-rounded">engineering</span>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block lh-1 mb-1" style="font-size: 11px;">Packer</small>
-                                            <div class="fw-bold text-navy">{{ isset($calculation) && $calculation->packer_id ? \App\Models\User::find($calculation->packer_id)->name ?? '-' : '-' }}</div>
-                                        </div>
+
+                                <div class="packing-meta-item">
+                                    <span class="packing-meta-icon is-orange">
+                                        <span class="material-symbols-rounded">person</span>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <small>Approved By</small>
+                                        <strong title="{{ $approvedByName }}">{{ $approvedByName }}</strong>
                                     </div>
                                 </div>
-                                
-                                <div class="col-md-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="bg-warning bg-opacity-10 p-2 rounded me-3 text-warning d-flex align-items-center justify-content-center" style="color: #f59e0b; background-color: rgba(245, 158, 11, 0.1);">
-                                            <span class="material-symbols-rounded">person</span>
-                                        </div>
-                                        <div>
-                                            <small class="text-muted d-block lh-1 mb-1" style="font-size: 11px;">Assigned By</small>
-                                            <div class="fw-bold text-navy">{{ isset($calculation) && $calculation->created_by ? \App\Models\User::find($calculation->created_by)->name ?? '-' : '-' }}</div>
-                                        </div>
+
+                                <div class="packing-meta-item">
+                                    <span class="packing-meta-icon is-blue">
+                                        <span class="material-symbols-rounded">deployed_code</span>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <small>Packaging Type</small>
+                                        <strong title="{{ $packingType }}">{{ $packingType }}</strong>
+                                    </div>
+                                </div>
+
+                                <div class="packing-meta-item">
+                                    <span class="packing-meta-icon is-green">
+                                        <span class="material-symbols-rounded">check_circle</span>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <small>Status</small>
+                                        <span class="packing-status-badge {{ $statusClass }} mt-1">
+                                            <span class="packing-status-dot"></span>
+                                            {{ strtoupper($packingStatus) }}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <div class="packing-meta-item">
+                                    <span class="packing-meta-icon is-blue-soft">
+                                        <span class="material-symbols-rounded">calendar_month</span>
+                                    </span>
+                                    <div class="min-w-0">
+                                        <small>Delivery Date</small>
+                                        <strong>{{ $deliveryDate }}</strong>
                                     </div>
                                 </div>
                             </div>
@@ -2468,8 +2925,12 @@
                                     ? ($calculation->height ?? $calculation->tinggi ?? 0)
                                     : 0;
                     
-                                $cJarak = isset($calculation)
-                                    ? ($calculation->distance_between_pillars ?? $calculation->jarak_penyanggah ?? 300)
+                                $cJarakAtas = isset($calculation)
+                                    ? ($calculation->distance_between_pillars_top ?? $calculation->jarak_penyanggah_atas ?? 300)
+                                    : 300;
+                                    
+                                $cJarakBawah = isset($calculation)
+                                    ? ($calculation->distance_between_pillars_bottom ?? $calculation->jarak_penyanggah_bawah ?? 300)
                                     : 300;
                     
                                 $cGapAtas = isset($calculation)
@@ -2492,9 +2953,17 @@
                                         return filled($fallback) ? $fallback : '-';
                                     }
                     
-                                    return data_get($detail, 'material.kode')
+                                    $kode = data_get($detail, 'material.kode')
                                         ?? data_get($detail, 'material_kode')
-                                        ?? (filled($fallback) ? $fallback : '-');
+                                        ?? data_get($detail, 'material_code');
+                                        
+                                    // Prefer the flat column fallback if it's a full KAYU string
+                                    // and the detail only has a short component code (like BK02).
+                                    if (filled($fallback) && $fallback !== '-' && str_starts_with($fallback, 'KAYU-')) {
+                                        return $fallback;
+                                    }
+                    
+                                    return $kode ?? (filled($fallback) ? $fallback : '-');
                                 };
                     
                                 $getMaterialLabel = function ($detail, $fallback = '-') use ($getMaterialCode) {
@@ -2566,16 +3035,16 @@
                                     : null;
                     
                                 $fallbackBawahKakiStatus = isset($calculation)
-                                    ? ($calculation->bawah_kaki_balok_status ?? null)
+                                    ? ($calculation->bawah_kakibalok_status ?? $calculation->bawah_kaki_balok_status ?? null)
                                     : null;
                     
-                                $bawahPenyanggaIncluded = $detailBawahPenyangga
-                                    ? $detailIsIncluded($detailBawahPenyangga, true)
-                                    : $statusIsIncluded($fallbackBawahPenyanggaStatus, true);
+                                $bawahPenyanggaIncluded = $fallbackBawahPenyanggaStatus !== null
+                                    ? $statusIsIncluded($fallbackBawahPenyanggaStatus, true)
+                                    : ($detailBawahPenyangga ? $detailIsIncluded($detailBawahPenyangga, true) : true);
                     
                                 $bawahPenyanggaArah = data_get($detailBawahPenyangga, 'direction')
                                     ?? (isset($calculation)
-                                        ? ($calculation->bawah_penyanggah_arah ?? $calculation->bawah_penyangga_arah ?? 'Horizontal')
+                                        ? ($calculation->bawah_penyanggah_arahpemasangan ?? $calculation->bawah_penyanggah_arah ?? $calculation->bawah_penyangga_arah ?? 'Horizontal')
                                         : 'Horizontal');
                     
                                 $bawahPenyanggaMaterialFallback = isset($calculation)
@@ -2596,20 +3065,16 @@
                                     ? ($calculation->bawah_penutup_status ?? 'Tanpa Penutup')
                                     : 'Tanpa Penutup';
                     
-                                $bawahPenutupIncluded = $detailBawahPenutup
-                                    ? $detailIsIncluded($detailBawahPenutup, false)
-                                    : !in_array(
-                                        strtolower(trim((string) $fallbackBawahPenutupTipe)),
-                                        ['', '0', 'tanpa penutup', 'tidak makai penutup', 'tidak pakai papan', 'exclude'],
-                                        true
-                                    );
+                                $bawahPenutupIncluded = $fallbackBawahPenutupTipe !== 'Tanpa Penutup' && $fallbackBawahPenutupTipe !== null
+                                    ? !in_array(strtolower(trim((string) $fallbackBawahPenutupTipe)), ['', '0', 'tanpa penutup', 'tidak makai penutup', 'tidak pakai papan', 'exclude'], true)
+                                    : ($detailBawahPenutup ? $detailIsIncluded($detailBawahPenutup, false) : false);
                     
                                 $bawahPenutupTipe = $bawahPenutupIncluded
                                     ? (data_get($detailBawahPenutup, 'tipe_penutup') ?: $fallbackBawahPenutupTipe)
                                     : 'Tanpa Penutup';
                     
                                 $bawahPenutupArah = data_get($detailBawahPenutup, 'direction')
-                                    ?? (isset($calculation) ? ($calculation->bawah_penutup_arah ?? 'Horizontal') : 'Horizontal');
+                                    ?? (isset($calculation) ? ($calculation->bawah_penutup_arahpemasangan ?? $calculation->bawah_penutup_arah ?? 'Horizontal') : 'Horizontal');
                     
                                 $bawahPenutupMaterialFallback = isset($calculation)
                                     ? ($calculation->bawah_penutup_material ?? '-')
@@ -2625,15 +3090,15 @@
                                     $bawahPenutupMaterialFallback
                                 );
                     
-                                $bawahKakiIncluded = $detailBawahKaki
-                                    ? $detailIsIncluded($detailBawahKaki, true)
-                                    : $statusIsIncluded($fallbackBawahKakiStatus, true);
+                                $bawahKakiIncluded = $fallbackBawahKakiStatus !== null
+                                    ? $statusIsIncluded($fallbackBawahKakiStatus, true)
+                                    : ($detailBawahKaki ? $detailIsIncluded($detailBawahKaki, true) : true);
                     
                                 $bawahKakiArah = data_get($detailBawahKaki, 'direction')
-                                    ?? (isset($calculation) ? ($calculation->bawah_kaki_balok_arah ?? 'Horizontal') : 'Horizontal');
+                                    ?? (isset($calculation) ? ($calculation->bawah_kakibalok_arahpemasangan ?? $calculation->bawah_kaki_balok_arah ?? 'Horizontal') : 'Horizontal');
                     
                                 $bawahKakiMaterialFallback = isset($calculation)
-                                    ? ($calculation->bawah_kaki_balok_material ?? '-')
+                                    ? ($calculation->bawah_kakibalok_material ?? $calculation->bawah_kaki_balok_material ?? '-')
                                     : '-';
                     
                                 $bawahKakiMaterial = $getMaterialCode(
@@ -2663,13 +3128,13 @@
                                     ? ($calculation->atas_penyanggah_status ?? $calculation->atas_penyangga_status ?? null)
                                     : null;
                     
-                                $atasPenyanggaIncluded = $detailAtasPenyangga
-                                    ? $detailIsIncluded($detailAtasPenyangga, true)
-                                    : $statusIsIncluded($fallbackAtasPenyanggaStatus, true);
+                                $atasPenyanggaIncluded = $fallbackAtasPenyanggaStatus !== null
+                                    ? $statusIsIncluded($fallbackAtasPenyanggaStatus, true)
+                                    : ($detailAtasPenyangga ? $detailIsIncluded($detailAtasPenyangga, true) : true);
                     
                                 $atasPenyanggaArah = data_get($detailAtasPenyangga, 'direction')
                                     ?? (isset($calculation)
-                                        ? ($calculation->atas_penyanggah_arah ?? $calculation->atas_penyangga_arah ?? 'Vertikal')
+                                        ? ($calculation->atas_penyanggah_arahpemasangan ?? $calculation->atas_penyanggah_arah ?? $calculation->atas_penyangga_arah ?? 'Vertikal')
                                         : 'Vertikal');
                     
                                 $atasPenyanggaMaterialFallback = isset($calculation)
@@ -2690,20 +3155,16 @@
                                     ? ($calculation->atas_penutup_status ?? 'Tanpa Penutup')
                                     : 'Tanpa Penutup';
                     
-                                $atasPenutupIncluded = $detailAtasPenutup
-                                    ? $detailIsIncluded($detailAtasPenutup, false)
-                                    : !in_array(
-                                        strtolower(trim((string) $fallbackAtasPenutupTipe)),
-                                        ['', '0', 'tanpa penutup', 'tidak makai penutup', 'tidak pakai papan', 'exclude'],
-                                        true
-                                    );
+                                $atasPenutupIncluded = $fallbackAtasPenutupTipe !== 'Tanpa Penutup' && $fallbackAtasPenutupTipe !== null
+                                    ? !in_array(strtolower(trim((string) $fallbackAtasPenutupTipe)), ['', '0', 'tanpa penutup', 'tidak makai penutup', 'tidak pakai papan', 'exclude'], true)
+                                    : ($detailAtasPenutup ? $detailIsIncluded($detailAtasPenutup, false) : false);
                     
                                 $atasPenutupTipe = $atasPenutupIncluded
                                     ? (data_get($detailAtasPenutup, 'tipe_penutup') ?: $fallbackAtasPenutupTipe)
                                     : 'Tanpa Penutup';
                     
                                 $atasPenutupArah = data_get($detailAtasPenutup, 'direction')
-                                    ?? (isset($calculation) ? ($calculation->atas_penutup_arah ?? 'Horizontal') : 'Horizontal');
+                                    ?? (isset($calculation) ? ($calculation->atas_penutup_arahpemasangan ?? $calculation->atas_penutup_arah ?? 'Horizontal') : 'Horizontal');
                     
                                 $atasPenutupMaterialFallback = isset($calculation)
                                     ? ($calculation->atas_penutup_material ?? '-')
@@ -2773,293 +3234,616 @@
                                 }
                             </style>
                     
+
+                            <style>
+                                /* Refined packing configuration layout */
+                                .crate-page .packing-config-layout {
+                                    display: grid;
+                                    grid-template-columns: minmax(360px, 0.86fr) minmax(560px, 1.34fr);
+                                    gap: 16px;
+                                    align-items: stretch;
+                                    padding: 16px;
+                                }
+
+                                .crate-page .packing-config-stack {
+                                    display: grid;
+                                    gap: 16px;
+                                    align-content: start;
+                                }
+
+                                .crate-page .packing-config-panel {
+                                    overflow: hidden;
+                                    border: 1px solid #e2e8f0;
+                                    border-radius: 14px;
+                                    background: #ffffff;
+                                    box-shadow: 0 5px 16px rgba(15, 23, 42, .045);
+                                }
+
+                                .crate-page .packing-config-panel-header {
+                                    display: flex;
+                                    align-items: flex-start;
+                                    gap: 11px;
+                                    padding: 16px 16px 13px;
+                                    border-bottom: 1px solid #edf2f7;
+                                }
+
+                                .crate-page .packing-config-panel-icon {
+                                    width: 34px;
+                                    height: 34px;
+                                    display: inline-flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    flex: 0 0 34px;
+                                    border-radius: 9px;
+                                    background: #eff6ff;
+                                    color: #1769e8;
+                                }
+
+                                .crate-page .packing-config-panel-icon.green {
+                                    background: #ecfdf5;
+                                    color: #059669;
+                                }
+
+                                .crate-page .packing-config-title {
+                                    margin: 0;
+                                    color: #0f2748;
+                                    font-size: 13px;
+                                    font-weight: 900;
+                                    letter-spacing: .015em;
+                                }
+
+                                .crate-page .packing-config-subtitle {
+                                    margin-top: 3px;
+                                    color: #64748b;
+                                    font-size: 11px;
+                                    line-height: 1.45;
+                                }
+
+                                .crate-page .dimension-fields {
+                                    display: grid;
+                                    grid-template-columns: repeat(3, minmax(0, 1fr));
+                                    gap: 12px;
+                                    padding: 16px;
+                                }
+
+                                .crate-page .clearance-fields {
+                                    display: grid;
+                                    grid-template-columns: repeat(2, minmax(0, 1fr));
+                                    gap: 12px;
+                                    padding: 16px;
+                                }
+
+                                .crate-page .packing-field-label {
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 7px;
+                                    margin-bottom: 7px;
+                                    color: #334155;
+                                    font-size: 11px;
+                                    font-weight: 800;
+                                }
+
+                                .crate-page .packing-field-label .material-symbols-rounded {
+                                    width: 25px;
+                                    height: 25px;
+                                    display: inline-flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    border-radius: 7px;
+                                    background: #eff6ff;
+                                    color: #1769e8;
+                                    font-size: 15px;
+                                }
+
+                                .crate-page .packing-field-label.green .material-symbols-rounded {
+                                    background: #ecfdf5;
+                                    color: #059669;
+                                }
+
+                                .crate-page .packing-value-box {
+                                    display: grid;
+                                    grid-template-columns: minmax(0, 1fr) auto;
+                                    align-items: center;
+                                    min-height: 44px;
+                                    padding: 0 12px;
+                                    border: 1px solid #dce5f0;
+                                    border-radius: 9px;
+                                    background: #ffffff;
+                                    box-shadow: 0 2px 5px rgba(15, 23, 42, .025);
+                                }
+
+                                .crate-page .packing-value-box input {
+                                    width: 100%;
+                                    min-width: 0;
+                                    border: 0 !important;
+                                    outline: 0;
+                                    background: transparent !important;
+                                    color: #0f172a !important;
+                                    font-size: 15px !important;
+                                    font-weight: 800 !important;
+                                    box-shadow: none !important;
+                                }
+
+                                .crate-page .packing-value-box .unit {
+                                    color: #64748b;
+                                    font-size: 11px;
+                                    font-weight: 800;
+                                }
+
+                                .crate-page .clearance-note {
+                                    display: flex;
+                                    gap: 9px;
+                                    margin: 0 16px 16px;
+                                    padding: 11px 12px;
+                                    border-radius: 9px;
+                                    background: #f0f7ff;
+                                    color: #52657a;
+                                    font-size: 10px;
+                                    line-height: 1.5;
+                                }
+
+                                .crate-page .clearance-note .material-symbols-rounded {
+                                    color: #1769e8;
+                                    font-size: 17px;
+                                    flex: 0 0 auto;
+                                }
+
+                                .crate-page .material-tabs-wrap {
+                                    padding: 13px 14px 0;
+                                }
+
+                                .crate-page .material-tabs {
+                                    display: inline-flex;
+                                    padding: 3px;
+                                    border: 1px solid #e2e8f0;
+                                    border-radius: 10px;
+                                    background: #f8fafc;
+                                }
+
+                                .crate-page .material-tabs .nav-link {
+                                    min-width: 118px;
+                                    border: 0;
+                                    border-radius: 7px;
+                                    color: #64748b;
+                                    font-size: 11px;
+                                    font-weight: 800;
+                                    padding: 8px 16px;
+                                }
+
+                                .crate-page .material-tabs .nav-link.active {
+                                    background: #10b981;
+                                    color: #ffffff;
+                                    box-shadow: 0 4px 10px rgba(16, 185, 129, .18);
+                                }
+
+                                .crate-page .material-tab-content {
+                                    padding: 14px;
+                                    height: auto !important;
+                                    min-height: 0 !important;
+                                    flex: 0 0 auto;
+                                }
+
+                                /* Material Configuration berhenti sejajar dengan bagian bawah Internal Clearance */
+                                .crate-page .packing-config-layout > .packing-config-panel {
+                                    align-self: stretch;
+                                    height: 100%;
+                                    min-height: 0 !important;
+                                    display: flex;
+                                    flex-direction: column;
+                                }
+
+                                .crate-page .packing-config-layout > .packing-config-panel .material-tabs-wrap,
+                                .crate-page .packing-config-layout > .packing-config-panel #materialAreaTabsContent {
+                                    flex: 0 0 auto;
+                                }
+
+                                .crate-page #materialAreaTabsContent .tab-pane,
+                                .crate-page #materialAreaTabsContent .material-list {
+                                    height: auto !important;
+                                    min-height: 0 !important;
+                                }
+
+                                .crate-page .material-list {
+                                    display: grid;
+                                    gap: 10px;
+                                }
+
+                                .crate-page .material-row-card {
+                                    display: grid;
+                                    grid-template-columns: minmax(150px, 1.15fr) minmax(88px, .7fr) minmax(105px, .75fr) minmax(180px, 1.4fr);
+                                    gap: 12px;
+                                    align-items: center;
+                                    padding: 13px 14px;
+                                    border: 1px solid #e8edf4;
+                                    border-radius: 11px;
+                                    background: #ffffff;
+                                    transition: border-color .2s ease, box-shadow .2s ease;
+                                }
+
+                                .crate-page .material-row-card:hover {
+                                    border-color: #cfd9e7;
+                                    box-shadow: 0 5px 14px rgba(15, 23, 42, .05);
+                                }
+
+                                .crate-page .material-component {
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 10px;
+                                    min-width: 0;
+                                    color: #0f172a;
+                                    font-size: 12px;
+                                    font-weight: 900;
+                                }
+
+                                .crate-page .material-component-icon {
+                                    width: 34px;
+                                    height: 34px;
+                                    display: inline-flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    flex: 0 0 34px;
+                                    border-radius: 9px;
+                                    background: #ecfdf5;
+                                    color: #059669;
+                                }
+
+                                .crate-page .material-component-icon.orange {
+                                    background: #fff7ed;
+                                    color: #f97316;
+                                }
+
+                                .crate-page .material-meta-label {
+                                    display: block;
+                                    margin-bottom: 4px;
+                                    color: #94a3b8;
+                                    font-size: 9px;
+                                    font-weight: 800;
+                                    letter-spacing: .04em;
+                                    text-transform: uppercase;
+                                }
+
+                                .crate-page .material-meta-value {
+                                    display: block;
+                                    min-width: 0;
+                                    color: #172033;
+                                    font-size: 11px;
+                                    font-weight: 700;
+                                    line-height: 1.4;
+                                    overflow-wrap: anywhere;
+                                }
+
+                                .crate-page .material-mode-badge {
+                                    display: inline-flex;
+                                    align-items: center;
+                                    width: fit-content;
+                                    border-radius: 999px;
+                                    padding: 4px 9px;
+                                    background: #eafaf1;
+                                    color: #079455;
+                                    font-size: 9px;
+                                    font-weight: 900;
+                                }
+
+                                .crate-page .material-mode-badge.orange {
+                                    background: #fff4e5;
+                                    color: #e8790c;
+                                }
+
+                                .crate-page .material-empty {
+                                    padding: 24px;
+                                    border: 1px dashed #cbd5e1;
+                                    border-radius: 11px;
+                                    color: #64748b;
+                                    text-align: center;
+                                    font-size: 11px;
+                                }
+
+                                @media (max-width: 1199.98px) {
+                                    .crate-page .packing-config-layout {
+                                        grid-template-columns: 1fr;
+                                    }
+                                }
+
+                                @media (max-width: 767.98px) {
+                                    .crate-page .packing-config-layout {
+                                        padding: 12px;
+                                    }
+
+                                    .crate-page .dimension-fields,
+                                    .crate-page .clearance-fields {
+                                        grid-template-columns: 1fr;
+                                    }
+
+                                    .crate-page .material-row-card {
+                                        grid-template-columns: 1fr 1fr;
+                                    }
+                                }
+
+                                @media (max-width: 479.98px) {
+                                    .crate-page .material-row-card {
+                                        grid-template-columns: 1fr;
+                                    }
+
+                                    .crate-page .material-tabs {
+                                        display: flex;
+                                        width: 100%;
+                                    }
+
+                                    .crate-page .material-tabs .nav-link {
+                                        flex: 1 1 50%;
+                                        min-width: 0;
+                                    }
+                                }
+
+                                [data-bs-theme="dark"] .crate-page .packing-config-panel,
+                                .crate-page.packaging-dark .packing-config-panel,
+                                [data-bs-theme="dark"] .crate-page .material-row-card,
+                                .crate-page.packaging-dark .material-row-card,
+                                [data-bs-theme="dark"] .crate-page .packing-value-box,
+                                .crate-page.packaging-dark .packing-value-box {
+                                    background: #111827 !important;
+                                    border-color: #334155 !important;
+                                }
+
+                                [data-bs-theme="dark"] .crate-page .packing-config-panel-header,
+                                .crate-page.packaging-dark .packing-config-panel-header {
+                                    border-color: #334155 !important;
+                                }
+
+                                [data-bs-theme="dark"] .crate-page .packing-config-title,
+                                [data-bs-theme="dark"] .crate-page .material-component,
+                                [data-bs-theme="dark"] .crate-page .material-meta-value,
+                                .crate-page.packaging-dark .packing-config-title,
+                                .crate-page.packaging-dark .material-component,
+                                .crate-page.packaging-dark .material-meta-value {
+                                    color: #f8fafc !important;
+                                }
+                            </style>
+
                             <div class="card-body p-0">
-                                <div class="configuration-grid">
-                    
-                                    {{-- 1. DIMENSI --}}
-                                    <div class="d-flex flex-column h-100 configuration-section configuration-section-dimension">
-                                        <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
-                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center">1</span>
-                                            Dimensi
-                                        </h6>
-                    
-                                        <div class="d-flex flex-column border rounded bg-white container-input-group overflow-hidden flex-grow-1 configuration-content configuration-content-narrow">
-                                            <div class="configuration-matrix-header" style="visibility: hidden; min-height: 28px;" aria-hidden="true">
-                                                <span>&nbsp;</span>
+                                <div class="packing-config-layout">
+                                    <div class="packing-config-stack">
+                                        {{-- CRATE SIZE --}}
+                                        <section class="packing-config-panel" aria-labelledby="crate-size-title">
+                                            <div class="packing-config-panel-header">
+                                                <span class="packing-config-panel-icon">
+                                                    <span class="material-symbols-rounded" style="font-size: 19px;">deployed_code</span>
+                                                </span>
+                                                <div>
+                                                    <h6 id="crate-size-title" class="packing-config-title">CRATE SIZE</h6>
+                                                    <div class="packing-config-subtitle">Ukuran luar peti kemas / crate</div>
+                                                </div>
                                             </div>
-                    
-                                            <div class="d-flex align-items-center px-3 py-2 group-item">
-                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">swap_horiz</span>
-                                                <div class="w-100 min-w-0">
-                                                    <small class="text-muted d-block lh-1 mb-1">Panjang</small>
-                                                    <div class="configuration-unit-field">
-                                                        <input
-                                                            type="number"
-                                                            name="length"
-                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
-                                                            value="{{ $cPanjang }}"
-                                                            readonly
-                                                        >
-                                                        <span class="configuration-unit text-muted">mm</span>
+
+                                            <div class="dimension-fields">
+                                                <label>
+                                                    <span class="packing-field-label">
+                                                        <span class="material-symbols-rounded">swap_horiz</span>
+                                                        Panjang (P)
+                                                    </span>
+                                                    <span class="packing-value-box">
+                                                        <input type="number" name="length" value="{{ $cPanjang }}" readonly class="configuration-readonly-input">
+                                                        <span class="unit">mm</span>
+                                                    </span>
+                                                </label>
+
+                                                <label>
+                                                    <span class="packing-field-label">
+                                                        <span class="material-symbols-rounded">straighten</span>
+                                                        Lebar (L)
+                                                    </span>
+                                                    <span class="packing-value-box">
+                                                        <input type="number" name="width" value="{{ $cLebar }}" readonly class="configuration-readonly-input">
+                                                        <span class="unit">mm</span>
+                                                    </span>
+                                                </label>
+
+                                                <label>
+                                                    <span class="packing-field-label">
+                                                        <span class="material-symbols-rounded">height</span>
+                                                        Tinggi (T)
+                                                    </span>
+                                                    <span class="packing-value-box">
+                                                        <input type="number" name="height" value="{{ $cTinggi }}" readonly class="configuration-readonly-input">
+                                                        <span class="unit">mm</span>
+                                                    </span>
+                                                </label>
+                                            </div>
+                                        </section>
+
+                                        {{-- INTERNAL CLEARANCE --}}
+                                        <section class="packing-config-panel" aria-labelledby="clearance-title">
+                                            <div class="packing-config-panel-header">
+                                                <span class="packing-config-panel-icon green">
+                                                    <span class="material-symbols-rounded" style="font-size: 19px;">height</span>
+                                                </span>
+                                                <div>
+                                                    <h6 id="clearance-title" class="packing-config-title" style="color:#07895f;">INTERNAL CLEARANCE</h6>
+                                                    <div class="packing-config-subtitle">Ruang tambahan untuk handling dan keamanan barang</div>
+                                                </div>
+                                            </div>
+
+                                            <div class="clearance-fields">
+                                                <label>
+                                                    <span class="packing-field-label green">
+                                                        <span class="material-symbols-rounded">vertical_align_top</span>
+                                                        Jarak Atas
+                                                    </span>
+                                                    <span class="packing-value-box">
+                                                        <input type="number" name="jarak_penyanggah_atas" value="{{ $cJarakAtas }}" readonly class="configuration-readonly-input">
+                                                        <span class="unit">mm</span>
+                                                    </span>
+                                                </label>
+
+                                                <label>
+                                                    <span class="packing-field-label green">
+                                                        <span class="material-symbols-rounded">vertical_align_bottom</span>
+                                                        Jarak Bawah
+                                                    </span>
+                                                    <span class="packing-value-box">
+                                                        <input type="number" name="jarak_penyanggah_bawah" value="{{ $cJarakBawah }}" readonly class="configuration-readonly-input">
+                                                        <span class="unit">mm</span>
+                                                    </span>
+                                                </label>
+
+                                                <label>
+                                                    <span class="packing-field-label green">
+                                                        <span class="material-symbols-rounded">keyboard_double_arrow_up</span>
+                                                        Celah Atas
+                                                    </span>
+                                                    <span class="packing-value-box">
+                                                        <input type="number" name="gap_atas" value="{{ $cGapAtas }}" readonly class="configuration-readonly-input">
+                                                        <span class="unit">mm</span>
+                                                    </span>
+                                                </label>
+
+                                                <label>
+                                                    <span class="packing-field-label green">
+                                                        <span class="material-symbols-rounded">keyboard_double_arrow_down</span>
+                                                        Celah Bawah
+                                                    </span>
+                                                    <span class="packing-value-box">
+                                                        <input type="number" name="gap_bawah" value="{{ $cGapBawah }}" readonly class="configuration-readonly-input">
+                                                        <span class="unit">mm</span>
+                                                    </span>
+                                                </label>
+                                            </div>
+
+                                            <div class="clearance-note">
+                                                <span class="material-symbols-rounded">info</span>
+                                                <span>Nilai clearance digunakan sebagai ruang tambahan untuk memudahkan proses handling dan menjaga keamanan barang.</span>
+                                            </div>
+                                        </section>
+                                    </div>
+
+                                    {{-- MATERIAL CONFIGURATION --}}
+                                    <section class="packing-config-panel" aria-labelledby="material-config-title">
+                                        <div class="packing-config-panel-header">
+                                            <span class="packing-config-panel-icon green">
+                                                <span class="material-symbols-rounded" style="font-size: 19px;">deployed_code</span>
+                                            </span>
+                                            <div>
+                                                <h6 id="material-config-title" class="packing-config-title" style="color:#07895f;">MATERIAL CONFIGURATION</h6>
+                                                <div class="packing-config-subtitle">Atur material dan struktur untuk setiap area crate</div>
+                                            </div>
+                                        </div>
+
+                                        <div class="material-tabs-wrap">
+                                            <ul class="nav material-tabs" id="materialAreaTabs" role="tablist">
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link" id="area-bawah-tab" data-bs-toggle="tab" data-bs-target="#area-bawah-pane" type="button" role="tab" aria-controls="area-bawah-pane" aria-selected="false">Area Bawah</button>
+                                                </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link active" id="area-atas-tab" data-bs-toggle="tab" data-bs-target="#area-atas-pane" type="button" role="tab" aria-controls="area-atas-pane" aria-selected="true">Area Atas</button>
+                                                </li>
+                                            </ul>
+                                        </div>
+
+                                        <div class="tab-content material-tab-content" id="materialAreaTabsContent">
+                                            <div class="tab-pane fade show active" id="area-atas-pane" role="tabpanel" aria-labelledby="area-atas-tab" tabindex="0">
+                                                <div class="material-list">
+                                                    <div class="material-row-card">
+                                                        <div class="material-component">
+                                                            <span class="material-component-icon"><span class="material-symbols-rounded">change_history</span></span>
+                                                            Penyangga
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Mode</span>
+                                                            <span class="material-mode-badge">{{ $atasPenyanggaIncluded ? 'Include' : 'Not Include' }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Arah</span>
+                                                            <span class="material-meta-value">{{ $atasPenyanggaIncluded ? ($atasPenyanggaArah ?: '-') : '-' }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Material</span>
+                                                            <span class="material-meta-value" title="{{ $atasPenyanggaMaterialLabel }}">{{ $atasPenyanggaIncluded ? ($atasPenyanggaMaterialLabel ?: '-') : '-' }}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="material-row-card">
+                                                        <div class="material-component">
+                                                            <span class="material-component-icon orange"><span class="material-symbols-rounded">grid_view</span></span>
+                                                            Penutup
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Mode</span>
+                                                            <span class="material-mode-badge orange">{{ $atasPenutupTipe }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Arah</span>
+                                                            <span class="material-meta-value">{{ $atasPenutupIncluded ? ($atasPenutupArah ?: '-') : '-' }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Material</span>
+                                                            <span class="material-meta-value" title="{{ $atasPenutupMaterialLabel }}">{{ $atasPenutupIncluded ? ($atasPenutupMaterialLabel ?: '-') : '-' }}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                    
-                                            <div class="d-flex align-items-center px-3 py-2 group-item">
-                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">straighten</span>
-                                                <div class="w-100 min-w-0">
-                                                    <small class="text-muted d-block lh-1 mb-1">Lebar</small>
-                                                    <div class="configuration-unit-field">
-                                                        <input
-                                                            type="number"
-                                                            name="width"
-                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
-                                                            value="{{ $cLebar }}"
-                                                            readonly
-                                                        >
-                                                        <span class="configuration-unit text-muted">mm</span>
+
+                                            <div class="tab-pane fade" id="area-bawah-pane" role="tabpanel" aria-labelledby="area-bawah-tab" tabindex="0">
+                                                <div class="material-list">
+                                                    <div class="material-row-card">
+                                                        <div class="material-component">
+                                                            <span class="material-component-icon"><span class="material-symbols-rounded">change_history</span></span>
+                                                            Penyangga
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Mode</span>
+                                                            <span class="material-mode-badge">{{ $bawahPenyanggaIncluded ? 'Include' : 'Not Include' }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Arah</span>
+                                                            <span class="material-meta-value">{{ $bawahPenyanggaIncluded ? ($bawahPenyanggaArah ?: '-') : '-' }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Material</span>
+                                                            <span class="material-meta-value" title="{{ $bawahPenyanggaMaterialLabel }}">{{ $bawahPenyanggaIncluded ? ($bawahPenyanggaMaterialLabel ?: '-') : '-' }}</span>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </div>
-                    
-                                            <div class="d-flex align-items-center px-3 py-2 group-item">
-                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">height</span>
-                                                <div class="w-100 min-w-0">
-                                                    <small class="text-muted d-block lh-1 mb-1">Tinggi</small>
-                                                    <div class="configuration-unit-field">
-                                                        <input
-                                                            type="number"
-                                                            name="height"
-                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
-                                                            value="{{ $cTinggi }}"
-                                                            readonly
-                                                        >
-                                                        <span class="configuration-unit text-muted">mm</span>
+
+                                                    <div class="material-row-card">
+                                                        <div class="material-component">
+                                                            <span class="material-component-icon orange"><span class="material-symbols-rounded">grid_view</span></span>
+                                                            Penutup
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Mode</span>
+                                                            <span class="material-mode-badge orange">{{ $bawahPenutupTipe }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Arah</span>
+                                                            <span class="material-meta-value">{{ $bawahPenutupIncluded ? ($bawahPenutupArah ?: '-') : '-' }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Material</span>
+                                                            <span class="material-meta-value" title="{{ $bawahPenutupMaterialLabel }}">{{ $bawahPenutupIncluded ? ($bawahPenutupMaterialLabel ?: '-') : '-' }}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="material-row-card">
+                                                        <div class="material-component">
+                                                            <span class="material-component-icon"><span class="material-symbols-rounded">view_column_2</span></span>
+                                                            Kaki Balok
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Mode</span>
+                                                            <span class="material-mode-badge">{{ $bawahKakiIncluded ? 'Include' : 'Not Include' }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Arah</span>
+                                                            <span class="material-meta-value">{{ $bawahKakiIncluded ? ($bawahKakiArah ?: '-') : '-' }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Material</span>
+                                                            <span class="material-meta-value" title="{{ $bawahKakiMaterialLabel }}">{{ $bawahKakiIncluded ? ($bawahKakiMaterialLabel ?: '-') : '-' }}</span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                    
-                                    {{-- 2. KONFIGURASI AREA BAWAH --}}
-                                    <div class="d-flex flex-column h-100 configuration-section configuration-section-bottom configuration-section-wide">
-                                        <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
-                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center">2</span>
-                                            Konfigurasi Area Bawah
-                                        </h6>
-                    
-                                        <div class="d-flex flex-column bg-white container-input-group overflow-hidden border rounded flex-grow-1 configuration-content configuration-matrix">
-                                            <div class="configuration-matrix-header" aria-hidden="true">
-                                                <span>Komponen</span>
-                                                <span>Penggunaan</span>
-                                                <span>Arah Pemasangan</span>
-                                                <span>Material</span>
-                                            </div>
-                    
-                                            <div class="configuration-matrix-row group-item">
-                                                <div class="configuration-component">
-                                                    <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">change_history</span>
-                                                    <small class="text-muted">Penyangga</small>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value">{{ $bawahPenyanggaIncluded ? 'Include' : 'Not Include' }}</span>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value {{ !$bawahPenyanggaIncluded ? 'config-display-muted' : '' }}">
-                                                        {{ $bawahPenyanggaIncluded ? ($bawahPenyanggaArah ?: '-') : '-' }}
-                                                    </span>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value {{ !$bawahPenyanggaIncluded ? 'config-display-muted' : '' }}" title="{{ $bawahPenyanggaMaterialLabel }}">
-                                                        {{ $bawahPenyanggaIncluded ? ($bawahPenyanggaMaterialLabel ?: '-') : '-' }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                    
-                                            <div class="configuration-matrix-row group-item">
-                                                <div class="configuration-component">
-                                                    <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">grid_view</span>
-                                                    <small class="text-muted">Penutup</small>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value">{{ $bawahPenutupTipe }}</span>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value {{ !$bawahPenutupIncluded ? 'config-display-muted' : '' }}">
-                                                        {{ $bawahPenutupIncluded ? ($bawahPenutupArah ?: '-') : '-' }}
-                                                    </span>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value {{ !$bawahPenutupIncluded ? 'config-display-muted' : '' }}" title="{{ $bawahPenutupMaterialLabel }}">
-                                                        {{ $bawahPenutupIncluded ? ($bawahPenutupMaterialLabel ?: '-') : '-' }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                    
-                                            <div class="configuration-matrix-row group-item">
-                                                <div class="configuration-component">
-                                                    <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">view_column_2</span>
-                                                    <small class="text-muted">Kaki Balok</small>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value">{{ $bawahKakiIncluded ? 'Include' : 'Not Include' }}</span>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value {{ !$bawahKakiIncluded ? 'config-display-muted' : '' }}">
-                                                        {{ $bawahKakiIncluded ? ($bawahKakiArah ?: '-') : '-' }}
-                                                    </span>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value {{ !$bawahKakiIncluded ? 'config-display-muted' : '' }}" title="{{ $bawahKakiMaterialLabel }}">
-                                                        {{ $bawahKakiIncluded ? ($bawahKakiMaterialLabel ?: '-') : '-' }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                    
-                                    {{-- 3. KONFIGURASI AREA ATAS --}}
-                                    <div class="d-flex flex-column h-100 configuration-section configuration-section-top configuration-section-wide">
-                                        <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
-                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center">3</span>
-                                            Konfigurasi Area Atas
-                                        </h6>
-                    
-                                        <div class="d-flex flex-column bg-white container-input-group overflow-hidden border rounded flex-grow-1 configuration-content configuration-matrix">
-                                            <div class="configuration-matrix-header" aria-hidden="true">
-                                                <span>Komponen</span>
-                                                <span>Penggunaan</span>
-                                                <span>Arah Pemasangan</span>
-                                                <span>Material</span>
-                                            </div>
-                    
-                                            <div class="configuration-matrix-row group-item">
-                                                <div class="configuration-component">
-                                                    <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">change_history</span>
-                                                    <small class="text-muted">Penyangga</small>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value">{{ $atasPenyanggaIncluded ? 'Include' : 'Not Include' }}</span>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value {{ !$atasPenyanggaIncluded ? 'config-display-muted' : '' }}">
-                                                        {{ $atasPenyanggaIncluded ? ($atasPenyanggaArah ?: '-') : '-' }}
-                                                    </span>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value {{ !$atasPenyanggaIncluded ? 'config-display-muted' : '' }}" title="{{ $atasPenyanggaMaterialLabel }}">
-                                                        {{ $atasPenyanggaIncluded ? ($atasPenyanggaMaterialLabel ?: '-') : '-' }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                    
-                                            <div class="configuration-matrix-row group-item">
-                                                <div class="configuration-component">
-                                                    <span class="material-symbols-rounded text-secondary" style="font-size: 16px;">grid_view</span>
-                                                    <small class="text-muted">Penutup</small>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value">{{ $atasPenutupTipe }}</span>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value {{ !$atasPenutupIncluded ? 'config-display-muted' : '' }}">
-                                                        {{ $atasPenutupIncluded ? ($atasPenutupArah ?: '-') : '-' }}
-                                                    </span>
-                                                </div>
-                                                <div class="configuration-cell">
-                                                    <span class="config-display-value {{ !$atasPenutupIncluded ? 'config-display-muted' : '' }}" title="{{ $atasPenutupMaterialLabel }}">
-                                                        {{ $atasPenutupIncluded ? ($atasPenutupMaterialLabel ?: '-') : '-' }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                    
-                                    {{-- 4. KONFIGURASI TAMBAHAN --}}
-                                    <div class="d-flex flex-column h-100 configuration-section configuration-section-general">
-                                        <h6 class="fw-bold text-navy mb-0 d-flex align-items-center configuration-heading">
-                                            <span class="badge bg-navy me-2 rounded-circle d-flex align-items-center justify-content-center">4</span>
-                                            Konfigurasi
-                                        </h6>
-                    
-                                        <div class="d-flex flex-column border rounded bg-white container-input-group overflow-hidden flex-grow-1 configuration-content configuration-content-narrow">
-                                            <div class="configuration-matrix-header" style="visibility: hidden; min-height: 28px;" aria-hidden="true">
-                                                <span>&nbsp;</span>
-                                            </div>
-                    
-                                            <div class="d-flex align-items-center px-3 py-2 group-item">
-                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">straighten</span>
-                                                <div class="w-100 min-w-0">
-                                                    <small class="text-muted d-block lh-1 mb-1">Jarak Penyangga</small>
-                                                    <div class="configuration-unit-field">
-                                                        <input
-                                                            type="number"
-                                                            name="distance_between_pillars"
-                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
-                                                            value="{{ $cJarak }}"
-                                                            readonly
-                                                        >
-                                                        <span class="configuration-unit text-muted">mm</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                    
-                                            <div class="d-flex align-items-center px-3 py-2 group-item">
-                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">vertical_align_top</span>
-                                                <div class="w-100 min-w-0">
-                                                    <small class="text-muted d-block lh-1 mb-1">Celah Atas</small>
-                                                    <div class="configuration-unit-field">
-                                                        <input
-                                                            type="number"
-                                                            name="gap_atas"
-                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
-                                                            value="{{ $cGapAtas }}"
-                                                            readonly
-                                                        >
-                                                        <span class="configuration-unit text-muted">mm</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                    
-                                            <div class="d-flex align-items-center px-3 py-2 group-item">
-                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">vertical_align_bottom</span>
-                                                <div class="w-100 min-w-0">
-                                                    <small class="text-muted d-block lh-1 mb-1">Celah Bawah</small>
-                                                    <div class="configuration-unit-field">
-                                                        <input
-                                                            type="number"
-                                                            name="gap_bawah"
-                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
-                                                            value="{{ $cGapBawah }}"
-                                                            readonly
-                                                        >
-                                                        <span class="configuration-unit text-muted">mm</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                    
-                                            <div
-                                                class="d-flex align-items-center px-3 py-2 group-item"
-                                                id="jarak_balok_additional_wrapper"
-                                                style="{{ !$bawahKakiIncluded ? 'opacity: 0.5; pointer-events: none; background-color: #f8f9fa;' : '' }}"
-                                            >
-                                                <span class="material-symbols-rounded text-secondary me-3" style="font-size: 18px;">view_agenda</span>
-                                                <div class="w-100 min-w-0">
-                                                    <small class="text-muted d-block lh-1 mb-1">Jumlah Kaki Balok</small>
-                                                    <div class="configuration-unit-field">
-                                                        <input
-                                                            type="text"
-                                                            name="jumlah_kaki_balok"
-                                                            class="form-control form-control-sm border-0 p-0 shadow-none text-navy custom-input w-100 configuration-readonly-input"
-                                                            value="{{ $jumlahKakiBalok }}"
-                                                            readonly
-                                                        >
-                                                        <span class="configuration-unit text-muted">pcs</span>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    </section>
                                 </div>
                             </div>
                     
@@ -3668,7 +4452,8 @@
                         } else if (child.name === 'Nail') {
                             child.position.set(0, 0, 0);
                             // Rotate the nail so its local Z axis (length) aligns with the Y axis (UP)
-                            child.rotation.set(-Math.PI / 2, 0, 0);
+                            // Flipped so the head is on top
+                            child.rotation.set(Math.PI / 2, 0, 0);
                         }
                         
                         if (child.isMesh) {
@@ -4118,6 +4903,9 @@
 
             offsets.forEach(off => {
                 let n = nailModel.clone();
+                // Scale up nails specifically for bottom area (Penyangga) so they are more visible
+                n.scale.multiplyScalar(2.5);
+                
                 let nx = mesh.position.x, ny = mesh.position.y, nz = mesh.position.z;
                 
                 if (axis === 'x') nx += off;
@@ -4184,6 +4972,9 @@
 
             corners.forEach(corner => {
                 let n = nailModel.clone();
+                // Scale up nails to make them more visible in the 3D visual
+                n.scale.multiplyScalar(2.5);
+                
                 let nx = mesh.position.x;
                 let ny = mesh.position.y;
                 let nz = mesh.position.z;
@@ -4244,7 +5035,9 @@
                 const P = parseFloat(document.querySelector('input[name="length"]').value) || 0;
                 const L = parseFloat(document.querySelector('input[name="width"]').value) || 0;
                 const T = parseFloat(document.querySelector('input[name="height"]').value) || 0;
-                const maxSpacing = parseFloat(document.querySelector('input[name="distance_between_pillars"]').value) || 500;
+                const maxSpacingBawah = parseFloat(document.querySelector('input[name="jarak_penyanggah_bawah"]')?.value) || 500;
+                const maxSpacingAtas = parseFloat(document.querySelector('input[name="jarak_penyanggah_atas"]')?.value) || 500;
+                const maxSpacing = Math.max(maxSpacingBawah, maxSpacingAtas);
                 const arahGlobal = getConfigValue('arah_pemasangan', 'Horizontal');
                 const celahAtas = parseFloat(document.querySelector('input[name="gap_atas"]').value) || 0;
                 const celahBawah = parseFloat(document.querySelector('input[name="gap_bawah"]').value) || 0;
@@ -4538,8 +5331,23 @@
                                 const pBawah = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penutup') : null;
                                 t_penutup_bawah = pBawah && pBawah.material_kode !== '-' ? parseFloat(pBawah.calculated_thickness) / 1000 : 0.02;
                             }
-                            const baseY = (hasBawahPenutup ? -t_penutup_bawah : 0);
-                            const y = baseY - (pDim.t / 2) - offP;
+                            let maxBawahThk_c = 0;
+                            let t_penutup_b_c = 0;
+                            let t_penyangga_b_c = 0;
+                            if (typeof hasBawahPenutup !== 'undefined' && hasBawahPenutup && typeof activeDetails !== 'undefined') {
+                                const pBawah = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penutup');
+                                if (pBawah && pBawah.material_kode !== '-') t_penutup_b_c = parseFloat(pBawah.calculated_thickness) / 1000;
+                            }
+                            if (typeof activeDetails !== 'undefined') {
+                                const pPeny = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga');
+                                if (pPeny && pPeny.material_kode !== '-') t_penyangga_b_c = parseFloat(pPeny.calculated_thickness) / 1000;
+                            }
+                            maxBawahThk_c = Math.max(t_penutup_b_c, t_penyangga_b_c);
+                            const offsetBalokY_c = (typeof expPenutupBawah !== 'undefined' && expPenutupBawah) ? 0.2 : ((typeof expPenyanggaBawah !== 'undefined' && expPenyanggaBawah) ? 0.2 : ((typeof expKakiBalok !== 'undefined' && expKakiBalok) ? 0.2 : 0));
+                            const floorY = -maxBawahThk_c - offsetBalokY_c;
+                            
+                            // Bottom surface of Penyangga is at floorY (resting on Kaki Balok)
+                            const y = floorY + (pDim.t / 2) - offP;
                             
                             let t_penutup_samping_p = 0;
                             if (typeof hasCover !== 'undefined' && hasCover) {
@@ -4549,14 +5357,49 @@
                             const outer_l = l_m + (typeof hasCover !== 'undefined' && hasCover ? t_penutup_samping_p * 2 : 0);
                             const outer_w = w_m + (typeof hasCover !== 'undefined' && hasCover ? t_penutup_samping_p * 2 : 0);
 
+                            let celahPeny = (maxSpacingBawah) / 1000;
+                            let langkahPeny = pDim.w + celahPeny;
+                            let spanBound = (face.orientation === 'H') ? outer_w / 2 - pDim.hw : outer_l / 2 - pDim.hw;
+                            
+                            // Reserve space for Penutup if present
+                            let w_penutup_reserved = 0;
+                            if (typeof hasBawahPenutup !== 'undefined' && hasBawahPenutup && typeof activeDetails !== 'undefined') {
+                                const pBawah = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penutup');
+                                w_penutup_reserved = pBawah && pBawah.material_kode !== '-' ? parseFloat(pBawah.calculated_width) / 1000 : 0.1;
+                            }
+                            
+                            let halfCount = Math.floor(count / 2);
+                            
+                            // Prevent exceeding bounds AND leave room for Penutup at the edges
+                            let maxPenyCenter = spanBound - w_penutup_reserved;
+                            if (maxPenyCenter < 0) maxPenyCenter = 0; // fallback if box is too small
+                            
+                            if (halfCount > 0 && halfCount * langkahPeny > maxPenyCenter) {
+                                langkahPeny = maxPenyCenter / halfCount;
+                            }
+                            
+                            positions = [];
+                            if (count % 2 === 1) {
+                                for(let i = -halfCount; i <= halfCount; i++) {
+                                    positions.push(i * langkahPeny);
+                                }
+                            } else {
+                                let halfCountEven = count / 2;
+                                for(let i = -halfCountEven; i <= halfCountEven; i++) {
+                                    if (i === 0) continue;
+                                    let pos = i > 0 ? (i - 0.5) * langkahPeny : (i + 0.5) * langkahPeny;
+                                    if (pos > spanBound) pos = spanBound;
+                                    if (pos < -spanBound) pos = -spanBound;
+                                    positions.push(pos);
+                                }
+                            }
+
                             if (face.orientation === 'H') {
-                                positions = evenlySpaced(count, -outer_w / 2 + pDim.hw, outer_w / 2 - pDim.hw);
                                 positions.forEach(function (z) {
                                     let bMesh = addBeam(new THREE.Vector3(outer_l, pDim.t, pDim.w), new THREE.Vector3(0, y, z), supportMaterial, face.name + ' arah panjang');
                                     addNailsForPenyangga(bMesh, face.id);
                                 });
                             } else {
-                                positions = evenlySpaced(count, -outer_l / 2 + pDim.hw, outer_l / 2 - pDim.hw);
                                 positions.forEach(function (x) {
                                     let bMesh = addBeam(new THREE.Vector3(pDim.w, pDim.t, outer_w), new THREE.Vector3(x, y, 0), supportMaterial, face.name + ' arah lebar');
                                     addNailsForPenyangga(bMesh, face.id);
@@ -4770,7 +5613,60 @@
                             }
 
                             const forcedCount = penutupDetail && penutupDetail.quantity ? parseInt(penutupDetail.quantity) : null;
-                            const layout = makeBoardLayout(crossSpan, w_penutup, gapM, isFull, forcedCount);
+                            let layout = makeBoardLayout(crossSpan, w_penutup, gapM, isFull, forcedCount);
+
+                            if (face.id === 'bottom' && forcedCount !== null && forcedCount > 0 && !isFull) {
+                                let t_py_w = 0.08;
+                                let pPeny = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga') : null;
+                                if (pPeny && pPeny.material_kode !== '-') t_py_w = parseFloat(pPeny.calculated_width) / 1000;
+                                let celahPeny = maxSpacingBawah / 1000;
+                                let langkahPeny = t_py_w + celahPeny;
+                                let countPeny = pPeny && pPeny.quantity ? parseInt(pPeny.quantity) : 0;
+                                
+                                let customPositions = [];
+                                let customSizes = [];
+                                // 2 Edge pieces at the absolute outer bounds
+                                customPositions.push(-crossSpan / 2 + w_penutup / 2);
+                                customSizes.push(w_penutup);
+                                
+                                if (forcedCount > 1) {
+                                    customPositions.push(crossSpan / 2 - w_penutup / 2);
+                                    customSizes.push(w_penutup);
+                                }
+                                
+                                // Pieces between Penyangga
+                                if (countPeny > 1 && forcedCount > 2) {
+                                    let maxPenyCenter = crossSpan / 2 - w_penutup - (t_py_w / 2);
+                                    if (maxPenyCenter < 0) maxPenyCenter = 0;
+                                    
+                                    let halfPeny = Math.floor(countPeny / 2);
+                                    if (halfPeny > 0 && halfPeny * langkahPeny > maxPenyCenter) {
+                                        langkahPeny = maxPenyCenter / halfPeny;
+                                        celahPeny = langkahPeny - t_py_w;
+                                    }
+                                    
+                                    let spaces = countPeny - 1;
+                                    let coversPerSpace = Math.floor((forcedCount - 2) / spaces);
+                                    let startSpaceIdx = -halfPeny;
+                                    
+                                    for(let i = 0; i < spaces; i++) {
+                                        let leftPenyCenter = startSpaceIdx * langkahPeny;
+                                        startSpaceIdx++;
+                                        let rightPenyCenter = startSpaceIdx * langkahPeny;
+                                        
+                                        let spaceWidth = celahPeny; // space between inner edges of Penyangga
+                                        let gapBetweenCovers = (spaceWidth - (coversPerSpace * w_penutup)) / (coversPerSpace + 1);
+                                        
+                                        let currentPos = leftPenyCenter + (t_py_w / 2) + gapBetweenCovers + (w_penutup / 2);
+                                        for(let j=0; j<coversPerSpace; j++) {
+                                            customPositions.push(currentPos);
+                                            customSizes.push(w_penutup);
+                                            currentPos += w_penutup + gapBetweenCovers;
+                                        }
+                                    }
+                                }
+                                layout = { count: forcedCount, pieceCross: w_penutup, positions: customPositions, sizes: customSizes };
+                            }
 
                             layout.positions.forEach(function (pos, index) {
                                 const pSize = layout.sizes ? layout.sizes[index] : layout.pieceCross;
@@ -4796,7 +5692,24 @@
                                         addNailsForBoard(bMesh, face.id);
                                     }
                                 } else {
-                                    const y = face.id === 'top' ? h_m + t_penyangga_atas_c + t_penutup / 2 + offC : -t_penutup / 2 - offC;
+                                    let floorY_c = 0;
+                                    if (face.id === 'bottom') {
+                                        let maxBawahThk_c = 0;
+                                        let t_penutup_b_c = 0;
+                                        let t_penyangga_b_c = 0;
+                                        if (typeof hasBawahPenutup !== 'undefined' && hasBawahPenutup && typeof activeDetails !== 'undefined') {
+                                            const pBawah = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penutup');
+                                            if (pBawah && pBawah.material_kode !== '-') t_penutup_b_c = parseFloat(pBawah.calculated_thickness) / 1000;
+                                        }
+                                        if (typeof showPenyanggaBawah !== 'undefined' && showPenyanggaBawah && typeof activeDetails !== 'undefined') {
+                                            const pPeny = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga');
+                                            if (pPeny && pPeny.material_kode !== '-') t_penyangga_b_c = parseFloat(pPeny.calculated_thickness) / 1000;
+                                        }
+                                        maxBawahThk_c = Math.max(t_penutup_b_c, t_penyangga_b_c);
+                                        const offsetBalokY_c = (typeof expPenutupBawah !== 'undefined' && expPenutupBawah) ? 0.2 : ((typeof expPenyanggaBawah !== 'undefined' && expPenyanggaBawah) ? 0.2 : ((typeof expKakiBalok !== 'undefined' && expKakiBalok) ? 0.2 : 0));
+                                        floorY_c = -maxBawahThk_c - offsetBalokY_c;
+                                    }
+                                    const y = face.id === 'top' ? h_m + t_penyangga_atas_c + t_penutup / 2 + offC : floorY_c + (t_penutup / 2) - offC;
                                     const w_m_top = face.id === 'top' ? w_m + (typeof extraSpanPanjang !== 'undefined' ? extraSpanPanjang : 0) : w_m_bottom;
                                     const l_m_top = face.id === 'top' ? l_m + (typeof extraSpanLebar !== 'undefined' ? extraSpanLebar : 0) : l_m_bottom;
                                     if (faceArah === 'H') {
@@ -4844,7 +5757,9 @@
                         }
 
                         const offsetBalokY = expPenutupBawah ? 0.2 : (expPenyanggaBawah ? 0.2 : (expKakiBalok ? 0.2 : 0));
-                        const permukaanBawahPenyangga = (hasBawahPenutup ? -t_penutup_bawah : 0) - t_penyangga_bawah - offsetBalokY;
+                        // Kaki Balok sits directly under the thickest bottom layer (since Penyangga and Penutup are side-by-side)
+                        const maxBawahThk = Math.max(hasBawahPenutup ? t_penutup_bawah : 0, typeof showPenyanggaBawah !== 'undefined' && showPenyanggaBawah ? t_penyangga_bawah : 0);
+                        const permukaanBawahPenyangga = -maxBawahThk - offsetBalokY;
                         const y = permukaanBawahPenyangga - (balok_w / 2);
                         
                         // Kaki Balok disesuaikan agar sejajar presisi dengan panjang/lebar Rangka Bawah (termasuk penutup)
@@ -5095,6 +6010,27 @@
                 
                 let costTotalEl = document.getElementById('cost-total');
                 if (costTotalEl) costTotalEl.innerText = formatRupiah(summary.total_cost);
+                
+                // Update manpower estimates
+                let wPotong = document.getElementById('waktu-potong');
+                if (wPotong) wPotong.innerText = formatNumber(summary.manpower_potong || 0, 2);
+                let wSerut = document.getElementById('waktu-serut');
+                if (wSerut) wSerut.innerText = formatNumber(summary.manpower_serut || 0, 2);
+                let wPerakitan = document.getElementById('waktu-perakitan');
+                if (wPerakitan) wPerakitan.innerText = formatNumber(summary.manpower_perakitan || 0, 2);
+                let wPrepare = document.getElementById('waktu-prepare');
+                if (wPrepare) wPrepare.innerText = formatNumber(summary.manpower_prepare || 0, 2);
+                let wTotal = document.getElementById('waktu-total');
+                if (wTotal) wTotal.innerText = formatNumber((summary.total_waktu_manpower || 0) / 60, 2);
+                let wTotalCard = document.getElementById('waktu-total-card');
+                if (wTotalCard) wTotalCard.innerText = formatNumber((summary.total_waktu_manpower || 0) / 60, 2);
+                let wVolumeM3 = document.getElementById('waktu-volume-m3');
+                if (wVolumeM3) wVolumeM3.innerText = formatNumber(summary.volume_m3 || 0, 3);
+                
+                let volCells = document.querySelectorAll('.vol-m3-cell');
+                volCells.forEach(cell => {
+                    cell.innerText = formatNumber(summary.volume_m3 || 0, 3);
+                });
                 
                 // Rebuild tables
                 let htmlAll = '';
@@ -7590,4 +8526,34 @@
             </div>
         </div>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const tableCollapse = document.getElementById('packingDetailTable');
+            const toggleButton = document.getElementById('packingTableToggle');
+            const toggleLabel = document.getElementById('packingToggleLabel');
+            const toggleIcon = document.getElementById('packingToggleIcon');
+
+            if (!tableCollapse || !toggleButton || !toggleLabel || !toggleIcon) {
+                return;
+            }
+
+            const setPackingTableState = function (isVisible) {
+                toggleButton.setAttribute('aria-expanded', isVisible ? 'true' : 'false');
+                toggleLabel.textContent = isVisible ? 'Hide Table' : 'Show Table';
+                toggleIcon.textContent = isVisible ? 'expand_less' : 'expand_more';
+            };
+
+            tableCollapse.addEventListener('shown.bs.collapse', function () {
+                setPackingTableState(true);
+            });
+
+            tableCollapse.addEventListener('hidden.bs.collapse', function () {
+                setPackingTableState(false);
+            });
+
+            setPackingTableState(tableCollapse.classList.contains('show'));
+        });
+    </script>
+
 </x-app-layout>
