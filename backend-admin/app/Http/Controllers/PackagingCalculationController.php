@@ -215,6 +215,17 @@ class PackagingCalculationController extends Controller
             'bawah_penutup_tipe' => 'nullable|string|max:255',
             'arah_pemasangan' => 'nullable|string|in:Horizontal,Vertikal',
             'total_material_cost' => 'nullable|numeric',
+
+            // Data Step 1
+            'qty_pack' => 'nullable|integer|min:1',
+            'packer_id' => 'nullable|uuid',
+            'type_packaging' => 'nullable|string|max:100',
+            'items' => 'required|array|min:1',
+            'items.*.no_so' => 'required|string|max:255',
+            'items.*.customer' => 'nullable|string|max:255',
+            'items.*.no_product' => 'required|string|max:255',
+            'items.*.desc_product' => 'nullable|string',
+            'items.*.qty' => 'required|integer|min:1',
         ]);
 
         if ($validator->fails()) {
@@ -274,37 +285,48 @@ class PackagingCalculationController extends Controller
 
             $calculation->refresh(); // Refresh agar calculate() baca JSON terbaru
 
-            // Sync Item
-            if ($request->has('items') && is_array($request->items)) {
-                $calculation->items()->delete();
-                foreach ($request->items as $itemData) {
-                    $calculation->items()->create([
-                        'no_product' => $itemData['no_product'] ?? null,
-                        'desc_product' => $itemData['desc_product'] ?? null,
-                        'qty' => $itemData['qty'] ?? 1,
-                        'no_so' => $itemData['no_so'] ?? null,
-                        'customer' => $itemData['customer'] ?? null,
-                    ]);
-                }
-            } else {
-                $item = $calculation->items()->first();
-                if ($item) {
-                    $item->update([
-                        'no_product' => $request->no_product ?? $item->no_product,
-                        'desc_product' => $request->desc_product ?? $item->desc_product,
-                        'qty' => $request->qty_order ?? $item->qty,
-                        'no_so' => $request->no_so ?? $item->no_so,
-                        'customer' => $request->customer ?? $item->customer,
-                    ]);
-                } else {
-                    $calculation->items()->create([
-                        'no_product' => $request->no_product ?? null,
-                        'desc_product' => $request->desc_product ?? null,
-                        'qty' => $request->qty_order ?? 1,
-                        'no_so' => $request->no_so ?? null,
-                        'customer' => $request->customer ?? null,
-                    ]);
-                }
+            // =========================================================
+            // Sync item Step 1
+            // Seluruh item lama diganti dengan isi tabel terbaru dari modal.
+            // Customer disimpan per item, bukan hanya dari header.
+            // =========================================================
+            $items = collect($request->input('items', []))
+                ->map(function (array $itemData) {
+                    return [
+                        'no_so' => trim(
+                            (string) ($itemData['no_so'] ?? '')
+                        ),
+                        'customer' => trim(
+                            (string) ($itemData['customer'] ?? '')
+                        ),
+                        'no_product' => trim(
+                            (string) ($itemData['no_product'] ?? '')
+                        ),
+                        'desc_product' => trim(
+                            (string) ($itemData['desc_product'] ?? '')
+                        ),
+                        'qty' => max(
+                            1,
+                            (int) ($itemData['qty'] ?? 1)
+                        ),
+                    ];
+                })
+                ->filter(function (array $itemData) {
+                    return $itemData['no_product'] !== '';
+                })
+                ->values();
+
+            if ($items->isEmpty()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data produk Step 1 kosong.',
+                ], 422);
+            }
+
+            $calculation->items()->delete();
+
+            foreach ($items as $itemData) {
+                $calculation->items()->create($itemData);
             }
 
             \Log::info("Invoking PackagingCalculatorService...");
