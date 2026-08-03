@@ -58,11 +58,15 @@ class PackagingController extends Controller
             
             $job = PackagingJob::create([
                 'type_packaging' => $request->input('type_packaging', $request->packType ?? 'Box'),
+                // Menyimpan nilai "Bahan Penutup" (contoh: Papan / Triplek) dari Step 2 
+                // Nilai ini penting karena menentukan interaksi logika dropdown Konfigurasi di Step 3
+                // (seperti Box, Palet, Peti, Kerangka memiliki perlakuan berbeda terhadap Papan/Triplek).
                 'tipe_penutup' => $request->input('tipe_penutup'),
                 'packaging_number' => 'PKG-' . date('Ymd') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT),
                 'packer_id' => !empty($firstItem['packer']) ? $firstItem['packer'] : null,
                 'qty_packaging' => $firstItem['qty_pack'] ?? 1,
                 'deadline' => $request->date_delivery,
+                'completion_date' => $request->completion_date,
                 
                 'panjang' => $firstItem['length'] ?? 0,
                 'lebar' => $firstItem['width'] ?? 0,

@@ -259,8 +259,12 @@ class PackagingCalculationController extends Controller
                 'qty_packaging' => $request->qty_pack ?? $calculation->qty_packaging,
                 'packer_id' => $request->packer_id ?? $calculation->packer_id,
                 'type_packaging' => $request->type_packaging ?? $calculation->type_packaging,
+                // Memperbarui nilai "Bahan Penutup" (contoh: Papan / Triplek) dari front-end.
+                // Disimpan di database karena nilai ini menentukan rules di step 3 Konfigurasi Area Atas & Bawah,
+                // contoh: jika Peti Kayu maka Triplek dilarang, Palet Kayu Konfigurasi Atas disembunyikan.
                 'tipe_penutup' => $request->tipe_penutup ?? $calculation->tipe_penutup,
-                
+                'completion_date' => $request->completion_date ?? $calculation->completion_date,
+
 
                 // Konfigurasi Bawah
                 'bawah_penyanggah_status' => $request->has('bawah_penyangga_include') ? ($request->bawah_penyangga_include ? 'Include' : 'Exclude') : $calculation->bawah_penyanggah_status,
