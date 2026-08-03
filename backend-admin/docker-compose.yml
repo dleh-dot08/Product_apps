@@ -1,9 +1,6 @@
 services:
   backend-admin:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: backend-admin:local
+    image: ghcr.io/${GHCR_USERNAME}/driver-app:${IMAGE_TAG:-latest}
     container_name: backend-admin
     restart: unless-stopped
     ports:
