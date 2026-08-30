@@ -15,8 +15,12 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         $user = $request->user();
-        $user->load(['role', 'division']);
-        return $user;
+        $user->load(['roleRelation', 'division']);
+        
+        $userArray = $user->toArray();
+        $userArray['role'] = $user->roleRelation;
+        
+        return $userArray;
     });
     
     // User Management API
@@ -31,9 +35,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     
     // Pickup Tasks API
+    Route::get('/driver/dashboard', [PickupTaskController::class, 'dashboardSummary']);
     Route::get('/pickup', [PickupTaskController::class, 'index']);
+    Route::get('/pickup/{id}', [PickupTaskController::class, 'show']);
     Route::post('/pickup', [PickupTaskController::class, 'store']);
     Route::patch('/pickup/{id}/status', [PickupTaskController::class, 'updateStatus']);
+    
+    // Expense API
+    Route::post('/pickup/{id}/expenses', [\App\Http\Controllers\Api\ExpenseController::class, 'storeFromTask']);
+    
+    // Driver Location API
+    Route::post('/driver/location', [\App\Http\Controllers\Api\LocationController::class, 'updateLocation']);
+    Route::get('/driver/locations', [\App\Http\Controllers\Api\LocationController::class, 'getActiveDrivers']);
 });
 
 // Proxy API untuk pencarian SO

@@ -109,7 +109,8 @@
             <!-- App Content -->
             <div class="app-content">
                 <div class="container-fluid">
-                    {{ $slot }}
+                    {{ $slot ?? '' }}
+                    @yield('content')
                 </div>
             </div>
         </main>

@@ -17,4 +17,9 @@ class Vehicle extends Model
         'fuel_price_per_liter' => 'decimal:2',
         'km_per_liter' => 'decimal:2',
     ];
+
+    public function trips()
+    {
+        return $this->hasMany(Trip::class);
+    }
 }

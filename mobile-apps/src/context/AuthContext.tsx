@@ -7,8 +7,25 @@ type User = {
   id: number;
   name: string;
   email: string;
+  phone?: string;
   role?: { id: number; name: string };
   division?: { id: number; name: string };
+  driver_id?: string;
+  sim_number?: string;
+  sim_expiry?: string;
+  address?: string;
+  emergency_contact?: string;
+  stats?: {
+    completed_tasks?: number;
+    on_time_percentage?: number;
+    rating?: number;
+    driving_hours?: number;
+  };
+  vehicle?: {
+    name?: string;
+    plate?: string;
+    status?: string;
+  };
 };
 
 type AuthContextType = {
