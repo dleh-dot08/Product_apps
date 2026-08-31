@@ -1,0 +1,601 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Product Apps API",
+        "description": "API router untuk aplikasi mobile Product Apps. Semua endpoint memerlukan router API key. Endpoint selain login juga memerlukan token Laravel Sanctum.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api",
+            "description": "Product Apps API"
+        }
+    ],
+    "paths": {
+        "/login": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Login pengguna",
+                "operationId": "1486dc0e281b126982243d7ced5e2806",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password",
+                                    "device_name"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password"
+                                    },
+                                    "device_name": {
+                                        "type": "string",
+                                        "example": "android"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Login berhasil"
+                    },
+                    "401": {
+                        "description": "API key tidak valid"
+                    },
+                    "422": {
+                        "description": "Kredensial atau input tidak valid"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": []
+                    }
+                ]
+            }
+        },
+        "/user": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Data pengguna aktif",
+                "operationId": "d0ab46371daeea73844fb4b5d5c17577",
+                "responses": {
+                    "200": {
+                        "description": "Data pengguna"
+                    },
+                    "401": {
+                        "description": "Tidak terautentikasi"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            }
+        },
+        "/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout pengguna",
+                "operationId": "0f6540fbc55a49301762884670ed62bd",
+                "responses": {
+                    "200": {
+                        "description": "Logout berhasil"
+                    },
+                    "401": {
+                        "description": "Tidak terautentikasi"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            }
+        },
+        "/users": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Daftar pengguna (API key saja)",
+                "operationId": "cd1201fdf2a517458a6bb115eefe7593",
+                "responses": {
+                    "200": {
+                        "description": "Daftar pengguna"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Buat pengguna",
+                "operationId": "f13eeaf82e68c0b168881a67cbc94fd4",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pengguna dibuat"
+                    },
+                    "422": {
+                        "description": "Input tidak valid"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            }
+        },
+        "/users/{id}": {
+            "get": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Detail pengguna (API key saja)",
+                "operationId": "2bde0fa9f86f923be31629d909e4ff92",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detail pengguna"
+                    },
+                    "404": {
+                        "description": "Tidak ditemukan"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Update pengguna",
+                "operationId": "d71cc8e182f1bcdf309bfab942285c43",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Pengguna diperbarui"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Hapus pengguna",
+                "operationId": "ea7a7fd7900b9ffcc5be84c530b34743",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Pengguna dihapus"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            }
+        },
+        "/driver/dashboard": {
+            "get": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "Ringkasan dashboard driver",
+                "operationId": "2564eba4d12e06f9d93fe52c64ff6023",
+                "responses": {
+                    "200": {
+                        "description": "Ringkasan dashboard"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            }
+        },
+        "/pickup": {
+            "get": {
+                "tags": [
+                    "Pickup Tasks"
+                ],
+                "summary": "Daftar tugas pickup/delivery",
+                "operationId": "cf635ce077e08bbdac0ebef7945ba64d",
+                "parameters": [
+                    {
+                        "name": "status",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "date",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Daftar tugas"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Pickup Tasks"
+                ],
+                "summary": "Buat tugas pickup",
+                "operationId": "67604d1949ac66ac953a2965dba4e71a",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Tugas dibuat"
+                    },
+                    "422": {
+                        "description": "Input tidak valid"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            }
+        },
+        "/pickup/{id}": {
+            "get": {
+                "tags": [
+                    "Pickup Tasks"
+                ],
+                "summary": "Detail tugas",
+                "operationId": "30114299465cbee4bcf681f55c202a70",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Detail tugas"
+                    },
+                    "404": {
+                        "description": "Tidak ditemukan"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            }
+        },
+        "/pickup/{id}/status": {
+            "patch": {
+                "tags": [
+                    "Pickup Tasks"
+                ],
+                "summary": "Update status tugas",
+                "operationId": "abb1137b7c2bdaedcc8139de391c0134",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Status diperbarui"
+                    },
+                    "422": {
+                        "description": "Input tidak valid"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            }
+        },
+        "/pickup/{id}/expenses": {
+            "post": {
+                "tags": [
+                    "Pickup Tasks"
+                ],
+                "summary": "Tambah pengeluaran tugas",
+                "operationId": "e520bb99bbd604ba175877bea1bac572",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Pengeluaran dibuat"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            }
+        },
+        "/driver/location": {
+            "post": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "Update lokasi driver",
+                "operationId": "a964fd267d49c117c75e55880ba523ce",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Lokasi diperbarui"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": [],
+                        "SanctumToken": []
+                    }
+                ]
+            }
+        },
+        "/driver/locations": {
+            "get": {
+                "tags": [
+                    "Drivers"
+                ],
+                "summary": "Lokasi driver aktif (API key saja)",
+                "operationId": "45bfff5669cb7a636409de76a76062a7",
+                "responses": {
+                    "200": {
+                        "description": "Daftar lokasi"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": []
+                    }
+                ]
+            }
+        },
+        "/packaging/search-so": {
+            "get": {
+                "tags": [
+                    "Packaging"
+                ],
+                "summary": "Cari sales order",
+                "operationId": "b955bda9fe14349de438513363d3f056",
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "schema": {
+                            "type": "string",
+                            "format": "date"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Hasil pencarian"
+                    },
+                    "502": {
+                        "description": "Upstream gagal"
+                    }
+                },
+                "security": [
+                    {
+                        "RouterApiKey": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "RouterApiKey": {
+                "type": "http",
+                "description": "Gunakan API key router hardcoded sebagai Bearer token.",
+                "bearerFormat": "Base64 API key",
+                "scheme": "bearer"
+            },
+            "SanctumToken": {
+                "type": "apiKey",
+                "description": "Token Sanctum dari response login. Tidak perlu awalan Bearer.",
+                "name": "X-Auth-Token",
+                "in": "header"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Authentication"
+        },
+        {
+            "name": "Users"
+        },
+        {
+            "name": "Pickup Tasks"
+        },
+        {
+            "name": "Drivers"
+        },
+        {
+            "name": "Packaging"
+        }
+    ]
+}

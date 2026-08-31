@@ -15,7 +15,6 @@ env:
   REGISTRY: ghcr.io
   SERVER_APP_DIR: ~/repositories/Product_apps/backend-admin
   CONTAINER_NAME: backend-admin
-  DB_NETWORK: postgres_database
 
 jobs:
   build_images:
@@ -71,7 +70,17 @@ jobs:
         run: |
           sleep 10
           netbird status
-          ping -c 3 ${{ secrets.SERVER_HOST }} || true
+          ping -c 3 ${{ secrets.SERVER_HOST }}
+
+      - name: Upload compose file
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USERNAME }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT }}
+          source: backend-admin/docker-compose.yml
+          target: ~/repositories/Product_apps
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -84,7 +93,6 @@ jobs:
           command_timeout: 25m
           script: |
             set -e
-            IMAGE_NAME="ghcr.io/${{ secrets.GHCR_USERNAME }}/driver-app"
 
             mkdir -p \
               ${{ env.SERVER_APP_DIR }}/storage/app/public \
@@ -95,22 +103,11 @@ jobs:
               ${{ env.SERVER_APP_DIR }}/bootstrap/cache
 
             echo "${{ secrets.GHCR_PAT }}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.GHCR_USERNAME }} --password-stdin
-            docker pull "$IMAGE_NAME:${{ github.sha }}"
+            cd ${{ env.SERVER_APP_DIR }}
+            GHCR_USERNAME=${{ secrets.GHCR_USERNAME }} IMAGE_TAG=${{ github.sha }} docker compose pull
+            GHCR_USERNAME=${{ secrets.GHCR_USERNAME }} IMAGE_TAG=${{ github.sha }} docker compose up -d --force-recreate
 
-            docker stop ${{ env.CONTAINER_NAME }} || true
-            docker rm ${{ env.CONTAINER_NAME }} || true
-
-            docker run -d \
-              --name ${{ env.CONTAINER_NAME }} \
-              --restart unless-stopped \
-              --network ${{ env.DB_NETWORK }} \
-              -p 8000:80 \
-              --env-file ${{ env.SERVER_APP_DIR }}/.env \
-              -v ${{ env.SERVER_APP_DIR }}/storage:/var/www/html/storage \
-              -v ${{ env.SERVER_APP_DIR }}/bootstrap/cache:/var/www/html/bootstrap/cache \
-              "$IMAGE_NAME:${{ github.sha }}"
-
-            docker exec ${{ env.CONTAINER_NAME }} chown -R www-data:www-data storage bootstrap/cache
-            docker exec ${{ env.CONTAINER_NAME }} php artisan migrate
-            docker exec ${{ env.CONTAINER_NAME }} php artisan config:cache
-            docker exec ${{ env.CONTAINER_NAME }} php artisan view:cache
+            docker compose exec -T ${{ env.CONTAINER_NAME }} chown -R www-data:www-data storage bootstrap/cache
+            docker compose exec -T ${{ env.CONTAINER_NAME }} php artisan migrate --force
+            docker compose exec -T ${{ env.CONTAINER_NAME }} php artisan config:cache
+            docker compose exec -T ${{ env.CONTAINER_NAME }} php artisan view:cache
