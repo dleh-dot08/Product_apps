@@ -4400,6 +4400,55 @@
             return dark;
         }
 
+        let cachedWebGLAvailability = null;
+
+        function isWebGLAvailable() {
+            if (cachedWebGLAvailability !== null) {
+                return cachedWebGLAvailability;
+            }
+
+            try {
+                const testCanvas = document.createElement('canvas');
+                const gl = testCanvas.getContext('webgl2', {
+                    antialias: false,
+                    preserveDrawingBuffer: false
+                }) || testCanvas.getContext('webgl', {
+                    antialias: false,
+                    preserveDrawingBuffer: false
+                }) || testCanvas.getContext('experimental-webgl');
+
+                if (!gl) {
+                    cachedWebGLAvailability = false;
+                    return false;
+                }
+
+                const loseContext = gl.getExtension('WEBGL_lose_context');
+                loseContext?.loseContext();
+                cachedWebGLAvailability = true;
+                return true;
+            } catch (error) {
+                console.error('Pengecekan WebGL gagal:', error);
+                cachedWebGLAvailability = false;
+                return false;
+            }
+        }
+
+        function disposeThreeRenderer(targetRenderer) {
+            if (!targetRenderer) return;
+
+            try {
+                targetRenderer.setAnimationLoop?.(null);
+                targetRenderer.dispose?.();
+                targetRenderer.forceContextLoss?.();
+
+                if (targetRenderer.domElement?.parentNode) {
+                    targetRenderer.domElement.parentNode.removeChild(targetRenderer.domElement);
+                }
+            } catch (error) {
+                console.warn('Renderer tidak dapat dibersihkan:', error);
+            }
+        }
+
         // Global variables for 3D Visualizer
         let scene, camera, renderer, controls, woodTexture, frameMaterial, supportMaterial, coverMaterial, plywoodMaterial;
         let modelGroup, dimensionGroup, ground, grid;
@@ -4408,15 +4457,38 @@
         let currentView = 'iso';
         let currentMaxDimension = 2;
         let activeDetails = [];
+        let crate3DInitialized = false;
+        let crate3DInitializing = false;
+        let crateAnimationFrameId = null;
+        let crateResizeObserver = null;
         const calcId = "{{ $calculation->id ?? 'new' }}";
 
         function init3D() {
+            if (crate3DInitialized || crate3DInitializing) return true;
+            crate3DInitializing = true;
+
             try {
                 const container = document.getElementById('crate-canvas-container');
                 const canvas = document.getElementById('crate-canvas');
                 const loading = document.getElementById('canvas-loading');
 
-                if (!container || !canvas) return;
+                if (!container || !canvas) {
+                    crate3DInitializing = false;
+                    return false;
+                }
+
+                if (typeof THREE === 'undefined') {
+                    throw new Error('Three.js belum berhasil dimuat.');
+                }
+
+                if (!isWebGLAvailable()) {
+                    throw new Error('Browser tidak dapat membuat WebGL context. Periksa hardware acceleration atau context WebGL lain yang masih aktif.');
+                }
+
+                if (renderer) {
+                    disposeThreeRenderer(renderer);
+                    renderer = null;
+                }
 
                 // Create scene
                 scene = new THREE.Scene();
@@ -4433,11 +4505,21 @@
                 camera.position.set(3, 3, 4);
 
                 // Renderer setup
-                renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: false, preserveDrawingBuffer: true });
-                renderer.setSize(container.clientWidth, container.clientHeight);
-                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-                renderer.shadowMap.enabled = true;
-                renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+                renderer = new THREE.WebGLRenderer({
+                    canvas: canvas,
+                    antialias: false,
+                    alpha: false,
+                    preserveDrawingBuffer: false,
+                    powerPreference: 'default',
+                    failIfMajorPerformanceCaveat: false
+                });
+                renderer.setSize(
+                    Math.max(container.clientWidth, 320),
+                    Math.max(container.clientHeight, 260),
+                    false
+                );
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+                renderer.shadowMap.enabled = false;
 
                 // Load Nail GLB Model
                 const gltfLoader = new THREE.GLTFLoader();
@@ -4543,37 +4625,61 @@
 
                 // Resize observer
                 if ('ResizeObserver' in window) {
-                    const observer = new ResizeObserver(() => {
-                        onWindowResize();
-                    });
-                    observer.observe(container);
+                    crateResizeObserver?.disconnect();
+                    crateResizeObserver = new ResizeObserver(onWindowResize);
+                    crateResizeObserver.observe(container);
                 }
+                window.removeEventListener('resize', onWindowResize);
                 window.addEventListener('resize', onWindowResize);
 
-                // Animation loop
-                function animate() {
-                    requestAnimationFrame(animate);
-                    controls.update();
-                    
-                    if (camera && controls && typeof dimensionGroup !== 'undefined') {
-                        const dist = camera.position.distanceTo(controls.target);
-                        const maxD = typeof currentMaxDimension !== 'undefined' ? currentMaxDimension : 2;
-                        const baseDist = Math.max(1.5, maxD * 1.5);
-                        // Make scale proportional to distance so it maintains a readable size on screen
-                        const scaleFactor = dist / baseDist;
-                        dimensionGroup.children.forEach(child => {
-                            if (child.isSprite && child.userData.baseScale) {
-                                child.scale.copy(child.userData.baseScale).multiplyScalar(scaleFactor);
-                            }
-                        });
-                    }
-                    
-                    renderer.render(scene, camera);
+                crate3DInitialized = true;
+                crate3DInitializing = false;
+
+                if (crateAnimationFrameId === null) {
+                    animateCrateScene();
                 }
-                animate();
+
+                return true;
             } catch (err) {
+                crate3DInitialized = false;
+                crate3DInitializing = false;
+
+                if (renderer) {
+                    disposeThreeRenderer(renderer);
+                    renderer = null;
+                }
+
                 console.error("Error inside init3D:", err);
                 showVisualizerError(err);
+                return false;
+            }
+        }
+
+        function animateCrateScene() {
+            if (!renderer || !scene || !camera) {
+                crateAnimationFrameId = null;
+                return;
+            }
+
+            crateAnimationFrameId = window.requestAnimationFrame(animateCrateScene);
+            controls?.update();
+
+            if (camera && controls && dimensionGroup) {
+                const dist = camera.position.distanceTo(controls.target);
+                const maxD = typeof currentMaxDimension !== 'undefined' ? currentMaxDimension : 2;
+                const baseDist = Math.max(1.5, maxD * 1.5);
+                const scaleFactor = dist / baseDist;
+
+                dimensionGroup.children.forEach((child) => {
+                    if (child.isSprite && child.userData.baseScale) {
+                        child.scale.copy(child.userData.baseScale).multiplyScalar(scaleFactor);
+                    }
+                });
+            }
+
+            const gl = renderer.getContext?.();
+            if (!gl?.isContextLost?.()) {
+                renderer.render(scene, camera);
             }
         }
 
@@ -4916,21 +5022,21 @@
                 
                 if (faceId === 'top') {
                     ny += thk/2; 
+                    n.rotation.x = Math.PI;
                 } else if (faceId === 'bottom') {
                     ny -= thk/2;
-                    n.rotation.x = Math.PI; 
                 } else if (faceId === 'front') {
                     nz += thk/2;
-                    n.rotation.x = Math.PI/2;
+                    n.rotation.x = -Math.PI/2;
                 } else if (faceId === 'back') {
                     nz -= thk/2;
-                    n.rotation.x = -Math.PI/2;
+                    n.rotation.x = Math.PI/2;
                 } else if (faceId === 'right') {
                     nx += thk/2;
-                    n.rotation.z = -Math.PI/2;
+                    n.rotation.z = Math.PI/2;
                 } else if (faceId === 'left') {
                     nx -= thk/2;
-                    n.rotation.z = Math.PI/2;
+                    n.rotation.z = -Math.PI/2;
                 }
                 
                 if (mesh.visible === false) n.visible = false;
@@ -4991,21 +5097,21 @@
                 
                 if (faceId === 'top') {
                     ny += thk/2; 
+                    n.rotation.x = Math.PI;
                 } else if (faceId === 'bottom') {
                     ny -= thk/2;
-                    n.rotation.x = Math.PI; 
                 } else if (faceId === 'front') {
                     nz += thk/2;
-                    n.rotation.x = Math.PI/2;
+                    n.rotation.x = -Math.PI/2;
                 } else if (faceId === 'back') {
                     nz -= thk/2;
-                    n.rotation.x = -Math.PI/2;
+                    n.rotation.x = Math.PI/2;
                 } else if (faceId === 'right') {
                     nx += thk/2;
-                    n.rotation.z = -Math.PI/2;
+                    n.rotation.z = Math.PI/2;
                 } else if (faceId === 'left') {
                     nx -= thk/2;
-                    n.rotation.z = Math.PI/2;
+                    n.rotation.z = -Math.PI/2;
                 }
                 
                 if (mesh.visible === false) n.visible = false;
@@ -7631,122 +7737,181 @@
                 let matCamX = 0; // target X for scrolling
                 let matMaxCamX = 0; // max X scroll
                 let matMeshes = [];
+                let matAnimationFrameId = null;
+                let matResizeHandlerBound = false;
+                let matToolbarBound = false;
+
+                function showMaterialWebGLFallback(message = 'Visualisasi potongan material tidak dapat ditampilkan, tetapi data dan proses perhitungan tetap berjalan.') {
+                    if (!matContainer) return;
+
+                    matContainer.innerHTML = `
+                        <div class="d-flex align-items-center justify-content-center h-100 w-100 p-4 text-center">
+                            <div>
+                                <span class="material-symbols-rounded text-warning mb-2" style="font-size:34px">view_in_ar</span>
+                                <div class="fw-bold text-dark" style="font-size:13px">Visualisasi material tidak tersedia</div>
+                                <div class="text-muted mt-1" style="font-size:11px;max-width:360px">${message}</div>
+                            </div>
+                        </div>`;
+                }
 
                 function initMaterialVisualizer() {
                     if (!matContainer) return false;
 
                     if (typeof THREE === 'undefined') {
-                        console.error('Three.js belum termuat. Visualisasi material tidak dapat dibuat.');
+                        showMaterialWebGLFallback('Three.js belum berhasil dimuat.');
                         return false;
                     }
 
-                    // Hindari canvas ganda bila fungsi dipanggil kembali.
-                    if (matRenderer && matRenderer.domElement) {
-                        matRenderer.domElement.remove();
+                    if (!isWebGLAvailable()) {
+                        showMaterialWebGLFallback('Browser tidak dapat membuat WebGL context untuk visualisasi material.');
+                        return false;
                     }
 
-                    matScene = new THREE.Scene();
-                    matScene.background = new THREE.Color(packagingThemePalette().materialSceneBackground);
+                    if (
+                        matRenderer &&
+                        matRenderer.domElement &&
+                        matContainer.contains(matRenderer.domElement) &&
+                        !matRenderer.getContext?.().isContextLost?.()
+                    ) {
+                        return true;
+                    }
 
-                    const containerWidth = Math.max(matContainer.clientWidth, 320);
-                    const containerHeight = Math.max(matContainer.clientHeight, 300);
-                    const aspect = containerWidth / containerHeight;
-                    window.matFrustumSize = 2.5;
-                    matCamera = new THREE.OrthographicCamera(
-                        window.matFrustumSize * aspect / -2,
-                        window.matFrustumSize * aspect / 2,
-                        window.matFrustumSize / 2,
-                        window.matFrustumSize / -2,
-                        0.1,
-                        100
-                    );
-                    matCamera.position.set(0, 1.5, 4.5);
-                    matCamera.lookAt(0, 0.8, 0);
+                    if (matRenderer) {
+                        disposeThreeRenderer(matRenderer);
+                        matRenderer = null;
+                    }
 
-                    matCameraGroup = new THREE.Group();
-                    matCameraGroup.add(matCamera);
-                    matScene.add(matCameraGroup);
+                    matContainer.querySelectorAll('canvas[data-material-webgl="true"]').forEach((oldCanvas) => oldCanvas.remove());
 
-                    matRenderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
-                    window.matRenderer = matRenderer;
-                    window.matScene = matScene;
-                    window.matCamera = matCamera;
-                    
-                    matRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
-                    matRenderer.setSize(containerWidth, containerHeight, false);
-                    matRenderer.domElement.style.position = 'absolute';
-                    matRenderer.domElement.style.inset = '0';
-                    matRenderer.domElement.style.width = '100%';
-                    matRenderer.domElement.style.height = '100%';
-                    matRenderer.domElement.style.display = 'block';
-                    matRenderer.shadowMap.enabled = true;
-                    matRenderer.shadowMap.type = THREE.PCFSoftShadowMap;
-                    matContainer.appendChild(matRenderer.domElement);
+                    try {
+                        matScene = new THREE.Scene();
+                        matScene.background = new THREE.Color(packagingThemePalette().materialSceneBackground);
 
-                    // Add Lights
-                    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-                    matScene.add(ambientLight);
-                    
-                    const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-                    dirLight.position.set(5, 10, 7);
-                    dirLight.castShadow = true;
-                    dirLight.shadow.mapSize.width = 1024;
-                    dirLight.shadow.mapSize.height = 1024;
-                    matScene.add(dirLight);
+                        const containerWidth = Math.max(matContainer.clientWidth || 0, 320);
+                        const containerHeight = Math.max(matContainer.clientHeight || 0, 300);
+                        const aspect = containerWidth / containerHeight;
+                        window.matFrustumSize = 2.5;
 
-                    // Grid helper for the floor
-                    const materialTheme = packagingThemePalette();
-                    matGridHelper = new THREE.GridHelper(
-                        100,
-                        100,
-                        materialTheme.materialGridCenter,
-                        materialTheme.materialGridLine
-                    );
-                    matGridHelper.position.y = 0;
-                    matScene.add(matGridHelper);
-                    
-                    // Add an invisible plane to receive shadows
-                    const planeGeom = new THREE.PlaneGeometry(100, 100);
-                    const planeMat = new THREE.ShadowMaterial({ opacity: 0.1 });
-                    const plane = new THREE.Mesh(planeGeom, planeMat);
-                    plane.rotation.x = -Math.PI / 2;
-                    plane.receiveShadow = true;
-                    matScene.add(plane);
+                        matCamera = new THREE.OrthographicCamera(
+                            window.matFrustumSize * aspect / -2,
+                            window.matFrustumSize * aspect / 2,
+                            window.matFrustumSize / 2,
+                            window.matFrustumSize / -2,
+                            0.1,
+                            100
+                        );
+                        matCamera.position.set(0, 1.5, 4.5);
+                        matCamera.lookAt(0, 0.8, 0);
 
-                    // Controls for buttons
-                    document.getElementById('btn-mat-left')?.addEventListener('click', () => {
-                        matCamX = Math.max(0, matCamX - 3); // scroll left
-                    });
-                    document.getElementById('btn-mat-right')?.addEventListener('click', () => {
-                        matCamX = Math.min(matMaxCamX, matCamX + 3); // scroll right
-                    });
+                        matCameraGroup = new THREE.Group();
+                        matCameraGroup.add(matCamera);
+                        matScene.add(matCameraGroup);
 
-                    // Start render loop
-                    requestAnimationFrame(animateMat);
+                        matRenderer = new THREE.WebGLRenderer({
+                            antialias: false,
+                            alpha: false,
+                            preserveDrawingBuffer: false,
+                            powerPreference: 'default',
+                            failIfMajorPerformanceCaveat: false
+                        });
+                        matRenderer.domElement.dataset.materialWebgl = 'true';
 
-                    window.addEventListener('resize', () => {
-                        if (!matContainer || !matCamera || !matRenderer) return;
-                        const width = Math.max(matContainer.clientWidth, 320);
-                        const height = Math.max(matContainer.clientHeight, 300);
-                        const aspect = width / height;
-                        matCamera.left = window.matFrustumSize * aspect / -2;
-                        matCamera.right = window.matFrustumSize * aspect / 2;
-                        matCamera.top = window.matFrustumSize / 2;
-                        matCamera.bottom = window.matFrustumSize / -2;
-                        matCamera.updateProjectionMatrix();
-                        matRenderer.setSize(width, height, false);
-                    });
+                        window.matRenderer = matRenderer;
+                        window.matScene = matScene;
+                        window.matCamera = matCamera;
 
-                    return true;
+                        matRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.25));
+                        matRenderer.setSize(containerWidth, containerHeight, false);
+                        matRenderer.domElement.style.position = 'absolute';
+                        matRenderer.domElement.style.inset = '0';
+                        matRenderer.domElement.style.width = '100%';
+                        matRenderer.domElement.style.height = '100%';
+                        matRenderer.domElement.style.display = 'block';
+                        matRenderer.shadowMap.enabled = false;
+                        matContainer.appendChild(matRenderer.domElement);
+
+                        matScene.add(new THREE.AmbientLight(0xffffff, 0.85));
+
+                        const dirLight = new THREE.DirectionalLight(0xffffff, 0.65);
+                        dirLight.position.set(5, 10, 7);
+                        matScene.add(dirLight);
+
+                        const materialTheme = packagingThemePalette();
+                        matGridHelper = new THREE.GridHelper(
+                            100,
+                            100,
+                            materialTheme.materialGridCenter,
+                            materialTheme.materialGridLine
+                        );
+                        matGridHelper.position.y = 0;
+                        matScene.add(matGridHelper);
+
+                        const plane = new THREE.Mesh(
+                            new THREE.PlaneGeometry(100, 100),
+                            new THREE.ShadowMaterial({ opacity: 0.1 })
+                        );
+                        plane.rotation.x = -Math.PI / 2;
+                        matScene.add(plane);
+
+                        if (!matToolbarBound) {
+                            document.getElementById('btn-mat-left')?.addEventListener('click', () => {
+                                matCamX = Math.max(0, matCamX - 3);
+                            });
+                            document.getElementById('btn-mat-right')?.addEventListener('click', () => {
+                                matCamX = Math.min(matMaxCamX, matCamX + 3);
+                            });
+                            matToolbarBound = true;
+                        }
+
+                        if (!matResizeHandlerBound) {
+                            window.addEventListener('resize', resizeMaterialVisualizer);
+                            matResizeHandlerBound = true;
+                        }
+
+                        if (matAnimationFrameId === null) {
+                            animateMat();
+                        }
+
+                        return true;
+                    } catch (error) {
+                        console.error('Gagal menginisialisasi visualisasi potongan material:', error);
+
+                        if (matRenderer) {
+                            disposeThreeRenderer(matRenderer);
+                            matRenderer = null;
+                        }
+
+                        showMaterialWebGLFallback(error?.message || 'WebGL context tidak dapat dibuat.');
+                        return false;
+                    }
+                }
+
+                function resizeMaterialVisualizer() {
+                    if (!matContainer || !matCamera || !matRenderer) return;
+
+                    const width = Math.max(matContainer.clientWidth || 0, 320);
+                    const height = Math.max(matContainer.clientHeight || 0, 300);
+                    const aspect = width / height;
+
+                    matCamera.left = window.matFrustumSize * aspect / -2;
+                    matCamera.right = window.matFrustumSize * aspect / 2;
+                    matCamera.top = window.matFrustumSize / 2;
+                    matCamera.bottom = window.matFrustumSize / -2;
+                    matCamera.updateProjectionMatrix();
+                    matRenderer.setSize(width, height, false);
                 }
 
                 function animateMat() {
-                    requestAnimationFrame(animateMat);
-                    if (matRenderer && matScene && matCamera && matCameraGroup) {
-                        // Decoupled camera logic:
-                        // 1. Pan left/right smoothly via the group position
-                        matCameraGroup.position.x += (matCamX - matCameraGroup.position.x) * 0.05;
-                        
+                    if (!matRenderer || !matScene || !matCamera || !matCameraGroup) {
+                        matAnimationFrameId = null;
+                        return;
+                    }
+
+                    matAnimationFrameId = window.requestAnimationFrame(animateMat);
+                    matCameraGroup.position.x += (matCamX - matCameraGroup.position.x) * 0.05;
+
+                    const gl = matRenderer.getContext?.();
+                    if (!gl?.isContextLost?.()) {
                         matRenderer.render(matScene, matCamera);
                         updateMatLabels();
                     }

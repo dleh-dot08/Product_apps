@@ -13,6 +13,11 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    // Find Driver Map
+    Route::get('/find-driver', function () {
+        return view('find-driver');
+    })->name('find-driver');
+    
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -33,8 +38,20 @@ Route::middleware('auth')->group(function () {
     })->name('daftar-tugas.index');
 
     // Route Tugas Driver
-    Route::resource('pickup-tasks', \App\Http\Controllers\PickupTaskController::class)->except(['create', 'show', 'edit']);
+    Route::get('/pickup-tasks/{pickup_task}/edit-detail', [\App\Http\Controllers\PickupTaskController::class, 'editDetail'])->name('pickup-tasks.edit-detail');
+    Route::put('/pickup-tasks/{pickup_task}/update-detail', [\App\Http\Controllers\PickupTaskController::class, 'updateDetail'])->name('pickup-tasks.update-detail');
+    Route::resource('pickup-tasks', \App\Http\Controllers\PickupTaskController::class)->except(['create', 'edit']);
     
+    // Route HPP Ritase
+    Route::get('/hpp-ritase', [\App\Http\Controllers\TripHppController::class, 'index'])->name('hpp.index');
+    Route::get('/hpp-ritase/export', [\App\Http\Controllers\TripHppController::class, 'export'])->name('hpp.export');
+    Route::get('/hpp-ritase/{id}', [\App\Http\Controllers\TripHppController::class, 'show'])->name('hpp.show');
+
+    // Route Pengeluaran (Expenses)
+    Route::resource('expenses', \App\Http\Controllers\ExpenseController::class)->except(['create', 'show', 'edit', 'update']);
+
+    // Route Delivery Orders
+    // (Delivery Order routes have been merged into pickup-tasks / Tugas Driver)
     
     // Routes untuk Packaging
     Route::prefix('packaging')->name('packaging.')->group(function () {
@@ -107,6 +124,9 @@ Route::middleware('auth')->group(function () {
             return redirect()->back()->with('success', 'Settings updated'); 
         })->name('validasi_data.settings.update');
     });
+    // Laporan Driver
+    Route::get('/driver-reports', [\App\Http\Controllers\DriverReportController::class, 'index'])->name('driver-reports.index');
+    Route::get('/driver-reports/{id}', [\App\Http\Controllers\DriverReportController::class, 'show'])->name('driver-reports.show');
 });
 
 require __DIR__.'/auth.php';

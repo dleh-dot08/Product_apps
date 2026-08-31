@@ -1,5 +1,6 @@
+import { Text } from '@/components/CustomText';
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 
 import { useRouter } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';

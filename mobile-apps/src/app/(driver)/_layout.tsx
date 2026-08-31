@@ -12,29 +12,27 @@ export default function DashboardLayout() {
 
   return (
     <Tabs tabBar={(props: any) => <CustomTabBar {...props} />} screenOptions={{ headerShown: false }}>
-      <Tabs.Screen name="index" options={{ title: 'Home' }} />
+      <Tabs.Screen name="index" options={{ title: 'Beranda' }} />
       <Tabs.Screen 
-        name="calendar" 
+        name="list-tugas" 
         options={{ 
-          title: 'Calendar',
-          href: isDriver || isViewer ? null : '/calendar'
+          title: 'Tugas',
         }} 
       />
-      <Tabs.Screen 
-        name="add" 
-        options={{ 
-          title: 'Add',
-          href: isViewer ? null : '/add'
-        }} 
-      />
+
       <Tabs.Screen 
         name="documents" 
         options={{ 
-          title: 'Documents',
-          href: isViewer ? null : '/documents' 
+          title: 'Laporan',
         }} 
       />
-      <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+      <Tabs.Screen 
+        name="laporan/[id]" 
+        options={{ 
+          href: null,
+        }} 
+      />
+      <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
     </Tabs>
   );
 }

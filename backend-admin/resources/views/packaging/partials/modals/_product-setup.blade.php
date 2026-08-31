@@ -37,6 +37,7 @@
         'packagingNumber' => $calculation->packaging_number ?? 'PKG-AUTO-001',
         'packerId' => $calculation->packer_id ?? auth()->id(),
         'qtyPacking' => $calculation->qty_packaging ?? 1,
+        'deliveryDate' => $calculation->completion_date ?? '',
         'typePackaging' => $calculation->type_packaging ?? 'Box',
         'dimensions' => [
             'length' => $calculation->panjang ?? '',
@@ -82,7 +83,7 @@
 @endphp
 
 <style>
-    /* =========================================================
+/* =========================================================
        PRODUCT SETUP MODAL
        Scope seluruh style ke #productSetupModal agar tidak
        mengganggu halaman atau modal lain.
@@ -206,12 +207,14 @@
         background-color: var(--ps-soft);
     }
 
-    /* Wizard indicator */
+    /* =========================================================
+       WIZARD INDICATOR
+       ========================================================= */
 
     #productSetupModal .ps-wizard {
         display: flex;
         align-items: center;
-        min-width: 250px;
+        min-width: 390px;
     }
 
     #productSetupModal .ps-wizard-step {
@@ -230,19 +233,20 @@
         border: 1px solid var(--ps-border-strong);
         border-radius: 50%;
         background: var(--ps-card);
-        font-size: 11px;
-        font-weight: 900;
+        font-size: 10px;
+        font-weight: 800;
     }
 
     #productSetupModal .ps-wizard-label {
-        font-size: 11px;
-        font-weight: 800;
+        font-size: 10px;
+        font-weight: 700;
         white-space: nowrap;
     }
 
     #productSetupModal .ps-wizard-line {
         height: 2px;
-        flex: 1 1 auto;
+        width: 30px;
+        flex: 0 0 30px;
         margin: 0 10px;
         background: var(--ps-border);
     }
@@ -857,6 +861,102 @@
         height: 100%;
     }
 
+
+    /* =========================================================
+       STEP 1 — PRODUCT TABLE
+       Ukuran font disamakan dengan komponen modal lainnya.
+       ========================================================= */
+
+    #productSetupModal .ps-table {
+        width: 100%;
+        margin-bottom: 0;
+        color: var(--ps-text);
+        border-color: var(--ps-border);
+    }
+
+    #productSetupModal .ps-table > :not(caption) > * > * {
+        border-color: var(--ps-border);
+        box-shadow: none;
+    }
+
+    #productSetupModal .ps-table thead th {
+        padding: 9px 11px;
+        vertical-align: middle;
+        border-top: 0;
+        border-bottom: 1px solid var(--ps-border);
+        color: var(--ps-muted);
+        background: var(--ps-soft);
+        font-size: 10px;
+        font-weight: 800;
+        line-height: 1.25;
+        letter-spacing: .2px;
+        text-transform: uppercase;
+        white-space: nowrap;
+    }
+
+    #productSetupModal .ps-table tbody td {
+        padding: 9px 11px;
+        vertical-align: middle;
+        color: var(--ps-text);
+        background: var(--ps-card);
+        font-size: 10px;
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    #productSetupModal .ps-table tbody tr:hover td {
+        background: rgba(var(--ps-primary-rgb), .03);
+    }
+
+    #productSetupModal .ps-table .row-qty {
+        width: 76px !important;
+        min-height: 30px;
+        padding: 4px 7px;
+        border: 1px solid var(--ps-border-strong);
+        border-radius: 7px;
+        color: var(--ps-text);
+        background: var(--ps-card);
+        font-size: 10px;
+        font-weight: 700;
+        text-align: center;
+        box-shadow: none;
+    }
+
+    #productSetupModal .ps-table .row-qty:focus {
+        border-color: var(--ps-primary);
+        outline: 0;
+        box-shadow: 0 0 0 3px rgba(var(--ps-primary-rgb), .10);
+    }
+
+    #productSetupModal .ps-table .btn-remove-item {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 !important;
+        border-radius: 7px;
+        font-size: 10px;
+        line-height: 1;
+    }
+
+    #productSetupModal .ps-table .btn-remove-item i {
+        font-size: 9px;
+    }
+
+    #productSetupModal .ps-table tbody:empty::after {
+        display: table-row;
+        height: 46px;
+        color: var(--ps-muted);
+        font-size: 10px;
+        text-align: center;
+        content: "Belum ada barang yang dipilih";
+    }
+
+    #productSetupModal .ps-table tbody:empty::before {
+        display: none;
+    }
+
     @media (min-width: 992px) {
         #productSetupModal .ps-search-card .row {
             --bs-gutter-x: 12px;
@@ -869,16 +969,11 @@
         }
     }
 
-</style>
-
-
-<style>
-    /* =========================================================
-       PRODUCT SETUP — STEP 2
-       CSS dipisahkan dari style modal utama agar mudah diubah.
+/* =========================================================
+       STEP 3 — KONFIGURASI PACKAGING
        ========================================================= */
 
-#step-2 {
+    #step-2 {
         --s2-primary: #ea580c;
         --s2-primary-dark: #c2410c;
         --s2-primary-soft: #fff7ed;
@@ -953,7 +1048,7 @@
 
     #step-2 .s2-main-grid {
         display: grid;
-        grid-template-columns: 1.15fr 1fr .75fr .95fr;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: .65rem;
     }
 
@@ -1142,7 +1237,7 @@
 
     #step-2 .s2-component-head {
         display: grid;
-        grid-template-columns: 125px 1fr 1.15fr 1fr;
+        grid-template-columns: 1.2fr 0.8fr 2px 125px 1fr 1.15fr 1fr;
         gap: .55rem;
         padding: 0 .55rem .35rem;
         color: var(--s2-primary);
@@ -1154,7 +1249,7 @@
 
     #step-2 .s2-component-row {
         display: grid;
-        grid-template-columns: 125px 1fr 1.15fr 1fr;
+        grid-template-columns: 1.2fr 0.8fr 2px 125px 1fr 1.15fr 1fr;
         gap: .55rem;
         align-items: center;
         padding: .52rem;
@@ -1195,6 +1290,14 @@
         border: 1px solid rgba(var(--s2-primary-rgb), .10);
         border-radius: 8px;
         font-size: .64rem;
+    }
+
+    #step-2 .s2-v-divider {
+        width: 2px;
+        height: 100%;
+        background-color: var(--s2-border);
+        border-radius: 2px;
+        opacity: 0.7;
     }
 
     /* =========================================================
@@ -1261,7 +1364,7 @@
 
         #step-2 .s2-component-head,
         #step-2 .s2-component-row {
-            grid-template-columns: 110px 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr 2px 110px 1fr 1fr 1fr;
         }
     }
 
@@ -1293,6 +1396,282 @@
         #step-2 .s2-unit {
             text-align: left;
         }
+    }
+
+/* =========================================================
+       STEP 2 — PACKING TYPE
+       ========================================================= */
+    #packingTypeStep {
+        --pt-primary: #ea580c;
+        --pt-primary-dark: #c2410c;
+        --pt-primary-rgb: 234, 88, 12;
+        --pt-text: #172033;
+        --pt-muted: #64748b;
+        --pt-card: #ffffff;
+        --pt-soft: #f8fafc;
+        --pt-border: #e2e8f0;
+        --pt-border-strong: #cbd5e1;
+        color: var(--pt-text);
+    }
+
+    [data-bs-theme="dark"] #packingTypeStep,
+    body.dark-mode #packingTypeStep {
+        --pt-text: #f1f5f9;
+        --pt-muted: #94a3b8;
+        --pt-card: #111827;
+        --pt-soft: #172033;
+        --pt-border: rgba(148, 163, 184, .18);
+        --pt-border-strong: rgba(148, 163, 184, .32);
+    }
+
+    #packingTypeStep .pt-shell {
+        overflow: hidden;
+        border: 1px solid var(--pt-border);
+        border-radius: 16px;
+        background: var(--pt-card);
+        box-shadow: 0 8px 26px rgba(15, 23, 42, .06);
+    }
+
+    #packingTypeStep .pt-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        min-height: 74px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--pt-border);
+        background: linear-gradient(90deg, rgba(var(--pt-primary-rgb), .045), transparent), var(--pt-card);
+    }
+
+    #packingTypeStep .pt-header-icon {
+        width: 42px;
+        height: 42px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 42px;
+        border: 1px solid rgba(var(--pt-primary-rgb), .18);
+        border-radius: 12px;
+        color: var(--pt-primary);
+        background: rgba(var(--pt-primary-rgb), .07);
+        font-size: 18px;
+    }
+
+    #packingTypeStep .pt-header-title {
+        margin: 0;
+        color: var(--pt-text);
+        font-size: 15px;
+        font-weight: 850;
+    }
+
+    #packingTypeStep .pt-header-description {
+        margin: 3px 0 0;
+        color: var(--pt-muted);
+        font-size: 10px;
+        line-height: 1.5;
+    }
+
+    #packingTypeStep .pt-content {
+        display: grid;
+        grid-template-columns: minmax(235px, 3fr) minmax(0, 9fr);
+        min-height: 470px;
+    }
+
+    #packingTypeStep .pt-type-column {
+        padding: 16px;
+        border-right: 1px solid var(--pt-border);
+    }
+
+    #packingTypeStep .pt-right-column {
+        min-width: 0;
+    }
+    #packingTypeStep .pt-section-heading {
+        margin-bottom: 13px;
+    }
+
+    #packingTypeStep .pt-section-title {
+        margin: 0;
+        color: var(--pt-text);
+        font-size: 11px;
+        font-weight: 850;
+        text-transform: uppercase;
+        letter-spacing: .25px;
+    }
+
+    #packingTypeStep .pt-section-number {
+        margin-right: 5px;
+    }
+
+    #packingTypeStep .pt-section-description {
+        margin: 5px 0 0;
+        color: var(--pt-muted);
+        font-size: 9px;
+        line-height: 1.5;
+    }
+
+    #packingTypeStep .pt-type-list {
+        display: grid;
+        gap: 9px;
+    }
+    #packingTypeStep .pt-option,
+    #packingTypeStep .pt-cover-option { position: relative; display: block; margin: 0; cursor: pointer; }
+    #packingTypeStep .pt-option input,
+    #packingTypeStep .pt-cover-option input { position: absolute; opacity: 0; pointer-events: none; }
+
+    #packingTypeStep .pt-option-card {
+        min-height: 28px;
+        display: flex;
+        align-items: center;
+        gap: 11px;
+        padding: 11px 12px;
+        border: 1px solid var(--pt-border-strong);
+        border-radius: 11px;
+        background: var(--pt-card);
+        transition: .18s ease;
+    }
+
+    #packingTypeStep .pt-option:hover .pt-option-card,
+    #packingTypeStep .pt-cover-option:hover .pt-cover-card {
+        border-color: rgba(var(--pt-primary-rgb), .38);
+        background: rgba(var(--pt-primary-rgb), .025);
+    }
+
+    #packingTypeStep .pt-radio {
+        width: 18px;
+        height: 18px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 18px;
+        border: 2px solid #94a3b8;
+        border-radius: 50%;
+        background: var(--pt-card);
+    }
+
+    #packingTypeStep .pt-radio::after {
+        width: 8px;
+        height: 8px;
+        content: "";
+        border-radius: 50%;
+        background: transparent;
+    }
+
+    #packingTypeStep .pt-option input:checked + .pt-option-card,
+    #packingTypeStep .pt-cover-option input:checked + .pt-cover-card {
+        border-color: var(--pt-primary);
+        background: rgba(var(--pt-primary-rgb), .045);
+        box-shadow: 0 0 0 2px rgba(var(--pt-primary-rgb), .07);
+    }
+
+    #packingTypeStep input:checked + * .pt-radio {
+        border-color: var(--pt-primary);
+    }
+    #packingTypeStep input:checked + * .pt-radio::after {
+        background: var(--pt-primary);
+    }
+    #packingTypeStep .pt-option-name {
+        color: var(--pt-text);
+        font-size: 11px;
+        font-weight: 800;
+    }
+
+    #packingTypeStep .pt-cover-options {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 9px;
+    }
+
+    #packingTypeStep .pt-cover-card {
+        min-height: 25px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 5px 14px;
+        border: 1px solid var(--pt-border-strong);
+        border-radius: 11px;
+        color: var(--pt-text);
+        background: var(--pt-card);
+        font-size: 11px;
+        font-weight: 800;
+        transition: .18s ease;
+    }
+
+    #packingTypeStep .pt-visual-section {
+        padding: 16px;
+    }
+
+    #packingTypeStep .pt-visual-frame {
+        min-height: 270px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 250px;
+        overflow: hidden;
+        border: 1px solid var(--pt-border);
+        border-radius: 13px;
+        background: var(--pt-soft);
+    }
+
+    #packingTypeStep .pt-visual-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 270px;
+        border-right: 1px solid var(--pt-border);
+        background: var(--pt-card);
+    }
+
+    #packingTypeStep .pt-empty-visual {
+        color: var(--pt-muted);
+        text-align: center;
+    }
+
+    #packingTypeStep .pt-empty-visual-icon {
+        width: 62px;
+        height: 62px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 10px;
+        border: 1px dashed var(--pt-border-strong);
+        border-radius: 16px;
+        color: var(--pt-primary);
+        background: var(--pt-soft);
+        font-size: 21px;
+    }
+
+    #packingTypeStep .pt-empty-visual-title { margin: 0 0 3px; color: var(--pt-text); font-size: 11px; font-weight: 800; }
+    #packingTypeStep .pt-empty-visual-text { margin: 0; font-size: 9px; }
+    #packingTypeStep .pt-detail-panel { padding: 18px; background: var(--pt-card); }
+    #packingTypeStep .pt-detail-title { margin: 0 0 17px; color: var(--pt-text); font-size: 10px; font-weight: 850; text-transform: uppercase; }
+    #packingTypeStep .pt-detail-list { display: grid; gap: 13px; }
+
+    #packingTypeStep .pt-detail-item {
+        display: grid;
+        grid-template-columns: 90px 10px minmax(0, 1fr);
+        color: var(--pt-muted);
+        font-size: 9px;
+        line-height: 1.45;
+    }
+
+    #packingTypeStep .pt-detail-item strong { color: var(--pt-text); }
+    #packingTypeStep .pt-detail-value { color: var(--pt-muted); font-weight: 700; }
+    #packingTypeStep .pt-detail-value.has-value { color: var(--pt-primary); }
+    #packingTypeStep .pt-detail-divider { margin: 16px 0; border-top: 1px solid var(--pt-border); }
+    #packingTypeStep .pt-description-label { margin-bottom: 6px; color: var(--pt-muted); font-size: 9px; font-weight: 800; }
+    #packingTypeStep .pt-description-value { margin: 0; color: var(--pt-muted); font-size: 9px; line-height: 1.6; }
+
+    @media (max-width: 991.98px) {
+        #packingTypeStep .pt-content { grid-template-columns: 1fr; }
+        #packingTypeStep .pt-type-column { border-right: 0; border-bottom: 1px solid var(--pt-border); }
+        #packingTypeStep .pt-type-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 767.98px) {
+        #packingTypeStep .pt-visual-frame { grid-template-columns: 1fr; }
+        #packingTypeStep .pt-visual-placeholder { border-right: 0; border-bottom: 1px solid var(--pt-border); }
+    }
+
+    @media (max-width: 575.98px) {
+        #packingTypeStep .pt-type-list,
+        #packingTypeStep .pt-cover-options { grid-template-columns: 1fr; }
     }
 </style>
 
@@ -1332,24 +1711,22 @@
 
                 <div class="d-flex align-items-center gap-3 ms-auto">
                     <div class="ps-wizard" aria-label="Product setup steps">
-                        <div
-                            class="ps-wizard-step is-active"
-                            data-wizard-indicator="1"
-                        >
+                        <div class="ps-wizard-step is-active" data-wizard-indicator="1">
                             <span class="ps-wizard-number">1</span>
                             <span class="ps-wizard-label">Pilih Produk</span>
                         </div>
 
-                        <div
-                            class="ps-wizard-line"
-                            data-wizard-line
-                        ></div>
+                        <div class="ps-wizard-line" data-wizard-line="1"></div>
 
-                        <div
-                            class="ps-wizard-step"
-                            data-wizard-indicator="2"
-                        >
+                        <div class="ps-wizard-step" data-wizard-indicator="2">
                             <span class="ps-wizard-number">2</span>
+                            <span class="ps-wizard-label">Packing Type</span>
+                        </div>
+
+                        <div class="ps-wizard-line" data-wizard-line="2"></div>
+
+                        <div class="ps-wizard-step" data-wizard-indicator="3">
+                            <span class="ps-wizard-number">3</span>
                             <span class="ps-wizard-label">Konfigurasi</span>
                         </div>
                     </div>
@@ -1529,12 +1906,115 @@
                 </div>
 
                 <!-- =====================================================
-                     STEP 2 — KONFIGURASI PACKAGING
+                     STEP 2 — PACKING TYPE
+                     ===================================================== -->
+                <div class="ps-step-panel" id="step2" data-setup-step="2">
+                    <div id="packingTypeStep">
+                        <div class="pt-shell">
+                            <div class="pt-header">
+                                <span class="pt-header-icon"><i class="fa-solid fa-cube"></i></span>
+                                <div>
+                                    <h6 class="pt-header-title">Packing Type</h6>
+                                    <p class="pt-header-description">Pilih jenis packaging dan bahan penutup yang sesuai dengan kebutuhan pengiriman.</p>
+                                </div>
+                            </div>
+
+                            <div class="pt-content">
+                                <section class="pt-type-column">
+                                    <div class="pt-section-heading">
+                                        <h6 class="pt-section-title"><span class="pt-section-number">1.</span> Pilih Type Packing</h6>
+                                        <p class="pt-section-description">Pilih jenis packaging yang akan digunakan.</p>
+                                    </div>
+
+                                    <div class="pt-type-list">
+                                        @php
+                                            $selectedTypePackaging = trim((string) ($calculation->type_packaging ?? ''));
+                                        @endphp
+                                        @foreach ([
+                                            'Box' => 'Box Kayu',
+                                            'Palet' => 'Palet Kayu',
+                                            'Peti' => 'Peti Kayu',
+                                            'Kerangka' => 'Kerangka Kayu',
+                                        ] as $packingValue => $packingLabel)
+                                            <label class="pt-option">
+                                                <input type="radio" name="packing_type" value="{{ $packingValue }}" {{ strcasecmp($selectedTypePackaging, $packingValue) === 0 ? 'checked' : '' }}>
+                                                <span class="pt-option-card">
+                                                    <span class="pt-radio"></span>
+                                                    <span class="pt-option-name">{{ $packingLabel }}</span>
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                    
+                                    <hr style="margin: 24px 0; border: 0; border-top: 1px solid var(--pt-border);">
+
+                                    <div class="pt-section-heading">
+                                        <h6 class="pt-section-title"><span class="pt-section-number">2.</span> Pilih Bahan Penutup</h6>
+                                        <p class="pt-section-description">Pilih bahan penutup yang akan digunakan pada packaging.</p>
+                                    </div>
+
+                                    <div class="pt-cover-options">
+                                        @php
+                                            $selectedTipePenutup = trim((string) ($calculation->tipe_penutup ?? ''));
+                                        @endphp
+                                        @foreach (['Papan', 'Triplek'] as $coverMaterial)
+                                            <label class="pt-cover-option">
+                                                <input type="radio" name="cover_material" value="{{ $coverMaterial }}" {{ strcasecmp($selectedTipePenutup, $coverMaterial) === 0 ? 'checked' : '' }}>
+                                                <span class="pt-cover-card">
+                                                    <span class="pt-radio"></span>
+                                                    <span>{{ $coverMaterial }}</span>
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
+                                </section>
+
+                                <div class="pt-right-column" style="padding-top: 16px;">
+                                    <section class="pt-visual-section">
+                                        <div class="pt-section-heading">
+                                            <h6 class="pt-section-title"><span class="pt-section-number">3.</span> Visualisasi Packaging</h6>
+                                        </div>
+
+                                        <div class="pt-visual-frame">
+                                            <div class="pt-visual-placeholder">
+                                                <div class="pt-empty-visual">
+                                                    <span class="pt-empty-visual-icon"><i class="fa-regular fa-image"></i></span>
+                                                    <h6 class="pt-empty-visual-title">Area Visual Packaging</h6>
+                                                    <p class="pt-empty-visual-text">Visual masih dikosongkan. Bingkai siap digunakan.</p>
+                                                </div>
+                                            </div>
+
+                                            <aside class="pt-detail-panel">
+                                                <h6 class="pt-detail-title">Detail Pilihan</h6>
+                                                <div class="pt-detail-list">
+                                                    <div class="pt-detail-item">
+                                                        <strong>Type Packing</strong><span>:</span>
+                                                        <span class="pt-detail-value" id="selectedPackingTypeText">-</span>
+                                                    </div>
+                                                    <div class="pt-detail-item">
+                                                        <strong>Bahan Penutup</strong><span>:</span>
+                                                        <span class="pt-detail-value" id="selectedCoverMaterialText">-</span>
+                                                    </div>
+                                                </div>
+                                                <div class="pt-detail-divider"></div>
+                                                <div class="pt-description-label">Deskripsi</div>
+                                                <p class="pt-description-value" id="selectedPackingDescription">Pilih type packing untuk menampilkan detail pilihan.</p>
+                                            </aside>
+                                        </div>
+                                    </section>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- =====================================================
+                     STEP 3 — KONFIGURASI PACKAGING
                      ===================================================== -->
                 <div
                     class="ps-step-panel"
-                    id="step2"
-                    data-setup-step="2"
+                    id="step3"
+                    data-setup-step="3"
                 >
                     <div id="step-2">
 <div class="s2-shell">
@@ -1599,27 +2079,27 @@
                 </div>
 
                 <div class="s2-field-card">
-                    <label class="s2-label" for="s2_type_packaging">
-                        <i class="fa-solid fa-box"></i>
-                        Type Packing
+                    <label class="s2-label" for="s2_delivery_date">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        Delivery Date
                     </label>
 
-                    <select class="form-select" id="s2_type_packaging">
-                        <option value="Box">Box</option>
-                        <option value="Palet">Palet</option>
-                        <option value="Peti">Peti</option>
-                        <option value="Kerangka">Kerangka</option>
-                    </select>
+                    <input
+                        type="date"
+                        class="form-control"
+                        id="s2_delivery_date"
+                    >
                 </div>
+
+
 
             </div>
         </div>
 
-        <!-- Baris 1 -->
-        <div class="s2-row">
-
-            <!-- Dimensi -->
-            <section class="s2-panel s2-dimension">
+        <!-- Dimensi Card (Full Width) -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <section class="s2-panel s2-dimension">
                 <div class="s2-panel-head">
                     <span class="s2-panel-number">1</span>
 
@@ -1631,9 +2111,9 @@
                 </div>
 
                 <div class="s2-panel-body">
-                    <div class="s2-compact-stack">
+                    <div class="d-flex align-items-center gap-4 w-100">
 
-                        <div class="s2-compact-field">
+                        <div class="s2-compact-field flex-fill">
                             <label class="s2-compact-label" for="s2_length">
                                 <span class="s2-compact-icon">
                                     <i class="fa-solid fa-arrows-left-right"></i>
@@ -1651,7 +2131,7 @@
                             <span class="s2-unit">mm</span>
                         </div>
 
-                        <div class="s2-compact-field">
+                        <div class="s2-compact-field flex-fill">
                             <label class="s2-compact-label" for="s2_width">
                                 <span class="s2-compact-icon">
                                     <i class="fa-solid fa-ruler-horizontal"></i>
@@ -1669,7 +2149,7 @@
                             <span class="s2-unit">mm</span>
                         </div>
 
-                        <div class="s2-compact-field">
+                        <div class="s2-compact-field flex-fill">
                             <label class="s2-compact-label" for="s2_height">
                                 <span class="s2-compact-icon">
                                     <i class="fa-solid fa-arrows-up-down"></i>
@@ -1690,7 +2170,12 @@
                     </div>
                 </div>
             </section>
+            </div>
+        </div>
 
+        <!-- Baris 1 -->
+        <div class="row">
+            <div class="col-12">
             <!-- Konfigurasi Area Bawah -->
             <section class="s2-panel s2-bottom">
                 <div class="s2-panel-head">
@@ -1707,6 +2192,9 @@
                     <div class="s2-component-table">
 
                         <div class="s2-component-head">
+                            <span>Keterangan</span>
+                            <span>Nilai</span>
+                            <div></div>
                             <span>Komponen</span>
                             <span>Penggunaan</span>
                             <span>Arah Pemasangan</span>
@@ -1728,6 +2216,16 @@
 
                         <!-- Penyanggah -->
                         <div class="s2-component-row">
+                            <div class="s2-component-name" style="font-size: 0.65rem;">
+                                Jarak Penyanggah Bawah
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <input type="number" class="form-control" id="s2_jarak_bawah" value="300" placeholder="0">
+                                <span class="s2-unit" style="font-size: 0.6rem;">mm</span>
+                            </div>
+
+                            <div class="s2-v-divider"></div>
+
                             <div class="s2-component-name">
                                 <span class="s2-mini-icon">
                                     <i class="fa-solid fa-grip-lines"></i>
@@ -1758,6 +2256,16 @@
 
                         <!-- Penutup -->
                         <div class="s2-component-row">
+                            <div class="s2-component-name" style="font-size: 0.65rem;">
+                                Celah Bawah
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <input type="number" class="form-control" id="s2_gap_bawah" placeholder="0">
+                                <span class="s2-unit" style="font-size: 0.6rem;">mm</span>
+                            </div>
+
+                            <div class="s2-v-divider"></div>
+
                             <div class="s2-component-name">
                                 <span class="s2-mini-icon">
                                     <i class="fa-solid fa-border-all"></i>
@@ -1790,6 +2298,10 @@
 
                         <!-- Kaki Balok -->
                         <div class="s2-component-row">
+                            <div></div>
+                            <div></div>
+                            <div class="s2-v-divider"></div>
+
                             <div class="s2-component-name">
                                 <span class="s2-mini-icon">
                                     <i class="fa-solid fa-grip-lines-vertical"></i>
@@ -1820,108 +2332,16 @@
                     </div>
                 </div>
             </section>
+            </div>
         </div>
 
         <!-- Baris 2 -->
-        <div class="s2-row">
-
-            <!-- Konfigurasi Tambahan -->
-            <section class="s2-panel s2-additional">
-                <div class="s2-panel-head">
-                    <span class="s2-panel-number">3</span>
-
-                    <span class="s2-panel-icon">
-                        <i class="fa-solid fa-sliders"></i>
-                    </span>
-
-                    <h6 class="s2-panel-title">Konfigurasi</h6>
-                </div>
-
-                <div class="s2-panel-body">
-                    <div class="s2-compact-stack">
-
-                        <div class="s2-compact-field">
-                            <label class="s2-compact-label" for="s2_jarak_atas">
-                                <span class="s2-compact-icon">
-                                    <i class="fa-solid fa-ruler"></i>
-                                </span>
-                                Jarak Penyanggah Atas
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                id="s2_jarak_atas"
-                                value="300"
-                                placeholder="0"
-                            >
-
-                            <span class="s2-unit">mm</span>
-                        </div>
-
-                        <div class="s2-compact-field">
-                            <label class="s2-compact-label" for="s2_jarak_bawah">
-                                <span class="s2-compact-icon">
-                                    <i class="fa-solid fa-ruler"></i>
-                                </span>
-                                Jarak Penyanggah Bawah
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                id="s2_jarak_bawah"
-                                value="300"
-                                placeholder="0"
-                            >
-
-                            <span class="s2-unit">mm</span>
-                        </div>
-
-                        <div class="s2-compact-field">
-                            <label class="s2-compact-label" for="s2_gap_atas">
-                                <span class="s2-compact-icon">
-                                    <i class="fa-solid fa-arrow-up"></i>
-                                </span>
-                                Celah Atas
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                id="s2_gap_atas"
-                                placeholder="0"
-                            >
-
-                            <span class="s2-unit">mm</span>
-                        </div>
-
-                        <div class="s2-compact-field">
-                            <label class="s2-compact-label" for="s2_gap_bawah">
-                                <span class="s2-compact-icon">
-                                    <i class="fa-solid fa-arrow-down"></i>
-                                </span>
-                                Celah Bawah
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                id="s2_gap_bawah"
-                                placeholder="0"
-                            >
-
-                            <span class="s2-unit">mm</span>
-                        </div>
-
-                    </div>
-                </div>
-            </section>
-
+        <div class="row">
+            <div class="col-12">
             <!-- Konfigurasi Area Atas -->
             <section class="s2-panel s2-top">
                 <div class="s2-panel-head">
-                    <span class="s2-panel-number">4</span>
+                    <span class="s2-panel-number">3</span>
 
                     <span class="s2-panel-icon">
                         <i class="fa-solid fa-sliders"></i>
@@ -1934,6 +2354,9 @@
                     <div class="s2-component-table">
 
                         <div class="s2-component-head">
+                            <span>Keterangan</span>
+                            <span>Nilai</span>
+                            <div></div>
                             <span>Komponen</span>
                             <span>Penggunaan</span>
                             <span>Arah Pemasangan</span>
@@ -1942,6 +2365,16 @@
 
                         <!-- Penyanggah -->
                         <div class="s2-component-row">
+                            <div class="s2-component-name" style="font-size: 0.65rem;">
+                                Jarak Penyanggah Atas
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <input type="number" class="form-control" id="s2_jarak_atas" value="300" placeholder="0">
+                                <span class="s2-unit" style="font-size: 0.6rem;">mm</span>
+                            </div>
+
+                            <div class="s2-v-divider"></div>
+
                             <div class="s2-component-name">
                                 <span class="s2-mini-icon">
                                     <i class="fa-solid fa-grip-lines"></i>
@@ -1972,6 +2405,16 @@
 
                         <!-- Penutup -->
                         <div class="s2-component-row">
+                            <div class="s2-component-name" style="font-size: 0.65rem;">
+                                Celah Atas
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <input type="number" class="form-control" id="s2_gap_atas" placeholder="0">
+                                <span class="s2-unit" style="font-size: 0.6rem;">mm</span>
+                            </div>
+
+                            <div class="s2-v-divider"></div>
+
                             <div class="s2-component-name">
                                 <span class="s2-mini-icon">
                                     <i class="fa-solid fa-border-all"></i>
@@ -2005,6 +2448,7 @@
                     </div>
                 </div>
             </section>
+            </div>
         </div>
 
         <!-- Catatan -->
@@ -2044,13 +2488,6 @@
                         Back
                     </button>
 
-                    <button
-                        type="button"
-                        class="btn ps-button ps-button-secondary"
-                        data-bs-dismiss="modal"
-                    >
-                        Cancel
-                    </button>
 
                     <button
                         type="button"
@@ -2092,65 +2529,44 @@
            HELPERS
            ===================================================== */
         const setStep = (step) => {
-            currentStep = step;
+            currentStep = Math.max(1, Math.min(3, Number(step)));
 
-            document.querySelectorAll(
-                '#productSetupModal [data-setup-step]'
-            ).forEach((panel) => {
+            document.querySelectorAll('#productSetupModal [data-setup-step]').forEach((panel) => {
                 panel.classList.toggle(
                     'is-active',
-                    Number(panel.dataset.setupStep) === step
+                    Number(panel.dataset.setupStep) === currentStep
                 );
             });
 
-            const indicatorOne = modalElement?.querySelector(
-                '[data-wizard-indicator="1"]'
-            );
+            modalElement?.querySelectorAll('[data-wizard-indicator]').forEach((indicator) => {
+                const indicatorStep = Number(indicator.dataset.wizardIndicator);
+                indicator.classList.toggle('is-active', indicatorStep === currentStep);
+                indicator.classList.toggle('is-complete', indicatorStep < currentStep);
+            });
 
-            const indicatorTwo = modalElement?.querySelector(
-                '[data-wizard-indicator="2"]'
-            );
+            modalElement?.querySelectorAll('[data-wizard-line]').forEach((line) => {
+                const lineStep = Number(line.dataset.wizardLine);
+                line.classList.toggle('is-complete', currentStep > lineStep);
+            });
 
-            const wizardLine = modalElement?.querySelector(
-                '[data-wizard-line]'
-            );
-
-            indicatorOne?.classList.toggle(
-                'is-active',
-                step === 1
-            );
-
-            indicatorOne?.classList.toggle(
-                'is-complete',
-                step === 2
-            );
-
-            indicatorTwo?.classList.toggle(
-                'is-active',
-                step === 2
-            );
-
-            wizardLine?.classList.toggle(
-                'is-complete',
-                step === 2
-            );
-
-            previousButton?.classList.toggle(
-                'd-none',
-                step === 1
-            );
+            previousButton?.classList.toggle('d-none', currentStep === 1);
 
             if (nextButton) {
-                nextButton.innerHTML = step === 1
+                nextButton.innerHTML = currentStep < 3
                     ? '<span>Next Step</span><i class="fa-solid fa-arrow-right"></i>'
                     : '<i class="fa-solid fa-floppy-disk"></i><span>Save Configuration</span>';
             }
 
             if (statusText) {
-                statusText.textContent = step === 1
-                    ? 'Lengkapi data produk untuk melanjutkan.'
-                    : 'Review konfigurasi sebelum disimpan.';
+                const messages = {
+                    1: 'Langkah 1 dari 3: Pilih produk yang akan dipacking.',
+                    2: 'Langkah 2 dari 3: Pilih type packing dan bahan penutup.',
+                    3: 'Langkah 3 dari 3: Lengkapi konfigurasi packaging.',
+                };
+                statusText.textContent = messages[currentStep];
             }
+
+            modalElement?.querySelector('.ps-modal-body')?.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
         const getSelectedItemData = () => {
@@ -2164,6 +2580,10 @@
                 id: option.value,
                 partNumber: option.dataset.itemNo || '-',
                 description: option.dataset.itemDesc || '-',
+                customer:
+                    option.dataset.customer ||
+                    window.currentFetchedCustomer ||
+                    '-',
                 qtyOrder: Number(option.dataset.qtyOrder || 0),
                 qtyRemaining: Number(option.dataset.qtyRemaining || 0),
             };
@@ -2251,8 +2671,28 @@
 
             const options = items.map((item, index) => {
                 const itemId = item.id ?? index;
-                const itemNumber = item.no_barang ?? item.item_no ?? item.part_no ?? '-';
-                const description = item.deskripsi_barang ?? item.description ?? item.item_description ?? '-';
+                const itemNumber =
+                    item.no_barang ??
+                    item.item_no ??
+                    item.part_no ??
+                    '-';
+
+                const description =
+                    item.deskripsi_barang ??
+                    item.description ??
+                    item.item_description ??
+                    '-';
+
+                const customer = String(
+                    item.nama_pelanggan ??
+                    item.nama_customer ??
+                    item.customer_name ??
+                    item.nm_customer ??
+                    item.customer ??
+                    window.currentFetchedCustomer ??
+                    '-'
+                ).trim() || '-';
+
                 const qtyOrder = Number(item.qty ?? item.qty_order ?? 0);
                 const qtyRemaining = Number(item.sisa_kirim ?? item.qty_remaining ?? 0);
 
@@ -2263,6 +2703,7 @@
                         value="${escapeSOHtml(itemId)}"
                         data-item-no="${escapeSOHtml(itemNumber)}"
                         data-item-desc="${escapeSOHtml(description)}"
+                        data-customer="${escapeSOHtml(customer)}"
                         data-qty-order="${qtyOrder}"
                         data-qty-remaining="${qtyRemaining}"
                         data-short-text="${escapeSOHtml(itemNumber)}"
@@ -2310,7 +2751,7 @@
                 soNumber: searchInput?.value?.trim() || '-',
                 itemNumber: item.partNumber,
                 description: item.description,
-                customer: window.currentFetchedCustomer || '-',
+                customer: item.customer || window.currentFetchedCustomer || '-',
                 qty: qty
             });
 
@@ -2321,6 +2762,185 @@
             itemDropdown.value = '';
             if (inputQtyItem) inputQtyItem.value = '';
         });
+
+        /* =====================================================
+           STEP 2 — PACKING TYPE
+           ===================================================== */
+        const packingTypeLabels = {
+            Box: 'Box Kayu',
+            Palet: 'Palet Kayu',
+            Peti: 'Peti Kayu',
+            Kerangka: 'Kerangka Kayu',
+        };
+
+        const packingTypeDescriptions = {
+            Box: 'Kotak kayu rapat yang menutup seluruh bagian barang.',
+            Palet: 'Alas datar untuk menumpuk barang agar mudah dipindahkan menggunakan forklift.',
+            Peti: 'Kotak kayu yang menutup sebagian bagian barang.',
+            Kerangka: 'Bingkai kayu terbuka yang memberikan perlindungan struktur pada barang.',
+        };
+
+        // ==========================================
+        // UI & Event Binding
+        // ==========================================
+        const syncPackingTypeSelection = () => {
+            const packingInput = document.querySelector('#packingTypeStep input[name="packing_type"]:checked');
+            const coverInput = document.querySelector('#packingTypeStep input[name="cover_material"]:checked');
+
+            const packingValue = packingInput ? packingInput.value : '';
+            let coverValue = coverInput ? coverInput.value : '';
+            // Handle Peti Kayu disabling Triplek in Step 2
+            const triplekCoverInput = document.querySelector('#packingTypeStep input[name="cover_material"][value="Triplek"]');
+            const papanCoverInput = document.querySelector('#packingTypeStep input[name="cover_material"][value="Papan"]');
+            if (triplekCoverInput && papanCoverInput) {
+                if (packingValue === 'Peti') {
+                    triplekCoverInput.disabled = true;
+                    if (coverValue === 'Triplek') {
+                        papanCoverInput.checked = true;
+                        coverValue = 'Papan';
+                    }
+                } else {
+                    triplekCoverInput.disabled = false;
+                }
+            }
+
+            const summaryPacking = document.getElementById('summary_packing_type');
+            if (summaryPacking) {
+                summaryPacking.textContent = packingValue + (coverValue ? ` + ${coverValue}` : '');
+            }
+            
+            // Logic for Konfigurasi Atas & Bawah
+            const s2_ptb_status = document.getElementById('s2_ptb_status');
+            const s2_pta_status = document.getElementById('s2_pta_status');
+            const topPanel = document.querySelector('.s2-panel.s2-top');
+            const s2_pa_status = document.getElementById('s2_pa_status');
+
+            // Helper to handle select state
+            const setSelectState = (select, allowedValues, forcedValue) => {
+                if (!select) return;
+                let valueChanged = false;
+
+                Array.from(select.options).forEach(opt => {
+                    if (allowedValues.includes(opt.value) || opt.value === 'Tanpa Penutup') {
+                        opt.hidden = false;
+                        opt.disabled = false;
+                    } else {
+                        opt.hidden = true;
+                        opt.disabled = true;
+                    }
+                });
+                
+                if (forcedValue) {
+                    if (select.value !== forcedValue) {
+                        select.value = forcedValue;
+                        valueChanged = true;
+                    }
+                    select.disabled = true; // prevent user change
+                    select.style.backgroundColor = 'var(--s2-soft, #f8fafc)'; // visual cue
+                } else {
+                    select.disabled = false;
+                    select.style.backgroundColor = '';
+                    if (!allowedValues.includes(select.value) && select.value !== 'Tanpa Penutup') {
+                        select.value = allowedValues[0];
+                        valueChanged = true;
+                    }
+                }
+
+                if (valueChanged) {
+                    select.dispatchEvent(new Event('change'));
+                }
+            };
+
+            // ==========================================
+            // KOMPLEKSITAS LOGIKA PACKING & BAHAN PENUTUP
+            // 1. Box Kayu: Papan -> Atas & Bawah otomatis Papan Full. Triplek -> Atas & Bawah otomatis Tripleks.
+            // 2. Palet Kayu: Panel Atas disembunyikan sepenuhnya (Exclude). Bawah bisa Papan Full/Setengah atau Tripleks.
+            // 3. Peti Kayu: Triplek di Step 2 didisable (hanya Papan). Atas & Bawah otomatis Papan Setengah.
+            // 4. Kerangka Kayu: Panel Atas TAMPIL namun Penutup Atas dikunci ke "Tanpa Penutup". Bawah bisa Papan Full/Setengah atau Tripleks.
+            // ==========================================
+            
+            // 1. Show/Hide Konfigurasi Atas
+            if (packingValue === 'Palet') {
+                if (topPanel) topPanel.style.display = 'none';
+                if (s2_pta_status && s2_pta_status.value !== 'Tanpa Penutup') {
+                    s2_pta_status.value = 'Tanpa Penutup';
+                    s2_pta_status.dispatchEvent(new Event('change'));
+                }
+                if (s2_pa_status && s2_pa_status.value !== 'Exclude') {
+                    s2_pa_status.value = 'Exclude';
+                    s2_pa_status.dispatchEvent(new Event('change'));
+                }
+            } else {
+                if (topPanel) topPanel.style.display = '';
+                if (s2_pa_status && s2_pa_status.value === 'Exclude') {
+                    s2_pa_status.value = 'Include';
+                    s2_pa_status.dispatchEvent(new Event('change'));
+                }
+            }
+
+            // 2. Options per combination
+            if (packingValue === 'Box') {
+                if (coverValue === 'Papan') {
+                    setSelectState(s2_pta_status, ['Papan Full'], 'Papan Full');
+                    setSelectState(s2_ptb_status, ['Papan Full'], 'Papan Full');
+                } else if (coverValue === 'Triplek') {
+                    setSelectState(s2_pta_status, ['Tripleks'], 'Tripleks');
+                    setSelectState(s2_ptb_status, ['Tripleks'], 'Tripleks');
+                }
+            } else if (packingValue === 'Peti') {
+                setSelectState(s2_pta_status, ['Papan Setengah'], 'Papan Setengah');
+                setSelectState(s2_ptb_status, ['Papan Setengah'], 'Papan Setengah');
+            } else if (packingValue === 'Palet' || packingValue === 'Kerangka') {
+                if (packingValue === 'Kerangka') {
+                    setSelectState(s2_pta_status, ['Tanpa Penutup'], 'Tanpa Penutup');
+                }
+                if (coverValue === 'Papan') {
+                    setSelectState(s2_ptb_status, ['Papan Full', 'Papan Setengah'], null);
+                } else if (coverValue === 'Triplek') {
+                    setSelectState(s2_ptb_status, ['Tripleks'], 'Tripleks');
+                }
+            }
+
+            const packingText = document.getElementById('selectedPackingTypeText');
+            const coverText = document.getElementById('selectedCoverMaterialText');
+            const descriptionText = document.getElementById('selectedPackingDescription');
+
+            if (packingText) {
+                packingText.textContent = packingTypeLabels[packingValue] || '-';
+                packingText.classList.toggle('has-value', Boolean(packingValue));
+            }
+
+            if (coverText) {
+                coverText.textContent = coverValue || '-';
+                coverText.classList.toggle('has-value', Boolean(coverValue));
+            }
+
+            if (descriptionText) {
+                descriptionText.textContent = packingTypeDescriptions[packingValue]
+                    || 'Pilih type packing untuk menampilkan detail pilihan.';
+            }
+        };
+
+        document.querySelectorAll(
+            '#packingTypeStep input[name="packing_type"], #packingTypeStep input[name="cover_material"]'
+        ).forEach((input) => input.addEventListener('change', syncPackingTypeSelection));
+
+        const validatePackingTypeStep = () => {
+            const packingInput = document.querySelector('#packingTypeStep input[name="packing_type"]:checked');
+            const coverInput = document.querySelector('#packingTypeStep input[name="cover_material"]:checked');
+
+            if (!packingInput) {
+                if (statusText) statusText.textContent = 'Pilih type packing terlebih dahulu.';
+                return false;
+            }
+
+            if (!coverInput) {
+                if (statusText) statusText.textContent = 'Pilih bahan penutup terlebih dahulu.';
+                return false;
+            }
+
+            return true;
+        };
 
         /* =====================================================
            EVENTS
@@ -2352,51 +2972,47 @@
             if (currentStep === 1) {
                 if (window.selectedItemsList && window.selectedItemsList.length > 0) {
                     setStep(2);
-                } else {
-                    if (statusText) {
-                        statusText.textContent =
-                            'Tarik data SO dan tambahkan barang ke daftar terlebih dahulu.';
-                    }
+                } else if (statusText) {
+                    statusText.textContent = 'Tarik data SO dan tambahkan barang ke daftar terlebih dahulu.';
                 }
                 return;
             }
 
-            if (!validateStepTwo()) {
+            if (currentStep === 2) {
+                if (!validatePackingTypeStep()) return;
+                setStep(3);
                 return;
             }
+
+            if (!validateStepTwo()) return;
 
             const payload = {
                 salesOrder: searchInput?.value?.trim() || '',
                 items: window.selectedItemsList,
+                packingType: {
+                    type: document.querySelector('#packingTypeStep input[name="packing_type"]:checked')?.value || '',
+                    coverMaterial: document.querySelector('#packingTypeStep input[name="cover_material"]:checked')?.value || '',
+                },
                 configuration: getPackagingConfiguration(),
             };
 
-            document.dispatchEvent(
-                new CustomEvent('productSetupSaveRequested', {
-                    detail: payload,
-                })
-            );
+            document.dispatchEvent(new CustomEvent('productSetupSaveRequested', { detail: payload }));
+            console.log('Product Setup payload:', payload);
 
-            console.log(
-                'Product Setup payload:',
-                payload
-            );
-
-            if (statusText) {
-                statusText.textContent =
-                    'Konfigurasi siap disimpan.';
-            }
+            if (statusText) statusText.textContent = 'Konfigurasi siap disimpan.';
         });
 
-        previousButton?.addEventListener(
-            'click',
-            () => setStep(1)
-        );
+        previousButton?.addEventListener('click', () => {
+            if (currentStep > 1) setStep(currentStep - 1);
+        });
 
-        modalElement?.addEventListener(
-            'hidden.bs.modal',
-            () => setStep(1)
-        );
+        modalElement?.addEventListener('hidden.bs.modal', () => {
+            setStep(1);
+            document.querySelectorAll('#packingTypeStep input[type="radio"]').forEach((input) => {
+                input.checked = false;
+            });
+            syncPackingTypeSelection();
+        });
 
 
         /* =====================================================
@@ -2411,7 +3027,8 @@
             packagingNumber: getFieldValue('s2_pkg_number'),
             packerId: getFieldValue('s2_packer'),
             qtyPacking: Number(getFieldValue('s2_qty_pack') || 0),
-            typePackaging: getFieldValue('s2_type_packaging'),
+            deliveryDate: getFieldValue('s2_delivery_date'),
+            typePackaging: document.querySelector('#packingTypeStep input[name="packing_type"]:checked')?.value || '',
 
             dimensions: {
                 length: Number(getFieldValue('s2_length') || 0),
@@ -2470,7 +3087,6 @@
             const requiredIds = [
                 's2_packer',
                 's2_qty_pack',
-                's2_type_packaging',
                 's2_length',
                 's2_width',
                 's2_height',
@@ -2541,16 +3157,67 @@
 
             // Populasikan nilai Step 2
             const setVal = (id, val) => {
-                const el = document.getElementById(id);
-                if (el && val !== undefined && val !== null && val !== '') {
-                    el.value = val;
+                const element = document.getElementById(id);
+
+                if (
+                    !element ||
+                    val === undefined ||
+                    val === null ||
+                    String(val).trim() === ''
+                ) {
+                    return;
                 }
+
+                const cleanValue = String(val).trim();
+
+                if (element.tagName === 'SELECT') {
+                    const matchingOption = Array.from(element.options).find(
+                        option =>
+                            String(option.value).trim().toLowerCase() ===
+                            cleanValue.toLowerCase()
+                    );
+
+                    if (matchingOption) {
+                        element.value = matchingOption.value;
+                    } else {
+                        const newOption = new Option(
+                            cleanValue,
+                            cleanValue,
+                            true,
+                            true
+                        );
+
+                        element.add(newOption);
+                    }
+
+                    element.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
+
+                    return;
+                }
+
+                element.value = cleanValue;
             };
 
             setVal('s2_pkg_number', initialData.packagingNumber);
             setVal('s2_packer', initialData.packerId);
             setVal('s2_qty_pack', initialData.qtyPacking);
-            setVal('s2_type_packaging', initialData.typePackaging);
+            if (initialData.deliveryDate) {
+                // Formatting to YYYY-MM-DD for date input
+                const dateObj = new Date(initialData.deliveryDate);
+                if (!isNaN(dateObj)) {
+                    setVal('s2_delivery_date', dateObj.toISOString().split('T')[0]);
+                }
+            }
+            
+            if (initialData.typePackaging) {
+                const radio = document.querySelector(`#packingTypeStep input[name="packing_type"][value="${initialData.typePackaging}"]`);
+                if (radio) {
+                    radio.checked = true;
+                    syncPackingTypeSelection();
+                }
+            }
 
             setVal('s2_length', initialData.dimensions?.length);
             setVal('s2_width', initialData.dimensions?.width);
@@ -2614,7 +3281,15 @@
                             if (el) el.textContent = text || '-';
                         };
                         setText('infoNoSO', soNumber);
-                        const customerName = firstItem.nama_pelanggan || firstItem.customer || '-';
+                        const customerName = String(
+                            firstItem.nama_pelanggan ??
+                            firstItem.nama_customer ??
+                            firstItem.customer_name ??
+                            firstItem.nm_customer ??
+                            firstItem.customer ??
+                            ''
+                        ).trim() || '-';
+
                         setText('infoCustomer', customerName);
                         window.currentFetchedCustomer = customerName;
                         // Misal kalau ada delivery date & address dari API
@@ -2661,110 +3336,225 @@
             let url = '';
             let finalPayload = {};
 
+            const selectedItems = Array.isArray(window.selectedItemsList)
+                ? window.selectedItemsList
+                : [];
+
+            const itemsList = selectedItems
+                .map(item => ({
+                    no_so: String(item.soNumber || '').trim(),
+                    customer: String(item.customer || '').trim() || '-',
+                    no_product: String(item.itemNumber || '').trim(),
+                    desc_product: String(item.description || '').trim(),
+                    qty: Math.max(1, Number(item.qty || 1)),
+                }))
+                .filter(item => item.no_product !== '');
+
+            if (itemsList.length === 0) {
+                throw new Error(
+                    'Daftar barang Step 1 kosong. Tambahkan minimal satu produk.'
+                );
+            }
+
             if (calcId) {
+                // =========================================================
                 // UPDATE EXISTING CALCULATION
+                // Route: PackagingCalculationController@update
+                // =========================================================
                 url = `/packaging/calc-update/${calcId}`;
-                let itemsList = [];
-                if (window.selectedItemsList && window.selectedItemsList.length > 0) {
-                    itemsList = window.selectedItemsList.map(item => ({
-                        no_so: item.soNumber,
-                        customer: item.customer,
-                        no_product: item.itemNumber,
-                        desc_product: item.description,
-                        qty: item.qty
-                    }));
-                } else if (payload.item) {
-                    itemsList = [{
-                        no_so: payload.salesOrder,
-                        customer: document.getElementById('infoCustomer')?.textContent,
-                        no_product: payload.item.product,
-                        desc_product: payload.item.desc,
-                        qty: payload.item.qtyOrder || 1
-                    }];
-                }
 
                 finalPayload = {
-                    _token: document.querySelector('meta[name="csrf-token"]')?.content,
+                    _token: document.querySelector(
+                        'meta[name="csrf-token"]'
+                    )?.content,
                     _method: 'PUT',
+
+                    // Step 1: WAJIB dikirim agar SO, customer, produk,
+                    // penambahan/penghapusan item dan qty dapat diperbarui.
+                    items: itemsList,
+
+                    // Step 2
                     qty_pack: payload.configuration.qtyPacking,
                     packer_id: payload.configuration.packerId,
-                    length: payload.configuration.dimensions.length,
-                    width: payload.configuration.dimensions.width,
-                    height: payload.configuration.dimensions.height,
-                    jarak_penyanggah_atas: payload.configuration.additional.supportSpacingAtas,
-                    jarak_penyanggah_bawah: payload.configuration.additional.supportSpacingBawah,
-                    gap_atas: payload.configuration.additional.topGap,
-                    gap_bawah: payload.configuration.additional.bottomGap,
-        
-                    bawah_penyangga_include: payload.configuration.bottom.support.usage === 'Include' ? 1 : 0,
-                    bawah_penyangga_arah: payload.configuration.bottom.support.direction,
-                    bawah_penyangga_material: payload.configuration.bottom.support.material,
-                    
-                    bawah_penutup_tipe: payload.configuration.bottom.cover.usage,
-                    bawah_penutup_arah: payload.configuration.bottom.cover.direction,
-                    bawah_penutup_material: payload.configuration.bottom.cover.material,
-                    
-                    include_pallet_base: payload.configuration.bottom.blockFeet.usage === 'Include' ? 1 : 0,
-                    bawah_kakibalok_arah: payload.configuration.bottom.blockFeet.direction,
-                    bawah_kakibalok_material: payload.configuration.bottom.blockFeet.material,
-                    
-                    atas_penyangga_include: payload.configuration.top.support.usage === 'Include' ? 1 : 0,
-                    atas_penyangga_arah: payload.configuration.top.support.direction,
-                    atas_penyangga_material: payload.configuration.top.support.material,
-                    
-                    atas_penutup_tipe: payload.configuration.top.cover.usage,
-                    atas_penutup_arah: payload.configuration.top.cover.direction,
-                    atas_penutup_material: payload.configuration.top.cover.material,
+                    completion_date: payload.configuration.deliveryDate,
+                    type_packaging:
+                        payload.configuration.typePackaging,
+                    tipe_penutup:
+                        payload.packingType.coverMaterial,
+
+                    length:
+                        payload.configuration.dimensions.length,
+                    width:
+                        payload.configuration.dimensions.width,
+                    height:
+                        payload.configuration.dimensions.height,
+
+                    jarak_penyanggah_atas:
+                        payload.configuration.additional
+                            .supportSpacingAtas,
+                    jarak_penyanggah_bawah:
+                        payload.configuration.additional
+                            .supportSpacingBawah,
+                    gap_atas:
+                        payload.configuration.additional.topGap,
+                    gap_bawah:
+                        payload.configuration.additional.bottomGap,
+
+                    bawah_penyangga_include:
+                        payload.configuration.bottom.support.usage ===
+                        'Include' ? 1 : 0,
+                    bawah_penyangga_arah:
+                        payload.configuration.bottom.support.direction,
+                    bawah_penyangga_material:
+                        payload.configuration.bottom.support.material,
+
+                    bawah_penutup_tipe:
+                        payload.configuration.bottom.cover.usage,
+                    bawah_penutup_arah:
+                        payload.configuration.bottom.cover.direction,
+                    bawah_penutup_material:
+                        payload.configuration.bottom.cover.material,
+
+                    include_pallet_base:
+                        payload.configuration.bottom.blockFeet.usage ===
+                        'Include' ? 1 : 0,
+                    bawah_kakibalok_arah:
+                        payload.configuration.bottom.blockFeet.direction,
+                    bawah_kakibalok_material:
+                        payload.configuration.bottom.blockFeet.material,
+
+                    atas_penyangga_include:
+                        payload.configuration.top.support.usage ===
+                        'Include' ? 1 : 0,
+                    atas_penyangga_arah:
+                        payload.configuration.top.support.direction,
+                    atas_penyangga_material:
+                        payload.configuration.top.support.material,
+
+                    atas_penutup_tipe:
+                        payload.configuration.top.cover.usage,
+                    atas_penutup_arah:
+                        payload.configuration.top.cover.direction,
+                    atas_penutup_material:
+                        payload.configuration.top.cover.material,
                 };
             } else {
+                // =========================================================
                 // CREATE NEW PACKAGING JOB
+                // Route: PackagingController@store
+                // =========================================================
                 url = '/packaging/store';
+
+                const firstItem = itemsList[0];
+
                 finalPayload = {
-                    _token: document.querySelector('meta[name="csrf-token"]')?.content,
-                    no_so: payload.salesOrder,
-                    customer: document.getElementById('infoCustomer')?.textContent,
-                    date_delivery: document.getElementById('infoDeliveryDate')?.textContent,
-                    address: document.getElementById('infoShipto')?.textContent,
-                    packType: 'Crate', // Default
-                    items: (payload.items || []).map(item => ({
-                        packer: payload.configuration.packerId,
-                        no_product: item.itemNumber || item.no_product,
-                        desc_product: item.description || item.desc_product,
-                        qty_kirim: item.qty || item.qty_kirim || 1,
-                        qty_pack: payload.configuration.qtyPacking,
-                        type_packaging: payload.configuration.typePackaging,
+                    _token: document.querySelector(
+                        'meta[name="csrf-token"]'
+                    )?.content,
 
-                        length: payload.configuration.dimensions.length,
-                        width: payload.configuration.dimensions.width,
-                        height: payload.configuration.dimensions.height,
-                        
-                        jarak_penyanggah_atas: payload.configuration.additional.supportSpacingAtas,
-                        jarak_penyanggah_bawah: payload.configuration.additional.supportSpacingBawah,
-                        gap_atas: payload.configuration.additional.topGap,
-                        gap_bawah: payload.configuration.additional.bottomGap,
+                    no_so: firstItem.no_so,
+                    customer: firstItem.customer,
+                    date_delivery:
+                        payload.configuration.deliveryDate ||
+                        document.getElementById(
+                            'infoDeliveryDate'
+                        )?.textContent?.trim() || null,
+                    completion_date:
+                        payload.configuration.deliveryDate || null,
+                    address:
+                        document.getElementById(
+                            'infoShipto'
+                        )?.textContent?.trim() || null,
 
-                        pb_status: payload.configuration.bottom.support.usage,
-                        pb_arah: payload.configuration.bottom.support.direction,
-                        pb_material: payload.configuration.bottom.support.material,
+                    packType:
+                        payload.configuration.typePackaging ||
+                        'Box',
+                    type_packaging:
+                        payload.configuration.typePackaging ||
+                        'Box',
+                    tipe_penutup:
+                        payload.packingType.coverMaterial,
 
-                        ptb_status: payload.configuration.bottom.cover.usage,
-                        ptb_arah: payload.configuration.bottom.cover.direction,
-                        ptb_material: payload.configuration.bottom.cover.material,
+                    items: itemsList.map(item => ({
+                        // Data Step 1 per produk
+                        no_so: item.no_so,
+                        customer: item.customer,
+                        no_product: item.no_product,
+                        desc_product: item.desc_product,
+                        qty: item.qty,
 
-                        kb_status: payload.configuration.bottom.blockFeet.usage,
-                        kb_arah: payload.configuration.bottom.blockFeet.direction,
-                        kb_material: payload.configuration.bottom.blockFeet.material,
+                        // Alias lama agar tetap kompatibel
+                        qty_kirim: item.qty,
 
-                        pa_status: payload.configuration.top.support.usage,
-                        pa_arah: payload.configuration.top.support.direction,
-                        pa_material: payload.configuration.top.support.material,
+                        // Data Step 2; item pertama dipakai controller
+                        // sebagai konfigurasi utama packaging.
+                        packer:
+                            payload.configuration.packerId,
+                        qty_pack:
+                            payload.configuration.qtyPacking,
+                        type_packaging:
+                            payload.configuration.typePackaging,
+                        tipe_penutup:
+                            payload.packingType.coverMaterial,
 
-                        pta_status: payload.configuration.top.cover.usage,
-                        pta_arah: payload.configuration.top.cover.direction,
-                        pta_material: payload.configuration.top.cover.material,
-                    }))
+                        length:
+                            payload.configuration.dimensions.length,
+                        width:
+                            payload.configuration.dimensions.width,
+                        height:
+                            payload.configuration.dimensions.height,
+
+                        jarak_penyanggah_atas:
+                            payload.configuration.additional
+                                .supportSpacingAtas,
+                        jarak_penyanggah_bawah:
+                            payload.configuration.additional
+                                .supportSpacingBawah,
+                        gap_atas:
+                            payload.configuration.additional.topGap,
+                        gap_bawah:
+                            payload.configuration.additional.bottomGap,
+
+                        pb_status:
+                            payload.configuration.bottom.support.usage,
+                        pb_arah:
+                            payload.configuration.bottom.support.direction,
+                        pb_material:
+                            payload.configuration.bottom.support.material,
+
+                        ptb_status:
+                            payload.configuration.bottom.cover.usage,
+                        ptb_arah:
+                            payload.configuration.bottom.cover.direction,
+                        ptb_material:
+                            payload.configuration.bottom.cover.material,
+
+                        kb_status:
+                            payload.configuration.bottom.blockFeet.usage,
+                        kb_arah:
+                            payload.configuration.bottom.blockFeet.direction,
+                        kb_material:
+                            payload.configuration.bottom.blockFeet.material,
+
+                        pa_status:
+                            payload.configuration.top.support.usage,
+                        pa_arah:
+                            payload.configuration.top.support.direction,
+                        pa_material:
+                            payload.configuration.top.support.material,
+
+                        pta_status:
+                            payload.configuration.top.cover.usage,
+                        pta_arah:
+                            payload.configuration.top.cover.direction,
+                        pta_material:
+                            payload.configuration.top.cover.material,
+                    })),
                 };
             }
+
+            console.log('FINAL STEP 1 ITEMS:', itemsList);
+            console.log('FINAL SAVE PAYLOAD:', finalPayload);
 
             const response = await fetch(url, {
                 method: 'POST', // Walaupun _method = PUT untuk calc-update, tetap pakai POST karena HTML form limits
@@ -2785,11 +3575,23 @@
                     window.location.reload(); // Reload halaman untuk memuat data terbaru
                 }
             } else {
-                alert('Gagal menyimpan: ' + (result.message || 'Unknown error'));
+                console.error('Save validation/error response:', result);
+
+                const validationMessages = result.errors
+                    ? Object.values(result.errors).flat().join('\n')
+                    : '';
+
+                alert(
+                    'Gagal menyimpan: ' +
+                    (result.message || 'Unknown error') +
+                    (validationMessages
+                        ? `\n\n${validationMessages}`
+                        : '')
+                );
             }
         } catch (error) {
             console.error('Save error:', error);
-            alert('Terjadi kesalahan jaringan.');
+            alert(error.message || 'Terjadi kesalahan jaringan.');
         } finally {
             if (submitBtn) {
                 submitBtn.disabled = false;

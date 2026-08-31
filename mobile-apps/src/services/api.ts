@@ -8,7 +8,7 @@ const getBaseUrl = () => {
   if (Platform.OS === 'android') {
     return 'http://10.0.2.2:8001/api';
   }
-  return 'http://localhost:8001/api';
+  return 'http://127.0.0.1:8001/api';
 };
 
 const api = axios.create({
