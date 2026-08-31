@@ -15,7 +15,10 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Panggil MasterDataSeeder untuk membuat roles dan divisions
-        $this->call([MasterDataSeeder::class]);
+        $this->call([
+            MasterDataSeeder::class,
+            PackingMaterialPricesSeeder::class,
+        ]);
 
         $superAdminRole = \App\Models\Role::firstOrCreate(['name' => 'Super Admin']);
         $driverRole = \App\Models\Role::firstOrCreate(['name' => 'Driver']);
@@ -26,7 +29,7 @@ class DatabaseSeeder extends Seeder
         $warehouseDivision = \App\Models\Division::firstOrCreate(['name' => 'Warehouse']);
 
         // Buat akun Super Admin default
-        User::updateOrCreate(['email' => 'admin@mail.com'], [
+        \App\Models\User::updateOrCreate(['email' => 'admin@mail.com'], [
             'username' => 'admin',
             'full_name' => 'Administrator',
             'password' => \Illuminate\Support\Facades\Hash::make('password'),
@@ -34,15 +37,11 @@ class DatabaseSeeder extends Seeder
             'role_id' => $superAdminRole->id,
             'division_id' => $hrDivision->id,
             'active' => true,
-        $this->call([
-            MasterDataSeeder::class,
-            PackingMaterialPricesSeeder::class,
-            PackagingFastenerValidationSeeder::class,
         ]);
 
         // Buat akun Driver 1, 2, 3
         for ($i = 1; $i <= 3; $i++) {
-            User::updateOrCreate(['email' => "driver{$i}@mail.com"], [
+            \App\Models\User::updateOrCreate(['email' => "driver{$i}@mail.com"], [
                 'username' => "driver{$i}",
                 'full_name' => "Driver {$i}",
                 'password' => \Illuminate\Support\Facades\Hash::make('password'),
@@ -55,7 +54,7 @@ class DatabaseSeeder extends Seeder
 
         // Buat akun Packer 1, 2, 3
         for ($i = 1; $i <= 3; $i++) {
-            User::updateOrCreate(['email' => "packer{$i}@mail.com"], [
+            \App\Models\User::updateOrCreate(['email' => "packer{$i}@mail.com"], [
                 'username' => "packer{$i}",
                 'full_name' => "Packer {$i}",
                 'password' => \Illuminate\Support\Facades\Hash::make('password'),

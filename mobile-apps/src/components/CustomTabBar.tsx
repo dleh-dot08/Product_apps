@@ -1,53 +1,110 @@
-import React, { useState } from 'react';
-import { View, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text } from '@/components/CustomText';
+import React from 'react';
+import {
+  Platform,
+  StyleSheet, TouchableOpacity,
+  View,
+} from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import Svg, { Path } from 'react-native-svg';
-import { useTheme } from '../context/ThemeContext';
-import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const TAB_BAR_HEIGHT = 70;
+import { Colors } from '@/constants/theme';
 
-const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => {
+import { useTheme } from '../context/ThemeContext';
+
+const TAB_BAR_HEIGHT = 64;
+
+const PRIMARY_COLOR = '#0756C6';
+const INACTIVE_COLOR = '#7C8DA5';
+
+type IoniconName = keyof typeof Ionicons.glyphMap;
+
+type TabVisualConfig = {
+  activeIcon: IoniconName;
+  inactiveIcon: IoniconName;
+};
+
+const TAB_CONFIG: Record<string, TabVisualConfig> = {
+  index: {
+    activeIcon: 'home',
+    inactiveIcon: 'home-outline',
+  },
+  'list-tugas': {
+    activeIcon: 'clipboard',
+    inactiveIcon: 'clipboard-outline',
+  },
+  documents: {
+    activeIcon: 'document-text',
+    inactiveIcon: 'document-text-outline',
+  },
+  profile: {
+    activeIcon: 'person',
+    inactiveIcon: 'person-outline',
+  },
+};
+
+export default function CustomTabBar({
+  state,
+  descriptors,
+  navigation,
+}: BottomTabBarProps) {
   const { theme } = useTheme();
-  const colors = Colors[theme];
-  const [barWidth, setBarWidth] = useState(0);
 
-  // Creates a curve in the middle
-  const getPath = () => {
-    if (barWidth === 0) return '';
-    return `
-      M 0 0
-      L ${(barWidth / 2) - 40} 0
-      C ${(barWidth / 2) - 20} 0, ${(barWidth / 2) - 35} 40, ${barWidth / 2} 40
-      C ${(barWidth / 2) + 35} 40, ${(barWidth / 2) + 20} 0, ${(barWidth / 2) + 40} 0
-      L ${barWidth} 0
-      L ${barWidth} ${TAB_BAR_HEIGHT}
-      L 0 ${TAB_BAR_HEIGHT}
-      Z
-    `;
-  };
+  const colors = Colors[theme];
+  const isDark = theme === 'dark';
+
+  const backgroundColor = isDark
+    ? colors.backgroundElement
+    : '#FFFFFF';
+
+  const borderColor = isDark
+    ? colors.backgroundSelected
+    : '#E8EDF4';
+
+  const inactiveColor = isDark
+    ? '#94A3B8'
+    : INACTIVE_COLOR;
 
   return (
-    <View 
-      style={styles.container} 
-      onLayout={(e) => setBarWidth(e.nativeEvent.layout.width)}
+    <SafeAreaView
+      edges={['bottom']}
+      style={[
+        styles.safeArea,
+        {
+          backgroundColor,
+          borderTopColor: borderColor,
+        },
+      ]}
     >
-      {barWidth > 0 && (
-        <Svg width={barWidth} height={TAB_BAR_HEIGHT} style={styles.background}>
-          <Path d={getPath()} fill={theme === 'dark' ? '#222' : '#e6e0fc'} />
-        </Svg>
-      )}
-
-      <View style={styles.content}>
-        {state.routes.map((route: any, index: number) => {
+      <View style={styles.tabBar}>
+        {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
-          
-          if ((options as any).href === null) {
+
+          const ALLOWED_TABS = ['index', 'list-tugas', 'documents', 'profile'];
+
+          if (!ALLOWED_TABS.includes(route.name) || (options as any).href === null) {
             return null;
           }
 
           const isFocused = state.index === index;
+
+          const config =
+            TAB_CONFIG[route.name] ??
+            TAB_CONFIG.index;
+
+          const iconName = isFocused
+            ? config.activeIcon
+            : config.inactiveIcon;
+
+          const tabColor = isFocused
+            ? PRIMARY_COLOR
+            : inactiveColor;
+
+          const label =
+            typeof options.title === 'string'
+              ? options.title
+              : getDefaultLabel(route.name);
 
           const onPress = () => {
             const event = navigation.emit({
@@ -56,101 +113,196 @@ const CustomTabBar = ({ state, descriptors, navigation }: BottomTabBarProps) => 
               canPreventDefault: true,
             });
 
-            if (!isFocused && !event.defaultPrevented) {
+            if (
+              !isFocused &&
+              !event.defaultPrevented
+            ) {
               navigation.navigate(route.name);
             }
           };
 
-          let iconName: any = 'home';
-          if (route.name === 'index') iconName = isFocused ? 'home' : 'home-outline';
-          if (route.name === 'calendar') iconName = isFocused ? 'calendar' : 'calendar-outline';
-          if (route.name === 'documents') iconName = isFocused ? 'document-text' : 'document-text-outline';
-          if (route.name === 'profile') iconName = isFocused ? 'person' : 'person-outline';
-
-          const color = isFocused ? '#5e35b1' : (theme === 'dark' ? '#aaa' : '#888');
-
-          if (route.name === 'add') {
-            return (
-              <TouchableOpacity
-                key={route.key}
-                onPress={onPress}
-                activeOpacity={0.8}
-                style={styles.addButtonContainer}
-              >
-                <View style={styles.addButton}>
-                  <Ionicons name="add" size={32} color="#fff" />
-                </View>
-              </TouchableOpacity>
-            );
-          }
+          const onLongPress = () => {
+            navigation.emit({
+              type: 'tabLongPress',
+              target: route.key,
+            });
+          };
 
           return (
             <TouchableOpacity
               key={route.key}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={
+                isFocused
+                  ? { selected: true }
+                  : {}
+              }
+              accessibilityLabel={
+                options.tabBarAccessibilityLabel
+              }
+              testID={
+                options.tabBarButtonTestID
+              }
               onPress={onPress}
+              onLongPress={onLongPress}
               style={styles.tabButton}
             >
-              <Ionicons name={iconName} size={24} color={color} />
+              <View
+                style={[
+                  styles.tabContent,
+                  isFocused &&
+                  styles.tabContentActive,
+                ]}
+              >
+                <View
+                  style={[
+                    styles.iconContainer,
+                    isFocused && {
+                      backgroundColor:
+                        '#EAF3FF',
+                    },
+                  ]}
+                >
+                  <Ionicons
+                    name={iconName}
+                    size={
+                      isFocused
+                        ? 23
+                        : 22
+                    }
+                    color={tabColor}
+                  />
+                </View>
+
+                <Text
+                  numberOfLines={1}
+                  style={[
+                    styles.tabLabel,
+                    {
+                      color: tabColor,
+                    },
+                    isFocused &&
+                    styles.tabLabelActive,
+                  ]}
+                >
+                  {label}
+                </Text>
+              </View>
             </TouchableOpacity>
           );
         })}
       </View>
-    </View>
+    </SafeAreaView>
   );
-};
+}
+
+function getDefaultLabel(routeName: string): string {
+  switch (routeName) {
+    case 'index':
+      return 'Beranda';
+
+    case 'list-tugas':
+      return 'Tugas';
+
+    case 'documents':
+      return 'Laporan';
+
+    case 'profile':
+      return 'Profil';
+
+    default:
+      return routeName;
+  }
+}
 
 const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 0,
-    width: '100%',
-    maxWidth: 800, // Handle web wide screens
-    alignSelf: 'center', // Center it if constrained
+  safeArea: {
+    borderTopWidth: 1,
+
+    shadowColor: '#0F172A',
+    shadowOffset: {
+      width: 0,
+      height: -4,
+    },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+
+    elevation: 12,
+  },
+
+  tabBar: {
     height: TAB_BAR_HEIGHT,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  background: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-  },
-  content: {
+
     flexDirection: 'row',
-    height: TAB_BAR_HEIGHT,
     alignItems: 'center',
     justifyContent: 'space-around',
-    paddingHorizontal: 10,
+
+    paddingHorizontal: 8,
+    paddingTop: 5,
   },
+
   tabButton: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     height: '100%',
-  },
-  addButtonContainer: {
-    flex: 1,
-    justifyContent: 'center',
+
     alignItems: 'center',
-  },
-  addButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#6b3ce3', // from image
     justifyContent: 'center',
+  },
+
+  tabContent: {
+    minWidth: 62,
+
     alignItems: 'center',
-    marginBottom: 40,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    justifyContent: 'center',
+
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+
+    borderRadius: 16,
+  },
+
+  tabContentActive: {
+    transform: [
+      {
+        translateY: -1,
+      },
+    ],
+  },
+
+  iconContainer: {
+    position: 'relative',
+
+    width: 38,
+    height: 32,
+
+    alignItems: 'center',
+    justifyContent: 'center',
+
+    borderRadius: 12,
+  },
+
+  activeDot: {
+    position: 'absolute',
+    bottom: 1,
+
+    width: 4,
+    height: 4,
+
+    backgroundColor: PRIMARY_COLOR,
+
+    borderRadius: 2,
+  },
+
+  tabLabel: {
+    marginTop: 2,
+
+    fontSize: 9.5,
+    fontWeight: '500',
+    letterSpacing: 0.1,
+  },
+
+  tabLabelActive: {
+    fontWeight: '800',
   },
 });
-
-export default CustomTabBar;

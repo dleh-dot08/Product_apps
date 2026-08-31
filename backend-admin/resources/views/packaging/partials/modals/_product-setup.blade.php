@@ -37,6 +37,7 @@
         'packagingNumber' => $calculation->packaging_number ?? 'PKG-AUTO-001',
         'packerId' => $calculation->packer_id ?? auth()->id(),
         'qtyPacking' => $calculation->qty_packaging ?? 1,
+        'deliveryDate' => $calculation->completion_date ?? '',
         'typePackaging' => $calculation->type_packaging ?? 'Box',
         'dimensions' => [
             'length' => $calculation->panjang ?? '',
@@ -1047,7 +1048,7 @@
 
     #step-2 .s2-main-grid {
         display: grid;
-        grid-template-columns: 1.15fr 1fr 1fr;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
         gap: .65rem;
     }
 
@@ -1236,7 +1237,7 @@
 
     #step-2 .s2-component-head {
         display: grid;
-        grid-template-columns: 125px 1fr 1.15fr 1fr;
+        grid-template-columns: 1.2fr 0.8fr 2px 125px 1fr 1.15fr 1fr;
         gap: .55rem;
         padding: 0 .55rem .35rem;
         color: var(--s2-primary);
@@ -1248,7 +1249,7 @@
 
     #step-2 .s2-component-row {
         display: grid;
-        grid-template-columns: 125px 1fr 1.15fr 1fr;
+        grid-template-columns: 1.2fr 0.8fr 2px 125px 1fr 1.15fr 1fr;
         gap: .55rem;
         align-items: center;
         padding: .52rem;
@@ -1289,6 +1290,14 @@
         border: 1px solid rgba(var(--s2-primary-rgb), .10);
         border-radius: 8px;
         font-size: .64rem;
+    }
+
+    #step-2 .s2-v-divider {
+        width: 2px;
+        height: 100%;
+        background-color: var(--s2-border);
+        border-radius: 2px;
+        opacity: 0.7;
     }
 
     /* =========================================================
@@ -1355,7 +1364,7 @@
 
         #step-2 .s2-component-head,
         #step-2 .s2-component-row {
-            grid-template-columns: 110px 1fr 1fr 1fr;
+            grid-template-columns: 1fr 1fr 2px 110px 1fr 1fr 1fr;
         }
     }
 
@@ -2069,16 +2078,28 @@
                     >
                 </div>
 
+                <div class="s2-field-card">
+                    <label class="s2-label" for="s2_delivery_date">
+                        <i class="fa-solid fa-calendar-days"></i>
+                        Delivery Date
+                    </label>
+
+                    <input
+                        type="date"
+                        class="form-control"
+                        id="s2_delivery_date"
+                    >
+                </div>
+
 
 
             </div>
         </div>
 
-        <!-- Baris 1 -->
-        <div class="s2-row">
-
-            <!-- Dimensi -->
-            <section class="s2-panel s2-dimension">
+        <!-- Dimensi Card (Full Width) -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <section class="s2-panel s2-dimension">
                 <div class="s2-panel-head">
                     <span class="s2-panel-number">1</span>
 
@@ -2090,9 +2111,9 @@
                 </div>
 
                 <div class="s2-panel-body">
-                    <div class="s2-compact-stack">
+                    <div class="d-flex align-items-center gap-4 w-100">
 
-                        <div class="s2-compact-field">
+                        <div class="s2-compact-field flex-fill">
                             <label class="s2-compact-label" for="s2_length">
                                 <span class="s2-compact-icon">
                                     <i class="fa-solid fa-arrows-left-right"></i>
@@ -2110,7 +2131,7 @@
                             <span class="s2-unit">mm</span>
                         </div>
 
-                        <div class="s2-compact-field">
+                        <div class="s2-compact-field flex-fill">
                             <label class="s2-compact-label" for="s2_width">
                                 <span class="s2-compact-icon">
                                     <i class="fa-solid fa-ruler-horizontal"></i>
@@ -2128,7 +2149,7 @@
                             <span class="s2-unit">mm</span>
                         </div>
 
-                        <div class="s2-compact-field">
+                        <div class="s2-compact-field flex-fill">
                             <label class="s2-compact-label" for="s2_height">
                                 <span class="s2-compact-icon">
                                     <i class="fa-solid fa-arrows-up-down"></i>
@@ -2149,7 +2170,12 @@
                     </div>
                 </div>
             </section>
+            </div>
+        </div>
 
+        <!-- Baris 1 -->
+        <div class="row">
+            <div class="col-12">
             <!-- Konfigurasi Area Bawah -->
             <section class="s2-panel s2-bottom">
                 <div class="s2-panel-head">
@@ -2166,6 +2192,9 @@
                     <div class="s2-component-table">
 
                         <div class="s2-component-head">
+                            <span>Keterangan</span>
+                            <span>Nilai</span>
+                            <div></div>
                             <span>Komponen</span>
                             <span>Penggunaan</span>
                             <span>Arah Pemasangan</span>
@@ -2187,6 +2216,16 @@
 
                         <!-- Penyanggah -->
                         <div class="s2-component-row">
+                            <div class="s2-component-name" style="font-size: 0.65rem;">
+                                Jarak Penyanggah Bawah
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <input type="number" class="form-control" id="s2_jarak_bawah" value="300" placeholder="0">
+                                <span class="s2-unit" style="font-size: 0.6rem;">mm</span>
+                            </div>
+
+                            <div class="s2-v-divider"></div>
+
                             <div class="s2-component-name">
                                 <span class="s2-mini-icon">
                                     <i class="fa-solid fa-grip-lines"></i>
@@ -2217,6 +2256,16 @@
 
                         <!-- Penutup -->
                         <div class="s2-component-row">
+                            <div class="s2-component-name" style="font-size: 0.65rem;">
+                                Celah Bawah
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <input type="number" class="form-control" id="s2_gap_bawah" placeholder="0">
+                                <span class="s2-unit" style="font-size: 0.6rem;">mm</span>
+                            </div>
+
+                            <div class="s2-v-divider"></div>
+
                             <div class="s2-component-name">
                                 <span class="s2-mini-icon">
                                     <i class="fa-solid fa-border-all"></i>
@@ -2249,6 +2298,10 @@
 
                         <!-- Kaki Balok -->
                         <div class="s2-component-row">
+                            <div></div>
+                            <div></div>
+                            <div class="s2-v-divider"></div>
+
                             <div class="s2-component-name">
                                 <span class="s2-mini-icon">
                                     <i class="fa-solid fa-grip-lines-vertical"></i>
@@ -2279,108 +2332,16 @@
                     </div>
                 </div>
             </section>
+            </div>
         </div>
 
         <!-- Baris 2 -->
-        <div class="s2-row">
-
-            <!-- Konfigurasi Tambahan -->
-            <section class="s2-panel s2-additional">
-                <div class="s2-panel-head">
-                    <span class="s2-panel-number">3</span>
-
-                    <span class="s2-panel-icon">
-                        <i class="fa-solid fa-sliders"></i>
-                    </span>
-
-                    <h6 class="s2-panel-title">Konfigurasi</h6>
-                </div>
-
-                <div class="s2-panel-body">
-                    <div class="s2-compact-stack">
-
-                        <div class="s2-compact-field">
-                            <label class="s2-compact-label" for="s2_jarak_atas">
-                                <span class="s2-compact-icon">
-                                    <i class="fa-solid fa-ruler"></i>
-                                </span>
-                                Jarak Penyanggah Atas
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                id="s2_jarak_atas"
-                                value="300"
-                                placeholder="0"
-                            >
-
-                            <span class="s2-unit">mm</span>
-                        </div>
-
-                        <div class="s2-compact-field">
-                            <label class="s2-compact-label" for="s2_jarak_bawah">
-                                <span class="s2-compact-icon">
-                                    <i class="fa-solid fa-ruler"></i>
-                                </span>
-                                Jarak Penyanggah Bawah
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                id="s2_jarak_bawah"
-                                value="300"
-                                placeholder="0"
-                            >
-
-                            <span class="s2-unit">mm</span>
-                        </div>
-
-                        <div class="s2-compact-field">
-                            <label class="s2-compact-label" for="s2_gap_atas">
-                                <span class="s2-compact-icon">
-                                    <i class="fa-solid fa-arrow-up"></i>
-                                </span>
-                                Celah Atas
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                id="s2_gap_atas"
-                                placeholder="0"
-                            >
-
-                            <span class="s2-unit">mm</span>
-                        </div>
-
-                        <div class="s2-compact-field">
-                            <label class="s2-compact-label" for="s2_gap_bawah">
-                                <span class="s2-compact-icon">
-                                    <i class="fa-solid fa-arrow-down"></i>
-                                </span>
-                                Celah Bawah
-                            </label>
-
-                            <input
-                                type="number"
-                                class="form-control"
-                                id="s2_gap_bawah"
-                                placeholder="0"
-                            >
-
-                            <span class="s2-unit">mm</span>
-                        </div>
-
-                    </div>
-                </div>
-            </section>
-
+        <div class="row">
+            <div class="col-12">
             <!-- Konfigurasi Area Atas -->
             <section class="s2-panel s2-top">
                 <div class="s2-panel-head">
-                    <span class="s2-panel-number">4</span>
+                    <span class="s2-panel-number">3</span>
 
                     <span class="s2-panel-icon">
                         <i class="fa-solid fa-sliders"></i>
@@ -2393,6 +2354,9 @@
                     <div class="s2-component-table">
 
                         <div class="s2-component-head">
+                            <span>Keterangan</span>
+                            <span>Nilai</span>
+                            <div></div>
                             <span>Komponen</span>
                             <span>Penggunaan</span>
                             <span>Arah Pemasangan</span>
@@ -2401,6 +2365,16 @@
 
                         <!-- Penyanggah -->
                         <div class="s2-component-row">
+                            <div class="s2-component-name" style="font-size: 0.65rem;">
+                                Jarak Penyanggah Atas
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <input type="number" class="form-control" id="s2_jarak_atas" value="300" placeholder="0">
+                                <span class="s2-unit" style="font-size: 0.6rem;">mm</span>
+                            </div>
+
+                            <div class="s2-v-divider"></div>
+
                             <div class="s2-component-name">
                                 <span class="s2-mini-icon">
                                     <i class="fa-solid fa-grip-lines"></i>
@@ -2431,6 +2405,16 @@
 
                         <!-- Penutup -->
                         <div class="s2-component-row">
+                            <div class="s2-component-name" style="font-size: 0.65rem;">
+                                Celah Atas
+                            </div>
+                            <div class="d-flex align-items-center gap-1">
+                                <input type="number" class="form-control" id="s2_gap_atas" placeholder="0">
+                                <span class="s2-unit" style="font-size: 0.6rem;">mm</span>
+                            </div>
+
+                            <div class="s2-v-divider"></div>
+
                             <div class="s2-component-name">
                                 <span class="s2-mini-icon">
                                     <i class="fa-solid fa-border-all"></i>
@@ -2464,6 +2448,7 @@
                     </div>
                 </div>
             </section>
+            </div>
         </div>
 
         <!-- Catatan -->
@@ -2503,13 +2488,6 @@
                         Back
                     </button>
 
-                    <button
-                        type="button"
-                        class="btn ps-button ps-button-secondary"
-                        data-bs-dismiss="modal"
-                    >
-                        Cancel
-                    </button>
 
                     <button
                         type="button"
@@ -2873,6 +2851,14 @@
                 }
             };
 
+            // ==========================================
+            // KOMPLEKSITAS LOGIKA PACKING & BAHAN PENUTUP
+            // 1. Box Kayu: Papan -> Atas & Bawah otomatis Papan Full. Triplek -> Atas & Bawah otomatis Tripleks.
+            // 2. Palet Kayu: Panel Atas disembunyikan sepenuhnya (Exclude). Bawah bisa Papan Full/Setengah atau Tripleks.
+            // 3. Peti Kayu: Triplek di Step 2 didisable (hanya Papan). Atas & Bawah otomatis Papan Setengah.
+            // 4. Kerangka Kayu: Panel Atas TAMPIL namun Penutup Atas dikunci ke "Tanpa Penutup". Bawah bisa Papan Full/Setengah atau Tripleks.
+            // ==========================================
+            
             // 1. Show/Hide Konfigurasi Atas
             if (packingValue === 'Palet') {
                 if (topPanel) topPanel.style.display = 'none';
@@ -3041,6 +3027,7 @@
             packagingNumber: getFieldValue('s2_pkg_number'),
             packerId: getFieldValue('s2_packer'),
             qtyPacking: Number(getFieldValue('s2_qty_pack') || 0),
+            deliveryDate: getFieldValue('s2_delivery_date'),
             typePackaging: document.querySelector('#packingTypeStep input[name="packing_type"]:checked')?.value || '',
 
             dimensions: {
@@ -3216,6 +3203,13 @@
             setVal('s2_pkg_number', initialData.packagingNumber);
             setVal('s2_packer', initialData.packerId);
             setVal('s2_qty_pack', initialData.qtyPacking);
+            if (initialData.deliveryDate) {
+                // Formatting to YYYY-MM-DD for date input
+                const dateObj = new Date(initialData.deliveryDate);
+                if (!isNaN(dateObj)) {
+                    setVal('s2_delivery_date', dateObj.toISOString().split('T')[0]);
+                }
+            }
             
             if (initialData.typePackaging) {
                 const radio = document.querySelector(`#packingTypeStep input[name="packing_type"][value="${initialData.typePackaging}"]`);
@@ -3382,6 +3376,7 @@
                     // Step 2
                     qty_pack: payload.configuration.qtyPacking,
                     packer_id: payload.configuration.packerId,
+                    completion_date: payload.configuration.deliveryDate,
                     type_packaging:
                         payload.configuration.typePackaging,
                     tipe_penutup:
@@ -3460,9 +3455,12 @@
                     no_so: firstItem.no_so,
                     customer: firstItem.customer,
                     date_delivery:
+                        payload.configuration.deliveryDate ||
                         document.getElementById(
                             'infoDeliveryDate'
                         )?.textContent?.trim() || null,
+                    completion_date:
+                        payload.configuration.deliveryDate || null,
                     address:
                         document.getElementById(
                             'infoShipto'

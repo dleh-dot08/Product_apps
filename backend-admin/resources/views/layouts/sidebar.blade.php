@@ -286,13 +286,7 @@
                         </a>
                     </li>
 
-                    <!-- 2. Delivery Order -->
-                    <li class="nav-item">
-                        <a href="#" class="nav-link">
-                            <i class="nav-icon fa-regular fa-clipboard"></i>
-                            <p class="ms-2 mb-0">Delivery Order</p>
-                        </a>
-                    </li>
+                    <!-- 2. (Delivery Order is now merged with Tugas Driver) -->
 
                     <!-- 3. Pembelian -->
                     <li class="nav-item">
@@ -317,6 +311,22 @@
                             <p class="ms-2 mb-0">Tugas Driver</p>
                         </a>
                     </li>
+                    
+                    <!-- 5.5 Find Driver -->
+                    <li class="nav-item">
+                        <a href="{{ route('find-driver') }}" class="nav-link {{ request()->routeIs('find-driver') ? 'active' : '' }}">
+                            <i class="nav-icon fa-solid fa-map-location-dot"></i>
+                            <p class="ms-2 mb-0">Find Driver</p>
+                        </a>
+                    </li>
+
+                    <!-- 5.6 Laporan Driver -->
+                    <li class="nav-item">
+                        <a href="{{ route('driver-reports.index') }}" class="nav-link {{ request()->routeIs('driver-reports.*') ? 'active' : '' }}">
+                            <i class="nav-icon fa-solid fa-file-invoice"></i>
+                            <p class="ms-2 mb-0">Laporan Driver</p>
+                        </a>
+                    </li>
 
                     <!-- 6. Daftar Tugas (Badge angka 0) -->
                     <li class="nav-item">
@@ -331,9 +341,17 @@
 
                     <!-- 7. HPP Ritase -->
                     <li class="nav-item">
-                        <a href="#" class="nav-link">
+                        <a href="{{ route('hpp.index') }}" class="nav-link {{ request()->routeIs('hpp.*') ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-dollar-sign"></i>
                             <p class="ms-2 mb-0">HPP Ritase</p>
+                        </a>
+                    </li>
+
+                    <!-- 7.5 Pengeluaran -->
+                    <li class="nav-item">
+                        <a href="{{ route('expenses.index') }}" class="nav-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}">
+                            <i class="nav-icon fa-solid fa-money-bill-wave"></i>
+                            <p class="ms-2 mb-0">Pengeluaran</p>
                         </a>
                     </li>
 

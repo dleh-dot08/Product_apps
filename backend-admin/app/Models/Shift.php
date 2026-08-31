@@ -30,4 +30,9 @@ class Shift extends Model
     {
         return $this->belongsTo(Vehicle::class, 'vehicle_id');
     }
+
+    public function expenses()
+    {
+        return $this->hasMany(Expense::class, 'shift_id');
+    }
 }

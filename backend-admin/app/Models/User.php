@@ -59,4 +59,14 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Role::class, 'role_id');
     }
+
+    public function driverProfile()
+    {
+        return $this->hasOne(DriverProfile::class, 'user_id');
+    }
+
+    public function trips()
+    {
+        return $this->hasMany(Trip::class, 'driver_id');
+    }
 }

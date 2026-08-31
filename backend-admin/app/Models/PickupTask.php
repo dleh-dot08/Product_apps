@@ -17,9 +17,13 @@ class PickupTask extends Model
         'started_at' => 'datetime',
         'arrived_at' => 'datetime',
         'completed_at' => 'datetime',
+        'dispatch_date' => 'datetime',
+        'estimated_arrival' => 'datetime',
         'quantity' => 'decimal:2',
         'unit_price' => 'decimal:2',
         'line_total' => 'decimal:2',
+        'departure_checklist' => 'array',
+        'arrival_checklist' => 'array',
     ];
 
     public function driver()
@@ -32,6 +36,11 @@ class PickupTask extends Model
         return $this->belongsTo(Vehicle::class, 'vehicle_id');
     }
 
+    public function attachments()
+    {
+        return $this->morphMany(TaskAttachment::class, 'task');
+    }
+
     public function shift()
     {
         return $this->belongsTo(Shift::class, 'shift_id');
@@ -40,5 +49,10 @@ class PickupTask extends Model
     public function assignedBy()
     {
         return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function items()
+    {
+        return $this->morphMany(TaskItem::class, 'itemable');
     }
 }

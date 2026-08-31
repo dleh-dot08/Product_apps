@@ -32,6 +32,21 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
+      ],
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Applikasi ini membutuhkan akses lokasi di latar belakang untuk memantau perjalanan driver saat sedang bertugas.",
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Aplikasi ini membutuhkan akses galeri agar Anda dapat mengunggah struk atau bukti foto dari memori HP.",
+          "cameraPermission": "Aplikasi ini membutuhkan akses kamera agar Anda dapat mengambil foto bukti serah terima dan kondisi barang secara langsung."
+        }
       ]
     ],
     "experiments": {
