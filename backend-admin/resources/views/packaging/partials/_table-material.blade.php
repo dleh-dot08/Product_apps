@@ -113,6 +113,12 @@
                                 <button class="nav-link rounded-pill px-4 py-1.5" style="font-size: 13px;" id="tab-bawah" data-bs-toggle="tab" data-bs-target="#content-bawah" type="button" role="tab">Bawah</button>
                             </li>
                             <li class="nav-item" role="presentation">
+                                <button class="nav-link rounded-pill px-4 py-1.5" style="font-size: 13px;" id="tab-additional" data-bs-toggle="tab" data-bs-target="#content-additional" type="button" role="tab">Additional</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link rounded-pill px-4 py-1.5" style="font-size: 13px;" id="tab-innerbox" data-bs-toggle="tab" data-bs-target="#content-innerbox" type="button" role="tab">Inner Box</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
                                 <button class="nav-link rounded-pill px-4 py-1.5" style="font-size: 13px;" id="tab-manpower" data-bs-toggle="tab" data-bs-target="#content-manpower" type="button" role="tab">Manpower</button>
                             </li>
                             <li class="nav-item" role="presentation">
@@ -172,7 +178,7 @@
                                                 <td class="text-end">{{ $detail['calculated_thickness'] }}</td>
                                                 <td class="text-end">{{ $detail['calculated_width'] }}</td>
                                                 <td class="text-end">{{ $detail['calculated_length'] }}</td>
-                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ $detail['total_quantity'] }} <span class="fw-normal text-muted">{{ strtolower($detail['satuan_harga']) === 'sqm' ? 'Sqm' : 'Pcs' }}</span></td>
+                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ (float) $detail['total_quantity'] }} <span class="fw-normal text-muted">{{ strtolower($detail['satuan_harga']) === 'sqm' ? 'Sqm' : 'Pcs' }}</span></td>
                                             </tr>
                                             @empty
                                             <tr>
@@ -220,9 +226,9 @@
                                                 <td class="text-end">{{ (float)$detail->calculated_thickness }}</td>
                                                 <td class="text-end">{{ (float)$detail->calculated_width }}</td>
                                                 <td class="text-end fw-medium">{{ (float)$detail->calculated_length }}</td>
-                                                <td class="text-center">{{ $detail->quantity }}</td>
+                                                <td class="text-center">{{ (float) $detail->quantity }}</td>
                                                 <td class="text-center">{{ $detail->side_count }}</td>
-                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ $detail->total_quantity }}</td>
+                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ (float) $detail->total_quantity }}</td>
                                                 <td class="text-end">{{ number_format($detail->total_length, 2, ',', '.') }}</td>
                                                 <td class="text-end text-muted">{{ number_format($detail->price_per_unit, 0, ',', '.') }}</td>
                                                 <td class="text-end fw-bold text-navy">Rp {{ number_format($detail->subtotal_price, 0, ',', '.') }}</td>
@@ -272,9 +278,9 @@
                                                 <td class="text-end">{{ (float)$detail->calculated_thickness }}</td>
                                                 <td class="text-end">{{ (float)$detail->calculated_width }}</td>
                                                 <td class="text-end fw-medium">{{ (float)$detail->calculated_length }}</td>
-                                                <td class="text-center">{{ $detail->quantity }}</td>
+                                                <td class="text-center">{{ (float) $detail->quantity }}</td>
                                                 <td class="text-center">{{ $detail->side_count }}</td>
-                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ $detail->total_quantity }}</td>
+                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ (float) $detail->total_quantity }}</td>
                                                 <td class="text-end">{{ number_format($detail->total_length, 2, ',', '.') }}</td>
                                                 <td class="text-end text-muted">{{ number_format($detail->price_per_unit, 0, ',', '.') }}</td>
                                                 <td class="text-end fw-bold text-navy">Rp {{ number_format($detail->subtotal_price, 0, ',', '.') }}</td>
@@ -318,9 +324,9 @@
                                                 <td class="text-end">{{ (float)$detail->calculated_thickness }}</td>
                                                 <td class="text-end">{{ (float)$detail->calculated_width }}</td>
                                                 <td class="text-end fw-medium">{{ (float)$detail->calculated_length }}</td>
-                                                <td class="text-center">{{ $detail->quantity }}</td>
+                                                <td class="text-center">{{ (float) $detail->quantity }}</td>
                                                 <td class="text-center">{{ $detail->side_count }}</td>
-                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ $detail->total_quantity }}</td>
+                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ (float) $detail->total_quantity }}</td>
                                                 <td class="text-end">{{ number_format($detail->total_length, 2, ',', '.') }}</td>
                                                 <td class="text-end text-muted">{{ number_format($detail->price_per_unit, 0, ',', '.') }}</td>
                                                 <td class="text-end fw-bold text-navy">Rp {{ number_format($detail->subtotal_price, 0, ',', '.') }}</td>
@@ -364,9 +370,9 @@
                                                 <td class="text-end">{{ (float)$detail->calculated_thickness }}</td>
                                                 <td class="text-end">{{ (float)$detail->calculated_width }}</td>
                                                 <td class="text-end fw-medium">{{ (float)$detail->calculated_length }}</td>
-                                                <td class="text-center">{{ $detail->quantity }}</td>
+                                                <td class="text-center">{{ (float) $detail->quantity }}</td>
                                                 <td class="text-center">{{ $detail->side_count }}</td>
-                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ $detail->total_quantity }}</td>
+                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ (float) $detail->total_quantity }}</td>
                                                 <td class="text-end">{{ number_format($detail->total_length, 2, ',', '.') }}</td>
                                                 <td class="text-end text-muted">{{ number_format($detail->price_per_unit, 0, ',', '.') }}</td>
                                                 <td class="text-end fw-bold text-navy">Rp {{ number_format($detail->subtotal_price, 0, ',', '.') }}</td>
@@ -379,6 +385,100 @@
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+
+                            <!-- Tab: ADDITIONAL -->
+                            <div class="tab-pane fade" id="content-additional" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table-premium w-100 mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Bagian</th>
+                                                <th>Material</th>
+                                                <th class="text-end">Tebal (mm)</th>
+                                                <th class="text-end">Lebar (mm)</th>
+                                                <th class="text-end">Panjang (mm)</th>
+                                                <th class="text-center">Qty</th>
+                                                <th class="text-center">Sisi</th>
+                                                <th class="text-center">Total</th>
+                                                <th class="text-end">Rate (Rp)</th>
+                                                <th class="text-end">Total Harga (Rp)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tab-additional-tbody">
+                                            @forelse(isset($calculation) ? $calculation->details->where('section', 'Additional')->values() : [] as $detail)
+                                            <tr>
+                                                <td class="fw-medium">{{ $detail->part_name }}</td>
+                                                <td class="fw-bold text-navy">{{ $detail->material?->kode ?? '-' }}</td>
+                                                <td class="text-end">{{ (float)$detail->calculated_thickness }}</td>
+                                                <td class="text-end">{{ (float)$detail->calculated_width }}</td>
+                                                <td class="text-end fw-medium">{{ (float)$detail->calculated_length }}</td>
+                                                <td class="text-center">{{ (float) $detail->quantity }}</td>
+                                                <td class="text-center">{{ $detail->side_count }}</td>
+                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ (float) $detail->total_quantity }} <span class="fw-normal text-muted">{{ (stripos($detail->part_name, 'Terpal') !== false || stripos($detail->material_kode ?? '', 'TERPAL') !== false) ? 'Sqm' : (stripos($detail->part_name, 'Carton') !== false ? 'Lembar' : 'Pcs') }}</span></td>
+                                                <td class="text-end text-muted">{{ number_format($detail->price_per_unit, 0, ',', '.') }}</td>
+                                                <td class="text-end fw-bold text-navy">Rp {{ number_format($detail->subtotal_price, 0, ',', '.') }}</td>
+                                            </tr>
+                                            @empty
+                                            <tr>
+                                                <td colspan="10" class="text-center py-5 text-muted">Belum ada data kalkulasi additional</td>
+                                            </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Tab: INNER BOX -->
+                            <div class="tab-pane fade" id="content-innerbox" role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table-premium w-100 mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Bagian</th>
+                                                <th>Material</th>
+                                                <th class="text-end">Tebal/Tinggi (mm)</th>
+                                                <th class="text-end">Lebar (mm)</th>
+                                                <th class="text-end">Panjang (mm)</th>
+                                                <th class="text-center">Qty</th>
+                                                <th class="text-end">Rate (Rp)</th>
+                                                <th class="text-end">Total Harga (Rp)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tab-innerbox-tbody">
+                                            @forelse(isset($calculation) ? $calculation->details->where('section', 'Inner Box')->values() : [] as $detail)
+                                            <tr>
+                                                <td class="fw-medium">{{ $detail->part_name }}</td>
+                                                <td class="fw-bold text-navy">{{ $detail->material?->kode ?? $detail->material_kode }}</td>
+                                                <td class="text-end">{{ (float)$detail->calculated_thickness }}</td>
+                                                <td class="text-end">{{ (float)$detail->calculated_width }}</td>
+                                                <td class="text-end fw-medium">{{ (float)$detail->calculated_length }}</td>
+                                                <td class="text-center fw-bold" style="color: #0ea5e9;">{{ (float) $detail->quantity }}</td>
+                                                <td class="text-end text-muted">{{ number_format($detail->price_per_unit, 0, ',', '.') }}</td>
+                                                <td class="text-end fw-bold text-navy">Rp {{ number_format($detail->subtotal_price, 0, ',', '.') }}</td>
+                                            </tr>
+                                            @empty
+                                            <tr>
+                                                <td colspan="8" class="text-center py-5 text-muted">Belum ada data kalkulasi Inner Box</td>
+                                            </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                @php
+                                    $totalInnerBox = isset($calculation) ? collect($calculation->details)->where('section', 'Inner Box')->sum('subtotal_price') : 0;
+                                @endphp
+                                @if($totalInnerBox > 0)
+                                <div class="p-3 bg-light d-flex justify-content-end tab-footer border-top">
+                                    <div class="card-summary-premium p-3" style="width: 350px;">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-navy fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 0.5px;">Total Biaya Inner Box</span>
+                                            <span class="fs-5 fw-black text-primary">Rp {{ number_format($totalInnerBox, 0, ',', '.') }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
                             </div>
 
                             <!-- Tab: MANPOWER -->

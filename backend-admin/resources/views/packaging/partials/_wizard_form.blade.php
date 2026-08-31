@@ -282,10 +282,7 @@
                     @if($isEdit)
                         @method('PUT')
                     @endif
-                    
-                    @include('packaging.partials.modals.step1')
-                    @include('packaging.partials.modals.step2')
-
+                    @include('packaging.partials.modals._product-setup')
                     <!-- Button Controls -->
                     <div class="d-flex justify-content-between mt-5 pt-4 border-top border-secondary border-opacity-10">
                         <button type="button" class="btn btn-light border px-4 text-body fw-bold btn-premium shadow-sm" id="btnPrev" style="display: none;">
