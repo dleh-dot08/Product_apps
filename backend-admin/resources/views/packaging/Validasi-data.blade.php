@@ -40,7 +40,7 @@
                                 <td><span class="badge bg-secondary bg-opacity-10 text-secondary border">{{ $mat->code }}</span></td>
                                 <td class="fw-medium">{{ $mat->component }}</td>
                                 <td>{{ $mat->thickness }} × {{ $mat->width }} × {{ $mat->length }} mm</td>
-                                <td>{{ $mat->wood_type }}</td>
+                                <td>{{ $mat->material_type }}</td>
                                 <td class="text-end fw-bold text-success">Rp {{ number_format($mat->unit_price, 0, ',', '.') }}<span class="text-muted fw-normal ms-1">/ {{ $mat->unit }}</span></td>
                             </tr>
                         @empty

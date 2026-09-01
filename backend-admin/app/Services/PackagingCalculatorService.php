@@ -88,10 +88,27 @@ class PackagingCalculatorService
                 ];
             }
 
+            $additionalMat = $detail->additional_mat ?? '';
+            $cartonSelected = stripos($additionalMat, 'Carton') !== false;
+            $terpalSelected = stripos($additionalMat, 'Terpal') !== false;
+
+            if ($detail->type_packaging === 'Box Carton' && !$cartonSelected) {
+                // If type packaging is Box Carton, we force Carton material as main component
+                $cartonSelected = true;
+            }
+
+            // Original dimensions from detail
+            $baseLength = (float) ($detail->panjang ?? $detail->length ?? 0);
+            $baseWidth = (float) ($detail->lebar ?? $detail->width ?? 0);
+            $baseHeight = (float) ($detail->tinggi ?? $detail->height ?? 0);
+
+            // Expansion for carton thickness (10mm per side = 20mm total)
+            $cartonThicknessExpansion = ($cartonSelected && !$hasInnerBoxes) ? 20 : 0;
+
             $params = [
-                'length' => (float) ($detail->panjang ?? $detail->length ?? 0),
-                'width' => (float) ($detail->lebar ?? $detail->width ?? 0),
-                'height' => (float) ($detail->tinggi ?? $detail->height ?? 0),
+                'length' => $baseLength + $cartonThicknessExpansion,
+                'width' => $baseWidth + $cartonThicknessExpansion,
+                'height' => $baseHeight + $cartonThicknessExpansion,
                 'jarak_penyanggah_atas' => (float) ($detail->jarak_penyanggah_atas ?? $detail->jarak_penyanggah ?? 300),
                 'jarak_penyanggah_bawah' => (float) ($detail->jarak_penyanggah_bawah ?? $detail->jarak_penyanggah ?? 300),
                 'distance_between_pillars' => (float) ($detail->jarak_penyanggah_bawah ?? $detail->jarak_penyanggah ?? 300),
@@ -106,6 +123,162 @@ class PackagingCalculatorService
             $params = array_merge($params, $extraParams);
 
             $detailsToInsert = $this->buildDetailsArray($params, 'Horizontal', $customDetails);
+
+            if ($hasInnerBoxes) {
+                foreach ($innerBoxesData as $box) {
+                    $matId = $box['material_id'] ?? $box['material'] ?? null;
+                    $qtyBox = (int)($box['qty'] ?? 1);
+                    if ($matId && $qtyBox > 0) {
+                        $boxMat = null;
+                        if (\Illuminate\Support\Str::isUuid($matId)) {
+                            $boxMat = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('id', $matId)->first();
+                        }
+                        if (!$boxMat) {
+                            $boxMat = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('code', $matId)->first();
+                        }
+                        if ($boxMat) {
+                            $price = (float) ($boxMat->unit_price ?? 0);
+                            $subtotal = $price * $qtyBox;
+                            $detailsToInsert[] = [
+                                'section' => 'Inner Box',
+                                'part_name' => 'Carton Box',
+                                'material_kode' => $boxMat->code ?? 'CARTON-BOX',
+                                'material_satuan_harga' => $boxMat->satuan ?? 'Pcs',
+                                'direction' => null,
+                                'tipe_penutup' => null,
+                                'calculated_thickness' => (float)($box['height'] ?? $boxMat->thickness ?? 0),
+                                'calculated_width' => (float)($box['width'] ?? $boxMat->width ?? 0),
+                                'calculated_length' => (float)($box['length'] ?? $boxMat->length ?? 0),
+                                'quantity' => $qtyBox,
+                                'side_count' => 1,
+                                'total_quantity' => $qtyBox,
+                                'total_length' => 0,
+                                'price_per_unit' => $price,
+                                'subtotal_price' => $subtotal,
+                                'nail_points' => 0,
+                            ];
+                        }
+                    }
+                }
+            }
+
+            if ($cartonSelected) {
+                $cartonCode = $detail->carton_material;
+                $cartonItem = null;
+                if ($cartonCode) {
+                    $cartonItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('code', $cartonCode)->first();
+                    if (!$cartonItem && \Illuminate\Support\Str::isUuid($cartonCode)) {
+                        $cartonItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('id', $cartonCode)->first();
+                    }
+                }
+                if (!$cartonItem) {
+                    $cartonItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')
+                        ->where('material_type', 'Carton')
+                        ->where('component', 'Carton Box Cokelat Lembaran')
+                        ->first();
+                }
+                
+                if ($cartonItem) {
+                    // Calculate Carton Quantity (Surface area of inner box)
+                    $innerSurfaceArea = 2 * (
+                        ($baseLength * $baseWidth) + 
+                        ($baseLength * $baseHeight) + 
+                        ($baseWidth * $baseHeight)
+                    );
+
+                    $cartonSheetLength = (float)($cartonItem->length ?? 0);
+                    $cartonSheetWidth = (float)($cartonItem->width ?? 0);
+                    $sheetArea = $cartonSheetLength * $cartonSheetWidth;
+
+                    if ($sheetArea > 0) {
+                        $qty = ceil($innerSurfaceArea / $sheetArea);
+                    } else {
+                        // Fallback if master data doesn't have size
+                        $qty = 1;
+                    }
+
+                    $price = (float) ($cartonItem->unit_price ?? 0);
+                    $subtotal = $price * $qty;
+                    $detailsToInsert[] = [
+                        'section' => 'Additional',
+                        'part_name' => 'Carton Material',
+                        'material_kode' => $cartonItem->code ?? 'CARTON',
+                        'material_satuan_harga' => $cartonItem->satuan ?? 'Pcs',
+                        'direction' => null,
+                        'tipe_penutup' => $detail->carton_type_sablon ?? 'Polos',
+                        'calculated_thickness' => (float)($cartonItem->thickness ?? 0),
+                        'calculated_width' => (float)$cartonItem->width,
+                        'calculated_length' => (float)$cartonItem->length,
+                        'quantity' => $qty / 6,
+                        'side_count' => 6,
+                        'total_quantity' => $qty,
+                        'total_length' => 0,
+                        'price_per_unit' => $price,
+                        'subtotal_price' => $subtotal,
+                        'nail_points' => 0,
+                    ];
+                }
+            }
+
+            if ($terpalSelected) {
+                $terpalCode = $detail->terpal_material;
+                $terpalItem = null;
+                if ($terpalCode) {
+                    $terpalItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('code', $terpalCode)->first();
+                    if (!$terpalItem && \Illuminate\Support\Str::isUuid($terpalCode)) {
+                        $terpalItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('id', $terpalCode)->first();
+                    }
+                }
+                if (!$terpalItem) {
+                    $terpalItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')
+                        ->where('material_type', 'Terpal')
+                        ->where('component', 'ILIKE', 'TERPAL A2')
+                        ->first();
+                }
+                if ($terpalItem) {
+                    // Calculate Terpal Quantity (Surface area of outer box + allowance)
+                    // Outer dimension = inner dimension + 40mm (avg wood thickness 20mm * 2) + 100mm (50mm allowance * 2)
+                    $outerLength = $params['length'] + 140;
+                    $outerWidth  = $params['width'] + 140;
+                    $outerHeight = $params['height'] + 140;
+
+                    $outerSurfaceArea = 2 * (
+                        ($outerLength * $outerWidth) + 
+                        ($outerLength * $outerHeight) + 
+                        ($outerWidth * $outerHeight)
+                    );
+
+                    // User requested exact SQM (meter persegi) like Manpower calculation
+                    $qty = $outerSurfaceArea / 1000000;
+
+                    $terpalSheetLength = (float)($terpalItem->length ?? 0);
+                    $terpalSheetWidth = (float)($terpalItem->width ?? 0);
+                    $terpalRollSqm = ($terpalSheetLength * $terpalSheetWidth) / 1000000;
+
+                    $rollPrice = (float) ($terpalItem->unit_price ?? 0);
+                    $price = $terpalRollSqm > 0 ? ($rollPrice / $terpalRollSqm) : $rollPrice;
+                    
+                    $subtotal = $price * $qty;
+                    $detailsToInsert[] = [
+                        'section' => 'Additional',
+                        'part_name' => 'Terpal Material',
+                        'material_kode' => $terpalItem->code ?? 'TERPAL',
+                        'material_satuan_harga' => $terpalItem->satuan ?? 'Pcs',
+                        'direction' => null,
+                        'tipe_penutup' => null,
+                        'calculated_thickness' => (float)$terpalItem->height,
+                        'calculated_width' => (float)$terpalItem->width,
+                        'calculated_length' => (float)$terpalItem->length,
+                        'quantity' => $qty,
+                        'side_count' => 1,
+                        'total_quantity' => $qty,
+                        'total_length' => 0,
+                        'price_per_unit' => $price,
+                        'subtotal_price' => $subtotal,
+                        'nail_points' => 0,
+                    ];
+                }
+            }
 
             $totalMaterial = 0;
             $now = now();
@@ -465,10 +638,30 @@ class PackagingCalculatorService
                 }
             }
 
+            $additionalMat = $calculation->additional_mat ?? '';
+            $cartonSelected = stripos($additionalMat, 'Carton') !== false;
+            $terpalSelected = stripos($additionalMat, 'Terpal') !== false;
+
+            $innerBoxesData = json_decode($calculation->inner_carton_boxes, true) ?? [];
+            $hasInnerBoxes = is_array($innerBoxesData) && count($innerBoxesData) > 0;
+
+            if ($calculation->type_packaging === 'Box Carton' && !$cartonSelected) {
+                // If type packaging is Box Carton, we force Carton material as main component
+                $cartonSelected = true;
+            }
+
+            // Original dimensions from detail
+            $baseLength = (float) ($calculation->panjang ?? $calculation->length ?? 0);
+            $baseWidth = (float) ($calculation->lebar ?? $calculation->width ?? 0);
+            $baseHeight = (float) ($calculation->tinggi ?? $calculation->height ?? 0);
+
+            // Expansion for carton thickness (10mm per side = 20mm total)
+            $cartonThicknessExpansion = ($cartonSelected && !$hasInnerBoxes) ? 20 : 0;
+
             $params = [
-                'length' => (float) ($calculation->panjang ?? $calculation->length ?? 0),
-                'width' => (float) ($calculation->lebar ?? $calculation->width ?? 0),
-                'height' => (float) ($calculation->tinggi ?? $calculation->height ?? 0),
+                'length' => $baseLength + $cartonThicknessExpansion,
+                'width' => $baseWidth + $cartonThicknessExpansion,
+                'height' => $baseHeight + $cartonThicknessExpansion,
                 'jarak_penyanggah_atas' => (float) ($calculation->jarak_penyanggah_atas ?? $calculation->distance_between_pillars_top ?? $calculation->jarak_penyanggah ?? $calculation->distance_between_pillars ?? 300),
                 'jarak_penyanggah_bawah' => (float) ($calculation->jarak_penyanggah_bawah ?? $calculation->distance_between_pillars_bottom ?? $calculation->jarak_penyanggah ?? $calculation->distance_between_pillars ?? 300),
                 'distance_between_pillars' => (float) ($calculation->jarak_penyanggah_bawah ?? $calculation->distance_between_pillars_bottom ?? $calculation->jarak_penyanggah ?? $calculation->distance_between_pillars ?? 300),
@@ -483,6 +676,161 @@ class PackagingCalculatorService
             $params = array_merge($params, $extraParams);
 
             $detailsToInsert = $this->buildDetailsArray($params, $arahGlobal, $customDetails);
+
+            if ($hasInnerBoxes) {
+                foreach ($innerBoxesData as $box) {
+                    $matId = $box['material_id'] ?? $box['material'] ?? null;
+                    $qtyBox = (int)($box['qty'] ?? 1);
+                    if ($matId && $qtyBox > 0) {
+                        $boxMat = null;
+                        if (\Illuminate\Support\Str::isUuid($matId)) {
+                            $boxMat = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('id', $matId)->first();
+                        }
+                        if (!$boxMat) {
+                            $boxMat = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('code', $matId)->first();
+                        }
+                        if ($boxMat) {
+                            $price = (float) ($boxMat->unit_price ?? 0);
+                            $subtotal = $price * $qtyBox;
+                            $detailsToInsert[] = [
+                                'section' => 'Inner Box',
+                                'part_name' => 'Carton Box',
+                                'material_kode' => $boxMat->code ?? 'CARTON-BOX',
+                                'material_satuan_harga' => $boxMat->satuan ?? 'Pcs',
+                                'direction' => null,
+                                'tipe_penutup' => null,
+                                'calculated_thickness' => (float)($box['height'] ?? $boxMat->thickness ?? 0),
+                                'calculated_width' => (float)($box['width'] ?? $boxMat->width ?? 0),
+                                'calculated_length' => (float)($box['length'] ?? $boxMat->length ?? 0),
+                                'quantity' => $qtyBox,
+                                'side_count' => 1,
+                                'total_quantity' => $qtyBox,
+                                'total_length' => 0,
+                                'price_per_unit' => $price,
+                                'subtotal_price' => $subtotal,
+                                'nail_points' => 0,
+                            ];
+                        }
+                    }
+                }
+            }
+
+            if ($cartonSelected) {
+                $cartonCode = $calculation->carton_material;
+                $cartonItem = null;
+                if ($cartonCode) {
+                    $cartonItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('code', $cartonCode)->first();
+                    if (!$cartonItem && \Illuminate\Support\Str::isUuid($cartonCode)) {
+                        $cartonItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('id', $cartonCode)->first();
+                    }
+                }
+                if (!$cartonItem) {
+                    $cartonItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')
+                        ->where('material_type', 'Carton')
+                        ->where('component', 'Carton Box Cokelat Lembaran')
+                        ->first();
+                }
+                
+                if ($cartonItem) {
+                    // Calculate Carton Quantity (Surface area of inner box)
+                    $innerSurfaceArea = 2 * (
+                        ($baseLength * $baseWidth) + 
+                        ($baseLength * $baseHeight) + 
+                        ($baseWidth * $baseHeight)
+                    );
+
+                    $cartonSheetLength = (float)($cartonItem->length ?? 0);
+                    $cartonSheetWidth = (float)($cartonItem->width ?? 0);
+                    $sheetArea = $cartonSheetLength * $cartonSheetWidth;
+
+                    if ($sheetArea > 0) {
+                        $qty = ceil($innerSurfaceArea / $sheetArea);
+                    } else {
+                        $qty = 1;
+                    }
+
+                    $price = (float) ($cartonItem->unit_price ?? 0);
+                    $subtotal = $price * $qty;
+                    $detailsToInsert[] = [
+                        'section' => 'Additional',
+                        'part_name' => 'Carton Material',
+                        'material_kode' => $cartonItem->code ?? 'CARTON',
+                        'material_satuan_harga' => $cartonItem->satuan ?? 'Pcs',
+                        'direction' => null,
+                        'tipe_penutup' => $calculation->carton_type_sablon ?? 'Polos',
+                        'calculated_thickness' => (float)($cartonItem->thickness ?? 0),
+                        'calculated_width' => (float)$cartonItem->width,
+                        'calculated_length' => (float)$cartonItem->length,
+                        'quantity' => $qty / 6,
+                        'side_count' => 6,
+                        'total_quantity' => $qty,
+                        'total_length' => 0,
+                        'price_per_unit' => $price,
+                        'subtotal_price' => $subtotal,
+                        'nail_points' => 0,
+                    ];
+                }
+            }
+
+            if ($terpalSelected) {
+                $terpalCode = $calculation->terpal_material;
+                $terpalItem = null;
+                if ($terpalCode) {
+                    $terpalItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('code', $terpalCode)->first();
+                    if (!$terpalItem && \Illuminate\Support\Str::isUuid($terpalCode)) {
+                        $terpalItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('id', $terpalCode)->first();
+                    }
+                }
+                if (!$terpalItem) {
+                    $terpalItem = \Illuminate\Support\Facades\DB::table('packing_material_prices')
+                        ->where('material_type', 'Terpal')
+                        ->where('component', 'ILIKE', 'TERPAL A2')
+                        ->first();
+                }
+                if ($terpalItem) {
+                    // Calculate Terpal Quantity (Surface area of outer box + allowance)
+                    // Outer dimension = inner dimension + 40mm (avg wood thickness 20mm * 2) + 100mm (50mm allowance * 2)
+                    $outerLength = $params['length'] + 140;
+                    $outerWidth  = $params['width'] + 140;
+                    $outerHeight = $params['height'] + 140;
+
+                    $outerSurfaceArea = 2 * (
+                        ($outerLength * $outerWidth) + 
+                        ($outerLength * $outerHeight) + 
+                        ($outerWidth * $outerHeight)
+                    );
+
+                    // User requested exact SQM (meter persegi) like Manpower calculation
+                    $qty = $outerSurfaceArea / 1000000;
+
+                    $terpalSheetLength = (float)($terpalItem->length ?? 0);
+                    $terpalSheetWidth = (float)($terpalItem->width ?? 0);
+                    $terpalRollSqm = ($terpalSheetLength * $terpalSheetWidth) / 1000000;
+
+                    $rollPrice = (float) ($terpalItem->unit_price ?? 0);
+                    $price = $terpalRollSqm > 0 ? ($rollPrice / $terpalRollSqm) : $rollPrice;
+                    
+                    $subtotal = $price * $qty;
+                    $detailsToInsert[] = [
+                        'section' => 'Additional',
+                        'part_name' => 'Terpal Material',
+                        'material_kode' => $terpalItem->code ?? 'TERPAL',
+                        'material_satuan_harga' => $terpalItem->satuan ?? 'Pcs',
+                        'direction' => null,
+                        'tipe_penutup' => null,
+                        'calculated_thickness' => (float)($terpalItem->thickness ?? 0),
+                        'calculated_width' => (float)$terpalItem->width,
+                        'calculated_length' => (float)$terpalItem->length,
+                        'quantity' => $qty,
+                        'side_count' => 1,
+                        'total_quantity' => $qty,
+                        'total_length' => 0,
+                        'price_per_unit' => $price,
+                        'subtotal_price' => $subtotal,
+                        'nail_points' => 0,
+                    ];
+                }
+            }
 
             $totalCost = 0;
             $now = now();
@@ -805,14 +1153,16 @@ class PackagingCalculatorService
         $isTripleks = stripos($tipePenutup, 'Tripleks') !== false || ($material && stripos($material->component, 'Triplek') !== false);
         
         $subtotalPrice = 0;
-        if ($material && strtolower($material->satuan_harga) === 'sqm') {
+        $unit = $material ? (is_object($material) && isset($material->unit) ? $material->unit : (isset($material->satuan_harga) ? $material->satuan_harga : 'pcs')) : 'pcs';
+
+        if ($material && strtolower($unit) === 'sqm') {
             if ($isTripleks) {
                 $totalAreaSqm = ($partLength * $calculatedWidth * $totalQty) / 1000000;
             } else {
                 $totalAreaSqm = ($partLength * $calculatedWidth * $totalQty) / 1000000;
             }
             $subtotalPrice = $totalAreaSqm * $pricePerUnit;
-        } elseif ($material && strtolower($material->satuan_harga) === 'pcs') {
+        } elseif ($material && strtolower($unit) === 'pcs') {
             $subtotalPrice = $totalQty * $pricePerUnit;
         } else {
             $subtotalPrice = $totalLength * $pricePerUnit;
@@ -823,7 +1173,7 @@ class PackagingCalculatorService
             'part_name' => $partName,
             'material_id' => $material ? $material->id : null,
             'material_kode' => $materialKode,
-            'material_satuan_harga' => $material ? $material->satuan_harga : 'pcs',
+            'material_satuan_harga' => $unit,
             'direction' => $direction,
             'tipe_penutup' => $tipePenutup,
             'calculated_thickness' => $calculatedThickness,
@@ -1121,6 +1471,27 @@ class PackagingCalculatorService
 
             $arah = $override['direction'] ?? ($override['arah'] ?? ($atasOverride['direction'] ?? ($atasOverride['arah'] ?? 'Horizontal')));
             $details[] = $this->formatDetailRow('Penutup', $pName, $pMat, $pKode, $arah, $tipePenutup, $tebal, $partWidth, $pPanjang, max(0, $pQty), 1);
+        }
+        // --- 4. HITUNG ADDITIONAL MATERIAL ---
+        $addMat = $params['additional_mat'] ?? null;
+        if (!empty($addMat) && $addMat !== 'Tidak Ada') {
+            if (stripos($addMat, 'Carton') !== false) {
+                $matCarton = \Illuminate\Support\Facades\DB::table('packing_material_prices')
+                    ->where('component', 'LIKE', '%Carton Box Cokelat Lembaran%')
+                    ->first();
+                if ($matCarton) {
+                    $details[] = $this->formatDetailRow('Additional', 'Carton Lembaran', $matCarton, $matCarton->code ?? $matCarton->id, '', '', (float)($matCarton->thickness ?? 0), (float)($matCarton->width ?? 0), (float)($matCarton->length ?? 0), 1, 1);
+                }
+            }
+
+            if (stripos($addMat, 'Terpal') !== false) {
+                $matTerpal = \Illuminate\Support\Facades\DB::table('packing_material_prices')
+                    ->where('component', 'LIKE', '%TERPAL A2%')
+                    ->first();
+                if ($matTerpal) {
+                    $details[] = $this->formatDetailRow('Additional', 'Terpal', $matTerpal, $matTerpal->code ?? $matTerpal->id, '', '', (float)($matTerpal->thickness ?? 0), (float)($matTerpal->width ?? 0), (float)($matTerpal->length ?? 0), 1, 1);
+                }
+            }
         }
 
         return $details;

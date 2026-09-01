@@ -44,6 +44,8 @@
             'width' => $calculation->lebar ?? '',
             'height' => $calculation->tinggi ?? '',
         ],
+        'cartonMaterial' => $calculation->carton_material ?? '',
+        'terpalMaterial' => $calculation->terpal_material ?? '',
         'additional' => [
             'topGap' => $calculation->gap_atas ?? '',
             'bottomGap' => $calculation->gap_bawah ?? '',
@@ -1168,6 +1170,123 @@
 
     #step-2 .s2-panel-body {
         padding: .85rem;
+        overflow: hidden;
+        transition: max-height .3s ease, padding .3s ease, opacity .2s ease;
+    }
+
+    #step-2 .s2-panel-body.is-collapsed {
+        max-height: 0 !important;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        opacity: 0;
+        border-top: none;
+    }
+
+    #step-2 .s2-panel-head[data-toggle-panel] {
+        cursor: pointer;
+        user-select: none;
+        transition: background .15s ease;
+    }
+
+    #step-2 .s2-panel-head[data-toggle-panel]:hover {
+        background:
+            linear-gradient(
+                90deg,
+                rgba(var(--s2-primary-rgb), .07),
+                transparent
+            ),
+            var(--s2-soft);
+    }
+
+    #step-2 .s2-panel-toggle {
+        margin-left: auto;
+        width: 24px;
+        height: 24px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 24px;
+        color: var(--s2-muted);
+        border-radius: 6px;
+        font-size: .7rem;
+        transition: transform .3s ease, background .15s ease;
+    }
+
+    #step-2 .s2-panel-head[data-toggle-panel]:hover .s2-panel-toggle {
+        background: rgba(var(--s2-primary-rgb), .08);
+        color: var(--s2-primary);
+    }
+
+    #step-2 .s2-panel-toggle.is-collapsed {
+        transform: rotate(180deg);
+    }
+
+    /* Carton Capacity Bar */
+    #step-2 .carton-capacity-wrap {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--s2-border);
+        background: var(--s2-soft);
+    }
+
+    #step-2 .carton-capacity-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 6px;
+    }
+
+    #step-2 .carton-capacity-label {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: .72rem;
+        font-weight: 700;
+        color: var(--s2-text);
+    }
+
+    #step-2 .carton-capacity-label i {
+        color: var(--s2-primary);
+    }
+
+    #step-2 .carton-capacity-pct {
+        font-size: .75rem;
+        font-weight: 800;
+        padding: 2px 8px;
+        border-radius: 6px;
+    }
+
+    #step-2 .carton-capacity-bar {
+        height: 10px;
+        border-radius: 99px;
+        background: rgba(var(--s2-primary-rgb), .1);
+        overflow: hidden;
+    }
+
+    #step-2 .carton-capacity-fill {
+        height: 100%;
+        border-radius: 99px;
+        transition: width .4s ease, background .3s ease;
+        min-width: 0;
+    }
+
+    #step-2 .carton-capacity-fill.is-ok {
+        background: linear-gradient(90deg, #22c55e, #16a34a);
+    }
+
+    #step-2 .carton-capacity-fill.is-warn {
+        background: linear-gradient(90deg, #f59e0b, #d97706);
+    }
+
+    #step-2 .carton-capacity-fill.is-over {
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+
+    #step-2 .carton-capacity-info {
+        margin-top: 4px;
+        font-size: .68rem;
+        font-weight: 600;
     }
 
     /* =========================================================
@@ -1967,6 +2086,35 @@
                                             </label>
                                         @endforeach
                                     </div>
+                                    
+                                    <hr style="margin: 10px 0; border: 0; border-top: 1px solid var(--pt-border);">
+
+                                    <div class="pt-section-heading">
+                                        <h6 class="pt-section-title"><span class="pt-section-number">2a.</span> Additional Mat (Opsional)</h6>
+                                        <p class="pt-section-description">Pilih material tambahan jika diperlukan.</p>
+                                    </div>
+
+                                    <div class="pt-cover-options">
+                                        @php
+                                            $selectedAdditionalMat = trim((string) ($calculation->additional_mat ?? ''));
+                                        @endphp
+                                        <label class="pt-cover-option">
+                                            <input type="radio" name="additional_mat" value="" {{ empty($selectedAdditionalMat) ? 'checked' : '' }}>
+                                            <span class="pt-cover-card">
+                                                <span class="pt-radio"></span>
+                                                <span>Tidak Ada</span>
+                                            </span>
+                                        </label>
+                                        @foreach (['Terpal', 'Carton', 'Terpal + Carton'] as $addMat)
+                                            <label class="pt-cover-option">
+                                                <input type="radio" name="additional_mat" value="{{ $addMat }}" {{ strcasecmp($selectedAdditionalMat, $addMat) === 0 ? 'checked' : '' }}>
+                                                <span class="pt-cover-card">
+                                                    <span class="pt-radio"></span>
+                                                    <span>{{ $addMat }}</span>
+                                                </span>
+                                            </label>
+                                        @endforeach
+                                    </div>
                                 </section>
 
                                 <div class="pt-right-column" style="padding-top: 16px;">
@@ -2096,11 +2244,107 @@
             </div>
         </div>
 
+        <!-- Inner Carton Box Section -->
+        @php
+            $savedInnerBoxes = json_decode($calculation->inner_carton_boxes ?? '[]', true);
+            $hasSavedInnerBoxes = is_array($savedInnerBoxes) && count($savedInnerBoxes) > 0;
+            $cartonBoxMaterials = \Illuminate\Support\Facades\DB::table('packing_material_prices')
+                                    ->where('material_type', 'Carton')
+                                    ->where('component', 'NOT LIKE', '%Lembaran%')
+                                    ->get();
+        @endphp
+
+        <div class="row mb-3">
+            <div class="col-12">
+                <section class="s2-panel" style="border: 1px solid var(--s2-border, #e2e8f0); border-radius: 12px; overflow: hidden;">
+                    <div class="s2-panel-head" style="display: flex; align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <span class="s2-panel-icon">
+                                <i class="fa-solid fa-boxes-packing"></i>
+                            </span>
+                            <h6 class="s2-panel-title" style="margin: 0;">Inner Carton Box</h6>
+                        </div>
+                        <div class="form-check form-switch" style="margin: 0;">
+                            <input class="form-check-input" type="checkbox" id="use_inner_carton_box" style="cursor: pointer;" {{ $hasSavedInnerBoxes ? 'checked' : '' }}>
+                            <label class="form-check-label" for="use_inner_carton_box" style="font-size: 0.75rem; cursor: pointer;">
+                                Gunakan Inner Box
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="s2-panel-body" id="inner_carton_box_container" style="display: {{ $hasSavedInnerBoxes ? 'block' : 'none' }}; padding: 12px;">
+                        <p style="font-size: 0.72rem; color: var(--s2-muted, #64748b); margin-bottom: 10px;">
+                            <i class="fa-solid fa-circle-info me-1"></i>
+                            Tambahkan carton box yang akan disusun di dalam peti kayu. Dimensi akan divalidasi terhadap ukuran peti.
+                        </p>
+
+                        <div id="carton_box_rows">
+                            <!-- Dynamic rows will be inserted here -->
+                        </div>
+
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="btn_add_carton_box" style="font-size: 0.75rem;">
+                            <i class="fa-solid fa-plus me-1"></i> Tambah Ukuran Box
+                        </button>
+
+                        <div id="carton_box_validation_warning" class="text-danger mt-2 fw-bold text-center" style="display: none; font-size: 0.75rem;"></div>
+
+                        <!-- Carton Capacity Bar -->
+                        <div class="carton-capacity-wrap" id="carton_capacity_bar" style="display: none;">
+                            <div class="carton-capacity-header">
+                                <span class="carton-capacity-label">
+                                    <i class="fa-solid fa-chart-pie"></i>
+                                    Carton Capacity
+                                </span>
+                                <span class="carton-capacity-pct" id="carton_capacity_pct">0%</span>
+                            </div>
+                            <div class="carton-capacity-bar">
+                                <div class="carton-capacity-fill is-ok" id="carton_capacity_fill" style="width: 0%;"></div>
+                            </div>
+                            <div class="carton-capacity-info" id="carton_capacity_info">
+                                <span style="color: var(--s2-muted);">0 L required / 0 L available</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <template id="carton-box-row-template">
+            <div class="carton-box-row" style="display: flex; align-items: flex-end; gap: 8px; margin-bottom: 8px; padding: 10px; border: 1px solid var(--s2-border, #e2e8f0); border-radius: 8px; background: var(--s2-soft, #f8fafc);">
+                <div style="flex: 2;">
+                    <label class="form-label" style="font-size: 0.7rem; font-weight: 600; margin-bottom: 2px;">Carton Box *</label>
+                    <select class="form-select form-select-sm carton_material" style="font-size: 0.75rem;">
+                        <option value="">Pilih Material...</option>
+                        @foreach($cartonBoxMaterials as $mat)
+                            <option value="{{ $mat->code ?? $mat->id }}"
+                                    data-component="{{ $mat->component }}"
+                                    data-size="{{ $mat->size }}">
+                                {{ $mat->component }} - {{ $mat->size }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div style="flex: 0 0 80px;">
+                    <label class="form-label" style="font-size: 0.7rem; font-weight: 600; margin-bottom: 2px;">Qty</label>
+                    <input type="number" class="form-control form-control-sm carton_qty" value="1" min="1" style="font-size: 0.75rem; text-align: center;">
+                </div>
+                <div style="flex: 0 0 32px; align-self: flex-end;">
+                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-carton-row" style="padding: 4px 8px;" title="Hapus">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            </div>
+        </template>
+
+        <script>
+            window.SAVED_INNER_BOXES = @json($savedInnerBoxes);
+        </script>
+
         <!-- Dimensi Card (Full Width) -->
         <div class="row mb-3">
             <div class="col-12">
                 <section class="s2-panel s2-dimension">
-                <div class="s2-panel-head">
+                <div class="s2-panel-head" data-toggle-panel="dimensi">
                     <span class="s2-panel-number">1</span>
 
                     <span class="s2-panel-icon">
@@ -2108,6 +2352,7 @@
                     </span>
 
                     <h6 class="s2-panel-title">Dimensi</h6>
+                    <span class="s2-panel-toggle"><i class="fa-solid fa-chevron-up"></i></span>
                 </div>
 
                 <div class="s2-panel-body">
@@ -2178,7 +2423,7 @@
             <div class="col-12">
             <!-- Konfigurasi Area Bawah -->
             <section class="s2-panel s2-bottom">
-                <div class="s2-panel-head">
+                <div class="s2-panel-head" data-toggle-panel="area-bawah">
                     <span class="s2-panel-number">2</span>
 
                     <span class="s2-panel-icon">
@@ -2186,6 +2431,7 @@
                     </span>
 
                     <h6 class="s2-panel-title">Konfigurasi Area Bawah</h6>
+                    <span class="s2-panel-toggle"><i class="fa-solid fa-chevron-up"></i></span>
                 </div>
 
                 <div class="s2-panel-body">
@@ -2248,7 +2494,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2290,7 +2536,7 @@
                                 @if(isset($penutupMaterials) && count($penutupMaterials) > 0)
                                     @foreach($penutupMaterials as $mat)
                                         @php $matType = (stripos($mat->component, 'triplek') !== false) ? 'Triplek' : 'Papan'; @endphp
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2323,7 +2569,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2340,7 +2586,7 @@
             <div class="col-12">
             <!-- Konfigurasi Area Atas -->
             <section class="s2-panel s2-top">
-                <div class="s2-panel-head">
+                <div class="s2-panel-head" data-toggle-panel="area-atas">
                     <span class="s2-panel-number">3</span>
 
                     <span class="s2-panel-icon">
@@ -2348,6 +2594,7 @@
                     </span>
 
                     <h6 class="s2-panel-title">Konfigurasi Area Atas</h6>
+                    <span class="s2-panel-toggle"><i class="fa-solid fa-chevron-up"></i></span>
                 </div>
 
                 <div class="s2-panel-body">
@@ -2397,7 +2644,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2439,7 +2686,7 @@
                                 @if(isset($penutupMaterials) && count($penutupMaterials) > 0)
                                     @foreach($penutupMaterials as $mat)
                                         @php $matType = (stripos($mat->component, 'triplek') !== false) ? 'Triplek' : 'Papan'; @endphp
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type)) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}" data-wood-type="{{ $mat->wood_type ?? '' }}">{{ ucwords(strtolower($mat->wood_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2450,6 +2697,65 @@
             </section>
             </div>
         </div>
+
+        <div class="row">
+            <div class="col-12">
+            <!-- Additional Mat -->
+            <section class="s2-panel s2-carton" style="display: none;">
+                <div class="s2-panel-head" data-toggle-panel="additional-mat">
+                    <span class="s2-panel-number">4</span>
+                    <span class="s2-panel-icon">
+                        <i class="fa-solid fa-box"></i>
+                    </span>
+                    <h6 class="s2-panel-title">Additional Mat</h6>
+                    <span class="s2-panel-toggle"><i class="fa-solid fa-chevron-up"></i></span>
+                </div>
+                <div class="s2-panel-body">
+                    <!-- Carton -->
+                    <div id="carton_material_container" class="d-none gap-3 align-items-center mb-3">
+                        <div class="flex-grow-1">
+                            @php
+                                $cartonMaterials = \Illuminate\Support\Facades\DB::table('packing_material_prices')
+                                                    ->where('material_type', 'Carton')
+                                                    ->where('component', 'like', '%Lembaran%')
+                                                    ->get();
+                            @endphp
+                            <label class="form-label" style="font-size: 0.75rem; font-weight: 600;">Type Carton</label>
+                            <select name="inner_carton_box" class="form-select pt-custom-select" id="s2_inner_carton_box">
+                                <option value="">Pilih Type Carton...</option>
+                                @if(isset($cartonMaterials) && count($cartonMaterials) > 0)
+                                    @foreach($cartonMaterials as $mat)
+                                        <option value="{{ $mat->code ?? $mat->id }}">{{ $mat->component }} - {{ $mat->size }} (Polos)</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Terpal -->
+                    <div id="terpal_material_container" style="display: none;">
+                        <div class="flex-grow-1">
+                            @php
+                                $terpalMaterials = \Illuminate\Support\Facades\DB::table('packing_material_prices')
+                                                    ->where('material_type', 'Terpal')
+                                                    ->get();
+                            @endphp
+                            <label class="form-label" style="font-size: 0.75rem; font-weight: 600;">Terpal</label>
+                            <select name="terpal_material" class="form-select pt-custom-select" id="s2_terpal_material">
+                                <option value="">Pilih Material Terpal...</option>
+                                @if(isset($terpalMaterials) && count($terpalMaterials) > 0)
+                                    @foreach($terpalMaterials as $mat)
+                                        <option value="{{ $mat->code ?? $mat->id }}">{{ $mat->component }} - {{ $mat->size }}</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            </div>
+        </div>
+
 
         <!-- Catatan -->
         <div class="s2-note">
@@ -2919,10 +3225,43 @@
                 descriptionText.textContent = packingTypeDescriptions[packingValue]
                     || 'Pilih type packing untuk menampilkan detail pilihan.';
             }
+
+            // Logic for Additional Mat
+            const addMatSelect = document.querySelector('input[name="additional_mat"]:checked');
+            const addMatValue = addMatSelect ? addMatSelect.value : '';
+
+            const cartonContainer = document.getElementById('carton_material_container');
+            if (cartonContainer) {
+                if (addMatValue.includes('Carton')) {
+                    cartonContainer.classList.remove('d-none');
+                    cartonContainer.classList.add('d-flex');
+                } else {
+                    cartonContainer.classList.remove('d-flex');
+                    cartonContainer.classList.add('d-none');
+                }
+            }
+
+            const terpalContainer = document.getElementById('terpal_material_container');
+            if (terpalContainer) {
+                if (addMatValue.includes('Terpal')) {
+                    terpalContainer.style.display = 'block';
+                } else {
+                    terpalContainer.style.display = 'none';
+                }
+            }
+
+            const cartonPanel = document.querySelector('.s2-carton');
+            if (cartonPanel) {
+                if (addMatValue.includes('Carton') || addMatValue.includes('Terpal')) {
+                    cartonPanel.style.display = 'block';
+                } else {
+                    cartonPanel.style.display = 'none';
+                }
+            }
         };
 
         document.querySelectorAll(
-            '#packingTypeStep input[name="packing_type"], #packingTypeStep input[name="cover_material"]'
+            '#packingTypeStep input[name="packing_type"], #packingTypeStep input[name="cover_material"], #packingTypeStep input[name="additional_mat"]'
         ).forEach((input) => input.addEventListener('change', syncPackingTypeSelection));
 
         const validatePackingTypeStep = () => {
@@ -3023,12 +3362,60 @@
             return element ? element.value : '';
         };
 
-        const getPackagingConfiguration = () => ({
-            packagingNumber: getFieldValue('s2_pkg_number'),
-            packerId: getFieldValue('s2_packer'),
-            qtyPacking: Number(getFieldValue('s2_qty_pack') || 0),
-            deliveryDate: getFieldValue('s2_delivery_date'),
-            typePackaging: document.querySelector('#packingTypeStep input[name="packing_type"]:checked')?.value || '',
+        const getPackagingConfiguration = () => {
+            const addMatSelected = document.querySelector('input[name="additional_mat"]:checked')?.value || '';
+            
+            // Extract inner carton boxes
+            let innerBoxes = null;
+            const useInnerCartonBox = document.getElementById('use_inner_carton_box');
+            if (useInnerCartonBox && useInnerCartonBox.checked) {
+                innerBoxes = [];
+                const rowsContainer = document.getElementById('carton_box_rows');
+                if (rowsContainer) {
+                    const rows = rowsContainer.querySelectorAll('.carton-box-row');
+                    rows.forEach(row => {
+                        const select = row.querySelector('.carton_material');
+                        const qtyInput = row.querySelector('.carton_qty');
+                        if (select && select.value) {
+                            const selectedOption = select.selectedOptions[0];
+                            const sizeStr = selectedOption?.getAttribute('data-size') || '';
+                            let length = null, width = null, height = null;
+                            
+                            // Simple parsing of dimension (e.g. "300mm x 300mm x 115mm")
+                            if (sizeStr) {
+                                const cleaned = sizeStr.replace(/\(.*?\)/g, '').trim();
+                                const nums = cleaned.match(/(\d+)\s*mm/gi);
+                                if (nums && nums.length >= 3) {
+                                    length = parseInt(nums[0]);
+                                    width = parseInt(nums[1]);
+                                    height = parseInt(nums[2]);
+                                }
+                            }
+                            
+                            innerBoxes.push({
+                                material: select.value,
+                                materialName: selectedOption?.textContent?.trim() || '',
+                                size: sizeStr,
+                                length: length,
+                                width: width,
+                                height: height,
+                                qty: parseInt(qtyInput?.value) || 1
+                            });
+                        }
+                    });
+                }
+            }
+
+            return {
+                packagingNumber: getFieldValue('s2_pkg_number'),
+                packerId: getFieldValue('s2_packer'),
+                qtyPacking: Number(getFieldValue('s2_qty_pack') || 0),
+                deliveryDate: getFieldValue('s2_delivery_date'),
+                additionalMat: addMatSelected,
+                innerCartonBox: addMatSelected.includes('Carton') ? getFieldValue('s2_inner_carton_box') : null,
+                innerCartonBoxesArray: innerBoxes,
+                terpalMaterial: addMatSelected.includes('Terpal') ? getFieldValue('s2_terpal_material') : null,
+                typePackaging: document.querySelector('#packingTypeStep input[name="packing_type"]:checked')?.value || '',
 
             dimensions: {
                 length: Number(getFieldValue('s2_length') || 0),
@@ -3080,8 +3467,9 @@
                     direction: getFieldValue('s2_pta_arah'),
                     material: getFieldValue('s2_pta_material'),
                 },
-            },
-        });
+            }
+        };
+    };
 
         const validateStepTwo = () => {
             const requiredIds = [
@@ -3227,6 +3615,9 @@
             setVal('s2_jarak_bawah', initialData.additional?.supportSpacingBawah);
             setVal('s2_gap_atas', initialData.additional?.topGap);
             setVal('s2_gap_bawah', initialData.additional?.bottomGap);
+
+            setVal('s2_inner_carton_box', initialData.cartonMaterial);
+            setVal('s2_terpal_material', initialData.terpalMaterial);
 
             setVal('s2_pb_status', initialData.bottom?.support?.usage);
             setVal('s2_pb_arah', initialData.bottom?.support?.direction);
@@ -3389,6 +3780,15 @@
                     height:
                         payload.configuration.dimensions.height,
 
+                    additional_mat:
+                        payload.configuration.additionalMat,
+                    carton_material:
+                        payload.configuration.innerCartonBox,
+                    terpal_material:
+                        payload.configuration.terpalMaterial,
+                    inner_carton_boxes:
+                        payload.configuration.innerCartonBoxesArray,
+
                     jarak_penyanggah_atas:
                         payload.configuration.additional
                             .supportSpacingAtas,
@@ -3503,6 +3903,15 @@
                             payload.configuration.dimensions.width,
                         height:
                             payload.configuration.dimensions.height,
+
+                        additional_mat:
+                            payload.configuration.additionalMat,
+                        carton_material:
+                            payload.configuration.innerCartonBox,
+                        terpal_material:
+                            payload.configuration.terpalMaterial,
+                        inner_carton_boxes:
+                            payload.configuration.innerCartonBoxesArray,
 
                         jarak_penyanggah_atas:
                             payload.configuration.additional
@@ -3650,5 +4059,335 @@ document.addEventListener('DOMContentLoaded', function() {
         // Jalankan untuk Area Bawah dan Area Atas
         filterPenutupMaterial('s2_ptb_status', 's2_ptb_material');
         filterPenutupMaterial('s2_pta_status', 's2_pta_material');
+
+        // Validate Dimensions
+        const validateDimensions = () => {
+            const p = parseFloat(document.getElementById('s2_length')?.value) || 0;
+            const l = parseFloat(document.getElementById('s2_width')?.value) || 0;
+            const t = parseFloat(document.getElementById('s2_height')?.value) || 0;
+            
+            // Just simple validation or other dimension checks if needed in the future
+        };
+
+        ['s2_length', 's2_width', 's2_height', 's2_inner_carton_box'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', validateDimensions);
+                el.addEventListener('change', validateDimensions);
+            }
+        });
+        
+        document.querySelectorAll('input[name="additional_mat"]').forEach(el => {
+            el.addEventListener('change', validateDimensions);
+        });
+
     });
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const useInnerCartonBox = document.getElementById('use_inner_carton_box');
+    const container = document.getElementById('inner_carton_box_container');
+    const rowsContainer = document.getElementById('carton_box_rows');
+    const btnAdd = document.getElementById('btn_add_carton_box');
+    const template = document.getElementById('carton-box-row-template');
+
+    const dimP = document.getElementById('s2_length');
+    const dimL = document.getElementById('s2_width');
+    const dimT = document.getElementById('s2_height');
+
+    let validationWarning = document.getElementById('carton_box_validation_warning');
+
+    if (!useInnerCartonBox || !container || !rowsContainer || !template) return;
+
+    // Toggle visibility
+    useInnerCartonBox.addEventListener('change', function() {
+        container.style.display = this.checked ? 'block' : 'none';
+        if (this.checked && rowsContainer.children.length === 0) {
+            addCartonRow();
+        }
+    });
+
+    // Add row from template
+    function addCartonRow(materialVal, qty) {
+        const clone = template.content.cloneNode(true);
+        const row = clone.querySelector('.carton-box-row');
+
+        if (materialVal) {
+            const select = row.querySelector('.carton_material');
+            if (select) {
+                // Try to find matching option
+                const match = Array.from(select.options).find(o =>
+                    o.value === materialVal || o.getAttribute('data-size') === materialVal
+                );
+                if (match) {
+                    select.value = match.value;
+                } else {
+                    select.value = materialVal;
+                }
+            }
+        }
+
+        if (qty) {
+            const qtyInput = row.querySelector('.carton_qty');
+            if (qtyInput) qtyInput.value = qty;
+        }
+
+        // Remove button handler
+        row.querySelector('.btn-remove-carton-row')?.addEventListener('click', function() {
+            row.remove();
+            validateInnerBoxDimensions();
+        });
+
+        // Validate on change
+        row.querySelector('.carton_material')?.addEventListener('change', validateInnerBoxDimensions);
+        row.querySelector('.carton_qty')?.addEventListener('input', validateInnerBoxDimensions);
+
+        rowsContainer.appendChild(row);
+        validateInnerBoxDimensions();
+    }
+
+    // Add button
+    btnAdd?.addEventListener('click', () => addCartonRow());
+
+    // Parse dimension from size string like "300mm x 300mm x 115mm"
+    function parseSizeDimensions(sizeStr) {
+        if (!sizeStr) return null;
+        // Remove text in parentheses like "(Include Sablon AQPA)"
+        const cleaned = sizeStr.replace(/\(.*?\)/g, '').trim();
+        // Match patterns: "300mm x 300mm x 115mm" or "P : 580mm x L : 310mm x T : 310mm"
+        const nums = cleaned.match(/(\d+)\s*mm/gi);
+        if (nums && nums.length >= 3) {
+            return {
+                p: parseInt(nums[0]),
+                l: parseInt(nums[1]),
+                t: parseInt(nums[2])
+            };
+        }
+        return null;
+    }
+
+    // Validate inner box dimensions against wooden crate
+    function validateInnerBoxDimensions() {
+        if (!validationWarning) return;
+
+        const crateP = parseFloat(dimP?.value) || 0;
+        const crateL = parseFloat(dimL?.value) || 0;
+        const crateT = parseFloat(dimT?.value) || 0;
+
+        if (crateP === 0 || crateL === 0 || crateT === 0) {
+            validationWarning.style.display = 'none';
+            return;
+        }
+
+        const rows = rowsContainer.querySelectorAll('.carton-box-row');
+        let totalVolume = 0;
+        let hasError = false;
+        let errorMsg = '';
+
+        rows.forEach(row => {
+            const select = row.querySelector('.carton_material');
+            const qtyInput = row.querySelector('.carton_qty');
+            const selectedOption = select?.selectedOptions[0];
+            const sizeStr = selectedOption?.getAttribute('data-size') || '';
+            const qty = Math.max(0, parseInt(qtyInput?.value, 10) || 0);
+            const dims = parseSizeDimensions(sizeStr);
+
+            if (dims) {
+                // Check if individual box exceeds crate
+                if (dims.p > crateP || dims.l > crateL || dims.t > crateT) {
+                    hasError = true;
+                    errorMsg = `⚠ Ukuran carton box (${dims.p}x${dims.l}x${dims.t}mm) melebihi dimensi peti kayu (${crateP}x${crateL}x${crateT}mm). Kurangi qty atau sesuaikan dimensi peti.`;
+                    row.style.borderColor = '#dc2626';
+                } else {
+                    row.style.borderColor = '';
+                }
+                totalVolume += (dims.p * dims.l * dims.t * qty);
+            }
+        });
+
+        const crateVolume = crateP * crateL * crateT;
+        if (!hasError && totalVolume > crateVolume && crateVolume > 0) {
+            hasError = true;
+            errorMsg = `⚠ Total volume carton box (${(totalVolume/1000000).toFixed(1)} L) melebihi volume peti kayu (${(crateVolume/1000000).toFixed(1)} L). Kurangi qty atau perbesar dimensi peti.`;
+        }
+
+        if (hasError) {
+            validationWarning.textContent = errorMsg;
+            validationWarning.style.display = 'block';
+        } else {
+            validationWarning.style.display = 'none';
+        }
+    }
+
+    // Listen to dimension changes for re-validation
+    [dimP, dimL, dimT].forEach(el => {
+        if (el) {
+            el.addEventListener('input', validateInnerBoxDimensions);
+            el.addEventListener('change', validateInnerBoxDimensions);
+        }
+    });
+
+    // Load saved data
+    if (window.SAVED_INNER_BOXES && Array.isArray(window.SAVED_INNER_BOXES) && window.SAVED_INNER_BOXES.length > 0) {
+        window.SAVED_INNER_BOXES.forEach(box => {
+            addCartonRow(box.material, box.qty);
+        });
+    }
+
+
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    /* =====================================================
+       COLLAPSIBLE PANEL TOGGLE
+       ===================================================== */
+    document.querySelectorAll('#step-2 [data-toggle-panel]').forEach(head => {
+        head.addEventListener('click', function(e) {
+            // Don't toggle when clicking form elements inside head
+            if (e.target.closest('input, select, button, label, .form-check')) return;
+
+            const panel = this.closest('.s2-panel');
+            if (!panel) return;
+
+            const body = panel.querySelector('.s2-panel-body');
+            const toggle = this.querySelector('.s2-panel-toggle');
+            if (!body) return;
+
+            const isCollapsed = body.classList.contains('is-collapsed');
+
+            if (isCollapsed) {
+                // Expand
+                body.classList.remove('is-collapsed');
+                body.style.maxHeight = body.scrollHeight + 'px';
+                body.style.opacity = '1';
+                if (toggle) toggle.classList.remove('is-collapsed');
+
+                // Remove max-height after animation for dynamic content
+                setTimeout(() => { body.style.maxHeight = ''; }, 350);
+            } else {
+                // Collapse
+                body.style.maxHeight = body.scrollHeight + 'px';
+                // Force reflow
+                body.offsetHeight;
+                body.classList.add('is-collapsed');
+                if (toggle) toggle.classList.add('is-collapsed');
+            }
+        });
+    });
+
+    /* =====================================================
+       CARTON CAPACITY BAR
+       ===================================================== */
+    const capacityBar = document.getElementById('carton_capacity_bar');
+    const capacityFill = document.getElementById('carton_capacity_fill');
+    const capacityPct = document.getElementById('carton_capacity_pct');
+    const capacityInfo = document.getElementById('carton_capacity_info');
+    const rowsContainer = document.getElementById('carton_box_rows');
+    const dimP = document.getElementById('s2_length');
+    const dimL = document.getElementById('s2_width');
+    const dimT = document.getElementById('s2_height');
+
+    function parseSizeDims(sizeStr) {
+        if (!sizeStr) return null;
+        const cleaned = sizeStr.replace(/\(.*?\)/g, '').trim();
+        const nums = cleaned.match(/(\d+)\s*mm/gi);
+        if (nums && nums.length >= 3) {
+            return {
+                p: parseInt(nums[0]),
+                l: parseInt(nums[1]),
+                t: parseInt(nums[2])
+            };
+        }
+        return null;
+    }
+
+    function updateCapacityBar() {
+        if (!capacityBar || !capacityFill || !capacityPct || !capacityInfo || !rowsContainer) return;
+
+        const crateP = parseFloat(dimP?.value) || 0;
+        const crateL = parseFloat(dimL?.value) || 0;
+        const crateT = parseFloat(dimT?.value) || 0;
+        const crateVolume = crateP * crateL * crateT;
+
+        const rows = rowsContainer.querySelectorAll('.carton-box-row');
+
+        if (rows.length === 0) {
+            capacityBar.style.display = 'none';
+            return;
+        }
+
+        let totalBoxVolume = 0;
+        rows.forEach(row => {
+            const select = row.querySelector('.carton_material');
+            const qtyInput = row.querySelector('.carton_qty');
+            const selectedOption = select?.selectedOptions[0];
+            const sizeStr = selectedOption?.getAttribute('data-size') || '';
+            const qty = Math.max(0, parseInt(qtyInput?.value, 10) || 0);
+            const dims = parseSizeDims(sizeStr);
+            if (dims) {
+                totalBoxVolume += (dims.p * dims.l * dims.t * qty);
+            }
+        });
+
+        capacityBar.style.display = '';
+
+        const requiredL = (totalBoxVolume / 1000000).toFixed(1);
+        const availableL = (crateVolume / 1000000).toFixed(1);
+
+        let pct = 0;
+        if (crateVolume > 0) {
+            pct = (totalBoxVolume / crateVolume * 100);
+        } else if (totalBoxVolume > 0) {
+            pct = 999;
+        }
+
+        const pctDisplay = pct > 999 ? '999+' : pct.toFixed(1);
+
+        // Update fill bar
+        capacityFill.style.width = Math.min(pct, 100) + '%';
+        capacityFill.className = 'carton-capacity-fill';
+        if (pct <= 80) {
+            capacityFill.classList.add('is-ok');
+            capacityPct.style.color = '#16a34a';
+            capacityPct.style.background = 'rgba(22, 163, 74, .1)';
+        } else if (pct <= 100) {
+            capacityFill.classList.add('is-warn');
+            capacityPct.style.color = '#d97706';
+            capacityPct.style.background = 'rgba(217, 119, 6, .1)';
+        } else {
+            capacityFill.classList.add('is-over');
+            capacityPct.style.color = '#dc2626';
+            capacityPct.style.background = 'rgba(220, 38, 38, .1)';
+        }
+
+        capacityPct.textContent = pctDisplay + '%';
+
+        const infoColor = pct > 100 ? '#dc2626' : 'var(--s2-muted)';
+        capacityInfo.innerHTML = `<span style="color: ${infoColor};">${requiredL} L required / ${availableL} L available</span>`;
+    }
+
+    // Listen for dimension changes
+    [dimP, dimL, dimT].forEach(el => {
+        if (el) {
+            el.addEventListener('input', updateCapacityBar);
+            el.addEventListener('change', updateCapacityBar);
+        }
+    });
+
+    // Listen for carton box row changes via event delegation
+    if (rowsContainer) {
+        rowsContainer.addEventListener('change', updateCapacityBar);
+        rowsContainer.addEventListener('input', updateCapacityBar);
+
+        // Observe new rows being added
+        const observer = new MutationObserver(updateCapacityBar);
+        observer.observe(rowsContainer, { childList: true });
+    }
+
+    // Initial update
+    setTimeout(updateCapacityBar, 500);
+});
 </script>

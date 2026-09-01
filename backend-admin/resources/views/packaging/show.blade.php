@@ -3729,6 +3729,10 @@
                                         </div>
 
                                         <div class="material-tabs-wrap">
+                                            @php
+                                                $innerBoxesData = json_decode($calculation->inner_carton_boxes, true) ?? [];
+                                                $hasInnerBoxes = is_array($innerBoxesData) && count($innerBoxesData) > 0;
+                                            @endphp
                                             <ul class="nav material-tabs" id="materialAreaTabs" role="tablist">
                                                 <li class="nav-item" role="presentation">
                                                     <button class="nav-link" id="area-bawah-tab" data-bs-toggle="tab" data-bs-target="#area-bawah-pane" type="button" role="tab" aria-controls="area-bawah-pane" aria-selected="false">Area Bawah</button>
@@ -3736,6 +3740,14 @@
                                                 <li class="nav-item" role="presentation">
                                                     <button class="nav-link active" id="area-atas-tab" data-bs-toggle="tab" data-bs-target="#area-atas-pane" type="button" role="tab" aria-controls="area-atas-pane" aria-selected="true">Area Atas</button>
                                                 </li>
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link" id="area-additional-tab" data-bs-toggle="tab" data-bs-target="#area-additional-pane" type="button" role="tab" aria-controls="area-additional-pane" aria-selected="false">Material Additional</button>
+                                                </li>
+                                                @if($hasInnerBoxes)
+                                                <li class="nav-item" role="presentation">
+                                                    <button class="nav-link" id="area-innerbox-tab" data-bs-toggle="tab" data-bs-target="#area-innerbox-pane" type="button" role="tab" aria-controls="area-innerbox-pane" aria-selected="false">Inner Box</button>
+                                                </li>
+                                                @endif
                                             </ul>
                                         </div>
 
@@ -3842,11 +3854,117 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            
+                                            <div class="tab-pane fade" id="area-additional-pane" role="tabpanel" aria-labelledby="area-additional-tab" tabindex="0">
+                                                <div class="material-list">
+                                                    @php
+                                                        $terpalId = $calculation->terpal_material ?? '';
+                                                        $cartonId = $calculation->carton_material ?? '';
+
+                                                        $terpalMat = null;
+                                                        if (!empty($terpalId)) {
+                                                            $terpalMat = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('code', $terpalId)->first();
+                                                            if (!$terpalMat && \Illuminate\Support\Str::isUuid($terpalId)) {
+                                                                $terpalMat = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('id', $terpalId)->first();
+                                                            }
+                                                        }
+
+                                                        $cartonMat = null;
+                                                        if (!empty($cartonId)) {
+                                                            $cartonMat = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('code', $cartonId)->first();
+                                                            if (!$cartonMat && \Illuminate\Support\Str::isUuid($cartonId)) {
+                                                                $cartonMat = \Illuminate\Support\Facades\DB::table('packing_material_prices')->where('id', $cartonId)->first();
+                                                            }
+                                                        }
+
+                                                        $terpalComponent = $terpalMat ? $terpalMat->component : '-';
+                                                        $cartonComponent = $cartonMat ? $cartonMat->component : '-';
+                                                    @endphp
+
+                                                    @if(!empty($terpalId))
+                                                    <div class="material-row-card">
+                                                        <div class="material-component">
+                                                            <span class="material-component-icon"><span class="material-symbols-rounded">layers</span></span>
+                                                            Terpal
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Mode</span>
+                                                            <span class="material-mode-badge">Include</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Material</span>
+                                                            <span class="material-meta-value" title="{{ $terpalComponent }}">{{ $terpalComponent }}</span>
+                                                        </div>
+                                                    </div>
+                                                    @endif
+
+                                                    @if(!empty($cartonId))
+                                                    <div class="material-row-card">
+                                                        <div class="material-component">
+                                                            <span class="material-component-icon"><span class="material-symbols-rounded">inventory_2</span></span>
+                                                            Carton Box
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Mode</span>
+                                                            <span class="material-mode-badge">Include</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Material</span>
+                                                            <span class="material-meta-value" title="{{ $cartonComponent }}">{{ $cartonComponent }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Type Sablon</span>
+                                                            <span class="material-meta-value">{{ $calculation->carton_type_sablon ?? 'Polos' }}</span>
+                                                        </div>
+                                                    </div>
+                                                    @endif
+
+                                                    @if(empty($terpalId) && empty($cartonId))
+                                                    <div class="material-row-card text-center d-flex align-items-center justify-content-center" style="grid-template-columns: 1fr; border-left-color: #6c757d;">
+                                                        <div class="py-3 text-muted">
+                                                            <span class="material-symbols-rounded d-block mb-1" style="font-size: 24px; opacity: 0.5;">info</span>
+                                                            <span style="font-size: 13px;">Tidak ada material tambahan</span>
+                                                        </div>
+                                                    </div>
+                                                    @endif
+                                                </div>
+                                            </div>
+
+                                            @if($hasInnerBoxes)
+                                            <div class="tab-pane fade" id="area-innerbox-pane" role="tabpanel" aria-labelledby="area-innerbox-tab" tabindex="0">
+                                                <div class="material-list" style="max-height: 280px; overflow-y: auto; overflow-x: hidden; padding-right: 5px;">
+                                                    @foreach($innerBoxesData as $idx => $ib)
+                                                    <div class="material-row-card" style="border-left-color: #07895f;">
+                                                        <div class="material-component">
+                                                            <span class="material-component-icon green"><span class="material-symbols-rounded">inventory_2</span></span>
+                                                            Inner Box #{{ $idx + 1 }}
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Material</span>
+                                                            <span class="material-meta-value">{{ $ib['materialName'] ?? '-' }}</span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Ukuran (PxLxT)</span>
+                                                            <span class="material-meta-value">
+                                                                @if(isset($ib['length']) && isset($ib['width']) && isset($ib['height']) && $ib['length'] && $ib['width'] && $ib['height'])
+                                                                    {{ $ib['length'] }}mm x {{ $ib['width'] }}mm x {{ $ib['height'] }}mm
+                                                                @else
+                                                                    {{ $ib['size'] ?? '-' }}
+                                                                @endif
+                                                            </span>
+                                                        </div>
+                                                        <div>
+                                                            <span class="material-meta-label">Qty</span>
+                                                            <span class="material-meta-value">{{ $ib['qty'] ?? 1 }} Pcs</span>
+                                                        </div>
+                                                    </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                            @endif
                                         </div>
                                     </section>
                                 </div>
-                            </div>
-                    
                             {{--
                                 Data ini tidak terlihat di halaman.
                                 Fungsinya hanya sebagai sumber nilai bagi renderer 2D/3D dan proses JavaScript lama.
@@ -4020,7 +4138,7 @@
                                 $len = (float)($detail->total_length ?? 0);
                                 $totalWoodLength += $len;
 
-                                $matWoodType = $detail->material->wood_type ?? null;
+                                $matWoodType = $detail->material->material_type ?? null;
                                 if ($matWoodType) {
                                     $matNama = ucwords(strtolower($matWoodType));
                                 } else {
@@ -4031,10 +4149,14 @@
                                     $materialResume[$matKode] = [
                                         'kode' => $matKode,
                                         'nama' => $matNama,
-                                        'length' => 0
+                                        'length' => 0,
+                                        'quantity' => 0,
+                                        'section' => $detail->section ?? '',
+                                        'part_name' => $detail->part_name ?? ''
                                     ];
                                 }
                                 $materialResume[$matKode]['length'] += $len;
+                                $materialResume[$matKode]['quantity'] += (float)($detail->total_quantity ?? 0);
                             }
                         }
                     @endphp
@@ -4083,8 +4205,19 @@
                                                     {{ $mat['kode'] }}
                                                 </div>
                                                 <div class="text-end flex-shrink-0">
-                                                    <span class="fw-extrabold text-success" style="font-size: 18px;">{{ number_format($mat['length'], 1, ',', '.') }}</span>
-                                                    <span class="text-muted fw-bold ms-1" style="font-size: 14px;">m</span>
+                                                    @if($mat['section'] === 'Inner Box')
+                                                        <span class="fw-extrabold text-success" style="font-size: 18px;">{{ number_format($mat['quantity'], 0, ',', '.') }}</span>
+                                                        <span class="text-muted fw-bold ms-1" style="font-size: 14px;">Pcs</span>
+                                                    @elseif($mat['section'] === 'Terpal' || ($mat['section'] === 'Additional' && (stripos($mat['nama'], 'Terpal') !== false || stripos($mat['part_name'], 'Terpal') !== false)))
+                                                        <span class="fw-extrabold text-success" style="font-size: 18px;">{{ number_format($mat['quantity'], 2, ',', '.') }}</span>
+                                                        <span class="text-muted fw-bold ms-1" style="font-size: 14px;">m²</span>
+                                                    @elseif($mat['section'] === 'Carton' || ($mat['section'] === 'Additional' && (stripos($mat['nama'], 'Carton') !== false || stripos($mat['part_name'], 'Carton') !== false)))
+                                                        <span class="fw-extrabold text-success" style="font-size: 18px;">{{ number_format($mat['quantity'], 0, ',', '.') }}</span>
+                                                        <span class="text-muted fw-bold ms-1" style="font-size: 14px;">Lembar</span>
+                                                    @else
+                                                        <span class="fw-extrabold text-success" style="font-size: 18px;">{{ number_format($mat['length'], 1, ',', '.') }}</span>
+                                                        <span class="text-muted fw-bold ms-1" style="font-size: 14px;">m</span>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>
@@ -5961,7 +6094,7 @@
                     'direction' => $d->direction,
                     'tipe_penutup' => $d->tipe_penutup,
                     'material_kode' => $d->material ? $d->material->kode : '-',
-                    'material_wood_type' => $d->material ? $d->material->wood_type : null,
+                    'material_wood_type' => $d->material ? $d->material->material_type : null,
                     'material_satuan_harga' => $d->material ? $d->material->satuan_harga : 'pcs',
                     'calculated_thickness' => (float)$d->calculated_thickness,
                     'calculated_width' => (float)$d->calculated_width,

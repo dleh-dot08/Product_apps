@@ -64,38 +64,52 @@ class PackagingCalculationController extends Controller
         }
 
         try {
+            $item0 = (is_array($request->items) && count($request->items) > 0) ? $request->items[0] : [];
+            
+            $additionalMat = $request->additional_mat ?? ($item0['additional_mat'] ?? null);
+            
             $insertData = [
                 'packaging_number' => $request->packaging_number ?? null,
                 'qty_packaging' => $request->qty_packaging ?? 1,
-                'panjang' => $request->length,
-                'lebar' => $request->width,
-                'tinggi' => $request->height,
-                'jarak_penyanggah_atas' => $request->jarak_penyanggah_atas ?? $request->distance_between_pillars ?? 0,
-                'jarak_penyanggah_bawah' => $request->jarak_penyanggah_bawah ?? $request->distance_between_pillars ?? 0,
-                'gap_atas' => $request->gap_atas,
-                'gap_bawah' => $request->gap_bawah,
+                'panjang' => $request->length ?? ($item0['length'] ?? null),
+                'lebar' => $request->width ?? ($item0['width'] ?? null),
+                'tinggi' => $request->height ?? ($item0['height'] ?? null),
+                'jarak_penyanggah_atas' => $request->jarak_penyanggah_atas ?? $request->distance_between_pillars ?? ($item0['jarak_penyanggah_atas'] ?? 0),
+                'jarak_penyanggah_bawah' => $request->jarak_penyanggah_bawah ?? $request->distance_between_pillars ?? ($item0['jarak_penyanggah_bawah'] ?? 0),
+                'gap_atas' => $request->gap_atas ?? ($item0['gap_atas'] ?? 0),
+                'gap_bawah' => $request->gap_bawah ?? ($item0['gap_bawah'] ?? 0),
                 'status' => 'draft',
-                'packer_id' => auth()->id() ?? null,
-                'type_packaging' => $request->type_packaging ?? null,
+                'packer_id' => auth()->id() ?? ($item0['packer'] ?? null),
+                'type_packaging' => $request->type_packaging ?? ($item0['type_packaging'] ?? null),
+                'inner_carton_boxes' => $request->has('inner_carton_boxes') 
+                    ? json_encode($request->inner_carton_boxes) 
+                    : (isset($item0['inner_carton_boxes']) ? json_encode($item0['inner_carton_boxes']) : null),
+                'additional_mat' => $additionalMat,
+                'carton_material' => stripos($additionalMat ?? '', 'Carton') !== false 
+                    ? ($request->carton_material ?? ($item0['carton_material'] ?? null)) : null,
+                'carton_type_sablon' => stripos($additionalMat ?? '', 'Carton') !== false 
+                    ? ($request->carton_type_sablon ?? ($item0['carton_type_sablon'] ?? null)) : null,
+                'terpal_material' => stripos($additionalMat ?? '', 'Terpal') !== false 
+                    ? ($request->terpal_material ?? ($item0['terpal_material'] ?? null)) : null,
                 
                 // Konfigurasi Bawah
-                'bawah_penyanggah_status' => $request->has('bawah_penyangga_include') ? ($request->bawah_penyangga_include ? 'Include' : 'Exclude') : null,
-                'bawah_penyanggah_arahpemasangan' => $bawahPenyanggaArah,
-                'bawah_penyanggah_material' => $request->bawah_penyangga_material,
-                'bawah_penutup_status' => $request->bawah_penutup_tipe,
-                'bawah_penutup_arahpemasangan' => $bawahPenutupArah,
-                'bawah_penutup_material' => $request->bawah_penutup_material,
-                'bawah_kakibalok_status' => $request->has('include_pallet_base') ? ($request->include_pallet_base ? 'Include' : 'Exclude') : null,
-                'bawah_kakibalok_arahpemasangan' => $request->bawah_kakibalok_arah,
-                'bawah_kakibalok_material' => $request->bawah_kakibalok_material,
+                'bawah_penyanggah_status' => $request->has('bawah_penyangga_include') ? ($request->bawah_penyangga_include ? 'Include' : 'Exclude') : (isset($item0['pb_status']) ? ($item0['pb_status'] ? 'Include' : 'Exclude') : null),
+                'bawah_penyanggah_arahpemasangan' => $bawahPenyanggaArah ?? ($item0['pb_arah'] ?? null),
+                'bawah_penyanggah_material' => $request->bawah_penyangga_material ?? ($item0['pb_material'] ?? null),
+                'bawah_penutup_status' => $request->bawah_penutup_tipe ?? ($item0['ptb_status'] ?? null),
+                'bawah_penutup_arahpemasangan' => $bawahPenutupArah ?? ($item0['ptb_arah'] ?? null),
+                'bawah_penutup_material' => $request->bawah_penutup_material ?? ($item0['ptb_material'] ?? null),
+                'bawah_kakibalok_status' => $request->has('include_pallet_base') ? ($request->include_pallet_base ? 'Include' : 'Exclude') : (isset($item0['kb_status']) ? ($item0['kb_status'] ? 'Include' : 'Exclude') : null),
+                'bawah_kakibalok_arahpemasangan' => $request->bawah_kakibalok_arah ?? ($item0['kb_arah'] ?? null),
+                'bawah_kakibalok_material' => $request->bawah_kakibalok_material ?? ($item0['kb_material'] ?? null),
                 
                 // Konfigurasi Atas
-                'atas_penyanggah_status' => $request->has('atas_penyangga_include') ? ($request->atas_penyangga_include ? 'Include' : 'Exclude') : null,
-                'atas_penyanggah_arahpemasangan' => $request->atas_penyangga_arah,
-                'atas_penyanggah_material' => $request->atas_penyangga_material,
-                'atas_penutup_status' => $request->atas_penutup_tipe,
-                'atas_penutup_arahpemasangan' => $request->atas_penutup_arah,
-                'atas_penutup_material' => $request->atas_penutup_material,
+                'atas_penyanggah_status' => $request->has('atas_penyangga_include') ? ($request->atas_penyangga_include ? 'Include' : 'Exclude') : (isset($item0['pa_status']) ? ($item0['pa_status'] ? 'Include' : 'Exclude') : null),
+                'atas_penyanggah_arahpemasangan' => $request->atas_penyangga_arah ?? ($item0['pa_arah'] ?? null),
+                'atas_penyanggah_material' => $request->atas_penyangga_material ?? ($item0['pa_material'] ?? null),
+                'atas_penutup_status' => $request->atas_penutup_tipe ?? ($item0['pta_status'] ?? null),
+                'atas_penutup_arahpemasangan' => $request->atas_penutup_arah ?? ($item0['pta_arah'] ?? null),
+                'atas_penutup_material' => $request->atas_penutup_material ?? ($item0['pta_material'] ?? null),
             ];
             \Log::info("Creating PackagingCalculation database row with: ", $insertData);
             $calculation = PackagingCalculation::create($insertData);
@@ -263,6 +277,11 @@ class PackagingCalculationController extends Controller
                 // Disimpan di database karena nilai ini menentukan rules di step 3 Konfigurasi Area Atas & Bawah,
                 // contoh: jika Peti Kayu maka Triplek dilarang, Palet Kayu Konfigurasi Atas disembunyikan.
                 'tipe_penutup' => $request->tipe_penutup ?? $calculation->tipe_penutup,
+                'additional_mat' => $request->additional_mat ?? $calculation->additional_mat,
+                'carton_material' => stripos($request->additional_mat ?? $calculation->additional_mat ?? '', 'Carton') !== false ? ($request->carton_material ?? $calculation->carton_material) : null,
+                'carton_type_sablon' => stripos($request->additional_mat ?? $calculation->additional_mat ?? '', 'Carton') !== false ? ($request->carton_type_sablon ?? $calculation->carton_type_sablon) : null,
+                'terpal_material' => stripos($request->additional_mat ?? $calculation->additional_mat ?? '', 'Terpal') !== false ? ($request->terpal_material ?? $calculation->terpal_material) : null,
+                'inner_carton_boxes' => $request->has('inner_carton_boxes') ? json_encode($request->inner_carton_boxes) : $calculation->inner_carton_boxes,
                 'completion_date' => $request->completion_date ?? $calculation->completion_date,
 
 

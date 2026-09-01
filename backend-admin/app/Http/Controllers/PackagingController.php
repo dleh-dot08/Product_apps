@@ -62,6 +62,10 @@ class PackagingController extends Controller
                 // Nilai ini penting karena menentukan interaksi logika dropdown Konfigurasi di Step 3
                 // (seperti Box, Palet, Peti, Kerangka memiliki perlakuan berbeda terhadap Papan/Triplek).
                 'tipe_penutup' => $request->input('tipe_penutup'),
+                'additional_mat' => $request->input('additional_mat'),
+                'carton_material' => stripos($request->input('additional_mat') ?? '', 'Carton') !== false ? $request->input('carton_material') : null,
+                'carton_type_sablon' => stripos($request->input('additional_mat') ?? '', 'Carton') !== false ? $request->input('carton_type_sablon') : null,
+                'terpal_material' => stripos($request->input('additional_mat') ?? '', 'Terpal') !== false ? $request->input('terpal_material') : null,
                 'packaging_number' => 'PKG-' . date('Ymd') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT),
                 'packer_id' => !empty($firstItem['packer']) ? $firstItem['packer'] : null,
                 'qty_packaging' => $firstItem['qty_pack'] ?? 1,
@@ -207,6 +211,11 @@ class PackagingController extends Controller
             // Update 1 Box Packaging dengan konfigurasi dari form
             $packagingJob->update([
                 'type_packaging' => $request->input('type_packaging', $request->packType ?? 'Box'),
+                'tipe_penutup' => $request->input('tipe_penutup'),
+                'additional_mat' => $request->input('additional_mat'),
+                'carton_material' => stripos($request->input('additional_mat') ?? '', 'Carton') !== false ? $request->input('carton_material') : null,
+                'carton_type_sablon' => stripos($request->input('additional_mat') ?? '', 'Carton') !== false ? $request->input('carton_type_sablon') : null,
+                'terpal_material' => stripos($request->input('additional_mat') ?? '', 'Terpal') !== false ? $request->input('terpal_material') : null,
                 'packer_id' => !empty($firstItem['packer']) ? $firstItem['packer'] : null,
                 'qty_packaging' => $firstItem['qty_pack'] ?? 1,
                 'deadline' => $request->date_delivery,
