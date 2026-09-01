@@ -2494,7 +2494,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat\->material_type ?? '' }}">{{ ucwords(strtolower($mat\->material_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->material_type ?? '' }}">{{ ucwords(strtolower($mat->material_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2536,7 +2536,7 @@
                                 @if(isset($penutupMaterials) && count($penutupMaterials) > 0)
                                     @foreach($penutupMaterials as $mat)
                                         @php $matType = (stripos($mat->component, 'triplek') !== false) ? 'Triplek' : 'Papan'; @endphp
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}" data-wood-type="{{ $mat\->material_type ?? '' }}">{{ ucwords(strtolower($mat\->material_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}" data-wood-type="{{ $mat->material_type ?? '' }}">{{ ucwords(strtolower($mat->material_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2569,7 +2569,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat\->material_type ?? '' }}">{{ ucwords(strtolower($mat\->material_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->material_type ?? '' }}">{{ ucwords(strtolower($mat->material_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2644,7 +2644,7 @@
                                 <option value="">Pilih Material...</option>
                                 @if(isset($balokMaterials) && count($balokMaterials) > 0)
                                     @foreach($balokMaterials as $mat)
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat\->material_type ?? '' }}">{{ ucwords(strtolower($mat\->material_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-wood-type="{{ $mat->material_type ?? '' }}">{{ ucwords(strtolower($mat->material_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
@@ -2686,7 +2686,7 @@
                                 @if(isset($penutupMaterials) && count($penutupMaterials) > 0)
                                     @foreach($penutupMaterials as $mat)
                                         @php $matType = (stripos($mat->component, 'triplek') !== false) ? 'Triplek' : 'Papan'; @endphp
-                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}" data-wood-type="{{ $mat\->material_type ?? '' }}">{{ ucwords(strtolower($mat\->material_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
+                                        <option value="{{ $mat->code ?? $mat->id }}" data-type="{{ $matType }}" data-wood-type="{{ $mat->material_type ?? '' }}">{{ ucwords(strtolower($mat->material_type ?? '')) }} - {{ (float)$mat->thickness }}x{{ (float)$mat->width }}</option>
                                     @endforeach
                                 @endif
                             </select>
