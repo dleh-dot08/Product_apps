@@ -1,9 +1,7 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cetak Kalkulasi - {{ $calculation->project_name ?? 'Crate' }}</title>
+<x-app-layout>
+    <x-slot name="title">
+        Cetak Kalkulasi - {{ $calculation->project_name ?? 'Crate' }}
+    </x-slot>
     <style>
         /* Loading Overlay for Background Generation */
         #bgGenOverlay {
@@ -13,14 +11,13 @@
             display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
         
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
         @page {
             size: A4 portrait;
             margin: 4mm 10mm 10mm 10mm; /* Top Right Bottom Left */
         }
-
-        body {
+        
+        /* Reset for app layout to display correctly on screen */
+        .print-layout-container {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background-color: #cbd5e1;
             color: #1e293b;
@@ -73,8 +70,24 @@
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
         @media print {
+            .app-sidebar, 
+            .app-sidebar.sidebar-floating,
+            aside.app-sidebar,
+            .app-header, 
+            .app-footer, 
+            .app-content-header { 
+                display: none !important; 
+            }
+            body.layout-fixed .app-wrapper,
+            body.layout-fixed .app-main,
+            .app-wrapper, 
+            .app-main { 
+                margin-left: 0 !important; 
+                padding-top: 0 !important; 
+                background-color: #ffffff !important; 
+            }
             .print-btn-bar { display: none !important; }
-            body { 
+            .print-layout-container { 
                 background-color: #ffffff; 
                 padding: 0; 
                 margin: 0; 
@@ -469,12 +482,13 @@
             display: table;
             clear: both;
         }
+        @media print {
+            .no-print { display: none !important; }
+        }
     </style>
-</head>
-<body>
 
-    <!-- Print Button -->
-    <div class="print-btn-bar">
+    <div class="print-layout-container">
+    <div class="print-btn-bar no-print">
         <button class="btn-print" onclick="window.print()">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="6 9 6 2 18 2 18 9"></polyline>
@@ -1133,7 +1147,7 @@
         </table>
     @if(isset($isBackgroundGen) && $isBackgroundGen)
         <!-- Hidden iframe for 3D Generation (must be on top to avoid occlusion culling in Chrome) -->
-        <iframe id="bgGenIframe" src="{{ route('packaging.calculations.show', ['id' => $calculation->id, 'auto_print' => 'iframe']) }}" style="position: absolute; left: 0px; top: 0px; width: 1024px; height: 768px; opacity: 0.001; pointer-events: none; border: none; z-index: 99999;"></iframe>
+        <iframe id="bgGenIframe" src="{{ route('packaging.calculations.show', ['id' => $calculation->id, 'auto_print' => 'iframe']) }}" style="position: absolute; left: -9999px; top: -9999px; width: 1024px; height: 768px; opacity: 1; pointer-events: none; border: none; z-index: 99999;"></iframe>
         <div id="bgGenOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9998; display: flex; flex-direction: column; align-items: center; justify-content: center;">
             <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem; border: 4px solid #0f3566; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
             <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
@@ -1183,5 +1197,5 @@
             });
         @endif
     </script>
-</body>
-</html>
+    </div>
+</x-app-layout>
