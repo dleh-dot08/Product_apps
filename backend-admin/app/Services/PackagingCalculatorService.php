@@ -512,54 +512,9 @@ class PackagingCalculatorService
         $L = (float) $detail->width;
         $T = (float) $detail->tinggi;
 
-        $rows = [
-            [
-                'bagian' => 'Atas & Bawah',
-                'panjang' => $P,
-                'lebar' => $L,
-                'sisi' => 2,
-                'luas' => ($P / 1000) * ($L / 1000),
-            ],
-            [
-                'bagian' => 'Kanan & Kiri',
-                'panjang' => $L,
-                'lebar' => $T,
-                'sisi' => 2,
-                'luas' => ($L / 1000) * ($T / 1000),
-            ],
-            [
-                'bagian' => 'Depan & Belakang',
-                'panjang' => $P,
-                'lebar' => $T,
-                'sisi' => 2,
-                'luas' => ($P / 1000) * ($T / 1000),
-            ],
-        ];
+        $details = DB::table('packing_job_calc_details')->where('job_id', $detail->id)->get();
 
-        $totalHargaManpower = 0;
-        $now = now();
-        foreach ($rows as $row) {
-            $totalLuas = $row['luas'] * $row['sisi'];
-            $totalBiaya = $totalLuas * $rate;
-
-            DB::table('packing_job_calc_manpowers')->insert([
-                'id' => \Illuminate\Support\Str::uuid()->toString(),
-                'job_id' => $detail->id,
-                'bagian' => $row['bagian'],
-                'panjang' => $row['panjang'],
-                'lebar' => $row['lebar'],
-                'sisi' => $row['sisi'],
-                'luas' => $row['luas'],
-                'total_luas' => $totalLuas,
-                'rate' => $rate,
-                'total_biaya' => $totalBiaya,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-            $totalHargaManpower += $totalBiaya;
-        }
-
-        return $totalHargaManpower;
+        return $this->insertManpowerData($detail->id, $details, $P, $L, $T, $rate);
     }
 
     /**
@@ -1083,51 +1038,84 @@ class PackagingCalculatorService
         $packagingSettings = file_exists($settingsPath) ? json_decode(file_get_contents($settingsPath), true) : ['manpower_rate' => 10000];
         $rate = $packagingSettings['manpower_rate'] ?? 10000;
 
+        DB::table('packing_job_calc_manpowers')->where('job_id', $calculation->id)->delete();
+        
+        $details = DB::table('packing_job_calc_details')->where('job_id', $calculation->id)->get();
         $P = (float) ($calculation->panjang ?? $calculation->length ?? 0);
         $L = (float) ($calculation->lebar ?? $calculation->width ?? 0);
         $T = (float) ($calculation->tinggi ?? $calculation->height ?? 0);
 
-        DB::table('packing_job_calc_manpowers')->where('job_id', $calculation->id)->delete();
+        return $this->insertManpowerData($calculation->id, $details, $P, $L, $T, $rate);
+    }
+
+    private function insertManpowerData($jobId, $details, $P, $L, $T, $rate)
+    {
+        $qtyPapan = 0;
+        $qtyBalok = 0;
+        $qtyTriplek = 0;
+
+        foreach ($details as $d) {
+            $code = is_array($d) ? ($d['material_kode'] ?? $d['material_code'] ?? '') : ($d->material_code ?? $d->material_kode ?? '');
+            $nama = is_array($d) ? ($d['material_nama'] ?? '') : ($d->material_nama ?? '');
+            $qty = is_array($d) ? (float)($d['total_quantity'] ?? 0) : (float)($d->total_quantity ?? 0);
+
+            if (empty($code) || $code === '-') continue;
+
+            $codeUpper = strtoupper($code);
+            if (str_contains($codeUpper, 'KAYU-PAPAN') || stripos($nama, 'papan') !== false) {
+                $qtyPapan += $qty;
+            } elseif (str_contains($codeUpper, 'KAYU-BALOK') || stripos($nama, 'balok') !== false) {
+                $qtyBalok += $qty;
+            } elseif (str_contains($codeUpper, 'KAYU-TRIPL') || str_contains($codeUpper, 'TR') || stripos($nama, 'triplek') !== false) {
+                $qtyTriplek += $qty;
+            }
+        }
+
+        $m3 = ($P * $L * $T) / 1000000000;
+
+        $waktuRules = DB::table('packaging_waktu_manpower')->get()->keyBy('kegiatan');
+        $getRule = function($kegiatan) use ($waktuRules) {
+            $rule = $waktuRules->get($kegiatan);
+            return $rule ? ((int)$rule->prepare_menit + (int)$rule->pekerjaan_menit) : 0;
+        };
+
+        $rows = [];
+        if ($qtyBalok > 0) {
+            $potongBalokTime = $getRule('POTONG BALOK');
+            $serutBalokTime = $getRule('SERUT BALOK');
+            $rows[] = ['bagian' => 'Potong Balok', 'qty' => $qtyBalok, 'waktu_satuan' => $potongBalokTime, 'total_waktu' => $qtyBalok * $potongBalokTime, 'satuan' => 'pcs'];
+            $rows[] = ['bagian' => 'Serut Balok', 'qty' => $qtyBalok, 'waktu_satuan' => $serutBalokTime, 'total_waktu' => $qtyBalok * $serutBalokTime, 'satuan' => 'pcs'];
+        }
+        if ($qtyPapan > 0) {
+            $potongPapanTime = $getRule('POTONG PAPAN');
+            $serutPapanTime = $getRule('SERUT PAPAN');
+            $rows[] = ['bagian' => 'Potong Papan', 'qty' => $qtyPapan, 'waktu_satuan' => $potongPapanTime, 'total_waktu' => $qtyPapan * $potongPapanTime, 'satuan' => 'pcs'];
+            $rows[] = ['bagian' => 'Serut Papan', 'qty' => $qtyPapan, 'waktu_satuan' => $serutPapanTime, 'total_waktu' => $qtyPapan * $serutPapanTime, 'satuan' => 'pcs'];
+        }
+        if ($qtyTriplek > 0) {
+            $potongTriplekTime = $getRule('POTONG TRIPLEK');
+            $rows[] = ['bagian' => 'Potong Triplek', 'qty' => $qtyTriplek, 'waktu_satuan' => $potongTriplekTime, 'total_waktu' => $qtyTriplek * $potongTriplekTime, 'satuan' => 'pcs'];
+        }
+        if ($m3 > 0) {
+            $perakitanTime = $getRule('PERAKITAN');
+            $rows[] = ['bagian' => 'Perakitan', 'qty' => $m3, 'waktu_satuan' => $perakitanTime, 'total_waktu' => $m3 * $perakitanTime, 'satuan' => 'm3'];
+        }
+
         $totalHargaManpower = 0;
-
-        $rows = [
-            [
-                'bagian' => 'Atas & Bawah',
-                'panjang' => $P,
-                'lebar' => $L,
-                'sisi' => 2,
-                'luas' => ($P / 1000) * ($L / 1000),
-            ],
-            [
-                'bagian' => 'Kanan & Kiri',
-                'panjang' => $L,
-                'lebar' => $T,
-                'sisi' => 2,
-                'luas' => ($L / 1000) * ($T / 1000),
-            ],
-            [
-                'bagian' => 'Depan & Belakang',
-                'panjang' => $P,
-                'lebar' => $T,
-                'sisi' => 2,
-                'luas' => ($P / 1000) * ($T / 1000),
-            ],
-        ];
-
         $now = now();
         foreach ($rows as $row) {
-            $totalLuas = $row['luas'] * $row['sisi'];
-            $totalBiaya = $totalLuas * $rate;
-
+            // Calculate cost based on rate (assuming rate is per hour, so divide total minutes by 60)
+            $totalBiaya = ($row['total_waktu'] / 60) * $rate;
+            
             DB::table('packing_job_calc_manpowers')->insert([
                 'id' => \Illuminate\Support\Str::uuid()->toString(),
-                'job_id' => $calculation->id,
+                'job_id' => $jobId,
                 'bagian' => $row['bagian'],
-                'panjang' => $row['panjang'],
-                'lebar' => $row['lebar'],
-                'sisi' => $row['sisi'],
-                'luas' => $row['luas'],
-                'total_luas' => $totalLuas,
+                'panjang' => $row['qty'], // Repurpose panjang for Qty/Vol
+                'lebar' => $row['waktu_satuan'], // Repurpose lebar for waktu_satuan
+                'sisi' => ($row['satuan'] == 'pcs' ? 1 : 0), // Use sisi as a flag or just leave it
+                'luas' => $row['total_waktu'], // Repurpose luas for total_waktu
+                'total_luas' => $row['total_waktu'],
                 'rate' => $rate,
                 'total_biaya' => $totalBiaya,
                 'created_at' => $now,
@@ -1228,7 +1216,7 @@ class PackagingCalculatorService
         return ['qty' => $totalQty, 'length' => $length, 'sisa_ujung' => $sisaUjung];
     }
 
-    private function calculateBottomCoverLayout($qtyPenyangga, $arah, $outerP, $outerL, $celahPenyangga, $celahPenutup, $lebarPenutup, $include, $tipePenutup, $isTripleks) {
+    private function calculateBottomCoverLayout($qtyPenyangga, $arah, $outerP, $outerL, $celahPenyangga, $celahPenutup, $lebarPenutup, $include, $tipePenutup, $isTripleks, $lebarPenyangga = 0) {
         if ($include == 0 || $include === '0' || $include === 'Exclude' || strtolower($include) === 'exclude' || empty($tipePenutup) || $tipePenutup === 'Tanpa Penutup' || $tipePenutup === 'Tidak makai penutup') {
             return ['qty' => 0, 'length' => 0];
         }
@@ -1240,15 +1228,44 @@ class PackagingCalculatorService
         }
         
         $qtyTotal = 0;
-        if ($qtyPenyangga > 1) {
-            $totalSpaces = $qtyPenyangga - 1;
+        if ($qtyPenyangga > 0) {
             $langkahPenutup = $lebarPenutup + $celahPenutup;
-            $qtyCoverPerSpace = ($langkahPenutup > 0) ? floor(($celahPenyangga + $celahPenutup) / $langkahPenutup) : 0;
-            $qtyTotal = 2 + ($totalSpaces * $qtyCoverPerSpace);
-        } elseif ($qtyPenyangga == 1) {
+            if ($langkahPenutup <= 0) return ['qty' => 0, 'length' => $length];
+            
             $qtyTotal = 2; // only left and right ends
-        } else {
-            $qtyTotal = 0;
+            
+            if ($qtyPenyangga > 1) {
+                $totalSpaces = $qtyPenyangga - 1;
+                $qtyCoverPerSpace = floor(($celahPenyangga + $celahPenutup) / $langkahPenutup);
+                $qtyTotal += ($totalSpaces * $qtyCoverPerSpace);
+            }
+            
+            if ($lebarPenyangga > 0) {
+                $crossSpan = ($arah === 'Horizontal') ? $outerP : $outerL;
+                $maxPenyCenter = ($crossSpan / 2) - $lebarPenutup - ($lebarPenyangga / 2);
+                if ($maxPenyCenter < 0) $maxPenyCenter = 0;
+                
+                $langkahPeny = $lebarPenyangga + $celahPenyangga;
+                $halfCount = floor($qtyPenyangga / 2);
+                
+                if ($halfCount > 0 && $halfCount * $langkahPeny > $maxPenyCenter) {
+                    $langkahPeny = $maxPenyCenter / $halfCount;
+                }
+                
+                $leftmostPenyCenter = 0;
+                if ($qtyPenyangga % 2 === 1) {
+                    $leftmostPenyCenter = -$halfCount * $langkahPeny;
+                } else {
+                    $leftmostPenyCenter = -($halfCount - 0.5) * $langkahPeny;
+                }
+                
+                $outerSpace = ($leftmostPenyCenter - ($lebarPenyangga / 2)) - ((-$crossSpan / 2) + $lebarPenutup);
+                
+                if ($outerSpace > 0) {
+                    $qtyCoverOuter = floor(($outerSpace + $celahPenutup) / $langkahPenutup);
+                    $qtyTotal += 2 * $qtyCoverOuter;
+                }
+            }
         }
 
         return ['qty' => $qtyTotal, 'length' => $length];
@@ -1392,7 +1409,7 @@ class PackagingCalculatorService
         $celahPB = (stripos($ptbTipe, 'Setengah') !== false) ? $celahBawah : $celahBawah; // menggunakan gap_bawah yang dipassing
         
         $ptbDirection = $bawahPenutupOverride['direction'] ?? ($bawahPenutupOverride['arah'] ?? $arahGlobal);
-        $ptbLayout = $this->calculateBottomCoverLayout($qtyPenyanggaBawah, $ptbDirection, $outerP, $outerL, $jarakBawah, $celahPB, $lebarPB, $ptbInclude, $ptbTipe, $isTripleks);
+        $ptbLayout = $this->calculateBottomCoverLayout($qtyPenyanggaBawah, $ptbDirection, $outerP, $outerL, $jarakBawah, $celahPB, $lebarPB, $ptbInclude, $ptbTipe, $isTripleks, $lebarPenyanggaBawah);
         
         if ($ptbLayout['qty'] > 0) {
             $partWidth = $isTripleks ? (($ptbDirection === 'Horizontal') ? $outerP : $outerL) : $lebarPB; // Jika tripleks, lebar disesuaikan dengan sisi menyilang

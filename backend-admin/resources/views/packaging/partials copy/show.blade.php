@@ -3322,11 +3322,46 @@
                                     positions.push(0);
                                     sizes.push(safeWidth);
                                 } else if (count > 1) {
-                                    const actualGap = (crossSpan - (count * safeWidth)) / (count - 1);
-                                    for (let i = 0; i < count; i++) {
-                                        positions.push(-crossSpan / 2 + safeWidth / 2 + i * (safeWidth + actualGap));
-                                        sizes.push(safeWidth);
+                                    let customPositions = [];
+                                    let customSizes = [];
+                                    let countPeny = parseInt(cBawah.qty);
+                                    let langkahPeny = 1;
+                                    let halfPeny = Math.floor(countPeny / 2);
+                                    let t_py_w = 0.05;
+                                    let penyPositions = [];
+                                    if (countPeny % 2 === 1) {
+                                        for(let i = -halfPeny; i <= halfPeny; i++) {
+                                            penyPositions.push(i * langkahPeny);
+                                        }
+                                    } else {
+                                        let halfCountEven = countPeny / 2;
+                                        for(let i = -halfCountEven; i <= halfCountEven; i++) {
+                                            if (i === 0) continue;
+                                            let pos = i > 0 ? (i - 0.5) * langkahPeny : (i + 0.5) * langkahPeny;
+                                            penyPositions.push(pos);
+                                        }
                                     }
+                                    
+                                    let spaces = countPeny - 1;
+                                    let coversPerSpace = Math.floor((forcedCount - 2) / spaces);
+                                    
+                                    for(let i = 0; i < spaces; i++) {
+                                        let leftPenyCenter = penyPositions[i];
+                                        let rightPenyCenter = penyPositions[i+1];
+                                        
+                                        let spaceWidth = rightPenyCenter - leftPenyCenter - t_py_w;
+                                        
+                                        let totalCoversWidth = (coversPerSpace * safeWidth) + ((coversPerSpace - 1) * gap);
+                                        let sideMargin = (spaceWidth - totalCoversWidth) / 2;
+                                        
+                                        let currentPos = leftPenyCenter + (t_py_w / 2) + sideMargin + (safeWidth / 2);
+                                        for(let j=0; j<coversPerSpace; j++) {
+                                            customPositions.push(currentPos);
+                                            customSizes.push(safeWidth);
+                                            currentPos += safeWidth + gap;
+                                        }
+                                    }
+                                    return { count: customPositions.length, pieceCross: safeWidth, positions: customPositions, sizes: customSizes };
                                 }
                             } else {
                                 // Untuk Papan Setengah: mulai dari bawah, pasang papan + celah. Papan terakhir dipotong jika melebihi batas atas.

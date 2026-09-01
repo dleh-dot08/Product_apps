@@ -3784,6 +3784,8 @@
                         payload.configuration.additionalMat,
                     carton_material:
                         payload.configuration.innerCartonBox,
+                    carton_type_sablon:
+                        payload.configuration.cartonTypeSablon,
                     terpal_material:
                         payload.configuration.terpalMaterial,
                     inner_carton_boxes:
@@ -3874,6 +3876,17 @@
                         'Box',
                     tipe_penutup:
                         payload.packingType.coverMaterial,
+                    additional_mat:
+                        payload.configuration.additionalMat,
+                    carton_material:
+                        payload.configuration.innerCartonBox,
+                    carton_type_sablon:
+                        payload.configuration.cartonTypeSablon,
+                    terpal_material:
+                        payload.configuration.terpalMaterial,
+                    inner_carton_boxes:
+                        payload.configuration.innerCartonBoxesArray,
+
 
                     items: itemsList.map(item => ({
                         // Data Step 1 per produk

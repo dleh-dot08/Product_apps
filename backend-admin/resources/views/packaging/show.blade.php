@@ -5671,9 +5671,11 @@
                                     positions.push(0);
                                     sizes.push(safeWidth);
                                 } else if (count > 1) {
-                                    const actualGap = (crossSpan - (count * safeWidth)) / (count - 1);
+                                    // Use the user's explicit gap to center the group, rather than stretching it
+                                    const totalGroupWidth = (count * safeWidth) + ((count - 1) * gap);
+                                    const startOffset = -totalGroupWidth / 2 + safeWidth / 2;
                                     for (let i = 0; i < count; i++) {
-                                        positions.push(-crossSpan / 2 + safeWidth / 2 + i * (safeWidth + actualGap));
+                                        positions.push(startOffset + i * (safeWidth + gap));
                                         sizes.push(safeWidth);
                                     }
                                 }
@@ -5884,27 +5886,81 @@
                                         celahPeny = langkahPeny - t_py_w;
                                     }
                                     
+                                    let penyPositions = [];
+                                    if (countPeny % 2 === 1) {
+                                        for(let i = -halfPeny; i <= halfPeny; i++) {
+                                            penyPositions.push(i * langkahPeny);
+                                        }
+                                    } else {
+                                        let halfCountEven = countPeny / 2;
+                                        for(let i = -halfCountEven; i <= halfCountEven; i++) {
+                                            if (i === 0) continue;
+                                            let pos = i > 0 ? (i - 0.5) * langkahPeny : (i + 0.5) * langkahPeny;
+                                            penyPositions.push(pos);
+                                        }
+                                    }
+                                    
                                     let spaces = countPeny - 1;
-                                    let coversPerSpace = Math.floor((forcedCount - 2) / spaces);
-                                    let startSpaceIdx = -halfPeny;
+                                    let langkahPenutup = w_penutup + gapM;
+                                    let coversPerSpace = (langkahPenutup > 0) ? Math.floor((celahPeny + gapM) / langkahPenutup) : 0;
                                     
                                     for(let i = 0; i < spaces; i++) {
-                                        let leftPenyCenter = startSpaceIdx * langkahPeny;
-                                        startSpaceIdx++;
-                                        let rightPenyCenter = startSpaceIdx * langkahPeny;
+                                        let leftPenyCenter = penyPositions[i];
+                                        let rightPenyCenter = penyPositions[i+1];
                                         
-                                        let spaceWidth = celahPeny; // space between inner edges of Penyangga
-                                        let gapBetweenCovers = (spaceWidth - (coversPerSpace * w_penutup)) / (coversPerSpace + 1);
+                                        let spaceWidth = rightPenyCenter - leftPenyCenter - t_py_w; // actual space between inner edges
                                         
-                                        let currentPos = leftPenyCenter + (t_py_w / 2) + gapBetweenCovers + (w_penutup / 2);
+                                        // Use the user's inputted gap instead of stretching evenly
+                                        let totalCoversWidth = (coversPerSpace * w_penutup) + ((coversPerSpace - 1) * gapM);
+                                        let sideMargin = (spaceWidth - totalCoversWidth) / 2;
+                                        
+                                        let currentPos = leftPenyCenter + (t_py_w / 2) + sideMargin + (w_penutup / 2);
                                         for(let j=0; j<coversPerSpace; j++) {
                                             customPositions.push(currentPos);
                                             customSizes.push(w_penutup);
-                                            currentPos += w_penutup + gapBetweenCovers;
+                                            currentPos += w_penutup + gapM;
+                                        }
+                                    }
+                                    
+                                    // Also fill the outer spaces (left and right) if they are large enough!
+                                    if (penyPositions.length > 0) {
+                                        let leftmostPenyCenter = penyPositions[0];
+                                        let rightmostPenyCenter = penyPositions[penyPositions.length - 1];
+                                        
+                                        // Left outer space (between left edge board inner face and leftmost penyangga inner face)
+                                        let leftOuterSpace = (leftmostPenyCenter - t_py_w/2) - (-crossSpan/2 + w_penutup);
+                                        if (leftOuterSpace > 0) {
+                                            let coversOuter = Math.floor((leftOuterSpace + gapM) / (w_penutup + gapM));
+                                            if (coversOuter > 0) {
+                                                let totalOuterCoversWidth = (coversOuter * w_penutup) + ((coversOuter - 1) * gapM);
+                                                let sideMarginOuter = (leftOuterSpace - totalOuterCoversWidth) / 2;
+                                                let currentPosOuter = (-crossSpan/2 + w_penutup) + sideMarginOuter + (w_penutup / 2);
+                                                for(let j=0; j<coversOuter; j++) {
+                                                    customPositions.push(currentPosOuter);
+                                                    customSizes.push(w_penutup);
+                                                    currentPosOuter += w_penutup + gapM;
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Right outer space (between rightmost penyangga inner face and right edge board inner face)
+                                        let rightOuterSpace = (crossSpan/2 - w_penutup) - (rightmostPenyCenter + t_py_w/2);
+                                        if (rightOuterSpace > 0) {
+                                            let coversOuter = Math.floor((rightOuterSpace + gapM) / (w_penutup + gapM));
+                                            if (coversOuter > 0) {
+                                                let totalOuterCoversWidth = (coversOuter * w_penutup) + ((coversOuter - 1) * gapM);
+                                                let sideMarginOuter = (rightOuterSpace - totalOuterCoversWidth) / 2;
+                                                let currentPosOuter = (rightmostPenyCenter + t_py_w/2) + sideMarginOuter + (w_penutup / 2);
+                                                for(let j=0; j<coversOuter; j++) {
+                                                    customPositions.push(currentPosOuter);
+                                                    customSizes.push(w_penutup);
+                                                    currentPosOuter += w_penutup + gapM;
+                                                }
+                                            }
                                         }
                                     }
                                 }
-                                layout = { count: forcedCount, pieceCross: w_penutup, positions: customPositions, sizes: customSizes };
+                                layout = { count: customPositions.length, pieceCross: w_penutup, positions: customPositions, sizes: customSizes };
                             }
 
                             layout.positions.forEach(function (pos, index) {
@@ -6716,13 +6772,14 @@
             
             function calculateManpower() {
                 let P = 0, L = 0, T = 0, rate = {{ $manpowerRate }};
-                let totalSqm = 0, totalBiayaMp = 0;
+                let totalWaktu = 0, totalBiayaMp = 0;
                 let rows = [];
 
-                if (!isEditModeActive && activeManpower && activeManpower.length > 0) {
+                if (activeManpower && activeManpower.length > 0) {
                     rows = activeManpower;
-                    totalSqm = rows.reduce((sum, r) => sum + r.total_luas, 0);
-                    totalBiayaMp = rows.reduce((sum, r) => sum + r.total_biaya, 0);
+                    // handle backend keys which might be 'panjang' instead of 'qty'
+                    totalWaktu = rows.reduce((sum, r) => sum + (parseFloat(r.total_luas) || parseFloat(r.total_waktu) || 0), 0);
+                    totalBiayaMp = rows.reduce((sum, r) => sum + parseFloat(r.total_biaya || 0), 0);
                 } else {
                     let lengthInput = document.querySelector('input[name="length"]');
                     let widthInput = document.querySelector('input[name="width"]');
@@ -6737,64 +6794,71 @@
                         rate = 0; // Force cost to 0 if no material
                     }
 
-                    
-                    let luasAtasBawah = (P / 1000) * (L / 1000);
-                    let totalLuasAtasBawah = luasAtasBawah * 2;
-                    
-                    let luasKananKiri = (L / 1000) * (T / 1000);
-                    let totalLuasKananKiri = luasKananKiri * 2;
-                    
-                    let luasDepanBelakang = (P / 1000) * (T / 1000);
-                    let totalLuasDepanBelakang = luasDepanBelakang * 2;
-                    
-                    totalSqm = totalLuasAtasBawah + totalLuasKananKiri + totalLuasDepanBelakang;
-                    totalBiayaMp = totalSqm * rate;
+                    let qtyPapan = 0, qtyBalok = 0, qtyTriplek = 0;
+                    if (typeof activeDetails !== 'undefined') {
+                        activeDetails.forEach(d => {
+                            let code = d.material_kode || d.material_code || '';
+                            let nama = d.material_nama || '';
+                            let qty = parseFloat(d.total_quantity || 0);
 
-                    rows = [
-                        {
-                            bagian: 'Atas & Bawah',
-                            panjang: P,
-                            lebar: L,
-                            sisi: 2,
-                            luas: luasAtasBawah,
-                            total_luas: totalLuasAtasBawah,
-                            rate: rate,
-                            total_biaya: totalLuasAtasBawah * rate
-                        },
-                        {
-                            bagian: 'Kanan & Kiri',
-                            panjang: L,
-                            lebar: T,
-                            sisi: 2,
-                            luas: luasKananKiri,
-                            total_luas: totalLuasKananKiri,
-                            rate: rate,
-                            total_biaya: totalLuasKananKiri * rate
-                        },
-                        {
-                            bagian: 'Depan & Belakang',
-                            panjang: P,
-                            lebar: T,
-                            sisi: 2,
-                            luas: luasDepanBelakang,
-                            total_luas: totalLuasDepanBelakang,
-                            rate: rate,
-                            total_biaya: totalLuasDepanBelakang * rate
-                        }
-                    ];
+                            if (!code || code === '-') return;
+
+                            let codeUpper = code.toUpperCase();
+                            if (codeUpper.includes('KAYU-PAPAN') || nama.toLowerCase().includes('papan')) {
+                                qtyPapan += qty;
+                            } else if (codeUpper.includes('KAYU-BALOK') || nama.toLowerCase().includes('balok')) {
+                                qtyBalok += qty;
+                            } else if (codeUpper.includes('KAYU-TRIPL') || codeUpper.includes('TR') || nama.toLowerCase().includes('triplek')) {
+                                qtyTriplek += qty;
+                            }
+                        });
+                    }
+
+                    let m3 = (P * L * T) / 1000000000;
+
+                    // Hardcoded fallback rules in case simulate() hasn't populated activeManpower yet
+                    let potongBalokTime = 4;
+                    let serutBalokTime = 5;
+                    let potongPapanTime = 4;
+                    let serutPapanTime = 5;
+                    let potongTriplekTime = 10;
+                    let perakitanTime = 105;
+
+                    if (qtyBalok > 0) {
+                        rows.push({ bagian: 'Potong Balok', qty: qtyBalok, satuan: 'pcs', waktu_satuan: potongBalokTime, total_waktu: qtyBalok * potongBalokTime, total_biaya: (qtyBalok * potongBalokTime / 60) * rate });
+                        rows.push({ bagian: 'Serut Balok', qty: qtyBalok, satuan: 'pcs', waktu_satuan: serutBalokTime, total_waktu: qtyBalok * serutBalokTime, total_biaya: (qtyBalok * serutBalokTime / 60) * rate });
+                    }
+                    if (qtyPapan > 0) {
+                        rows.push({ bagian: 'Potong Papan', qty: qtyPapan, satuan: 'pcs', waktu_satuan: potongPapanTime, total_waktu: qtyPapan * potongPapanTime, total_biaya: (qtyPapan * potongPapanTime / 60) * rate });
+                        rows.push({ bagian: 'Serut Papan', qty: qtyPapan, satuan: 'pcs', waktu_satuan: serutPapanTime, total_waktu: qtyPapan * serutPapanTime, total_biaya: (qtyPapan * serutPapanTime / 60) * rate });
+                    }
+                    if (qtyTriplek > 0) {
+                        rows.push({ bagian: 'Potong Triplek', qty: qtyTriplek, satuan: 'pcs', waktu_satuan: potongTriplekTime, total_waktu: qtyTriplek * potongTriplekTime, total_biaya: (qtyTriplek * potongTriplekTime / 60) * rate });
+                    }
+                    if (m3 > 0) {
+                        rows.push({ bagian: 'Perakitan', qty: m3, satuan: 'm3', waktu_satuan: perakitanTime, total_waktu: m3 * perakitanTime, total_biaya: (m3 * perakitanTime / 60) * rate });
+                    }
+
+                    totalWaktu = rows.reduce((sum, r) => sum + r.total_waktu, 0);
+                    totalBiayaMp = rows.reduce((sum, r) => sum + r.total_biaya, 0);
+                    
                     activeManpower = rows;
                 }
                 
                 let html = '';
                 rows.forEach(r => {
+                    let qtyVal = r.qty !== undefined ? r.qty : r.panjang;
+                    let satuanVal = r.satuan !== undefined ? r.satuan : (r.sisi == 1 ? 'pcs' : 'm3');
+                    let waktuSatuanVal = r.waktu_satuan !== undefined ? r.waktu_satuan : r.lebar;
+                    let totalWaktuVal = r.total_waktu !== undefined ? r.total_waktu : r.luas;
+                    
                     html += `
                         <tr>
                             <td class="fw-semibold text-navy">${r.bagian}</td>
-                            <td class="text-end text-secondary">${formatNumber(r.panjang, 0)}</td>
-                            <td class="text-end text-secondary">${formatNumber(r.lebar, 0)}</td>
-                            <td class="text-center text-secondary">${r.sisi}</td>
-                            <td class="text-end text-secondary">${formatNumber(r.luas, 2)}</td>
-                            <td class="text-end fw-black text-navy">${formatNumber(r.total_luas, 2)}</td>
+                            <td class="text-center text-secondary">${formatNumber(qtyVal, (satuanVal == 'm3' ? 3 : 0))}</td>
+                            <td class="text-center text-secondary">${satuanVal}</td>
+                            <td class="text-end text-secondary">${formatNumber(waktuSatuanVal, 0)}</td>
+                            <td class="text-end fw-black text-navy">${formatNumber(totalWaktuVal, 2)}</td>
                         </tr>
                     `;
                 });
@@ -6803,7 +6867,8 @@
                 if (tbody) tbody.innerHTML = html;
                 
                 let totalSqmEl = document.getElementById('mp-total-sqm');
-                if (totalSqmEl) totalSqmEl.innerText = formatNumber(totalSqm, 2);
+                if (totalSqmEl) totalSqmEl.innerText = formatNumber(totalWaktu / 60, 2); // Waktu in hours
+
                 
                 let totalCostEl = document.getElementById('mp-total-cost');
                 if (totalCostEl) totalCostEl.innerText = formatRupiah(totalBiayaMp);

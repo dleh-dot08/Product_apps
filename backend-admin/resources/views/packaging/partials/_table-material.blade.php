@@ -487,12 +487,11 @@
                                     <table class="table-premium w-100 mb-0">
                                         <thead>
                                             <tr>
-                                                <th>Bagian / Area</th>
-                                                <th class="text-end">Panjang (mm)</th>
-                                                <th class="text-end">Lebar (mm)</th>
-                                                <th class="text-center">Jumlah Sisi</th>
-                                                <th class="text-end">Luas per Sisi (m²)</th>
-                                                <th class="text-end">Total Luas (m²)</th>
+                                                <th>Bagian / Proses</th>
+                                                <th class="text-center">Qty / Volume</th>
+                                                <th class="text-center">Satuan</th>
+                                                <th class="text-end">Waktu per Satuan (Menit)</th>
+                                                <th class="text-end">Total Waktu (Menit)</th>
                                             </tr>
                                         </thead>
                                         <tbody id="manpower-tbody">
@@ -506,15 +505,15 @@
                                     <div class="card-summary-premium p-4" style="width: 380px;">
                                         <div class="d-flex justify-content-between align-items-center mb-3">
                                             <div class="d-flex align-items-center gap-2 text-muted">
-                                                <span class="material-symbols-rounded fs-5 text-sky-500" style="color: #0ea5e9;">square_foot</span>
-                                                <span class="fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 11px;">Total Area (SQM)</span>
+                                                <span class="material-symbols-rounded fs-5 text-sky-500" style="color: #0ea5e9;">schedule</span>
+                                                <span class="fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 11px;">Total Waktu (Jam)</span>
                                             </div>
                                             <span class="fs-6 fw-black text-dark" id="mp-total-sqm">0.00</span>
                                         </div>
                                         <div class="d-flex justify-content-between align-items-center mb-4">
                                             <div class="d-flex align-items-center gap-2 text-muted">
                                                 <span class="material-symbols-rounded fs-5 text-sky-500" style="color: #0ea5e9;">payments</span>
-                                                <span class="fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 11px;">Rate MP / m²</span>
+                                                <span class="fw-bold small text-uppercase" style="letter-spacing: 0.5px; font-size: 11px;">Rate MP / Jam</span>
                                             </div>
                                             <span class="fs-6 fw-bold text-dark">Rp {{ number_format($manpowerRate, 0, ',', '.') }}</span>
                                         </div>
