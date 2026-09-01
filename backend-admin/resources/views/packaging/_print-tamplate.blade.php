@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak Kalkulasi - {{ $calculation->project_name ?? 'Crate' }}</title>
     <style>
+        /* Loading Overlay for Background Generation */
+        #bgGenOverlay {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background-color: rgba(255, 255, 255, 0.95);
+            z-index: 99999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
         
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -294,6 +301,8 @@
             background-color: #ffffff;
             overflow: hidden;
             padding: 4px;
+            page-break-inside: avoid;
+            break-inside: avoid;
         }
         .visual-card-small .visual-title {
             font-size: 8px;
@@ -1062,42 +1071,42 @@
                 <div class="visual-card-small">
                     <div class="visual-title">1. Kaki Balok & Pyg Bawah</div>
                     <div class="visual-image-wrapper" style="aspect-ratio: 4/3; height: auto; padding: 4px;">
-                        @if(!empty($imgStep1)) <img src="{{ $imgStep1 }}" alt="Step 1" style="transform: scale(3.5);"> @else <span class="visual-placeholder">[Step 1]</span> @endif
+                        @if(!empty($imgStep1)) <img id="img-step-1" src="{{ $imgStep1 }}" alt="Step 1" style="transform: scale(3.5);"> @else <img id="img-step-1" src="" style="transform: scale(3.5);"> @endif
                     </div>
                 </div>
 
                 <div class="visual-card-small">
                     <div class="visual-title">2. + Penutup Bawah</div>
                     <div class="visual-image-wrapper" style="aspect-ratio: 4/3; height: auto; padding: 4px;">
-                        @if(!empty($imgStep2)) <img src="{{ $imgStep2 }}" alt="Step 2" style="transform: scale(3.5);"> @else <span class="visual-placeholder">[Step 2]</span> @endif
+                        @if(!empty($imgStep2)) <img id="img-step-2" src="{{ $imgStep2 }}" alt="Step 2" style="transform: scale(3.5);"> @else <img id="img-step-2" src="" style="transform: scale(3.5);"> @endif
                     </div>
                 </div>
 
                 <div class="visual-card-small">
                     <div class="visual-title">3. + Pntp Depan Belakang</div>
                     <div class="visual-image-wrapper" style="aspect-ratio: 4/3; height: auto; padding: 4px;">
-                        @if(!empty($imgStep3)) <img src="{{ $imgStep3 }}" alt="Step 3" style="transform: scale(3.5);"> @else <span class="visual-placeholder">[Step 3]</span> @endif
+                        @if(!empty($imgStep3)) <img id="img-step-3" src="{{ $imgStep3 }}" alt="Step 3" style="transform: scale(3.5);"> @else <img id="img-step-3" src="" style="transform: scale(3.5);"> @endif
                     </div>
                 </div>
 
                 <div class="visual-card-small">
                     <div class="visual-title">4. + Pntp Kanan Kiri</div>
                     <div class="visual-image-wrapper" style="aspect-ratio: 4/3; height: auto; padding: 4px;">
-                        @if(!empty($imgStep5)) <img src="{{ $imgStep5 }}" alt="Step 4" style="transform: scale(3.5);"> @else <span class="visual-placeholder">[Step 4]</span> @endif
+                        @if(!empty($imgStep5)) <img id="img-step-4" src="{{ $imgStep5 }}" alt="Step 4" style="transform: scale(3.5);"> @else <img id="img-step-4" src="" style="transform: scale(3.5);"> @endif
                     </div>
                 </div>
 
                 <div class="visual-card-small">
                     <div class="visual-title">5. + Penyangga Atas</div>
                     <div class="visual-image-wrapper" style="aspect-ratio: 4/3; height: auto; padding: 4px;">
-                        @if(!empty($imgStep7)) <img src="{{ $imgStep7 }}" alt="Step 5" style="transform: scale(3.5);"> @else <span class="visual-placeholder">[Step 5]</span> @endif
+                        @if(!empty($imgStep7)) <img id="img-step-5" src="{{ $imgStep7 }}" alt="Step 5" style="transform: scale(3.5);"> @else <img id="img-step-5" src="" style="transform: scale(3.5);"> @endif
                     </div>
                 </div>
 
                 <div class="visual-card-small">
                     <div class="visual-title">6. + Penutup Atas</div>
                     <div class="visual-image-wrapper" style="aspect-ratio: 4/3; height: auto; padding: 4px;">
-                        @if(!empty($imgStep8)) <img src="{{ $imgStep8 }}" alt="Step 6" style="transform: scale(3.5);"> @else <span class="visual-placeholder">[Step 6]</span> @endif
+                        @if(!empty($imgStep8)) <img id="img-step-6" src="{{ $imgStep8 }}" alt="Step 6" style="transform: scale(3.5);"> @else <img id="img-step-6" src="" style="transform: scale(3.5);"> @endif
                     </div>
                 </div>
             </div>
@@ -1106,13 +1115,13 @@
                 <div class="visual-card-small" style="width: 50%;">
                     <div class="visual-title">Hasil Posisi Semua Terexpand</div>
                     <div class="visual-image-wrapper" style="height: 240px; padding: 4px;">
-                        @if(!empty($imgFullExploded)) <img src="{{ $imgFullExploded }}" alt="Full Exploded" style="object-fit: contain; width: 100%; height: 100%; transform: scale(2.0);"> @else <span class="visual-placeholder">[Full Exploded]</span> @endif
+                        @if(!empty($imgFullExploded)) <img id="img-full-exploded" src="{{ $imgFullExploded }}" alt="Full Exploded" style="object-fit: contain; width: 100%; height: 100%; transform: scale(2.0);"> @else <img id="img-full-exploded" src="" style="object-fit: contain; width: 100%; height: 100%; transform: scale(2.0);"> @endif
                     </div>
                 </div>
                 <div class="visual-card-small" style="width: 50%;">
                     <div class="visual-title">Hasil Akhir Rakitan Utuh</div>
                     <div class="visual-image-wrapper" style="height: 240px; padding: 4px;">
-                        @if(!empty($imgFull)) <img src="{{ $imgFull }}" alt="Full Assembled" style="object-fit: contain; width: 100%; height: 100%; transform: scale(2.0);"> @else <span class="visual-placeholder">[Full Image]</span> @endif
+                        @if(!empty($imgFull)) <img id="img-full" src="{{ $imgFull }}" alt="Full Assembled" style="object-fit: contain; width: 100%; height: 100%; transform: scale(2.0);"> @else <img id="img-full" src="" style="object-fit: contain; width: 100%; height: 100%; transform: scale(2.0);"> @endif
                     </div>
                 </div>
             </div>
@@ -1122,13 +1131,57 @@
                 </tr>
             </tbody>
         </table>
+    @if(isset($isBackgroundGen) && $isBackgroundGen)
+        <!-- Hidden iframe for 3D Generation (must be on top to avoid occlusion culling in Chrome) -->
+        <iframe id="bgGenIframe" src="{{ route('packaging.calculations.show', ['id' => $calculation->id, 'auto_print' => 'iframe']) }}" style="position: absolute; left: 0px; top: 0px; width: 1024px; height: 768px; opacity: 0.001; pointer-events: none; border: none; z-index: 99999;"></iframe>
+        <div id="bgGenOverlay" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9998; display: flex; flex-direction: column; align-items: center; justify-content: center;">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem; border: 4px solid #0f3566; border-top: 4px solid transparent; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+            <h4 style="margin-top: 20px; color: #0f3566; font-family: sans-serif;">Generating 3D Document...</h4>
+            <p style="color: #64748b; font-family: sans-serif;">Please wait, preparing images for print...</p>
+        </div>
+        <script>
+            // Hide the actual print container while generating
+            document.querySelector('.print-container').style.display = 'none';
+        </script>
+    @endif
+    
     <!-- Auto Print Script -->
     <script>
-        window.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                window.print();
-            }, 500);
-        });
+        @if(isset($isBackgroundGen) && $isBackgroundGen)
+            window.addEventListener('message', function(event) {
+                if (event.data && event.data.type === '3d_images_generated') {
+                    const images = event.data.images;
+                    
+                    // Replace all images
+                    if (images.imgStep1) document.getElementById('img-step-1').src = images.imgStep1;
+                    if (images.imgStep2) document.getElementById('img-step-2').src = images.imgStep2;
+                    if (images.imgStep3) document.getElementById('img-step-3').src = images.imgStep3;
+                    if (images.imgStep5) document.getElementById('img-step-4').src = images.imgStep5;
+                    if (images.imgStep7) document.getElementById('img-step-5').src = images.imgStep7;
+                    if (images.imgStep8) document.getElementById('img-step-6').src = images.imgStep8;
+                    if (images.imgFullExploded) document.getElementById('img-full-exploded').src = images.imgFullExploded;
+                    if (images.imgFull) document.getElementById('img-full').src = images.imgFull;
+
+                    // Remove overlay and iframe
+                    document.getElementById('bgGenOverlay').style.display = 'none';
+                    let iframe = document.getElementById('bgGenIframe');
+                    if (iframe) iframe.remove();
+                    
+                    document.querySelector('.print-container').style.display = 'block';
+
+                    setTimeout(() => {
+                        window.print();
+                    }, 500);
+                }
+            });
+        @else
+            window.addEventListener('DOMContentLoaded', () => {
+                setTimeout(() => {
+                    window.print();
+                }, 500);
+            });
+        @endif
     </script>
 </body>
 </html>

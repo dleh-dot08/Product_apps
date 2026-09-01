@@ -605,22 +605,17 @@ class PackagingCalculationController extends Controller
             '8' => strlen((string)$imgStep8)
         ]);
 
-        $hasPenutupAtas = request('has_penutup_atas') == '1';
-        $hasPenutupBawah = request('has_penutup_bawah') == '1';
+        $hasPenutupAtas = request('has_penutup_atas') == '1' || request('has_atas_penutup') == 'true' ? true : false;
+        $hasPenutupBawah = request('has_penutup_bawah') == '1' || request('has_bawah_penutup') == 'true' ? true : false;
+        
+        $isBackgroundGen = request()->isMethod('get');
 
         return view('packaging._print-tamplate', compact(
-            'calculation',
-            'materials',
-            'manpowerRate',
-            'nailsPricePerKg',
-            'nailsWeightPerPiece',
-            'crateImage',
-            'imgStep1', 'imgStep2', 'imgStep3', 'imgStep4',
-            'imgStep5', 'imgStep6', 'imgStep7', 'imgStep8', 'imgFullExploded', 'imgFull',
-            'crateImageMaterials',
-            'hasPenutupAtas',
-            'hasPenutupBawah'
+            'calculation', 'materials', 
+            'manpowerRate', 'nailsPricePerKg', 'nailsWeightPerPiece',
+            'crateImage', 'imgStep1', 'imgStep2', 'imgStep3', 'imgStep4', 'imgStep5', 
+            'imgStep6', 'imgStep7', 'imgStep8', 'imgFullExploded', 'imgFull', 'crateImageMaterials',
+            'hasPenutupAtas', 'hasPenutupBawah', 'isBackgroundGen'
         ));
     }
 }
-

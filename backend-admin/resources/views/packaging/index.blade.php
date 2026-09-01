@@ -542,8 +542,14 @@
                                 <div class="pkg-icon"><i class="fa-solid fa-file-circle-plus"></i></div>
                                 <div>
                                     <div class="pkg-kpi-label">Permintaan Baru</div>
-                                    <div class="pkg-kpi-value mt-1">36</div>
-                                    <div class="pkg-kpi-meta mt-1"><i class="fa-solid fa-arrow-trend-up me-1"></i>12.7% dari total</div>
+                                    <div class="pkg-kpi-value mt-1">{{ $kpiPermintaanBaru['count'] }}</div>
+                                    <div class="pkg-kpi-meta mt-1">
+                                        @if($kpiPermintaanBaru['is_positive'])
+                                            <i class="fa-solid fa-arrow-trend-up me-1" style="color: #10b981;"></i><span style="color: #10b981;">+{{ $kpiPermintaanBaru['growth'] }}%</span> dari minggu lalu
+                                        @else
+                                            <i class="fa-solid fa-arrow-trend-down me-1" style="color: #ef4444;"></i><span style="color: #ef4444;">{{ $kpiPermintaanBaru['growth'] }}%</span> dari minggu lalu
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -555,8 +561,14 @@
                                 <div class="pkg-icon"><i class="fa-solid fa-gears"></i></div>
                                 <div>
                                     <div class="pkg-kpi-label">Dalam Proses</div>
-                                    <div class="pkg-kpi-value mt-1">94</div>
-                                    <div class="pkg-kpi-meta mt-1"><i class="fa-regular fa-clock me-1"></i>33.1% dari total</div>
+                                    <div class="pkg-kpi-value mt-1">{{ $kpiDalamProses['count'] }}</div>
+                                    <div class="pkg-kpi-meta mt-1">
+                                        @if($kpiDalamProses['is_positive'])
+                                            <i class="fa-solid fa-arrow-trend-up me-1" style="color: #10b981;"></i><span style="color: #10b981;">+{{ $kpiDalamProses['growth'] }}%</span> dari minggu lalu
+                                        @else
+                                            <i class="fa-solid fa-arrow-trend-down me-1" style="color: #ef4444;"></i><span style="color: #ef4444;">{{ $kpiDalamProses['growth'] }}%</span> dari minggu lalu
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -568,8 +580,14 @@
                                 <div class="pkg-icon"><i class="fa-solid fa-circle-check"></i></div>
                                 <div>
                                     <div class="pkg-kpi-label">Siap Kirim</div>
-                                    <div class="pkg-kpi-value mt-1">78</div>
-                                    <div class="pkg-kpi-meta mt-1"><i class="fa-solid fa-truck-fast me-1"></i>27.5% dari total</div>
+                                    <div class="pkg-kpi-value mt-1">{{ $kpiSiapKirim['count'] }}</div>
+                                    <div class="pkg-kpi-meta mt-1">
+                                        @if($kpiSiapKirim['is_positive'])
+                                            <i class="fa-solid fa-arrow-trend-up me-1" style="color: #10b981;"></i><span style="color: #10b981;">+{{ $kpiSiapKirim['growth'] }}%</span> dari minggu lalu
+                                        @else
+                                            <i class="fa-solid fa-arrow-trend-down me-1" style="color: #ef4444;"></i><span style="color: #ef4444;">{{ $kpiSiapKirim['growth'] }}%</span> dari minggu lalu
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -604,27 +622,33 @@
                                 <div class="pkg-summary-list">
                                     <div class="pkg-summary-row">
                                         <div class="pkg-summary-name"><i class="fa-regular fa-calendar"></i><span>Total request bulan ini</span></div>
-                                        <div class="pkg-summary-value">68 <span class="text-success ms-1" style="font-size:.67rem;"><i class="fa-solid fa-caret-up"></i> 15.3%</span></div>
+                                        <div class="pkg-summary-value">{{ $summaryData['total_month'] }} 
+                                            @if($summaryData['monthly_growth'] >= 0)
+                                                <span class="text-success ms-1" style="font-size:.67rem;"><i class="fa-solid fa-caret-up"></i> {{ $summaryData['monthly_growth'] }}%</span>
+                                            @else
+                                                <span class="text-danger ms-1" style="font-size:.67rem;"><i class="fa-solid fa-caret-down"></i> {{ abs($summaryData['monthly_growth']) }}%</span>
+                                            @endif
+                                        </div>
                                     </div>
                                     <div class="pkg-summary-row">
                                         <div class="pkg-summary-name"><i class="fa-solid fa-users"></i><span>Customer aktif</span></div>
-                                        <div class="pkg-summary-value">42</div>
+                                        <div class="pkg-summary-value">{{ $summaryData['customer_aktif'] }}</div>
                                     </div>
                                     <div class="pkg-summary-row">
                                         <div class="pkg-summary-name"><i class="fa-solid fa-location-dot"></i><span>Tujuan terbanyak</span></div>
-                                        <div class="pkg-summary-value">Surabaya</div>
+                                        <div class="pkg-summary-value">{{ $summaryData['tujuan_terbanyak'] }}</div>
                                     </div>
                                     <div class="pkg-summary-row">
                                         <div class="pkg-summary-name"><i class="fa-solid fa-box"></i><span>Tipe dominan</span></div>
-                                        <div class="pkg-summary-value">Wooden Crate + Pallet</div>
+                                        <div class="pkg-summary-value">{{ $summaryData['tipe_dominan'] }}</div>
                                     </div>
                                     <div class="pkg-summary-row">
                                         <div class="pkg-summary-name"><i class="fa-solid fa-triangle-exclamation text-danger"></i><span>Permintaan urgent</span></div>
-                                        <div class="pkg-summary-value">26 <span class="text-muted fw-normal" style="font-size:.67rem;">(9.2%)</span></div>
+                                        <div class="pkg-summary-value">{{ $summaryData['urgent_count'] }} <span class="text-muted fw-normal" style="font-size:.67rem;">({{ $summaryData['urgent_percentage'] }}%)</span></div>
                                     </div>
                                     <div class="pkg-summary-row">
                                         <div class="pkg-summary-name"><i class="fa-regular fa-clock"></i><span>Rata-rata lead time</span></div>
-                                        <div class="pkg-summary-value">4.6 hari</div>
+                                        <div class="pkg-summary-value">{{ $summaryData['avg_lead_time'] }} hari</div>
                                     </div>
                                 </div>
                             </div>
@@ -650,22 +674,22 @@
                                     <div class="pkg-donut">
                                         <svg viewBox="0 0 36 36" aria-label="Komposisi tipe packaging">
                                             <circle cx="18" cy="18" r="15.9155" fill="none" stroke="var(--pkg-line)" stroke-width="5"></circle>
-                                            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#0ea5e9" stroke-width="5" stroke-dasharray="46 54" stroke-dashoffset="0"></circle>
-                                            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#10b981" stroke-width="5" stroke-dasharray="28 72" stroke-dashoffset="-46"></circle>
-                                            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#f59e0b" stroke-width="5" stroke-dasharray="14 86" stroke-dashoffset="-74"></circle>
-                                            <circle cx="18" cy="18" r="15.9155" fill="none" stroke="#6366f1" stroke-width="5" stroke-dasharray="12 88" stroke-dashoffset="-88"></circle>
+                                            @foreach($compositionData as $data)
+                                                @if($data['percentage'] > 0)
+                                                    <circle cx="18" cy="18" r="15.9155" fill="none" stroke="{{ $data['color'] }}" stroke-width="5" stroke-dasharray="{{ $data['dasharray'] }}" stroke-dashoffset="{{ $data['dashoffset'] }}"></circle>
+                                                @endif
+                                            @endforeach
                                         </svg>
                                         <div class="pkg-donut-center">
-                                            <span class="pkg-donut-total">284</span>
+                                            <span class="pkg-donut-total">{{ $totalTypes }}</span>
                                             <span class="text-muted" style="font-size:.62rem;">Total</span>
                                         </div>
                                     </div>
 
                                     <div class="flex-grow-1">
-                                        <div class="pkg-legend-row"><span><span class="pkg-dot" style="background:#0ea5e9;"></span>W.Crate + Pallet</span><strong>46%</strong></div>
-                                        <div class="pkg-legend-row"><span><span class="pkg-dot" style="background:#10b981;"></span>W.Crate</span><strong>28%</strong></div>
-                                        <div class="pkg-legend-row"><span><span class="pkg-dot" style="background:#f59e0b;"></span>Steel Crate</span><strong>14%</strong></div>
-                                        <div class="pkg-legend-row"><span><span class="pkg-dot" style="background:#6366f1;"></span>Skid / Frame</span><strong>12%</strong></div>
+                                        @foreach($compositionData as $data)
+                                        <div class="pkg-legend-row"><span><span class="pkg-dot" style="background:{{ $data['color'] }};"></span>{{ $data['label'] }}</span><strong>{{ $data['percentage'] }}%</strong></div>
+                                        @endforeach
                                     </div>
                                 </div>
                             </div>
@@ -683,22 +707,26 @@
                                     <span class="pkg-section-icon"><i class="fa-solid fa-arrow-trend-up"></i></span>
                                 </div>
 
+                                @foreach($trendData as $data)
                                 <div class="pkg-trend-item">
-                                    <div class="pkg-trend-label"><span>Apr</span><strong>233</strong></div>
-                                    <div class="pkg-progress"><span style="width:82%;"></span></div>
+                                    <div class="pkg-trend-label">
+                                        @if($data['is_current'])
+                                            <span class="fw-bold text-body">{{ $data['label'] }}</span>
+                                            <strong style="color:var(--pkg-primary);">{{ $data['count'] }}</strong>
+                                        @else
+                                            <span>{{ $data['label'] }}</span>
+                                            <strong>{{ $data['count'] }}</strong>
+                                        @endif
+                                    </div>
+                                    <div class="pkg-progress">
+                                        @if($data['is_current'])
+                                            <span style="width:{{ $data['percentage'] }}%; background:var(--pkg-primary);"></span>
+                                        @else
+                                            <span style="width:{{ $data['percentage'] }}%;"></span>
+                                        @endif
+                                    </div>
                                 </div>
-                                <div class="pkg-trend-item">
-                                    <div class="pkg-trend-label"><span>Mei</span><strong>205</strong></div>
-                                    <div class="pkg-progress"><span style="width:72%;"></span></div>
-                                </div>
-                                <div class="pkg-trend-item">
-                                    <div class="pkg-trend-label"><span>Jun</span><strong>241</strong></div>
-                                    <div class="pkg-progress"><span style="width:85%;"></span></div>
-                                </div>
-                                <div class="pkg-trend-item">
-                                    <div class="pkg-trend-label"><span class="fw-bold text-body">Jul</span><strong style="color:var(--pkg-primary);">284</strong></div>
-                                    <div class="pkg-progress"><span style="width:100%;"></span></div>
-                                </div>
+                                @endforeach
                             </div>
                         </div>
                     </div>
