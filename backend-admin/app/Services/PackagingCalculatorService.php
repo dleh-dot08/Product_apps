@@ -97,6 +97,9 @@ class PackagingCalculatorService
                 $cartonSelected = true;
             }
 
+            $innerBoxesData = json_decode($detail->inner_carton_boxes ?? '[]', true) ?? [];
+            $hasInnerBoxes = is_array($innerBoxesData) && count($innerBoxesData) > 0;
+
             // Original dimensions from detail
             $baseLength = (float) ($detail->panjang ?? $detail->length ?? 0);
             $baseWidth = (float) ($detail->lebar ?? $detail->width ?? 0);
