@@ -3730,7 +3730,7 @@
 
                                         <div class="material-tabs-wrap">
                                             @php
-                                                $innerBoxesData = json_decode($calculation->inner_carton_boxes, true) ?? [];
+                                                $innerBoxesData = isset($calculation) ? json_decode($calculation->inner_carton_boxes, true) ?? [] : [];
                                                 $hasInnerBoxes = is_array($innerBoxesData) && count($innerBoxesData) > 0;
                                             @endphp
                                             <ul class="nav material-tabs" id="materialAreaTabs" role="tablist">
