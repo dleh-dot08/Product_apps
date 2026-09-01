@@ -6772,13 +6772,14 @@
             
             function calculateManpower() {
                 let P = 0, L = 0, T = 0, rate = {{ $manpowerRate }};
-                let totalSqm = 0, totalBiayaMp = 0;
+                let totalWaktu = 0, totalBiayaMp = 0;
                 let rows = [];
 
-                if (!isEditModeActive && activeManpower && activeManpower.length > 0) {
+                if (activeManpower && activeManpower.length > 0) {
                     rows = activeManpower;
-                    totalSqm = rows.reduce((sum, r) => sum + r.total_luas, 0);
-                    totalBiayaMp = rows.reduce((sum, r) => sum + r.total_biaya, 0);
+                    // handle backend keys which might be 'panjang' instead of 'qty'
+                    totalWaktu = rows.reduce((sum, r) => sum + (parseFloat(r.total_luas) || parseFloat(r.total_waktu) || 0), 0);
+                    totalBiayaMp = rows.reduce((sum, r) => sum + parseFloat(r.total_biaya || 0), 0);
                 } else {
                     let lengthInput = document.querySelector('input[name="length"]');
                     let widthInput = document.querySelector('input[name="width"]');
@@ -6793,64 +6794,71 @@
                         rate = 0; // Force cost to 0 if no material
                     }
 
-                    
-                    let luasAtasBawah = (P / 1000) * (L / 1000);
-                    let totalLuasAtasBawah = luasAtasBawah * 2;
-                    
-                    let luasKananKiri = (L / 1000) * (T / 1000);
-                    let totalLuasKananKiri = luasKananKiri * 2;
-                    
-                    let luasDepanBelakang = (P / 1000) * (T / 1000);
-                    let totalLuasDepanBelakang = luasDepanBelakang * 2;
-                    
-                    totalSqm = totalLuasAtasBawah + totalLuasKananKiri + totalLuasDepanBelakang;
-                    totalBiayaMp = totalSqm * rate;
+                    let qtyPapan = 0, qtyBalok = 0, qtyTriplek = 0;
+                    if (typeof activeDetails !== 'undefined') {
+                        activeDetails.forEach(d => {
+                            let code = d.material_kode || d.material_code || '';
+                            let nama = d.material_nama || '';
+                            let qty = parseFloat(d.total_quantity || 0);
 
-                    rows = [
-                        {
-                            bagian: 'Atas & Bawah',
-                            panjang: P,
-                            lebar: L,
-                            sisi: 2,
-                            luas: luasAtasBawah,
-                            total_luas: totalLuasAtasBawah,
-                            rate: rate,
-                            total_biaya: totalLuasAtasBawah * rate
-                        },
-                        {
-                            bagian: 'Kanan & Kiri',
-                            panjang: L,
-                            lebar: T,
-                            sisi: 2,
-                            luas: luasKananKiri,
-                            total_luas: totalLuasKananKiri,
-                            rate: rate,
-                            total_biaya: totalLuasKananKiri * rate
-                        },
-                        {
-                            bagian: 'Depan & Belakang',
-                            panjang: P,
-                            lebar: T,
-                            sisi: 2,
-                            luas: luasDepanBelakang,
-                            total_luas: totalLuasDepanBelakang,
-                            rate: rate,
-                            total_biaya: totalLuasDepanBelakang * rate
-                        }
-                    ];
+                            if (!code || code === '-') return;
+
+                            let codeUpper = code.toUpperCase();
+                            if (codeUpper.includes('KAYU-PAPAN') || nama.toLowerCase().includes('papan')) {
+                                qtyPapan += qty;
+                            } else if (codeUpper.includes('KAYU-BALOK') || nama.toLowerCase().includes('balok')) {
+                                qtyBalok += qty;
+                            } else if (codeUpper.includes('KAYU-TRIPL') || codeUpper.includes('TR') || nama.toLowerCase().includes('triplek')) {
+                                qtyTriplek += qty;
+                            }
+                        });
+                    }
+
+                    let m3 = (P * L * T) / 1000000000;
+
+                    // Hardcoded fallback rules in case simulate() hasn't populated activeManpower yet
+                    let potongBalokTime = 4;
+                    let serutBalokTime = 5;
+                    let potongPapanTime = 4;
+                    let serutPapanTime = 5;
+                    let potongTriplekTime = 10;
+                    let perakitanTime = 105;
+
+                    if (qtyBalok > 0) {
+                        rows.push({ bagian: 'Potong Balok', qty: qtyBalok, satuan: 'pcs', waktu_satuan: potongBalokTime, total_waktu: qtyBalok * potongBalokTime, total_biaya: (qtyBalok * potongBalokTime / 60) * rate });
+                        rows.push({ bagian: 'Serut Balok', qty: qtyBalok, satuan: 'pcs', waktu_satuan: serutBalokTime, total_waktu: qtyBalok * serutBalokTime, total_biaya: (qtyBalok * serutBalokTime / 60) * rate });
+                    }
+                    if (qtyPapan > 0) {
+                        rows.push({ bagian: 'Potong Papan', qty: qtyPapan, satuan: 'pcs', waktu_satuan: potongPapanTime, total_waktu: qtyPapan * potongPapanTime, total_biaya: (qtyPapan * potongPapanTime / 60) * rate });
+                        rows.push({ bagian: 'Serut Papan', qty: qtyPapan, satuan: 'pcs', waktu_satuan: serutPapanTime, total_waktu: qtyPapan * serutPapanTime, total_biaya: (qtyPapan * serutPapanTime / 60) * rate });
+                    }
+                    if (qtyTriplek > 0) {
+                        rows.push({ bagian: 'Potong Triplek', qty: qtyTriplek, satuan: 'pcs', waktu_satuan: potongTriplekTime, total_waktu: qtyTriplek * potongTriplekTime, total_biaya: (qtyTriplek * potongTriplekTime / 60) * rate });
+                    }
+                    if (m3 > 0) {
+                        rows.push({ bagian: 'Perakitan', qty: m3, satuan: 'm3', waktu_satuan: perakitanTime, total_waktu: m3 * perakitanTime, total_biaya: (m3 * perakitanTime / 60) * rate });
+                    }
+
+                    totalWaktu = rows.reduce((sum, r) => sum + r.total_waktu, 0);
+                    totalBiayaMp = rows.reduce((sum, r) => sum + r.total_biaya, 0);
+                    
                     activeManpower = rows;
                 }
                 
                 let html = '';
                 rows.forEach(r => {
+                    let qtyVal = r.qty !== undefined ? r.qty : r.panjang;
+                    let satuanVal = r.satuan !== undefined ? r.satuan : (r.sisi == 1 ? 'pcs' : 'm3');
+                    let waktuSatuanVal = r.waktu_satuan !== undefined ? r.waktu_satuan : r.lebar;
+                    let totalWaktuVal = r.total_waktu !== undefined ? r.total_waktu : r.luas;
+                    
                     html += `
                         <tr>
                             <td class="fw-semibold text-navy">${r.bagian}</td>
-                            <td class="text-end text-secondary">${formatNumber(r.panjang, 0)}</td>
-                            <td class="text-end text-secondary">${formatNumber(r.lebar, 0)}</td>
-                            <td class="text-center text-secondary">${r.sisi}</td>
-                            <td class="text-end text-secondary">${formatNumber(r.luas, 2)}</td>
-                            <td class="text-end fw-black text-navy">${formatNumber(r.total_luas, 2)}</td>
+                            <td class="text-center text-secondary">${formatNumber(qtyVal, (satuanVal == 'm3' ? 3 : 0))}</td>
+                            <td class="text-center text-secondary">${satuanVal}</td>
+                            <td class="text-end text-secondary">${formatNumber(waktuSatuanVal, 0)}</td>
+                            <td class="text-end fw-black text-navy">${formatNumber(totalWaktuVal, 2)}</td>
                         </tr>
                     `;
                 });
@@ -6859,7 +6867,8 @@
                 if (tbody) tbody.innerHTML = html;
                 
                 let totalSqmEl = document.getElementById('mp-total-sqm');
-                if (totalSqmEl) totalSqmEl.innerText = formatNumber(totalSqm, 2);
+                if (totalSqmEl) totalSqmEl.innerText = formatNumber(totalWaktu / 60, 2); // Waktu in hours
+
                 
                 let totalCostEl = document.getElementById('mp-total-cost');
                 if (totalCostEl) totalCostEl.innerText = formatRupiah(totalBiayaMp);

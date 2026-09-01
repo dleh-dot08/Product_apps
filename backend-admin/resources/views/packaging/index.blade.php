@@ -797,12 +797,12 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="actionDropdown{{ $job->id }}">
                                             <li>
-                                                <a class="dropdown-item d-flex align-items-center gap-2" href="{{ route('packaging.calculations.show', $job->id) }}">
-                                                    <i class="fa-solid fa-eye text-muted"></i> Show
+                                                <a class="dropdown-item d-flex align-items-center gap-2" href="{{ route('packaging.calculations.print', $job->id) }}" target="_blank">
+                                                    <i class="fa-solid fa-print text-muted"></i> Print
                                                 </a>
                                             </li>
                                             <li>
-                                                <a class="dropdown-item d-flex align-items-center gap-2" href="{{ route('packaging.edit', $job->id) }}">
+                                                <a class="dropdown-item d-flex align-items-center gap-2" href="{{ route('packaging.calculations.show', $job->id) }}">
                                                     <i class="fa-solid fa-pen-to-square text-primary"></i> Edit
                                                 </a>
                                             </li>

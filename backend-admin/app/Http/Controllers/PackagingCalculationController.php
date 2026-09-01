@@ -476,29 +476,77 @@ class PackagingCalculationController extends Controller
             }
         }
 
-        $areaKerja = 0;
         $P = (float) $request->length;
         $L = (float) $request->width;
         $T = (float) $request->height;
+        $areaKerja = 0;
+        $totalM3 = 0;
+
         if ($P && $L && $T) {
             $P_m = $P / 1000;
             $L_m = $L / 1000;
             $T_m = $T / 1000;
             $areaKerja = 2 * (($P_m * $L_m) + ($P_m * $T_m) + ($L_m * $T_m));
+            $totalM3 = ($P * $L * $T) / 1000000000;
         }
 
-        $potong = 0;
-        $serut = 0;
-        $perakitan = 0;
-        $prepare = 0;
-        $totalM3 = 0;
-        
-        if ($P && $L && $T) {
-            $totalM3 = ($P * $L * $T) / 1000000000;
-            $potong = $totalM3 * self::RATE_POTONG;
-            $serut = $totalM3 * self::RATE_SERUT;
-            $perakitan = $totalM3 * self::RATE_PERAKITAN;
-            $prepare = $totalM3 * self::RATE_PREPARE;
+        $qtyPapan = 0;
+        $qtyBalok = 0;
+        $qtyTriplek = 0;
+
+        foreach ($details as $d) {
+            $code = $d['material_kode'] ?? '';
+            $nama = $d['material_nama'] ?? '';
+            $qty = (float) ($d['total_quantity'] ?? 0);
+
+            if (empty($code) || $code === '-') continue;
+
+            $codeUpper = strtoupper($code);
+            if (str_contains($codeUpper, 'KAYU-PAPAN') || stripos($nama, 'papan') !== false) {
+                $qtyPapan += $qty;
+            } elseif (str_contains($codeUpper, 'KAYU-BALOK') || stripos($nama, 'balok') !== false) {
+                $qtyBalok += $qty;
+            } elseif (str_contains($codeUpper, 'KAYU-TRIPL') || str_contains($codeUpper, 'TR') || stripos($nama, 'triplek') !== false) {
+                $qtyTriplek += $qty;
+            }
+        }
+
+        $waktuRules = \Illuminate\Support\Facades\DB::table('packaging_waktu_manpower')->get()->keyBy('kegiatan');
+        $getRule = function($kegiatan) use ($waktuRules) {
+            $rule = $waktuRules->get($kegiatan);
+            return $rule ? ((int)$rule->prepare_menit + (int)$rule->pekerjaan_menit) : 0;
+        };
+
+        $manpowerRows = [];
+        $totalWaktuManpower = 0;
+
+        if ($qtyBalok > 0) {
+            $t = $getRule('POTONG BALOK');
+            $manpowerRows[] = ['bagian' => 'Potong Balok', 'qty' => $qtyBalok, 'satuan' => 'pcs', 'waktu_satuan' => $t, 'total_waktu' => $qtyBalok * $t];
+            $totalWaktuManpower += $qtyBalok * $t;
+
+            $t2 = $getRule('SERUT BALOK');
+            $manpowerRows[] = ['bagian' => 'Serut Balok', 'qty' => $qtyBalok, 'satuan' => 'pcs', 'waktu_satuan' => $t2, 'total_waktu' => $qtyBalok * $t2];
+            $totalWaktuManpower += $qtyBalok * $t2;
+        }
+        if ($qtyPapan > 0) {
+            $t = $getRule('POTONG PAPAN');
+            $manpowerRows[] = ['bagian' => 'Potong Papan', 'qty' => $qtyPapan, 'satuan' => 'pcs', 'waktu_satuan' => $t, 'total_waktu' => $qtyPapan * $t];
+            $totalWaktuManpower += $qtyPapan * $t;
+
+            $t2 = $getRule('SERUT PAPAN');
+            $manpowerRows[] = ['bagian' => 'Serut Papan', 'qty' => $qtyPapan, 'satuan' => 'pcs', 'waktu_satuan' => $t2, 'total_waktu' => $qtyPapan * $t2];
+            $totalWaktuManpower += $qtyPapan * $t2;
+        }
+        if ($qtyTriplek > 0) {
+            $t = $getRule('POTONG TRIPLEK');
+            $manpowerRows[] = ['bagian' => 'Potong Triplek', 'qty' => $qtyTriplek, 'satuan' => 'pcs', 'waktu_satuan' => $t, 'total_waktu' => $qtyTriplek * $t];
+            $totalWaktuManpower += $qtyTriplek * $t;
+        }
+        if ($totalM3 > 0) {
+            $t = $getRule('PERAKITAN');
+            $manpowerRows[] = ['bagian' => 'Perakitan', 'qty' => $totalM3, 'satuan' => 'm3', 'waktu_satuan' => $t, 'total_waktu' => $totalM3 * $t];
+            $totalWaktuManpower += $totalM3 * $t;
         }
 
         return response()->json([
@@ -511,11 +559,8 @@ class PackagingCalculationController extends Controller
                 'cost_bawah' => $costBawah,
                 'total_cost' => $costRangka + $costPenyangga + $costPenutup + $costBawah,
                 'area_kerja' => $areaKerja,
-                'manpower_potong' => $potong,
-                'manpower_serut' => $serut,
-                'manpower_perakitan' => $perakitan,
-                'manpower_prepare' => $prepare,
-                'total_waktu_manpower' => $potong + $serut + $perakitan + $prepare,
+                'manpower_rows' => $manpowerRows,
+                'total_waktu_manpower' => $totalWaktuManpower,
                 'volume_m3' => $totalM3,
             ]
         ]);
