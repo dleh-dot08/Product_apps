@@ -3,16 +3,21 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
-});
-
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PickupTaskController;
 
-Route::post('/login', [AuthController::class, 'login']);
+Route::middleware('api.router.key')->group(function () {
+    // API-key-only routes: these endpoints do not depend on the current user.
+    Route::post('/login', [AuthController::class, 'login']);
 
-Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/users', [\App\Http\Controllers\Api\UserController::class, 'index'])
+        ->name('api.users.index');
+    Route::get('/users/{user}', [\App\Http\Controllers\Api\UserController::class, 'show'])
+        ->name('api.users.show');
+
+    Route::get('/driver/locations', [\App\Http\Controllers\Api\LocationController::class, 'getActiveDrivers']);
+
+    Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', function (Request $request) {
         $user = $request->user();
         $user->load(['roleRelation', 'division']);
@@ -23,11 +28,11 @@ Route::middleware('auth:sanctum')->group(function () {
         return $userArray;
     });
     
-    // User Management API
-    Route::apiResource('users', App\Http\Controllers\Api\UserController::class)->names([
-        'index' => 'api.users.index',
+    // User Management writes require both router API key and user auth.
+    Route::apiResource('users', App\Http\Controllers\Api\UserController::class)->only([
+        'store', 'update', 'destroy',
+    ])->names([
         'store' => 'api.users.store',
-        'show' => 'api.users.show',
         'update' => 'api.users.update',
         'destroy' => 'api.users.destroy',
     ]);
@@ -46,11 +51,10 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Driver Location API
     Route::post('/driver/location', [\App\Http\Controllers\Api\LocationController::class, 'updateLocation']);
-    Route::get('/driver/locations', [\App\Http\Controllers\Api\LocationController::class, 'getActiveDrivers']);
-});
+    });
 
 // Proxy API untuk pencarian SO
-Route::get('/packaging/search-so', function(\Illuminate\Http\Request $request) {
+    Route::get('/packaging/search-so', function(\Illuminate\Http\Request $request) {
     $search = $request->input('q', '');
     $apiKey = 'Ym95Y29tcG9zaXRpb25leHBsYW5hdGlvbnRob3VnaHRwZWFjZWdpcmxjb2FjaHNlbnM=';
     
@@ -84,4 +88,5 @@ Route::get('/packaging/search-so', function(\Illuminate\Http\Request $request) {
     } catch (\Exception $e) {
         return response()->json(['error' => $e->getMessage()], 500);
     }
-})->name('api.packaging.search_so');
+    })->name('api.packaging.search_so');
+});
