@@ -4642,7 +4642,7 @@
                     canvas: canvas,
                     antialias: false,
                     alpha: false,
-                    preserveDrawingBuffer: false,
+                    preserveDrawingBuffer: true,
                     powerPreference: 'default',
                     failIfMajorPerformanceCaveat: false
                 });
@@ -7434,6 +7434,26 @@
                 function submitPrintForm(img1, img2, img3, img4, img5, img6, img7, img8, imgFullExploded, imgFull, imgMaterials, hasAtas, hasBawah) {
                     const form = document.createElement('form');
                     form.method = 'POST';
+                    if (window.location.search.includes('auto_print=iframe')) {
+                        window.parent.postMessage({
+                            type: '3d_images_generated',
+                            images: {
+                                imgStep1: img1,
+                                imgStep2: img2,
+                                imgStep3: img3,
+                                imgStep5: img5,
+                                imgStep7: img7,
+                                imgStep8: img8,
+                                imgFullExploded: imgFullExploded,
+                                imgFull: imgFull,
+                                imgMaterials: imgMaterials,
+                                hasAtas: hasAtas,
+                                hasBawah: hasBawah
+                            }
+                        }, '*');
+                        return;
+                    }
+                    
                     form.action = "{{ route('packaging.calculations.print', $calculation->id ?? 0) }}";
                     form.target = '_blank';
                     
@@ -8008,7 +8028,7 @@
                         matRenderer = new THREE.WebGLRenderer({
                             antialias: false,
                             alpha: false,
-                            preserveDrawingBuffer: false,
+                            preserveDrawingBuffer: true,
                             powerPreference: 'default',
                             failIfMajorPerformanceCaveat: false
                         });
@@ -8916,6 +8936,38 @@
             });
 
             setPackingTableState(tableCollapse.classList.contains('show'));
+        });
+
+        // AUTO PRINT LOGIC
+        document.addEventListener('DOMContentLoaded', function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('auto_print') === '1' || urlParams.get('auto_print') === 'iframe') {
+                // Wait for Three.js to finish rendering and initial layout setup
+                setTimeout(function() {
+                    // Trigger the print function defined in Three.js section
+                    if (typeof window.printWith3DImage === 'function') {
+                        // Create a temporary overlay to show it's processing if not in iframe
+                        if (urlParams.get('auto_print') !== 'iframe') {
+                            let overlay = document.createElement('div');
+                            overlay.style.position = 'fixed';
+                            overlay.style.top = '0';
+                            overlay.style.left = '0';
+                            overlay.style.width = '100vw';
+                            overlay.style.height = '100vh';
+                            overlay.style.backgroundColor = 'rgba(255, 255, 255, 0.9)';
+                            overlay.style.zIndex = '9999';
+                            overlay.style.display = 'flex';
+                            overlay.style.flexDirection = 'column';
+                            overlay.style.justifyContent = 'center';
+                            overlay.style.alignItems = 'center';
+                            overlay.innerHTML = '<div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div><h4 class="mt-3 text-primary">Generating 3D Document...</h4><p class="text-secondary">Please wait, preparing images for print...</p>';
+                            document.body.appendChild(overlay);
+                        }
+
+                        window.printWith3DImage();
+                    }
+                }, 3000); // 3 seconds to ensure 3D is fully loaded
+            }
         });
     </script>
 

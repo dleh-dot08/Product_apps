@@ -435,14 +435,20 @@ class PackagingCalculatorService
                 }
             }
 
-            // Map typeFrom ke kategori nail_size_rules: Balok, Triplek
-            $nailFrom = 'Balok';
+            // Map typeFrom ke kategori nail_size_rules
+            $nailFrom = 'balok';
             if (stripos($typeFrom, 'Triplek') !== false || stripos($typeFrom, 'Triplex') !== false) {
-                $nailFrom = 'Triplek';
+                $nailFrom = 'triplek';
+            } elseif (stripos($typeFrom, 'Papan') !== false) {
+                $nailFrom = 'papan';
             }
-            $nailTo = 'Balok';
 
-            $matchedNailSize = null;
+            $nailTo = 'balok';
+            if ($nailFrom === 'balok') {
+                $nailTo = 'balok_bawah';
+            }
+
+            $matchedNailSize = 'Tidak terdapat Validasi';
             if ($thkFrom > 0 && $thkTo > 0) {
                 // Exact match
                 $matchedRule = DB::table('nail_size_rules')
@@ -469,13 +475,19 @@ class PackagingCalculatorService
                 }
 
                 if ($matchedRule) {
-                    $matchedNailSize = $matchedRule->size_nails;
+                    $matchedNailSize = (string) $matchedRule->size_nails;
                 }
             }
 
             $totalPaku = $titik * $perTitik;
-            $estBerat = $totalPaku * $nailsWeightPerPiece;
-            $totalHarga = $estBerat * $pricePerKg;
+            
+            if ($matchedNailSize === '0' || $matchedNailSize === 'Tidak terdapat Validasi') {
+                $estBerat = 0;
+                $totalHarga = 0;
+            } else {
+                $estBerat = $totalPaku * $nailsWeightPerPiece;
+                $totalHarga = $estBerat * $pricePerKg;
+            }
 
             if ($titik > 0) {
                 DB::table('packing_job_nails')->insert([
@@ -962,13 +974,19 @@ class PackagingCalculatorService
             }
 
             // Map typeFrom ke kategori nail_size_rules
-            $nailFrom = 'Balok';
+            $nailFrom = 'balok';
             if (stripos($typeFrom, 'Triplek') !== false || stripos($typeFrom, 'Triplex') !== false) {
-                $nailFrom = 'Triplek';
+                $nailFrom = 'triplek';
+            } elseif (stripos($typeFrom, 'Papan') !== false) {
+                $nailFrom = 'papan';
             }
-            $nailTo = 'Balok';
 
-            $matchedNailSize = null;
+            $nailTo = 'balok';
+            if ($nailFrom === 'balok') {
+                $nailTo = 'balok_bawah';
+            }
+
+            $matchedNailSize = 'Tidak terdapat Validasi';
             if ($thkFrom > 0 && $thkTo > 0) {
                 // Exact match
                 $matchedRule = DB::table('nail_size_rules')
@@ -995,16 +1013,23 @@ class PackagingCalculatorService
                 }
 
                 if ($matchedRule) {
-                    $matchedNailSize = $matchedRule->size_nails;
+                    $matchedNailSize = (string) $matchedRule->size_nails;
                 }
             }
 
             $totalPaku = $titik * $perTitik;
-            $estBerat = $totalPaku * $nailsWeightPerPiece;
-            $totalHarga = $estBerat * $pricePerKg;
+            
+            if ($matchedNailSize === '0' || $matchedNailSize === 'Tidak terdapat Validasi') {
+                $estBerat = 0;
+                $totalHarga = 0;
+            } else {
+                $estBerat = $totalPaku * $nailsWeightPerPiece;
+                $totalHarga = $estBerat * $pricePerKg;
+            }
 
-            $now = now();
-            DB::table('packing_job_nails')->insert([
+            if ($titik > 0) {
+                $now = now();
+                DB::table('packing_job_nails')->insert([
                 'id' => \Illuminate\Support\Str::uuid()->toString(),
                 'job_id' => $calculation->id,
                 'category' => 'Paku',
@@ -1018,8 +1043,9 @@ class PackagingCalculatorService
                 'total_harga' => $totalHarga,
                 'created_at' => $now,
                 'updated_at' => $now,
-            ]);
-            $totalHargaPaku += $totalHarga;
+                ]);
+                $totalHargaPaku += $totalHarga;
+            }
         }
 
         return $totalHargaPaku;
