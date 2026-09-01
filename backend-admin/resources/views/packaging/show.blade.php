@@ -7253,11 +7253,7 @@
                 const chkPenutupBawah = document.getElementById('vis-toggle-penutup-bawah');
                 const chkKakiBalok = document.getElementById('vis-toggle-kakibalok');
                 
-                if (!chkPenyanggaAtas || !chkPenutupAtas || !chkPenyanggaBawah || !chkPenutupBawah) {
-                    submitPrintForm(canvas.toDataURL('image/png'), '', '', '', '', '', '', '', '', '', '', '');
-                    return;
-                }
-                
+                try {
                 // Save original states
                 const wasRangkaAtas = chkRangkaAtas.checked;
                 const wasPenyanggaAtas = chkPenyanggaAtas.checked;
@@ -7267,7 +7263,13 @@
                 const wasPenutupBawah = chkPenutupBawah.checked;
                 const wasKakiBalok = chkKakiBalok ? chkKakiBalok.checked : true;
                 
-                const waitFrame = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+                const waitFrame = () => new Promise(resolve => {
+                    if (window.location.search.includes('auto_print=iframe')) {
+                        setTimeout(resolve, 150);
+                    } else {
+                        requestAnimationFrame(() => requestAnimationFrame(resolve));
+                    }
+                });
                 
                 async function captureAll() {
                     const origZoom = camera.zoom;
@@ -7335,6 +7337,9 @@
                         if (typeof drawCrate === 'function') drawCrate(); else chkRangkaAtas.dispatchEvent(new Event('change'));
                         
                         await waitFrame();
+                        if (typeof renderer !== 'undefined' && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
+                            renderer.render(scene, camera);
+                        }
                         stepImages.push(canvas.toDataURL('image/png'));
                     }
                     
@@ -7347,6 +7352,9 @@
                     controls.update();
                     if (typeof drawCrate === 'function') drawCrate(); else chkRangkaAtas.dispatchEvent(new Event('change'));
                     await waitFrame();
+                    if (typeof renderer !== 'undefined' && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
+                        renderer.render(scene, camera);
+                    }
                     const imgFullExploded = canvas.toDataURL('image/png');
 
                     // Capture Full Assembled (Step 0)
@@ -7357,6 +7365,9 @@
                     controls.update();
                     if (typeof drawCrate === 'function') drawCrate(); else chkRangkaAtas.dispatchEvent(new Event('change'));
                     await waitFrame();
+                    if (typeof renderer !== 'undefined' && typeof scene !== 'undefined' && typeof camera !== 'undefined') {
+                        renderer.render(scene, camera);
+                    }
                     const imgFull = canvas.toDataURL('image/png');
                     
                     // Cleanup sequence flag
@@ -7428,7 +7439,7 @@
                         }
                     }
                     
-                    submitPrintForm(stepImages[0], stepImages[1], stepImages[2], stepImages[3], stepImages[4], stepImages[5], stepImages[6], stepImages[7], imgFullExploded, imgFull, imgMaterials, isHasAtasPenutup, isHasBawahPenutup);
+                    submitPrintForm(stepImages[0]||'', stepImages[1]||'', stepImages[2]||'', stepImages[3]||'', stepImages[4]||'', stepImages[5]||'', stepImages[6]||'', stepImages[7]||'', imgFullExploded||'', imgFull||'', imgMaterials||'', isHasAtasPenutup||'1', isHasBawahPenutup||'1');
                 }
                 
                 function submitPrintForm(img1, img2, img3, img4, img5, img6, img7, img8, imgFullExploded, imgFull, imgMaterials, hasAtas, hasBawah) {
@@ -7483,7 +7494,18 @@
                     form.submit();
                     document.body.removeChild(form);
                 }
-                             captureAll();
+                
+                captureAll().catch(e => {
+                    console.error("Error in captureAll:", e);
+                    submitPrintForm(canvas.toDataURL('image/png'), '', '', '', '', '', '', '', '', '', '', '', '');
+                });
+
+                } catch (e) {
+                    console.error("Error in printWith3DImage:", e);
+                    if (typeof submitPrintForm === 'function') {
+                        submitPrintForm(canvas ? canvas.toDataURL('image/png') : '', '', '', '', '', '', '', '', '', '', '', '', '');
+                    }
+                }
             };
 
             const formEdit = document.getElementById('form-edit-config');
@@ -8966,7 +8988,7 @@
 
                         window.printWith3DImage();
                     }
-                }, 3000); // 3 seconds to ensure 3D is fully loaded
+                }, 4500); // 4.5 seconds to ensure 3D is fully loaded
             }
         });
     </script>

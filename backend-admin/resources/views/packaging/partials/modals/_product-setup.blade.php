@@ -2124,7 +2124,8 @@
                                         </div>
 
                                         <div class="pt-visual-frame">
-                                            <div class="pt-visual-placeholder">
+                                            <img id="packingVisualImage" src="" alt="Visual Packaging" style="display: none; width: 100%; height: 100%; object-fit: contain; border-radius: 8px;">
+                                            <div class="pt-visual-placeholder" id="packingVisualPlaceholder">
                                                 <div class="pt-empty-visual">
                                                     <span class="pt-empty-visual-icon"><i class="fa-regular fa-image"></i></span>
                                                     <h6 class="pt-empty-visual-title">Area Visual Packaging</h6>
@@ -3224,6 +3225,32 @@
             if (descriptionText) {
                 descriptionText.textContent = packingTypeDescriptions[packingValue]
                     || 'Pilih type packing untuk menampilkan detail pilihan.';
+            }
+
+            const visualImage = document.getElementById('packingVisualImage');
+            const visualPlaceholder = document.getElementById('packingVisualPlaceholder');
+
+            if (visualImage && visualPlaceholder) {
+                if (packingValue) {
+                    const imgMap = {
+                        'Box': 'box-kayu.png',
+                        'Palet': 'Palet.png',
+                        'Peti': 'peti-kayu.png',
+                        'Kerangka': 'rangka-kayu.png'
+                    };
+                    const imgSrc = imgMap[packingValue];
+                    if (imgSrc) {
+                        visualImage.src = "{{ asset('packaging-asset/img') }}/" + imgSrc;
+                        visualImage.style.display = 'block';
+                        visualPlaceholder.style.display = 'none';
+                    } else {
+                        visualImage.style.display = 'none';
+                        visualPlaceholder.style.display = 'flex';
+                    }
+                } else {
+                    visualImage.style.display = 'none';
+                    visualPlaceholder.style.display = 'flex';
+                }
             }
 
             // Logic for Additional Mat
