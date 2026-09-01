@@ -61,11 +61,12 @@ class PackagingController extends Controller
                 // Menyimpan nilai "Bahan Penutup" (contoh: Papan / Triplek) dari Step 2 
                 // Nilai ini penting karena menentukan interaksi logika dropdown Konfigurasi di Step 3
                 // (seperti Box, Palet, Peti, Kerangka memiliki perlakuan berbeda terhadap Papan/Triplek).
-                'tipe_penutup' => $request->input('tipe_penutup'),
-                'additional_mat' => $request->input('additional_mat'),
-                'carton_material' => stripos($request->input('additional_mat') ?? '', 'Carton') !== false ? $request->input('carton_material') : null,
-                'carton_type_sablon' => stripos($request->input('additional_mat') ?? '', 'Carton') !== false ? $request->input('carton_type_sablon') : null,
-                'terpal_material' => stripos($request->input('additional_mat') ?? '', 'Terpal') !== false ? $request->input('terpal_material') : null,
+                'tipe_penutup' => $request->input('tipe_penutup') ?? $firstItem['tipe_penutup'] ?? null,
+                'additional_mat' => $request->input('additional_mat') ?? $firstItem['additional_mat'] ?? null,
+                'carton_material' => stripos($request->input('additional_mat') ?? $firstItem['additional_mat'] ?? '', 'Carton') !== false ? ($request->input('carton_material') ?? $firstItem['carton_material'] ?? null) : null,
+                'carton_type_sablon' => stripos($request->input('additional_mat') ?? $firstItem['additional_mat'] ?? '', 'Carton') !== false ? ($request->input('carton_type_sablon') ?? $firstItem['carton_type_sablon'] ?? null) : null,
+                'terpal_material' => stripos($request->input('additional_mat') ?? $firstItem['additional_mat'] ?? '', 'Terpal') !== false ? ($request->input('terpal_material') ?? $firstItem['terpal_material'] ?? null) : null,
+                'inner_carton_boxes' => json_encode($request->input('inner_carton_boxes') ?? $firstItem['inner_carton_boxes'] ?? []),
                 'packaging_number' => 'PKG-' . date('Ymd') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT),
                 'packer_id' => !empty($firstItem['packer']) ? $firstItem['packer'] : null,
                 'qty_packaging' => $firstItem['qty_pack'] ?? 1,
@@ -146,8 +147,8 @@ class PackagingController extends Controller
 
             // Hitung harga box sekali saja berdasarkan dimensi/konfigurasi box
             $extraParams = [
-                'atas_penyangga_include' => $firstItem['pa_status'] === 'Include' ? '1' : '0',
-                'bawah_penyangga_include' => $firstItem['pb_status'] === 'Include' ? '1' : '0',
+                'atas_penyangga_include' => ($firstItem['pa_status'] ?? 'Include') === 'Include' ? '1' : '0',
+                'bawah_penyangga_include' => ($firstItem['pb_status'] ?? 'Include') === 'Include' ? '1' : '0',
                 'bawah_penutup_tipe' => $firstItem['ptb_status'] ?? 'Tanpa Penutup',
                 'atas_penutup_tipe' => $firstItem['pta_status'] ?? 'Tanpa Penutup',
             ];
@@ -211,11 +212,12 @@ class PackagingController extends Controller
             // Update 1 Box Packaging dengan konfigurasi dari form
             $packagingJob->update([
                 'type_packaging' => $request->input('type_packaging', $request->packType ?? 'Box'),
-                'tipe_penutup' => $request->input('tipe_penutup'),
-                'additional_mat' => $request->input('additional_mat'),
-                'carton_material' => stripos($request->input('additional_mat') ?? '', 'Carton') !== false ? $request->input('carton_material') : null,
-                'carton_type_sablon' => stripos($request->input('additional_mat') ?? '', 'Carton') !== false ? $request->input('carton_type_sablon') : null,
-                'terpal_material' => stripos($request->input('additional_mat') ?? '', 'Terpal') !== false ? $request->input('terpal_material') : null,
+                'tipe_penutup' => $request->input('tipe_penutup') ?? $firstItem['tipe_penutup'] ?? null,
+                'additional_mat' => $request->input('additional_mat') ?? $firstItem['additional_mat'] ?? null,
+                'carton_material' => stripos($request->input('additional_mat') ?? $firstItem['additional_mat'] ?? '', 'Carton') !== false ? ($request->input('carton_material') ?? $firstItem['carton_material'] ?? null) : null,
+                'carton_type_sablon' => stripos($request->input('additional_mat') ?? $firstItem['additional_mat'] ?? '', 'Carton') !== false ? ($request->input('carton_type_sablon') ?? $firstItem['carton_type_sablon'] ?? null) : null,
+                'terpal_material' => stripos($request->input('additional_mat') ?? $firstItem['additional_mat'] ?? '', 'Terpal') !== false ? ($request->input('terpal_material') ?? $firstItem['terpal_material'] ?? null) : null,
+                'inner_carton_boxes' => json_encode($request->input('inner_carton_boxes') ?? $firstItem['inner_carton_boxes'] ?? []),
                 'packer_id' => !empty($firstItem['packer']) ? $firstItem['packer'] : null,
                 'qty_packaging' => $firstItem['qty_pack'] ?? 1,
                 'deadline' => $request->date_delivery,
@@ -293,8 +295,8 @@ class PackagingController extends Controller
 
             // Hitung harga box sekali saja berdasarkan konfigurasi yang diperbarui
             $extraParams = [
-                'atas_penyangga_include' => $firstItem['pa_status'] === 'Include' ? '1' : '0',
-                'bawah_penyangga_include' => $firstItem['pb_status'] === 'Include' ? '1' : '0',
+                'atas_penyangga_include' => ($firstItem['pa_status'] ?? 'Include') === 'Include' ? '1' : '0',
+                'bawah_penyangga_include' => ($firstItem['pb_status'] ?? 'Include') === 'Include' ? '1' : '0',
                 'bawah_penutup_tipe' => $firstItem['ptb_status'] ?? 'Tanpa Penutup',
                 'atas_penutup_tipe' => $firstItem['pta_status'] ?? 'Tanpa Penutup',
             ];
