@@ -5671,9 +5671,11 @@
                                     positions.push(0);
                                     sizes.push(safeWidth);
                                 } else if (count > 1) {
-                                    const actualGap = (crossSpan - (count * safeWidth)) / (count - 1);
+                                    // Use the user's explicit gap to center the group, rather than stretching it
+                                    const totalGroupWidth = (count * safeWidth) + ((count - 1) * gap);
+                                    const startOffset = -totalGroupWidth / 2 + safeWidth / 2;
                                     for (let i = 0; i < count; i++) {
-                                        positions.push(-crossSpan / 2 + safeWidth / 2 + i * (safeWidth + actualGap));
+                                        positions.push(startOffset + i * (safeWidth + gap));
                                         sizes.push(safeWidth);
                                     }
                                 }
@@ -5884,27 +5886,81 @@
                                         celahPeny = langkahPeny - t_py_w;
                                     }
                                     
+                                    let penyPositions = [];
+                                    if (countPeny % 2 === 1) {
+                                        for(let i = -halfPeny; i <= halfPeny; i++) {
+                                            penyPositions.push(i * langkahPeny);
+                                        }
+                                    } else {
+                                        let halfCountEven = countPeny / 2;
+                                        for(let i = -halfCountEven; i <= halfCountEven; i++) {
+                                            if (i === 0) continue;
+                                            let pos = i > 0 ? (i - 0.5) * langkahPeny : (i + 0.5) * langkahPeny;
+                                            penyPositions.push(pos);
+                                        }
+                                    }
+                                    
                                     let spaces = countPeny - 1;
-                                    let coversPerSpace = Math.floor((forcedCount - 2) / spaces);
-                                    let startSpaceIdx = -halfPeny;
+                                    let langkahPenutup = w_penutup + gapM;
+                                    let coversPerSpace = (langkahPenutup > 0) ? Math.floor((celahPeny + gapM) / langkahPenutup) : 0;
                                     
                                     for(let i = 0; i < spaces; i++) {
-                                        let leftPenyCenter = startSpaceIdx * langkahPeny;
-                                        startSpaceIdx++;
-                                        let rightPenyCenter = startSpaceIdx * langkahPeny;
+                                        let leftPenyCenter = penyPositions[i];
+                                        let rightPenyCenter = penyPositions[i+1];
                                         
-                                        let spaceWidth = celahPeny; // space between inner edges of Penyangga
-                                        let gapBetweenCovers = (spaceWidth - (coversPerSpace * w_penutup)) / (coversPerSpace + 1);
+                                        let spaceWidth = rightPenyCenter - leftPenyCenter - t_py_w; // actual space between inner edges
                                         
-                                        let currentPos = leftPenyCenter + (t_py_w / 2) + gapBetweenCovers + (w_penutup / 2);
+                                        // Use the user's inputted gap instead of stretching evenly
+                                        let totalCoversWidth = (coversPerSpace * w_penutup) + ((coversPerSpace - 1) * gapM);
+                                        let sideMargin = (spaceWidth - totalCoversWidth) / 2;
+                                        
+                                        let currentPos = leftPenyCenter + (t_py_w / 2) + sideMargin + (w_penutup / 2);
                                         for(let j=0; j<coversPerSpace; j++) {
                                             customPositions.push(currentPos);
                                             customSizes.push(w_penutup);
-                                            currentPos += w_penutup + gapBetweenCovers;
+                                            currentPos += w_penutup + gapM;
+                                        }
+                                    }
+                                    
+                                    // Also fill the outer spaces (left and right) if they are large enough!
+                                    if (penyPositions.length > 0) {
+                                        let leftmostPenyCenter = penyPositions[0];
+                                        let rightmostPenyCenter = penyPositions[penyPositions.length - 1];
+                                        
+                                        // Left outer space (between left edge board inner face and leftmost penyangga inner face)
+                                        let leftOuterSpace = (leftmostPenyCenter - t_py_w/2) - (-crossSpan/2 + w_penutup);
+                                        if (leftOuterSpace > 0) {
+                                            let coversOuter = Math.floor((leftOuterSpace + gapM) / (w_penutup + gapM));
+                                            if (coversOuter > 0) {
+                                                let totalOuterCoversWidth = (coversOuter * w_penutup) + ((coversOuter - 1) * gapM);
+                                                let sideMarginOuter = (leftOuterSpace - totalOuterCoversWidth) / 2;
+                                                let currentPosOuter = (-crossSpan/2 + w_penutup) + sideMarginOuter + (w_penutup / 2);
+                                                for(let j=0; j<coversOuter; j++) {
+                                                    customPositions.push(currentPosOuter);
+                                                    customSizes.push(w_penutup);
+                                                    currentPosOuter += w_penutup + gapM;
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Right outer space (between rightmost penyangga inner face and right edge board inner face)
+                                        let rightOuterSpace = (crossSpan/2 - w_penutup) - (rightmostPenyCenter + t_py_w/2);
+                                        if (rightOuterSpace > 0) {
+                                            let coversOuter = Math.floor((rightOuterSpace + gapM) / (w_penutup + gapM));
+                                            if (coversOuter > 0) {
+                                                let totalOuterCoversWidth = (coversOuter * w_penutup) + ((coversOuter - 1) * gapM);
+                                                let sideMarginOuter = (rightOuterSpace - totalOuterCoversWidth) / 2;
+                                                let currentPosOuter = (rightmostPenyCenter + t_py_w/2) + sideMarginOuter + (w_penutup / 2);
+                                                for(let j=0; j<coversOuter; j++) {
+                                                    customPositions.push(currentPosOuter);
+                                                    customSizes.push(w_penutup);
+                                                    currentPosOuter += w_penutup + gapM;
+                                                }
+                                            }
                                         }
                                     }
                                 }
-                                layout = { count: forcedCount, pieceCross: w_penutup, positions: customPositions, sizes: customSizes };
+                                layout = { count: customPositions.length, pieceCross: w_penutup, positions: customPositions, sizes: customSizes };
                             }
 
                             layout.positions.forEach(function (pos, index) {

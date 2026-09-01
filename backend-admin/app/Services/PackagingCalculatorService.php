@@ -1228,7 +1228,7 @@ class PackagingCalculatorService
         return ['qty' => $totalQty, 'length' => $length, 'sisa_ujung' => $sisaUjung];
     }
 
-    private function calculateBottomCoverLayout($qtyPenyangga, $arah, $outerP, $outerL, $celahPenyangga, $celahPenutup, $lebarPenutup, $include, $tipePenutup, $isTripleks) {
+    private function calculateBottomCoverLayout($qtyPenyangga, $arah, $outerP, $outerL, $celahPenyangga, $celahPenutup, $lebarPenutup, $include, $tipePenutup, $isTripleks, $lebarPenyangga = 0) {
         if ($include == 0 || $include === '0' || $include === 'Exclude' || strtolower($include) === 'exclude' || empty($tipePenutup) || $tipePenutup === 'Tanpa Penutup' || $tipePenutup === 'Tidak makai penutup') {
             return ['qty' => 0, 'length' => 0];
         }
@@ -1240,15 +1240,44 @@ class PackagingCalculatorService
         }
         
         $qtyTotal = 0;
-        if ($qtyPenyangga > 1) {
-            $totalSpaces = $qtyPenyangga - 1;
+        if ($qtyPenyangga > 0) {
             $langkahPenutup = $lebarPenutup + $celahPenutup;
-            $qtyCoverPerSpace = ($langkahPenutup > 0) ? floor(($celahPenyangga + $celahPenutup) / $langkahPenutup) : 0;
-            $qtyTotal = 2 + ($totalSpaces * $qtyCoverPerSpace);
-        } elseif ($qtyPenyangga == 1) {
+            if ($langkahPenutup <= 0) return ['qty' => 0, 'length' => $length];
+            
             $qtyTotal = 2; // only left and right ends
-        } else {
-            $qtyTotal = 0;
+            
+            if ($qtyPenyangga > 1) {
+                $totalSpaces = $qtyPenyangga - 1;
+                $qtyCoverPerSpace = floor(($celahPenyangga + $celahPenutup) / $langkahPenutup);
+                $qtyTotal += ($totalSpaces * $qtyCoverPerSpace);
+            }
+            
+            if ($lebarPenyangga > 0) {
+                $crossSpan = ($arah === 'Horizontal') ? $outerP : $outerL;
+                $maxPenyCenter = ($crossSpan / 2) - $lebarPenutup - ($lebarPenyangga / 2);
+                if ($maxPenyCenter < 0) $maxPenyCenter = 0;
+                
+                $langkahPeny = $lebarPenyangga + $celahPenyangga;
+                $halfCount = floor($qtyPenyangga / 2);
+                
+                if ($halfCount > 0 && $halfCount * $langkahPeny > $maxPenyCenter) {
+                    $langkahPeny = $maxPenyCenter / $halfCount;
+                }
+                
+                $leftmostPenyCenter = 0;
+                if ($qtyPenyangga % 2 === 1) {
+                    $leftmostPenyCenter = -$halfCount * $langkahPeny;
+                } else {
+                    $leftmostPenyCenter = -($halfCount - 0.5) * $langkahPeny;
+                }
+                
+                $outerSpace = ($leftmostPenyCenter - ($lebarPenyangga / 2)) - ((-$crossSpan / 2) + $lebarPenutup);
+                
+                if ($outerSpace > 0) {
+                    $qtyCoverOuter = floor(($outerSpace + $celahPenutup) / $langkahPenutup);
+                    $qtyTotal += 2 * $qtyCoverOuter;
+                }
+            }
         }
 
         return ['qty' => $qtyTotal, 'length' => $length];
@@ -1392,7 +1421,7 @@ class PackagingCalculatorService
         $celahPB = (stripos($ptbTipe, 'Setengah') !== false) ? $celahBawah : $celahBawah; // menggunakan gap_bawah yang dipassing
         
         $ptbDirection = $bawahPenutupOverride['direction'] ?? ($bawahPenutupOverride['arah'] ?? $arahGlobal);
-        $ptbLayout = $this->calculateBottomCoverLayout($qtyPenyanggaBawah, $ptbDirection, $outerP, $outerL, $jarakBawah, $celahPB, $lebarPB, $ptbInclude, $ptbTipe, $isTripleks);
+        $ptbLayout = $this->calculateBottomCoverLayout($qtyPenyanggaBawah, $ptbDirection, $outerP, $outerL, $jarakBawah, $celahPB, $lebarPB, $ptbInclude, $ptbTipe, $isTripleks, $lebarPenyanggaBawah);
         
         if ($ptbLayout['qty'] > 0) {
             $partWidth = $isTripleks ? (($ptbDirection === 'Horizontal') ? $outerP : $outerL) : $lebarPB; // Jika tripleks, lebar disesuaikan dengan sisi menyilang
