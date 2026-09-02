@@ -262,5 +262,5 @@
     </div>
 </div>
 
-@include('expenses.partials.create-modal')
+@include('expenses.Partials.create-modal')
 @endsection
