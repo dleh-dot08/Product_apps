@@ -7,6 +7,9 @@ const config: ExpoConfig = {
     apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL,
     apiRouterKey: process.env.EXPO_PUBLIC_API_ROUTER_KEY,
   },
+  ios: {
+    bundleIdentifier: 'com.aqpa.driverapp',
+  },
 };
 
 export default config;

@@ -1,37 +1,42 @@
 import axios from 'axios';
-import * as SecureStore from 'expo-secure-store';
-import { Platform } from 'react-native';
+import { getStorageItemAsync } from '../context/AuthContext';
 
-// Gunakan 10.0.2.2 untuk mengakses localhost PC dari Emulator Android.
-// Gunakan localhost untuk iOS/Web.
-const getBaseUrl = () => {
-  if (Platform.OS === 'android') {
-    return 'http://10.0.2.2:8001/api';
-  }
-  return 'http://127.0.0.1:8001/api';
-};
+const API_BASE_URL = 'https://driverapp.aqpa-indonesia.com/api';
+
+const API_KEY = 'cHJvZHVjdF9hcHBzX2FwaV9yb3V0ZXJfMjAyNg==';
 
 const api = axios.create({
-  baseURL: getBaseUrl(),
+  baseURL: API_BASE_URL,
+
   headers: {
-    'Accept': 'application/json',
+    Accept: 'application/json',
     'Content-Type': 'application/json',
+
+    // Router API Key
+    'X-API-Key': API_KEY,
   },
 });
 
-import { getStorageItemAsync } from '../context/AuthContext';
+// Sisipkan Sanctum token pada setiap request setelah login
+api.interceptors.request.use(
+  async (config) => {
+    try {
+      const token = await getStorageItemAsync('userToken');
 
-// Interceptor untuk menyisipkan Token di setiap Request
-api.interceptors.request.use(async (config) => {
-  try {
-    const token = await getStorageItemAsync('userToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+
+      return config;
+    } catch (error) {
+      console.error('Error fetching token for interceptor', error);
+
+      return config;
     }
-  } catch (error) {
-    console.error('Error fetching token for interceptor', error);
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-});
+);
 
 export default api;
