@@ -288,12 +288,29 @@
 
                     <!-- 2. (Delivery Order is now merged with Tugas Driver) -->
 
-                    <!-- 3. Pembelian -->
-                    <li class="nav-item">
-                        <a href="{{ route('sales-orders.index') }}" class="nav-link {{ request()->routeIs('sales-orders.*') ? 'active' : '' }}">
-                            <i class="nav-icon fa-solid fa-cart-shopping"></i>
-                            <p class="ms-2 mb-0">Pembelian</p>
+                    <!-- 3. Data Akurasi -->
+                    <li class="nav-item {{ (request()->routeIs('sales-orders.*') || request()->routeIs('purchase-orders.*')) ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ (request()->routeIs('sales-orders.*') || request()->routeIs('purchase-orders.*')) ? 'active' : '' }}">
+                            <i class="nav-icon fa-solid fa-database"></i>
+                            <p class="ms-2 mb-0 w-100 d-flex justify-content-between align-items-center">
+                                Data Akurasi
+                                <i class="fa-solid fa-angle-down" style="font-size: 0.8rem; transition: transform 0.3s;"></i>
+                            </p>
                         </a>
+                        <ul class="nav nav-treeview ms-3">
+                            <li class="nav-item">
+                                <a href="{{ route('sales-orders.index') }}" class="nav-link {{ request()->routeIs('sales-orders.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-bag-shopping" style="font-size: 0.9rem;"></i>
+                                    <p class="ms-2 mb-0" style="font-size: 0.9rem;">Penjualan (SO)</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('purchase-orders.index') }}" class="nav-link {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-cart-shopping" style="font-size: 0.9rem;"></i>
+                                    <p class="ms-2 mb-0" style="font-size: 0.9rem;">Pembelian (PO)</p>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
 
                     <!-- 4. Packing (Route Asli) -->

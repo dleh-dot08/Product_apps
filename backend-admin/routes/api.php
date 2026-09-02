@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PickupTaskController;
 
 Route::middleware('api.router.key')->group(function () {
+
+
     // API-key-only routes: these endpoints do not depend on the current user.
     Route::post('/login', [AuthController::class, 'login']);
 
@@ -53,40 +55,136 @@ Route::middleware('api.router.key')->group(function () {
     Route::post('/driver/location', [\App\Http\Controllers\Api\LocationController::class, 'updateLocation']);
     });
 
-// Proxy API untuk pencarian SO
-    Route::get('/packaging/search-so', function(\Illuminate\Http\Request $request) {
-    $search = $request->input('q', '');
-    $apiKey = 'Ym95Y29tcG9zaXRpb25leHBsYW5hdGlvbnRob3VnaHRwZWFjZWdpcmxjb2FjaHNlbnM=';
+});
+
+// Proxy API untuk pencarian SO & PO (Membaca dari Local Database)
+Route::middleware('web')->group(function () {
     
-    $dateFrom = $request->input('date_from', now()->subMonths(6)->format('Y-m-d'));
-    $dateTo = $request->input('date_to', now()->format('Y-m-d'));
-    
-    $url = "https://akurasi-api.aqpa-indonesia.com/api/integration/penjualan-so?offset=0&limit=1000&date_from={$dateFrom}&date_to={$dateTo}";
-    
-    try {
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'X-API-Key' => $apiKey
-        ])->get($url);
+    // --- TRIGGER BACKGROUND SYNC ---
+    Route::post('/integration/trigger-sync-so', function() {
+        // Prevent timeout for large syncs
+        set_time_limit(300);
+        \Illuminate\Support\Facades\Artisan::call('akurasi:sync', ['--only' => 'so']);
+        return response()->json([
+            'status' => 'success', 
+            'message' => 'Sync SO berhasil dijalankan di latar belakang'
+        ]);
+    })->name('api.integration.trigger_sync_so');
+
+    // --- SALES ORDERS ---
+    Route::get('/integration/search-so', function(\Illuminate\Http\Request $request) {
+        $search = $request->input('q', '');
         
-        if ($response->successful()) {
-            $data = $response->json();
-            
-            if ($search && isset($data['data'])) {
-                $search = strtolower($search);
-                $data['data'] = array_values(array_filter($data['data'], function($item) use ($search) {
-                    return str_contains(strtolower($item['no_so'] ?? ''), $search) 
-                        || str_contains(strtolower($item['deskripsi_barang'] ?? ''), $search)
-                        || str_contains(strtolower($item['no_barang'] ?? ''), $search);
-                }));
-                $data['total_rows'] = count($data['data']);
-            }
-            
-            return response()->json($data);
+        $query = \App\Models\SalesOrderAkurasi::query();
+        
+        if ($search) {
+            $search = strtolower($search);
+            $query->where(function($q) use ($search) {
+                $q->where('no_so', 'like', "%{$search}%")
+                  ->orWhere('deskripsi_barang', 'like', "%{$search}%")
+                  ->orWhere('no_barang', 'like', "%{$search}%")
+                  ->orWhere('nama_pelanggan', 'like', "%{$search}%");
+            });
         }
         
-        return response()->json(['error' => 'Gagal mengambil data'], $response->status());
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
-    })->name('api.packaging.search_so');
+        // Filter by Date Range
+        $dateFrom = $request->input('date_from');
+        $dateTo = $request->input('date_to');
+        if ($dateFrom && $dateTo) {
+            $query->whereBetween('tgl_so', [$dateFrom, $dateTo]);
+        } elseif ($dateFrom) {
+            $query->where('tgl_so', '>=', $dateFrom);
+        } elseif ($dateTo) {
+            $query->where('tgl_so', '<=', $dateTo);
+        }
+
+        // Filter by Status Hold
+        $statusHold = $request->input('status_hold');
+        if ($statusHold !== null && $statusHold !== '') {
+            $query->where('is_held', $statusHold);
+        }
+
+        // Filter by Status
+        $status = $request->input('status');
+        if ($status) {
+            $query->where('status', 'like', "%{$status}%");
+        }
+
+        $sortCol = $request->input('sort_col', 'tgl_so');
+        $sortDir = $request->input('sort_dir', 'desc');
+        
+        // Validasi arah sort agar aman dari SQL Injection
+        $sortDir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
+        
+        // Validasi kolom agar tidak error
+        $allowedSorts = [
+            'no_so', 'tgl_so', 'tgl_estimasi', 'no_pelanggan', 'nama_pelanggan', 
+            'no_po_customer', 'salesman', 'no_barang', 'deskripsi_barang', 
+            'category_produk', 'qty', 'qty_shipped', 'sisa_kirim', 'stok_tersedia', 
+            'unit_price', 'discount_amount', 'ppn_amount', 'dpp', 'no_pengiriman', 'tgl_kirim'
+        ];
+
+        if (in_array($sortCol, $allowedSorts)) {
+            $query->orderBy($sortCol, $sortDir);
+        } else {
+            $query->orderBy('tgl_so', 'desc');
+        }
+        
+        $perPage = (int) $request->input('per_page', 20);
+        $data = $query->paginate($perPage);
+        return response()->json($data);
+    })->name('api.integration.search_so');
+
+    Route::get('/integration/detail-so/{no_so}', function($no_so) {
+        $items = \App\Models\SalesOrderAkurasi::where('no_so', $no_so)->get();
+        if($items->isEmpty()) return response()->json(['error' => 'Data tidak ditemukan'], 404);
+        
+        return response()->json([
+            'no_so' => $items->first()->no_so,
+            'tgl_so' => $items->first()->tgl_so,
+            'est_kirim' => $items->first()->tgl_estimasi,
+            'pelanggan' => $items->first()->nama_pelanggan,
+            'shipto' => $items->first()->shipto,
+            'status' => $items->first()->status,
+            'total_amount' => $items->sum('subtotal'),
+            'items' => $items
+        ]);
+    })->name('api.integration.detail_so');
+
+
+    // --- PURCHASE ORDERS ---
+    Route::get('/integration/search-po', function(\Illuminate\Http\Request $request) {
+        $search = $request->input('q', '');
+        
+        $query = \App\Models\PembelianOrderAkurasi::query();
+        
+        if ($search) {
+            $search = strtolower($search);
+            $query->where(function($q) use ($search) {
+                $q->where('no_pembelian', 'like', "%{$search}%")
+                  ->orWhere('deskripsi_barang', 'like', "%{$search}%")
+                  ->orWhere('no_barang', 'like', "%{$search}%")
+                  ->orWhere('nama_pemasok', 'like', "%{$search}%");
+            });
+        }
+        
+        $data = $query->orderBy('tgl_pembelian', 'desc')->paginate(10);
+        return response()->json($data);
+    })->name('api.integration.search_po');
+
+    Route::get('/integration/detail-po/{no_po}', function($no_po) {
+        $items = \App\Models\PembelianOrderAkurasi::where('no_pembelian', $no_po)->get();
+        if($items->isEmpty()) return response()->json(['error' => 'Data tidak ditemukan'], 404);
+        
+        return response()->json([
+            'no_po' => $items->first()->no_pembelian,
+            'tgl_po' => $items->first()->tgl_pembelian,
+            'est_kirim' => $items->first()->tgl_ekspetasi,
+            'pemasok' => $items->first()->nama_pemasok,
+            'shipto' => $items->first()->so_no, // shipto or SO
+            'status' => $items->first()->status_bayar,
+            'total_amount' => $items->sum('amount'),
+            'items' => $items
+        ]);
+    })->name('api.integration.detail_po');
 });

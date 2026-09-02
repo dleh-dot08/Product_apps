@@ -16,19 +16,12 @@ class EnsureApiRouterKey
 
     public function handle(Request $request, Closure $next): Response
     {
-        $token = $request->bearerToken();
+        $apiKey = $request->header('X-API-Key');
 
-        if (! is_string($token) || ! hash_equals(self::API_KEY, $token)) {
+        if (! is_string($apiKey) || ! hash_equals(self::API_KEY, $apiKey)) {
             return response()->json([
                 'message' => 'API key tidak valid.',
             ], 401);
-        }
-
-        // The router key occupies Authorization. Forward the user's Sanctum
-        // token from X-Auth-Token for endpoints that also require login.
-        $userToken = $request->header('X-Auth-Token');
-        if (is_string($userToken) && $userToken !== '') {
-            $request->headers->set('Authorization', 'Bearer '.$userToken);
         }
 
         return $next($request);
