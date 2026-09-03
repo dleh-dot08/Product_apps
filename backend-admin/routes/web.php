@@ -5,6 +5,8 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OtaUpdateController;
 
+use App\Http\Controllers\OtaUpdateController;
+
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -130,7 +132,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/driver-reports/{id}', [\App\Http\Controllers\DriverReportController::class, 'show'])->name('driver-reports.show');
 });
 
-// Jangan di ganggu ini OTA Android
+// Jangan di ganggu ini OTA Android 
 Route::get('/updates', [OtaUpdateController::class, 'manifest'])
     ->name('ota.manifest');
 

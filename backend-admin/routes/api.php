@@ -7,6 +7,8 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PickupTaskController;
 use App\Http\Controllers\OtaUpdateController;
 
+use App\Http\Controllers\OtaUpdateController;
+
 Route::middleware('api.router.key')->group(function () {
 
 
@@ -120,16 +122,25 @@ Route::middleware('web')->group(function () {
         // Validasi arah sort agar aman dari SQL Injection
         $sortDir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
         
+        $sortMapping = [
+            'salesman' => 'nama_salesman',
+            'dpp' => 'subtotal',
+            'tgl_kirim' => 'tgl_pengiriman'
+        ];
+        
+        $dbSortCol = $sortMapping[$sortCol] ?? $sortCol;
+
         // Validasi kolom agar tidak error
         $allowedSorts = [
-            'no_so', 'tgl_so', 'tgl_estimasi', 'no_pelanggan', 'nama_pelanggan', 
-            'no_po_customer', 'salesman', 'no_barang', 'deskripsi_barang', 
+            'no_so', 'tgl_so', 'tgl_estimasi', 'tgl_pengiriman', 'no_pelanggan', 'nama_pelanggan', 
+            'no_po_customer', 'nama_salesman', 'no_barang', 'deskripsi_barang', 
             'category_produk', 'qty', 'qty_shipped', 'sisa_kirim', 'stok_tersedia', 
-            'unit_price', 'discount_amount', 'ppn_amount', 'dpp', 'no_pengiriman', 'tgl_kirim'
+            'unit_price', 'discount_amount', 'ppn_amount', 'subtotal', 'amount', 'no_pengiriman',
+            'salesman', 'dpp', 'tgl_kirim'
         ];
 
         if (in_array($sortCol, $allowedSorts)) {
-            $query->orderBy($sortCol, $sortDir);
+            $query->orderBy($dbSortCol, $sortDir);
         } else {
             $query->orderBy('tgl_so', 'desc');
         }

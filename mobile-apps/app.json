@@ -75,9 +75,7 @@
       }
     },
     "owner": "frrama77s-team",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
+    "runtimeVersion": "1.0.0",
     "updates": {
       "url": "https://u.expo.dev/71baecf7-0803-4399-b427-0faf85a71895"
     }
