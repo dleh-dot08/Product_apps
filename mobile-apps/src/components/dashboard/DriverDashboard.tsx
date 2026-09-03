@@ -147,6 +147,7 @@ export default function DriverDashboard() {
   const currentUser = user as any;
 
   const driverName =
+    currentUser?.full_name ||
     currentUser?.name ||
     currentUser?.nama ||
     currentUser?.employee?.name ||
