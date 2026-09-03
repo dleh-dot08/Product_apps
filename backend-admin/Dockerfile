@@ -13,13 +13,13 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
 COPY . .
-RUN composer dump-autoload --optimize
+RUN composer dump-autoload --optimize --no-scripts
 
 FROM php:8.2-apache
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev unzip \
-    && docker-php-ext-install pdo_pgsql pgsql \
+    && apt-get install -y --no-install-recommends libpq-dev unzip libzip-dev \
+    && docker-php-ext-install pdo_pgsql pgsql zip \
     && a2enmod rewrite \
     && sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf \
     && rm -rf /var/lib/apt/lists/*
@@ -28,6 +28,7 @@ WORKDIR /var/www/html
 COPY --from=vendor /app ./
 COPY --from=assets /app/public/build ./public/build
 
-RUN chown -R www-data:www-data storage bootstrap/cache
+RUN php artisan package:discover --ansi \
+    && chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 80
