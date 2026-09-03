@@ -100,9 +100,10 @@
                     <thead class="text-uppercase">
                         <tr>
                             <th class="px-4" style="color: var(--sidebar-link);">Pengguna</th>
-                            <th class="px-4" style="color: var(--sidebar-link);">Email</th>
+                            <th class="px-4" style="color: var(--sidebar-link);">Kontak & Username</th>
                             <th class="px-4" style="color: var(--sidebar-link);">Divisi</th>
                             <th class="px-4" style="color: var(--sidebar-link);">Hak Akses</th>
+                            <th class="px-4" style="color: var(--sidebar-link);">Status</th>
                             <th class="px-4 text-end" style="color: var(--sidebar-link);">Aksi</th>
                         </tr>
                     </thead>
@@ -111,15 +112,18 @@
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($user->name) }}&background=6366f1&color=fff&bold=true&size=128" class="rounded-circle me-3 shadow-sm border border-2 border-white" width="45" height="45" alt="{{ $user->name }}">
+                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($user->full_name) }}&background=6366f1&color=fff&bold=true&size=128" class="rounded-circle me-3 shadow-sm border border-2 border-white" width="45" height="45" alt="{{ $user->full_name }}">
                                         <div>
-                                            <div class="fw-bold mb-1" style="font-size: 0.95rem;">{{ $user->name }}</div>
+                                            <div class="fw-bold mb-1" style="font-size: 0.95rem;">{{ $user->full_name }}</div>
                                             <div class="small opacity-50">Bergabung {{ $user->created_at->format('M Y') }}</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="text-muted" style="font-size: 0.9rem;">
-                                    <i class="fa-regular fa-envelope me-2 opacity-50"></i>{{ $user->email }}
+                                    <div><i class="fa-regular fa-envelope me-2 opacity-50"></i>{{ $user->email }}</div>
+                                    @if($user->username)
+                                        <div class="mt-1"><i class="fa-solid fa-at me-2 opacity-50"></i>{{ $user->username }}</div>
+                                    @endif
                                 </td>
                                 <td>
                                     <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-2 rounded-pill fw-medium" style="font-size: 0.8rem;">
@@ -144,9 +148,20 @@
                                         <i class="fa-solid {{ $icon }} me-1 opacity-75"></i> {{ $roleName }}
                                     </span>
                                 </td>
+                                <td>
+                                    @if($user->active)
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-3 py-2 rounded-pill fw-medium" style="font-size: 0.8rem;">
+                                            <i class="fa-solid fa-check-circle me-1 opacity-75"></i> Aktif
+                                        </span>
+                                    @else
+                                        <span class="badge bg-secondary bg-opacity-10 text-secondary border border-secondary border-opacity-25 px-3 py-2 rounded-pill fw-medium" style="font-size: 0.8rem;">
+                                            <i class="fa-solid fa-ban me-1 opacity-75"></i> Non-Aktif
+                                        </span>
+                                    @endif
+                                </td>
                                 <td class="text-end">
                                     <div class="d-flex gap-2 justify-content-end">
-                                        <button type="button" onclick="openUserModal(true, {{ json_encode(['id' => $user->id, 'name' => $user->name, 'email' => $user->email, 'division_id' => $user->division_id, 'role_id' => $user->role_id]) }})" class="btn btn-sm btn-light border rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; transition: all 0.2s;" title="Edit Pengguna" onmouseover="this.classList.replace('btn-light', 'btn-primary'); this.classList.remove('border')" onmouseout="this.classList.replace('btn-primary', 'btn-light'); this.classList.add('border')">
+                                        <button type="button" onclick="openUserModal(true, {{ json_encode(['id' => $user->id, 'full_name' => $user->full_name, 'username' => $user->username, 'email' => $user->email, 'division_id' => $user->division_id, 'role_id' => $user->role_id, 'active' => $user->active]) }})" class="btn btn-sm btn-light border rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; transition: all 0.2s;" title="Edit Pengguna" onmouseover="this.classList.replace('btn-light', 'btn-primary'); this.classList.remove('border')" onmouseout="this.classList.replace('btn-primary', 'btn-light'); this.classList.add('border')">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
                                         <form action="{{ route('users.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengguna ini?');">
@@ -161,7 +176,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-5">
+                                <td colspan="6" class="text-center py-5">
                                     <div class="text-muted mb-3"><i class="fa-solid fa-users-slash fa-3x opacity-25"></i></div>
                                     <h6 class="fw-semibold">Belum ada pengguna</h6>
                                     <p class="small opacity-75 mb-0">Tambahkan pengguna baru untuk mulai mengelola akses sistem.</p>

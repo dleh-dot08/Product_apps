@@ -15,8 +15,9 @@ class UserController extends Controller
         $search = $request->input('search');
         
         $users = User::when($search, function($query) use ($search) {
-            $query->where('name', 'ilike', "%{$search}%")
-                  ->orWhere('email', 'ilike', "%{$search}%");
+            $query->where('full_name', 'ilike', "%{$search}%")
+                  ->orWhere('email', 'ilike', "%{$search}%")
+                  ->orWhere('username', 'ilike', "%{$search}%");
         })->latest()->paginate(10)->withQueryString();
 
         $divisions = \App\Models\Division::all();
@@ -38,13 +39,16 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'full_name' => 'required|string|max:255',
+            'username' => 'nullable|string|max:255|unique:users',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
             'division_id' => 'nullable|exists:divisions,id',
             'role_id' => 'required|exists:roles,id',
+            'active' => 'nullable|boolean',
         ]);
 
+        $validated['active'] = $request->has('active');
         $validated['password'] = Hash::make($validated['password']);
         User::create($validated);
 
@@ -61,12 +65,16 @@ class UserController extends Controller
     public function update(Request $request, User $user)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
+            'full_name' => 'required|string|max:255',
+            'username' => ['nullable', 'string', 'max:255', Rule::unique('users')->ignore($user->id)],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             'password' => 'nullable|string|min:8',
             'division_id' => 'nullable|exists:divisions,id',
             'role_id' => 'required|exists:roles,id',
+            'active' => 'nullable|boolean',
         ]);
+
+        $validated['active'] = $request->has('active');
 
         if (!empty($validated['password'])) {
             $validated['password'] = Hash::make($validated['password']);
