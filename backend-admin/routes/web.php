@@ -16,7 +16,7 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
     // Find Driver Map
     Route::get('/find-driver', function () {
-        return view('find-driver');
+        return view('find-driver.index');
     })->name('find-driver');
     
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
