@@ -22,14 +22,18 @@ RUN printf "upload_max_filesize=50M\npost_max_size=55M\n" \
     > /usr/local/etc/php/conf.d/99-uploads.ini
 
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev unzip libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
-
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev unzip libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+    && apt-get install -y --no-install-recommends \
+        libpq-dev \
+        unzip \
+        libpng-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install pdo_pgsql pgsql gd \
     && a2enmod rewrite \
-    && sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf \
+    && sed -ri 's!/var/www/html!/var/www/html/public!g' \
+        /etc/apache2/sites-available/*.conf \
+        /etc/apache2/apache2.conf \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html
