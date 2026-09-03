@@ -11,17 +11,30 @@ RUN pnpm run build
 FROM composer:2 AS vendor
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts
+RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts --ignore-platform-reqs
 COPY . .
 RUN composer dump-autoload --optimize
 
 FROM php:8.2-apache
 
+# Allow OTA bundle uploads
+RUN printf "upload_max_filesize=50M\npost_max_size=55M\n" \
+    > /usr/local/etc/php/conf.d/99-uploads.ini
+
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq-dev unzip \
-    && docker-php-ext-install pdo_pgsql pgsql \
+    && apt-get install -y --no-install-recommends \
+        libpq-dev \
+        libzip-dev \
+        unzip \
+        libpng-dev \
+        libjpeg62-turbo-dev \
+        libfreetype6-dev \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install pdo_pgsql pgsql gd zip \
     && a2enmod rewrite \
-    && sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/*.conf /etc/apache2/apache2.conf \
+    && sed -ri 's!/var/www/html!/var/www/html/public!g' \
+        /etc/apache2/sites-available/*.conf \
+        /etc/apache2/apache2.conf \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /var/www/html

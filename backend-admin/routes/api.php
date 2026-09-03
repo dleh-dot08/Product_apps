@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PickupTaskController;
+use App\Http\Controllers\OtaUpdateController;
 
 use App\Http\Controllers\OtaUpdateController;
 
