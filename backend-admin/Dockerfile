@@ -17,6 +17,13 @@ RUN composer dump-autoload --optimize
 
 FROM php:8.2-apache
 
+# Allow OTA bundle uploads
+RUN printf "upload_max_filesize=50M\npost_max_size=55M\n" \
+    > /usr/local/etc/php/conf.d/99-uploads.ini
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libpq-dev unzip libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
+
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libpq-dev unzip libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
