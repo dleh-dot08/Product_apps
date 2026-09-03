@@ -104,6 +104,20 @@ jobs:
 
             echo "${{ secrets.GHCR_PAT }}" | docker login ${{ env.REGISTRY }} -u ${{ secrets.GHCR_USERNAME }} --password-stdin
             cd ${{ env.SERVER_APP_DIR }}
+
+            if [ -z "${{ secrets.OTA_PUBLISH_TOKEN }}" ]; then
+              echo "OTA_PUBLISH_TOKEN secret belum tersedia"
+              exit 1
+            fi
+
+            touch .env
+
+            if grep -q '^OTA_PUBLISH_TOKEN=' .env; then
+              sed -i "s|^OTA_PUBLISH_TOKEN=.*$|OTA_PUBLISH_TOKEN=${{ secrets.OTA_PUBLISH_TOKEN }}|" .env
+            else
+              printf '\nOTA_PUBLISH_TOKEN=%s\n' "${{ secrets.OTA_PUBLISH_TOKEN }}" >> .env
+            fi
+
             GHCR_USERNAME=${{ secrets.GHCR_USERNAME }} IMAGE_TAG=${{ github.sha }} docker compose pull
             GHCR_USERNAME=${{ secrets.GHCR_USERNAME }} IMAGE_TAG=${{ github.sha }} docker compose up -d --force-recreate
 

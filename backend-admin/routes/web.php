@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\OtaUpdateController;
 
 Route::get('/', function () {
     return redirect()->route('login');
@@ -128,5 +129,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/driver-reports', [\App\Http\Controllers\DriverReportController::class, 'index'])->name('driver-reports.index');
     Route::get('/driver-reports/{id}', [\App\Http\Controllers\DriverReportController::class, 'show'])->name('driver-reports.show');
 });
+
+// Jangan di ganggu ini OTA Android
+Route::get('/updates', [OtaUpdateController::class, 'manifest'])
+    ->name('ota.manifest');
+
+Route::get('/updates/assets', [OtaUpdateController::class, 'asset'])
+    ->name('ota.asset');
 
 require __DIR__.'/auth.php';
