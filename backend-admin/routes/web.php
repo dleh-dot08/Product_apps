@@ -5,8 +5,6 @@ use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\OtaUpdateController;
 
-use App\Http\Controllers\OtaUpdateController;
-
 Route::get('/', function () {
     return redirect()->route('login');
 });

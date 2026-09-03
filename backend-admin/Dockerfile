@@ -13,7 +13,7 @@ WORKDIR /app
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --prefer-dist --optimize-autoloader --no-scripts --ignore-platform-reqs
 COPY . .
-RUN composer dump-autoload --optimize
+RUN composer dump-autoload --optimize --no-scripts
 
 FROM php:8.2-apache
 
@@ -41,6 +41,7 @@ WORKDIR /var/www/html
 COPY --from=vendor /app ./
 COPY --from=assets /app/public/build ./public/build
 
-RUN chown -R www-data:www-data storage bootstrap/cache
+RUN php artisan package:discover --ansi \
+    && chown -R www-data:www-data storage bootstrap/cache
 
 EXPOSE 80
