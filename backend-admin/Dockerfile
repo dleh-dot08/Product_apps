@@ -24,12 +24,13 @@ RUN printf "upload_max_filesize=50M\npost_max_size=55M\n" \
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         libpq-dev \
+        libzip-dev \
         unzip \
         libpng-dev \
         libjpeg62-turbo-dev \
         libfreetype6-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo_pgsql pgsql gd \
+    && docker-php-ext-install pdo_pgsql pgsql gd zip \
     && a2enmod rewrite \
     && sed -ri 's!/var/www/html!/var/www/html/public!g' \
         /etc/apache2/sites-available/*.conf \
