@@ -19,6 +19,8 @@ const config: ExpoConfig = {
   updates: {
     ...(appJson.updates ?? {}),
     url: updateUrl,
+    checkAutomatically: 'ON_LOAD',
+    fallbackToCacheTimeout: 5000,
   },
 
   plugins: [
