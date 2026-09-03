@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PickupTaskController;
 
+use App\Http\Controllers\OtaUpdateController;
+
 Route::middleware('api.router.key')->group(function () {
 
 
@@ -56,6 +58,9 @@ Route::middleware('api.router.key')->group(function () {
     });
 
 });
+
+Route::post('/internal/ota/publish', [OtaUpdateController::class, 'publish'])
+    ->name('ota.publish');
 
 // Proxy API untuk pencarian SO & PO (Membaca dari Local Database)
 Route::middleware('web')->group(function () {

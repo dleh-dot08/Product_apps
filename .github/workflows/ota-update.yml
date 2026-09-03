@@ -1,0 +1,201 @@
+name: AQPA Driver OTA Update
+
+on:
+  push:
+    branches:
+      - ota-updates-online
+    paths:
+      - "mobile-apps/**"
+
+  workflow_dispatch:
+
+jobs:
+  ota-update:
+    name: Publish Self-Hosted + Expo Backup
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: mobile-apps
+
+    env:
+      EXPO_PUBLIC_API_BASE_URL: ${{ secrets.EXPO_PUBLIC_API_BASE_URL }}
+      EXPO_PUBLIC_API_ROUTER_KEY: ${{ secrets.EXPO_PUBLIC_API_ROUTER_KEY }}
+      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      OTA_PUBLISH_TOKEN: ${{ secrets.OTA_PUBLISH_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile-apps/package-lock.json
+
+      - name: Validate secrets
+        shell: bash
+        run: |
+          set -e
+
+          if [ -z "$EXPO_PUBLIC_API_BASE_URL" ]; then
+            echo "EXPO_PUBLIC_API_BASE_URL belum diset"
+            exit 1
+          fi
+
+          if [ -z "$EXPO_PUBLIC_API_ROUTER_KEY" ]; then
+            echo "EXPO_PUBLIC_API_ROUTER_KEY belum diset"
+            exit 1
+          fi
+
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "EXPO_TOKEN belum diset"
+            exit 1
+          fi
+
+          if [ -z "$OTA_PUBLISH_TOKEN" ]; then
+            echo "OTA_PUBLISH_TOKEN belum diset"
+            exit 1
+          fi
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Setup Expo / EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      # ==========================================================
+      # SELF-HOSTED OTA - PRIMARY
+      # ==========================================================
+
+      - name: Read runtime version
+        shell: bash
+        run: |
+          set -e
+
+          npx expo config --type public --json > expo-config-temp.json
+
+          RUNTIME_VERSION=$(node -e "
+            const config = require('./expo-config-temp.json');
+            const rv = config.runtimeVersion;
+
+            if (typeof rv !== 'string' || !rv) {
+              console.error('runtimeVersion harus berupa string.');
+              process.exit(1);
+            }
+
+            process.stdout.write(rv);
+          ")
+
+          echo "RUNTIME_VERSION=$RUNTIME_VERSION" >> "$GITHUB_ENV"
+          echo "Runtime version: $RUNTIME_VERSION"
+
+          rm expo-config-temp.json
+
+      - name: Build Self-Hosted OTA
+        shell: bash
+        run: |
+          set -e
+
+          rm -rf dist-selfhost
+
+          npx expo export \
+            --platform android \
+            --output-dir dist-selfhost
+
+      - name: Save Expo config
+        shell: bash
+        run: |
+          set -e
+
+          npx expo config \
+            --type public \
+            --json > dist-selfhost/expoConfig.json
+
+      - name: Validate OTA files
+        shell: bash
+        run: |
+          set -e
+
+          test -f dist-selfhost/metadata.json || {
+            echo "metadata.json tidak ditemukan"
+            exit 1
+          }
+
+          test -f dist-selfhost/expoConfig.json || {
+            echo "expoConfig.json tidak ditemukan"
+            exit 1
+          }
+
+          test -d dist-selfhost/_expo || {
+            echo "Folder _expo tidak ditemukan"
+            exit 1
+          }
+
+          echo "Self-hosted OTA export valid."
+
+      - name: Create OTA ZIP
+        shell: bash
+        run: |
+          set -e
+
+          rm -f aqpa-driver-ota.zip
+
+          cd dist-selfhost
+          zip -r ../aqpa-driver-ota.zip . > /dev/null
+          cd ..
+
+          test -f aqpa-driver-ota.zip
+
+          echo "OTA ZIP created:"
+          ls -lh aqpa-driver-ota.zip
+
+      - name: Publish to AQPA Self-Hosted OTA
+        shell: bash
+        run: |
+          set -e
+
+          echo "Publishing runtime $RUNTIME_VERSION..."
+
+          curl \
+            --fail-with-body \
+            --show-error \
+            --silent \
+            --request POST \
+            "https://driverapp.aqpa-indonesia.com/api/internal/ota/publish" \
+            --header "Accept: application/json" \
+            --header "X-OTA-Publish-Token: $OTA_PUBLISH_TOKEN" \
+            --form "runtimeVersion=$RUNTIME_VERSION" \
+            --form "bundle=@aqpa-driver-ota.zip"
+
+          echo
+          echo "Self-hosted OTA published successfully."
+
+      - name: Upload OTA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aqpa-driver-ota-${{ github.sha }}
+          path: |
+            mobile-apps/aqpa-driver-ota.zip
+          retention-days: 14
+
+      # ==========================================================
+      # EXPO EAS UPDATE - BACKUP
+      # ==========================================================
+
+      - name: Publish Expo Backup
+        env:
+          OTA_PROVIDER: eas
+        shell: bash
+        run: |
+          set -e
+
+          eas update \
+            --channel production-backup \
+            --message "AQPA OTA backup ${{ github.sha }}" \
+            --non-interactive

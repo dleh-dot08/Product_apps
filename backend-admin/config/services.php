@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'ota' => [
+        'publish_token' => env('OTA_PUBLISH_TOKEN'),
+    ],
+
 ];
