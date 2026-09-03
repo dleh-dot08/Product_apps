@@ -631,7 +631,7 @@ class OtaUpdateController extends Controller
             ? 'application/javascript'
             : $this->detectContentType($fullPath);
 
-        $url = url('/updates/assets')
+        $url = secure_url('/updates/assets')
             . '?'
             . http_build_query([
                 'asset' => $relativePath,
