@@ -1,21 +1,21 @@
 <!-- User Modal -->
 <div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
   <div class="modal-dialog modal-dialog-centered modal-lg">
-    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; background: var(--sidebar-bg);">
+    <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; background: #ffffff;">
       <div class="modal-header border-bottom border-secondary border-opacity-25 p-4">
-        <h5 class="modal-title fw-bold" id="userModalLabel" style="color: var(--sidebar-link);">
+        <h5 class="modal-title fw-bold text-dark" id="userModalLabel">
             <i class="fa-solid fa-user-plus me-2 text-primary" id="userModalIcon"></i> 
             <span id="userModalTitle">Tambah Pengguna</span>
         </h5>
-        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body p-4" style="color: var(--bs-body-color);">
+      <div class="modal-body p-4 text-dark">
         
         <form id="userForm" action="{{ route('users.store') }}" method="POST">
             @csrf
             <div id="methodContainer"></div>
 
-            <h6 class="fw-bold mb-3" style="color: var(--sidebar-link); letter-spacing: 0.5px;">1. Informasi Dasar</h6>
+            <h6 class="fw-bold mb-3 text-secondary" style="letter-spacing: 0.5px;">1. Informasi Dasar</h6>
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <label class="form-label fw-medium">Nama Lengkap <span class="text-danger">*</span></label>
@@ -38,7 +38,7 @@
 
             <hr class="border-secondary border-opacity-25 my-4">
 
-            <h6 class="fw-bold mb-3" style="color: var(--sidebar-link); letter-spacing: 0.5px;">2. Penugasan & Hak Akses Sistem</h6>
+            <h6 class="fw-bold mb-3 text-secondary" style="letter-spacing: 0.5px;">2. Penugasan & Hak Akses Sistem</h6>
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <label class="form-label fw-medium">Divisi (Unit Kerja)</label>
@@ -62,7 +62,7 @@
             
             <hr class="border-secondary border-opacity-25 my-4">
 
-            <h6 class="fw-bold mb-3" style="color: var(--sidebar-link); letter-spacing: 0.5px;">3. Status Akun</h6>
+            <h6 class="fw-bold mb-3 text-secondary" style="letter-spacing: 0.5px;">3. Status Akun</h6>
             <div class="row g-3 mb-4">
                 <div class="col-md-12">
                     <div class="form-check form-switch d-flex align-items-center gap-2">

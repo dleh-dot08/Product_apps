@@ -45,7 +45,6 @@ class UserController extends Controller
             'password' => 'required|string|min:8',
             'division_id' => 'nullable|exists:divisions,id',
             'role_id' => 'required|exists:roles,id',
-            'active' => 'nullable|boolean',
         ]);
 
         $validated['active'] = $request->has('active');
@@ -71,7 +70,6 @@ class UserController extends Controller
             'password' => 'nullable|string|min:8',
             'division_id' => 'nullable|exists:divisions,id',
             'role_id' => 'required|exists:roles,id',
-            'active' => 'nullable|boolean',
         ]);
 
         $validated['active'] = $request->has('active');
