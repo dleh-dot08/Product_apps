@@ -125,9 +125,7 @@ Route::middleware('auth')->group(function () {
             return redirect()->back()->with('success', 'Settings updated'); 
         })->name('validasi_data.settings.update');
     });
-    // Laporan Driver
-    Route::get('/driver-reports', [\App\Http\Controllers\DriverReportController::class, 'index'])->name('driver-reports.index');
-    Route::get('/driver-reports/{id}', [\App\Http\Controllers\DriverReportController::class, 'show'])->name('driver-reports.show');
+
 });
 
 // Jangan di ganggu ini OTA Android 

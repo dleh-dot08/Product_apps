@@ -337,13 +337,6 @@
                         </a>
                     </li>
 
-                    <!-- 5.6 Laporan Driver -->
-                    <li class="nav-item">
-                        <a href="{{ route('driver-reports.index') }}" class="nav-link {{ request()->routeIs('driver-reports.*') ? 'active' : '' }}">
-                            <i class="nav-icon fa-solid fa-file-invoice"></i>
-                            <p class="ms-2 mb-0">Laporan Driver</p>
-                        </a>
-                    </li>
 
                     <!-- 6. Daftar Tugas (Badge angka 0) -->
                     <li class="nav-item">
