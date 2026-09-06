@@ -35,4 +35,9 @@ class Shift extends Model
     {
         return $this->hasMany(Expense::class, 'shift_id');
     }
+
+    public function pickupTasks()
+    {
+        return $this->hasMany(PickupTask::class, 'shift_id');
+    }
 }
