@@ -119,22 +119,39 @@ export default function LaporanDetailScreen() {
             </View>
           </View>
           
-          <Text style={styles.routeOrigin}>{task.pickup_name || '-'}</Text>
-          <View style={styles.routeDestinationContainer}>
-            <Ionicons name="arrow-forward" size={16} color="#6B7280" />
-            <Text style={styles.routeDestination}>{task.destination || '-'}</Text>
-          </View>
-
-          <View style={styles.metaInfoRow}>
-            <View style={styles.metaItem}>
-              <Ionicons name="time-outline" size={16} color="#6B7280" />
-              <Text style={styles.metaText}>Mulai: {formatDateTime(task.started_at)}</Text>
+          <View style={styles.routeContainer}>
+            <View style={styles.routeIcons}>
+              <Ionicons name="location" size={20} color="#3B82F6" />
+              <View style={styles.routeLine} />
+              <Ionicons name="location" size={20} color="#10B981" />
+            </View>
+            <View style={styles.routeTexts}>
+              <Text style={styles.routeOrigin}>{task.pickup_name || 'Lokasi Penjemputan'}</Text>
+              <View style={styles.routeSpacer} />
+              <Text style={styles.routeDestination}>{task.destination || 'Lokasi Tujuan'}</Text>
             </View>
           </View>
-          <View style={styles.metaInfoRow}>
+
+          <View style={styles.metaDivider} />
+
+          <View style={styles.metaInfoGrid}>
             <View style={styles.metaItem}>
-              <Ionicons name="checkmark-done-outline" size={16} color="#6B7280" />
-              <Text style={styles.metaText}>Selesai: {formatDateTime(task.completed_at)}</Text>
+              <View style={styles.metaIconBg}>
+                <Ionicons name="time" size={16} color="#3B82F6" />
+              </View>
+              <View style={styles.metaTextContainer}>
+                <Text style={styles.metaLabel}>Waktu Mulai</Text>
+                <Text style={styles.metaText}>{formatDateTime(task.started_at)}</Text>
+              </View>
+            </View>
+            <View style={[styles.metaItem, { marginTop: 12 }]}>
+              <View style={[styles.metaIconBg, { backgroundColor: '#D1FAE5' }]}>
+                <Ionicons name="checkmark-done" size={16} color="#10B981" />
+              </View>
+              <View style={styles.metaTextContainer}>
+                <Text style={styles.metaLabel}>Waktu Selesai</Text>
+                <Text style={styles.metaText}>{formatDateTime(task.completed_at)}</Text>
+              </View>
             </View>
           </View>
         </View>
@@ -176,7 +193,7 @@ export default function LaporanDetailScreen() {
               {task.shift.expenses.map((expense: any, idx: number) => (
                 <View key={expense.id} style={[styles.financeItem, idx > 0 && styles.borderTop]}>
                   <View style={styles.financeHeader}>
-                    <View>
+                    <View style={styles.financeInfo}>
                       <Text style={styles.financeCategory}>{expense.category}</Text>
                       {expense.description && <Text style={styles.financeDesc}>{expense.description}</Text>}
                     </View>
@@ -278,36 +295,74 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Inter-SemiBold',
   },
-  routeOrigin: {
-    fontSize: 16,
-    fontFamily: 'Inter-SemiBold',
-    color: '#1F2937',
-  },
-  routeDestinationContainer: {
+  routeContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
     marginBottom: 16,
   },
-  routeDestination: {
-    fontSize: 16,
+  routeIcons: {
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  routeLine: {
+    width: 2,
+    flex: 1,
+    minHeight: 20,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 4,
+    borderRadius: 1,
+  },
+  routeTexts: {
+    flex: 1,
+  },
+  routeSpacer: {
+    height: 16,
+  },
+  routeOrigin: {
+    fontSize: 15,
     fontFamily: 'Inter-SemiBold',
     color: '#1F2937',
-    marginLeft: 8,
+    lineHeight: 22,
   },
-  metaInfoRow: {
-    flexDirection: 'row',
-    marginBottom: 8,
+  routeDestination: {
+    fontSize: 15,
+    fontFamily: 'Inter-SemiBold',
+    color: '#1F2937',
+    lineHeight: 22,
+  },
+  metaDivider: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginVertical: 12,
+  },
+  metaInfoGrid: {
+    flexDirection: 'column',
   },
   metaItem: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  metaText: {
-    marginLeft: 6,
-    fontSize: 14,
+  metaIconBg: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#DBEAFE',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  metaTextContainer: {
+    flex: 1,
+  },
+  metaLabel: {
+    fontSize: 11,
     fontFamily: 'Inter-Medium',
-    color: '#4B5563',
+    color: '#6B7280',
+    marginBottom: 2,
+  },
+  metaText: {
+    fontSize: 13,
+    fontFamily: 'Inter-SemiBold',
+    color: '#111827',
   },
   sectionContainer: {
     paddingHorizontal: 20,
@@ -373,6 +428,11 @@ const styles = StyleSheet.create({
   financeHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  financeInfo: {
+    flex: 1,
+    paddingRight: 12,
   },
   financeCategory: {
     fontFamily: 'Inter-SemiBold',
@@ -386,8 +446,10 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   financeAmount: {
-    fontFamily: 'Inter-SemiBold',
+    fontFamily: 'Inter-Bold',
     color: '#111827',
+    flexShrink: 0,
+    fontSize: 14,
   },
   financeNotes: {
     fontFamily: 'Inter-Medium',
