@@ -3,7 +3,6 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
-
 use App\Http\Controllers\OtaUpdateController;
 
 Route::get('/', function () {
@@ -17,7 +16,7 @@ Route::get('/dashboard', function () {
 Route::middleware('auth')->group(function () {
     // Find Driver Map
     Route::get('/find-driver', function () {
-        return view('find-driver');
+        return view('find-driver.index');
     })->name('find-driver');
     
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -126,9 +125,7 @@ Route::middleware('auth')->group(function () {
             return redirect()->back()->with('success', 'Settings updated'); 
         })->name('validasi_data.settings.update');
     });
-    // Laporan Driver
-    Route::get('/driver-reports', [\App\Http\Controllers\DriverReportController::class, 'index'])->name('driver-reports.index');
-    Route::get('/driver-reports/{id}', [\App\Http\Controllers\DriverReportController::class, 'show'])->name('driver-reports.show');
+
 });
 
 // Jangan di ganggu ini OTA Android 

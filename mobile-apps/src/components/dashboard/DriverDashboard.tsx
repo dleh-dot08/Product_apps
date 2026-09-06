@@ -9,6 +9,8 @@ import {
   ScrollView,
   StyleSheet, TouchableOpacity,
   View,
+  Modal,
+  Pressable
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -137,6 +139,7 @@ export default function DriverDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [isNotificationModalVisible, setNotificationModalVisible] = useState(false);
 
   const pageBackground = isDark ? colors.background : BRAND.page;
   const cardBackground = isDark ? colors.backgroundElement : BRAND.white;
@@ -256,14 +259,16 @@ export default function DriverDashboard() {
               <TouchableOpacity
                 activeOpacity={0.7}
                 style={styles.notificationButton}
-                onPress={() => showFeatureInfo('Notifikasi')}
+                onPress={() => setNotificationModalVisible(true)}
               >
                 <Ionicons
                   name="notifications-outline"
                   size={24}
                   color={BRAND.white}
                 />
-                <View style={styles.notificationDot} />
+                {todayTasks.some(task => task.status === 'assigned') && (
+                  <View style={styles.notificationDot} />
+                )}
               </TouchableOpacity>
             </View>
 
@@ -473,6 +478,53 @@ export default function DriverDashboard() {
 
         <View style={styles.bottomSpacer} />
       </ScrollView>
+
+      <Modal
+        visible={isNotificationModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setNotificationModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay} 
+          onPress={() => setNotificationModalVisible(false)}
+        >
+          <Pressable style={[styles.modalContent, { backgroundColor: cardBackground }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>Notifikasi</Text>
+              <TouchableOpacity onPress={() => setNotificationModalVisible(false)}>
+                <Ionicons name="close" size={24} color={textColor} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              {todayTasks.filter(t => t.status === 'assigned').length > 0 ? (
+                todayTasks.filter(t => t.status === 'assigned').map(task => (
+                  <TouchableOpacity 
+                    key={task.id} 
+                    style={[styles.notificationItem, { borderBottomColor: borderColor }]}
+                    onPress={() => {
+                      setNotificationModalVisible(false);
+                      openTask(task.id);
+                    }}
+                  >
+                    <Ionicons name="alert-circle-outline" size={24} color={BRAND.primary} />
+                    <View style={styles.notificationItemBody}>
+                      <Text style={[styles.notificationItemTitle, { color: textColor }]}>
+                        Tugas Baru: {task.reference_number || `TRIP-${task.id}`}
+                      </Text>
+                      <Text style={styles.notificationItemDesc}>
+                        {task.pickup_name || 'Lokasi Pickup'} → {task.destination || 'Tujuan'}
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <Text style={styles.emptyNotificationText}>Tidak ada notifikasi baru.</Text>
+              )}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1735,5 +1787,56 @@ const styles = StyleSheet.create({
   },
   bottomSpacer: {
     height: 28,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '85%',
+    maxHeight: '70%',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: BRAND.borderSoft,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalBody: {
+    padding: 16,
+  },
+  notificationItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  notificationItemBody: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  notificationItemTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  notificationItemDesc: {
+    fontSize: 12,
+    color: BRAND.muted,
+    marginTop: 2,
+  },
+  emptyNotificationText: {
+    textAlign: 'center',
+    color: BRAND.muted,
+    marginVertical: 20,
   },
 });

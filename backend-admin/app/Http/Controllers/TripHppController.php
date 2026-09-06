@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Trip;
+use App\Models\Shift;
 use App\Services\HppCalculationService;
 
 class TripHppController extends Controller
@@ -15,45 +15,79 @@ class TripHppController extends Controller
         $this->hppService = $hppService;
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $trips = Trip::with(['vehicle', 'driver'])->orderBy('date', 'desc')->get();
+        // Load Shift
+        $allShifts = Shift::with(['vehicle', 'driver', 'pickupTasks', 'expenses'])
+            ->orderBy('work_date', 'desc')
+            ->get();
 
-        $totalTrips = $trips->count();
-        $totalCost = $trips->sum(function($trip) {
-            return $trip->total_cost;
-        });
-
-        // Hitung rata-rata HPP per barang
+        $totalTrips = $allShifts->count();
+        
+        $totalCost = 0;
         $totalItems = 0;
-        foreach ($trips as $trip) {
-            $totalItems += $trip->items->count();
-        }
-        $avgHppPerItem = $totalItems > 0 ? $totalCost / $totalItems : 0;
-
-        // Komposisi Biaya
+        $totalJarak = 0;
+        $totalDurasi = 0;
         $costComposition = [
-            'BBM' => $trips->sum('fuel_cost'),
-            'Manpower' => $trips->sum('manpower_cost'),
-            'Tol' => $trips->sum('toll_cost'),
-            'Parkir' => $trips->sum('parking_cost'),
-            'Lainnya' => $trips->sum('other_cost'),
+            'BBM' => 0,
+            'Manpower' => 0,
+            'Tol' => 0,
+            'Parkir' => 0,
+            'Lainnya' => 0,
         ];
 
-        return view('hpp.index', compact('trips', 'totalTrips', 'totalCost', 'avgHppPerItem', 'costComposition'));
+        // Process each shift and attach calculated properties to display in view easily
+        foreach ($allShifts as $shift) {
+            $calc = $this->hppService->calculateProrata($shift);
+            $shift->calc_details = $calc;
+            $shift->total_cost = $calc['costs']['total'];
+
+            $totalCost += $calc['costs']['total'];
+            $totalItems += $shift->pickupTasks->sum('quantity');
+
+            if ($shift->start_odometer && $shift->end_odometer) {
+                $totalJarak += max(0, $shift->end_odometer - $shift->start_odometer);
+            }
+            if ($shift->check_in_at && $shift->check_out_at) {
+                $totalDurasi += $shift->check_in_at->diffInMinutes($shift->check_out_at);
+            }
+
+            $costComposition['BBM'] += $calc['costs']['fuel'];
+            $costComposition['Manpower'] += $calc['costs']['manpower'];
+            $costComposition['Tol'] += $calc['costs']['toll'];
+            $costComposition['Parkir'] += $calc['costs']['parking'];
+            $costComposition['Lainnya'] += $calc['costs']['other'];
+        }
+
+        // Hitung rata-rata HPP per barang
+        $avgHppPerItem = $totalItems > 0 ? $totalCost / $totalItems : 0;
+
+        // Paginate the collection manually for the table
+        $perPage = $request->get('per_page', 10);
+        $page = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
+        
+        $shifts = new \Illuminate\Pagination\LengthAwarePaginator(
+            $allShifts->forPage($page, $perPage),
+            $allShifts->count(),
+            $perPage,
+            $page,
+            ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
+
+        return view('hpp.index', compact('shifts', 'totalTrips', 'totalCost', 'avgHppPerItem', 'costComposition', 'totalJarak', 'totalDurasi'));
     }
 
     public function show($id)
     {
-        $trip = Trip::with(['vehicle', 'driver', 'items'])->findOrFail($id);
+        $shift = Shift::with(['vehicle', 'driver', 'pickupTasks', 'expenses'])->findOrFail($id);
         
-        $prorataDetails = $this->hppService->calculateProrata($trip);
+        $prorataDetails = $this->hppService->calculateProrata($shift);
 
-        return view('hpp.show', compact('trip', 'prorataDetails'));
+        return view('hpp.show', compact('shift', 'prorataDetails'));
     }
 
     public function export()
     {
-        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\TripHppExport, 'HPP_Ritase_Log.xlsx');
+        return redirect()->back()->with('error', 'Fitur export sedang disesuaikan dengan data operasional baru.');
     }
 }
