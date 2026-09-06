@@ -232,9 +232,9 @@ export default function LaporanScreen() {
               </View>
 
               <View style={styles.routeContainer}>
-                <Text style={styles.routeText}>{report.from}</Text>
+                <Text style={[styles.routeText, { flex: 1 }]} numberOfLines={2}>{report.from}</Text>
                 <Ionicons name="arrow-forward" size={16} color="#6B7280" style={{ marginHorizontal: 8 }} />
-                <Text style={styles.routeText}>{report.to}</Text>
+                <Text style={[styles.routeText, { flex: 1 }]} numberOfLines={2}>{report.to}</Text>
               </View>
 
               <View style={styles.reportMeta}>
@@ -250,7 +250,7 @@ export default function LaporanScreen() {
 
               <View style={styles.reportDriver}>
                 <Ionicons name="person-outline" size={14} color="#6B7280" />
-                <Text style={styles.driverText}>{report.driver}</Text>
+                <Text style={styles.driverText} numberOfLines={1}>{report.driver}</Text>
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
               </View>
             </TouchableOpacity>
@@ -401,9 +401,11 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     marginTop: 20,
+    gap: 12,
   },
   statCard: {
     backgroundColor: '#FFFFFF',
@@ -411,7 +413,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 8,
     alignItems: 'center',
-    width: (width - 40 - 24) / 4, // 4 cards with gaps
+    width: '47%', // 2 columns with gap
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -577,8 +579,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingLeft: 46,
     gap: 6,
+    paddingRight: 8,
   },
   driverText: {
+    flex: 1,
     fontSize: 13,
     color: '#4B5563',
   },
