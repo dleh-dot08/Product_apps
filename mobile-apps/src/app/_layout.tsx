@@ -13,8 +13,9 @@ import {
 } from '@expo-google-fonts/inter';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { View, Text, ActivityIndicator, Modal, StyleSheet } from 'react-native';
+import { View, Text, ActivityIndicator, Modal, StyleSheet, Alert } from 'react-native';
 import { checkAppUpdate } from '../services/updater';
+import * as Updates from 'expo-updates';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -66,23 +67,54 @@ function ThemeApplier() {
 
 export default function RootLayout() {
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [otaStatus, setOtaStatus] = useState<string | null>(null);
 
   useEffect(() => {
-    checkAppUpdate((progress: number | null) => {
-      setDownloadProgress(progress);
-    });
+    async function performUpdateCheck() {
+      // 1. Coba periksa OTA Update (Hanya jalan di Production/APK hasil build, bukan Expo Go)
+      if (!__DEV__) {
+        try {
+          const update = await Updates.checkForUpdateAsync();
+          if (update.isAvailable) {
+            setOtaStatus('Menerapkan pembaruan OTA (JS Bundle)...');
+            await Updates.fetchUpdateAsync();
+            setOtaStatus(null);
+            
+            Alert.alert(
+              "Update Berhasil",
+              "Pembaruan sistem telah selesai. Aplikasi akan dimuat ulang untuk menerapkan perubahan.",
+              [{ text: "Muat Ulang", onPress: () => Updates.reloadAsync() }]
+            );
+            return; // Hentikan fungsi di sini agar tidak memanggil checkAppUpdate (APK)
+          }
+        } catch (error: any) {
+          console.log("Error checking OTA:", error.message);
+        }
+      }
+
+      // 2. Fallback: Jika tidak ada OTA atau terjadi error, periksa update APK utuh
+      checkAppUpdate((progress: number | null) => {
+        setDownloadProgress(progress);
+      });
+    }
+
+    performUpdateCheck();
   }, []);
 
   return (
     <CustomThemeProvider>
       <ThemeApplier />
 
-      <Modal visible={downloadProgress !== null} transparent animationType="fade">
+      <Modal visible={downloadProgress !== null || otaStatus !== null} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <ActivityIndicator size="large" color="#208AEF" />
             <Text style={styles.modalTitle}>Mengunduh Pembaruan...</Text>
-            <Text style={styles.modalSubtitle}>{downloadProgress}% selesai</Text>
+            {otaStatus ? (
+              <Text style={styles.modalSubtitle}>{otaStatus}</Text>
+            ) : (
+              <Text style={styles.modalSubtitle}>{downloadProgress}% selesai</Text>
+            )}
           </View>
         </View>
       </Modal>
