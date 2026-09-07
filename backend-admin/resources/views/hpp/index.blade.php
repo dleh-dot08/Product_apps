@@ -1400,7 +1400,7 @@
                                                     <div class="d-flex justify-content-between align-items-center mb-3">
                                                         <h6 class="font-weight-bold m-0" style="color: #1e293b;"><i class="fas fa-box-open text-primary mr-2"></i> Alokasi HPP per Barang</h6>
                                                         <span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; padding: 6px 12px;">
-                                                            <i class="fas fa-calculator mr-1"></i> Skenario: {{ $shift->calc_details['is_prorata'] ? 'Prorata Kuantitas (QTY)' : 'Bagi Rata (Flat)' }}
+                                                            <i class="fas fa-calculator mr-1"></i> Skenario: {{ $shift->calc_details['is_prorata'] ? 'Prorata Nilai Barang (Value)' : 'Bagi Rata (Flat)' }}
                                                         </span>
                                                     </div>
                                                     
@@ -1410,7 +1410,8 @@
                                                                 <tr>
                                                                     <th class="border-0 text-muted" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">Kode / Deskripsi</th>
                                                                     <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">Qty</th>
-                                                                    <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">Nilai Barang</th>
+                                                                    <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">Harga Satuan</th>
+                                                                    <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">Nilai Barang (Total)</th>
                                                                     <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">HPP per Baris</th>
                                                                     <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">HPP / Qty</th>
                                                                     <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">% Beban</th>
@@ -1433,6 +1434,9 @@
                                                                         <small class="text-muted ml-1">{{ $item['unit'] }}</small>
                                                                     </td>
                                                                     <td class="text-right" style="padding: 12px 15px; border-color: #f1f5f9; color:#475569;">
+                                                                        Rp {{ number_format(isset($item['unit_price']) ? $item['unit_price'] : ($item['quantity'] > 0 ? $item['line_total'] / $item['quantity'] : 0), 0, ',', '.') }}
+                                                                    </td>
+                                                                    <td class="text-right" style="padding: 12px 15px; border-color: #f1f5f9; color:#475569;">
                                                                         Rp {{ number_format($item['line_total'], 0, ',', '.') }}
                                                                     </td>
                                                                     <td class="text-right font-weight-bold" style="padding: 12px 15px; border-color: #f1f5f9; color:#ea580c;">
@@ -1450,7 +1454,7 @@
                                                                 </tr>
                                                                 @empty
                                                                 <tr>
-                                                                    <td colspan="6" class="text-center text-muted py-4" style="background:#f8fafc;">
+                                                                    <td colspan="7" class="text-center text-muted py-4" style="background:#f8fafc;">
                                                                         <i class="fas fa-box-open mb-2 text-muted" style="font-size:24px; opacity: 0.5;"></i><br>
                                                                         Tidak ada rincian barang dalam ritase ini.
                                                                     </td>
