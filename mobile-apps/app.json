@@ -35,6 +35,8 @@
     },
     "plugins": [
       "expo-router",
+      "expo-image",
+      "expo-secure-store",
       [
         "expo-splash-screen",
         {
@@ -72,7 +74,7 @@
     "owner": "frrama77s-team",
     "runtimeVersion": "1.0.0",
     "updates": {
-      "url": "https://driverapp.aqpa-indonesia.com/updates"
+      "url": "https://u.expo.dev/71baecf7-0803-4399-b427-0faf85a71895"
     }
   }
 }
