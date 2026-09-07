@@ -32,6 +32,12 @@ export default function DashboardLayout() {
           href: null,
         }} 
       />
+      <Tabs.Screen 
+        name="task/[id]" 
+        options={{ 
+          href: null,
+        }} 
+      />
       <Tabs.Screen name="profile" options={{ title: 'Profil' }} />
     </Tabs>
   );

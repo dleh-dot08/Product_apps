@@ -88,6 +88,6 @@ class TripHppController extends Controller
 
     public function export()
     {
-        return redirect()->back()->with('error', 'Fitur export sedang disesuaikan dengan data operasional baru.');
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\HppRitaseExport, 'Laporan_HPP_Ritase_' . date('Ymd_His') . '.xlsx');
     }
 }
