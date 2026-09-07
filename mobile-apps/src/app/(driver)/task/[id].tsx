@@ -15,15 +15,6 @@ import { Platform } from 'react-native';
 
 let MapView: any = null;
 let Marker: any = null;
-if (Platform.OS !== 'web') {
-  try {
-    const Maps = require('react-native-maps');
-    MapView = Maps.default;
-    Marker = Maps.Marker;
-  } catch (e) {
-    console.warn("Maps not loaded", e);
-  }
-}
 
 const safeFormatDate = (dateString?: string | null) => {
   if (!dateString) return '-';
@@ -130,7 +121,34 @@ type TaskDetail = {
   items?: TaskItemDetail[] | null;
 };
 
-export default function TaskDetailScreen() {
+class ErrorBoundary extends React.Component<any, { hasError: boolean, error: any }> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+
+  static getDerivedStateFromError(error: any) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: any, errorInfo: any) {
+    console.error("ErrorBoundary caught an error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20, backgroundColor: '#FFF' }}>
+          <Text style={{ color: 'red', fontSize: 18, fontWeight: 'bold' }}>Terjadi Kesalahan (Crash)</Text>
+          <Text style={{ color: 'black', marginTop: 10, textAlign: 'center' }}>{String(this.state.error)}</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function TaskDetailScreenContent() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { theme } = useTheme();
@@ -707,6 +725,14 @@ export default function TaskDetailScreen() {
         task={task} 
       />
     </View>
+  );
+}
+
+export default function TaskDetailScreen() {
+  return (
+    <ErrorBoundary>
+      <TaskDetailScreenContent />
+    </ErrorBoundary>
   );
 }
 
