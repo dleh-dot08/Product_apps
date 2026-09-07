@@ -16,10 +16,33 @@ import { Platform } from 'react-native';
 let MapView: any = null;
 let Marker: any = null;
 if (Platform.OS !== 'web') {
-  const Maps = require('react-native-maps');
-  MapView = Maps.default;
-  Marker = Maps.Marker;
+  try {
+    const Maps = require('react-native-maps');
+    MapView = Maps.default;
+    Marker = Maps.Marker;
+  } catch (e) {
+    console.warn("Maps not loaded", e);
+  }
 }
+
+const safeFormatDate = (dateString?: string | null) => {
+  if (!dateString) return '-';
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '-';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  } catch(e) { return '-'; }
+};
+
+const safeFormatTime = (dateString?: string | null) => {
+  if (!dateString) return '-';
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '-';
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} WIB`;
+  } catch(e) { return '-'; }
+};
 import { Colors } from '@/constants/theme';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../services/api';
@@ -380,11 +403,11 @@ export default function TaskDetailScreen() {
           <View style={styles.dateTimeRow}>
             <Ionicons name="calendar-outline" size={14} color={textMuted} />
             <Text style={[styles.dateTimeText, { color: textMuted }]}>
-              {(task.dispatch_date || task.assigned_at) ? new Date(task.dispatch_date || task.assigned_at || '').toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+              {safeFormatDate(task.dispatch_date || task.assigned_at)}
             </Text>
             <Ionicons name="time-outline" size={14} color={textMuted} style={{ marginLeft: 12 }} />
             <Text style={[styles.dateTimeText, { color: textMuted }]}>
-              {(task.dispatch_date || task.assigned_at) ? new Date(task.dispatch_date || task.assigned_at || '').toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' : '-'}
+              {safeFormatTime(task.dispatch_date || task.assigned_at)}
             </Text>
           </View>
 
@@ -402,7 +425,7 @@ export default function TaskDetailScreen() {
                 <View style={styles.timelineItemHeader}>
                   <Text style={[styles.timelineTitle, { color: BRAND.primary }]}>Lokasi {isPickup ? 'Pickup' : 'Awal'}</Text>
                   <Text style={[styles.timelineTime, { color: textMuted }]}>
-                    {(task.dispatch_date || task.assigned_at) ? new Date(task.dispatch_date || task.assigned_at || '').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + new Date(task.dispatch_date || task.assigned_at || '').toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
+                    {safeFormatDate(task.dispatch_date || task.assigned_at)} {safeFormatTime(task.dispatch_date || task.assigned_at)}
                   </Text>
                 </View>
                 <Text style={[styles.timelineLocName, { color: textColor }]}>{task.pickup_name || '-'}</Text>
@@ -413,7 +436,7 @@ export default function TaskDetailScreen() {
                 <View style={styles.timelineItemHeader}>
                   <Text style={[styles.timelineTitle, { color: BRAND.primary }]}>Lokasi Dropoff</Text>
                   <Text style={[styles.timelineTime, { color: textMuted }]}>
-                    {task.estimated_arrival ? new Date(task.estimated_arrival).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + ' ' + new Date(task.estimated_arrival).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Estimasi'}
+                    {task.estimated_arrival ? `${safeFormatDate(task.estimated_arrival)} ${safeFormatTime(task.estimated_arrival)}` : 'Estimasi'}
                   </Text>
                 </View>
                 <Text style={[styles.timelineLocName, { color: textColor }]}>{task.destination_name || (task.sales_order ? task.sales_order.customer_name : task.destination) || '-'}</Text>
@@ -491,13 +514,13 @@ export default function TaskDetailScreen() {
             <View>
               <Text style={[styles.estimasiLabel, { color: textMuted }]}>Berangkat</Text>
               <Text style={[styles.estimasiValue, { color: textColor }]}>
-                {(task.dispatch_date || task.assigned_at) ? new Date(task.dispatch_date || task.assigned_at || '').toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' : '-'}
+                {safeFormatTime(task.dispatch_date || task.assigned_at)}
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={[styles.estimasiLabel, { color: textMuted }]}>Estimasi Tiba</Text>
               <Text style={[styles.estimasiValue, { color: textColor }]}>
-                {task.estimated_arrival ? new Date(task.estimated_arrival).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB' : '-'}
+                {safeFormatTime(task.estimated_arrival)}
               </Text>
             </View>
           </View>
