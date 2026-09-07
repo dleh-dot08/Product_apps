@@ -1,45 +1,32 @@
-import type { ExpoConfig } from 'expo/config';
+import { ExpoConfig, ConfigContext } from 'expo/config';
 
-const appJson = require('./app.json').expo;
+export default ({ config }: ConfigContext): ExpoConfig => {
+  const projectId = config.extra?.eas?.projectId;
 
-const projectId = appJson.extra?.eas?.projectId;
-
-const useEasUpdates = process.env.OTA_PROVIDER === 'eas';
-
-const updateUrl =
-  useEasUpdates && projectId
-    ? `https://u.expo.dev/${projectId}`
-    : 'https://driverapp.aqpa-indonesia.com/updates';
-
-const config: ExpoConfig = {
-  ...appJson,
-
-  runtimeVersion: '1.0.0',
-
-  updates: {
-    ...(appJson.updates ?? {}),
-    url: updateUrl,
-    checkAutomatically: 'ON_LOAD',
-    fallbackToCacheTimeout: 5000,
-  },
-
-  plugins: [
-    ...(appJson.plugins ?? []),
-    'expo-background-task',
-    'expo-sqlite',
-    'expo-sharing',
-  ],
-
-  extra: {
-    ...(appJson.extra ?? {}),
-    apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL,
-    apiRouterKey: process.env.EXPO_PUBLIC_API_ROUTER_KEY,
-  },
-
-  ios: {
-    ...(appJson.ios ?? {}),
-    bundleIdentifier: 'com.aqpa.driverapp',
-  },
-};
-
-export default config;
+  return {
+    ...config,
+    name: config.name || 'mobile-apps',
+    slug: config.slug || 'driverapps',
+    updates: {
+      ...config.updates,
+      url: projectId ? `https://u.expo.dev/${projectId}` : config.updates?.url,
+      checkAutomatically: 'ON_LOAD',
+      fallbackToCacheTimeout: 5000,
+    },
+    plugins: [
+      ...(config.plugins || []),
+      'expo-background-task',
+      'expo-sqlite',
+      'expo-sharing',
+    ],
+    extra: {
+      ...config.extra,
+      apiBaseUrl: process.env.EXPO_PUBLIC_API_BASE_URL,
+      apiRouterKey: process.env.EXPO_PUBLIC_API_ROUTER_KEY,
+    },
+    ios: {
+      ...config.ios,
+      bundleIdentifier: 'com.aqpa.driverapp',
+    },
+  };
+};

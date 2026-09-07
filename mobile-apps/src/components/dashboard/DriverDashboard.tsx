@@ -15,7 +15,6 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useFocusEffect, useRouter } from 'expo-router';
-import * as Updates from 'expo-updates';
 
 import { Colors } from '@/constants/theme';
 import { useAuth } from '../../context/AuthContext';
@@ -141,31 +140,6 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isNotificationModalVisible, setNotificationModalVisible] = useState(false);
-
-  const handleCheckUpdate = async () => {
-    try {
-      Alert.alert('Cek Update', 'Sedang memeriksa pembaruan ke server OTA...');
-      const update = await Updates.checkForUpdateAsync();
-      
-      if (update.isAvailable) {
-        Alert.alert(
-          'Pembaruan Tersedia',
-          'Aplikasi sedang mengunduh pembaruan terbaru. Harap tunggu sebentar...',
-        );
-        await Updates.fetchUpdateAsync();
-        
-        Alert.alert(
-          'Berhasil Diunduh',
-          'Pembaruan telah diunduh. Aplikasi akan dimuat ulang untuk menerapkan versi terbaru.',
-          [{ text: 'Muat Ulang Sekarang', onPress: () => Updates.reloadAsync() }]
-        );
-      } else {
-        Alert.alert('Aplikasi Terkini', 'Aplikasi Anda sudah menggunakan versi yang paling baru.');
-      }
-    } catch (error: any) {
-      Alert.alert('Gagal Memeriksa Update', error.message || 'Terjadi kesalahan. Pastikan internet stabil atau cek konfigurasi OTA.');
-    }
-  };
 
   const pageBackground = isDark ? colors.background : BRAND.page;
   const cardBackground = isDark ? colors.backgroundElement : BRAND.white;
@@ -499,14 +473,6 @@ export default function DriverDashboard() {
                 textColor={textColor}
               />
 
-              <TouchableOpacity
-                activeOpacity={0.86}
-                style={[styles.primaryButton, { marginTop: 24, marginBottom: 10, backgroundColor: BRAND.violet }]}
-                onPress={handleCheckUpdate}
-              >
-                <Ionicons name="cloud-download-outline" size={19} color={BRAND.white} />
-                <Text style={styles.primaryButtonText}>Cek Pembaruan (Manual OTA)</Text>
-              </TouchableOpacity>
             </>
           )}
         </View>
