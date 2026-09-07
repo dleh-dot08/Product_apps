@@ -60,7 +60,7 @@ export default function ProfileScreen() {
                 <Text style={styles.statusText}>Aktif</Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.editButton} onPress={() => router.push('/edit-profil')}>
+            <TouchableOpacity style={styles.editButton} onPress={() => router.push('/profile/edit' as any)}>
               <Ionicons name="pencil" size={20} color="#0756C6" />
             </TouchableOpacity>
           </View>
@@ -68,7 +68,7 @@ export default function ProfileScreen() {
           <View style={styles.heroDetails}>
             <View style={styles.heroDetailItem}>
               <Text style={styles.detailLabel}>ID Driver</Text>
-              <Text style={styles.detailValue}>{user?.driver_id || 'Data Belum Tersedia'}</Text>
+              <Text style={styles.detailValue}>{user?.driver_id || user?.id || 'Data Belum Tersedia'}</Text>
             </View>
             <View style={styles.heroDetailItem}>
               <Text style={styles.detailLabel}>No. HP</Text>
@@ -166,7 +166,7 @@ export default function ProfileScreen() {
         <View style={styles.sectionContainer}>
           <Text style={styles.sectionTitle}>Menu Akun</Text>
           
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/edit-profil')}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profile/edit' as any)}>
             <Ionicons name="pencil-outline" size={20} color="#4B5563" />
             <Text style={styles.menuItemText}>Edit Profil</Text>
             <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />

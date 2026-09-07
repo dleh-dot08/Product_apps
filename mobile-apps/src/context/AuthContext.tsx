@@ -33,6 +33,7 @@ type AuthContextType = {
   isLoading: boolean;
   login: (email: string, password: string, device_name: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateProfile: (data: { name: string, email: string, password?: string }) => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -123,8 +124,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const updateProfile = async (data: { name: string, email: string, password?: string }) => {
+    try {
+      const response = await api.put('/user/profile', data);
+      if (response.data?.user) {
+        setUser(response.data.user);
+      }
+    } catch (error: any) {
+      console.error("Update profile failed", error.response?.data || error.message);
+      throw error;
+    }
+  };
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ user, isLoading, login, logout, updateProfile }}>
       {children}
     </AuthContext.Provider>
   );
