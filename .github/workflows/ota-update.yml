@@ -196,6 +196,7 @@ jobs:
           set -e
 
           eas update \
-            --channel production-backup \
+            --branch ota-updates-online \
+            --environment production \
             --message "AQPA OTA backup ${{ github.sha }}" \
             --non-interactive
