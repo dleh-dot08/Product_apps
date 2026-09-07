@@ -194,6 +194,13 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <View style={styles.divider} />
 
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(driver)/pembaruan-sistem' as any)}>
+            <Ionicons name="cloud-download-outline" size={20} color="#4B5563" />
+            <Text style={styles.menuItemText}>Cek Pembaruan OTA</Text>
+            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
+          <View style={styles.divider} />
+
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/bantuan')}>
             <Ionicons name="help-circle-outline" size={20} color="#4B5563" />
             <Text style={styles.menuItemText}>Bantuan</Text>

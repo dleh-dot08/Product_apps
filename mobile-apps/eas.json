@@ -1,9 +1,17 @@
 {
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "local"
+  },
   "build": {
     "android-apk": {
       "distribution": "internal",
+      "channel": "ota-updates-online",
       "android": {
         "buildType": "apk"
+      },
+      "env": {
+        "EXPO_NO_DOCTOR": "1"
       }
     },
     "ios-preview": {

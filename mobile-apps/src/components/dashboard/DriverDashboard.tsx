@@ -149,13 +149,7 @@ export default function DriverDashboard() {
 
   const currentUser = user as any;
 
-  const driverName =
-    currentUser?.full_name ||
-    currentUser?.name ||
-    currentUser?.nama ||
-    currentUser?.employee?.name ||
-    currentUser?.email?.split('@')?.[0] ||
-    'Driver';
+  const driverName = currentUser?.full_name || 'Driver';
 
   const driverPhoto =
     currentUser?.photo_url ||
@@ -478,6 +472,7 @@ export default function DriverDashboard() {
                 borderColor={borderColor}
                 textColor={textColor}
               />
+
             </>
           )}
         </View>

@@ -154,24 +154,32 @@ export default function LaporanScreen() {
         {/* Summary Stats */}
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
+            <View style={[styles.statIconWrapper, { backgroundColor: '#EFF6FF' }]}>
+              <Ionicons name="document-text" size={22} color="#2563EB" />
+            </View>
+            <Text style={styles.statValue}>{totalLaporan}</Text>
             <Text style={styles.statLabel}>Total Laporan</Text>
-            <Text style={[styles.statValue, { color: '#2563EB' }]}>{totalLaporan}</Text>
-            <Text style={styles.statSubLabel}>Semua</Text>
           </View>
           <View style={styles.statCard}>
+            <View style={[styles.statIconWrapper, { backgroundColor: '#FEF3C7' }]}>
+              <Ionicons name="time" size={22} color="#F59E0B" />
+            </View>
+            <Text style={styles.statValue}>{menungguCount}</Text>
             <Text style={styles.statLabel}>Menunggu</Text>
-            <Text style={[styles.statValue, { color: '#F59E0B' }]}>{menungguCount}</Text>
-            <Text style={styles.statSubLabel}>Perlu Diperiksa</Text>
           </View>
           <View style={styles.statCard}>
+            <View style={[styles.statIconWrapper, { backgroundColor: '#D1FAE5' }]}>
+              <Ionicons name="checkmark-circle" size={22} color="#10B981" />
+            </View>
+            <Text style={styles.statValue}>{disetujuiCount}</Text>
             <Text style={styles.statLabel}>Disetujui</Text>
-            <Text style={[styles.statValue, { color: '#10B981' }]}>{disetujuiCount}</Text>
-            <Text style={styles.statSubLabel}>Selesai</Text>
           </View>
           <View style={styles.statCard}>
+            <View style={[styles.statIconWrapper, { backgroundColor: '#FEE2E2' }]}>
+              <Ionicons name="close-circle" size={22} color="#EF4444" />
+            </View>
+            <Text style={styles.statValue}>{ditolakCount}</Text>
             <Text style={styles.statLabel}>Ditolak</Text>
-            <Text style={[styles.statValue, { color: '#EF4444' }]}>{ditolakCount}</Text>
-            <Text style={styles.statSubLabel}>Perlu Revisi</Text>
           </View>
         </View>
 
@@ -232,9 +240,9 @@ export default function LaporanScreen() {
               </View>
 
               <View style={styles.routeContainer}>
-                <Text style={styles.routeText}>{report.from}</Text>
+                <Text style={[styles.routeText, { flex: 1 }]} numberOfLines={2}>{report.from}</Text>
                 <Ionicons name="arrow-forward" size={16} color="#6B7280" style={{ marginHorizontal: 8 }} />
-                <Text style={styles.routeText}>{report.to}</Text>
+                <Text style={[styles.routeText, { flex: 1 }]} numberOfLines={2}>{report.to}</Text>
               </View>
 
               <View style={styles.reportMeta}>
@@ -250,7 +258,7 @@ export default function LaporanScreen() {
 
               <View style={styles.reportDriver}>
                 <Ionicons name="person-outline" size={14} color="#6B7280" />
-                <Text style={styles.driverText}>{report.driver}</Text>
+                <Text style={styles.driverText} numberOfLines={1}>{report.driver}</Text>
                 <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
               </View>
             </TouchableOpacity>
@@ -401,40 +409,43 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
     marginTop: 20,
+    gap: 12,
   },
   statCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    alignItems: 'center',
-    width: (width - 40 - 24) / 4, // 4 cards with gaps
+    borderRadius: 16,
+    padding: 16,
+    width: '47%', // 2 columns with gap
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.05,
-    shadowRadius: 5,
-    elevation: 2,
+    shadowRadius: 8,
+    elevation: 3,
     borderWidth: 1,
     borderColor: '#F3F4F6',
   },
-  statLabel: {
-    fontSize: 10,
-    color: '#6B7280',
-    marginBottom: 4,
-    textAlign: 'center',
+  statIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
+    color: '#1F2937',
     marginBottom: 4,
   },
-  statSubLabel: {
-    fontSize: 9,
-    color: '#9CA3AF',
-    textAlign: 'center',
+  statLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   searchFilterContainer: {
     flexDirection: 'row',
@@ -577,8 +588,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingLeft: 46,
     gap: 6,
+    paddingRight: 8,
   },
   driverText: {
+    flex: 1,
     fontSize: 13,
     color: '#4B5563',
   },
