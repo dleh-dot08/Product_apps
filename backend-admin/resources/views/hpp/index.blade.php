@@ -484,7 +484,7 @@
 
     #hppDashboardPage .ritase-filterbar {
         display: grid;
-        grid-template-columns: minmax(230px, 1.35fr) 190px 220px 220px 84px;
+        grid-template-columns: minmax(180px, 1.35fr) 150px 180px 180px 84px auto;
         gap: 10px;
         align-items: center;
         padding: 10px 16px;
@@ -1237,6 +1237,10 @@
                     <i class="fas fa-rotate-left"></i>
                     Reset
                 </button>
+                <a href="{{ route('hpp.export') }}" class="btn-hpp-export" style="height: 36px; padding: 0 14px; font-size: 10px; border-radius: 9px; box-shadow:none;">
+                    <i class="fas fa-file-excel"></i>
+                    Generate Excel
+                </a>
             </div>
 
             <div class="ritase-table-wrap">

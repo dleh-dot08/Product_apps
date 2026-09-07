@@ -200,7 +200,7 @@ export default function ListTugas() {
       borderColor={borderColor}
       textColor={textColor}
       textMuted={textMuted}
-      onPress={() => router.push(`/task/${item.id}` as any)}
+      onPress={() => router.push(`/(driver)/task/${item.id}` as any)}
     />
   );
 
