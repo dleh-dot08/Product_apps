@@ -40,19 +40,23 @@ class HppCalculationService
         // Total Biaya Ritase
         $totalCost = $fuelCost + $manpowerCost + $tollCost + $parkingCost + $otherCost;
         
-        // 1. Hitung Total Muatan (QTY) dalam 1 Ritase
-        $totalQty = $tasks->sum('quantity');
-        
-        // 2. Hitung HPP per QTY (Beban per satuan)
-        $hppPerQty = $totalQty > 0 ? ($totalCost / $totalQty) : 0;
+        // 1. Hitung Total Nilai Barang dalam 1 Ritase
+        $totalNilai = $tasks->sum('line_total');
         
         $result = [];
         
         foreach ($tasks as $task) {
             $qtyBaris = $task->quantity ?? 0;
+            $nilaiBaris = $task->line_total ?? 0;
+            
+            // 2. Hitung Rasio Nilai
+            $rasioNilai = $totalNilai > 0 ? ($nilaiBaris / $totalNilai) : ($tasks->count() > 0 ? 1 / $tasks->count() : 0);
             
             // 3. Hitung HPP per Baris
-            $hppPerBaris = $hppPerQty * $qtyBaris;
+            $hppPerBaris = $totalCost * $rasioNilai;
+            
+            // 4. Hitung HPP per QTY
+            $hppPerQty = $qtyBaris > 0 ? ($hppPerBaris / $qtyBaris) : 0;
             
             $result[] = [
                 'task_id' => $task->id,
@@ -60,10 +64,10 @@ class HppCalculationService
                 'item_description' => $task->item_description ?? 'Paket/Barang',
                 'quantity' => $qtyBaris,
                 'unit' => $task->unit ?? 'pcs',
-                'line_total' => $task->line_total,
+                'line_total' => $nilaiBaris,
                 'hpp_per_baris' => $hppPerBaris,
                 'hpp_per_qty' => $hppPerQty,
-                'percentage' => $totalCost > 0 ? ($hppPerBaris / $totalCost) * 100 : 0
+                'percentage' => $rasioNilai * 100
             ];
         }
         
@@ -76,8 +80,8 @@ class HppCalculationService
                 'other' => $otherCost,
                 'total' => $totalCost
             ],
-            'base_value' => $totalQty,
-            'is_prorata' => $totalQty > 0,
+            'base_value' => $totalNilai,
+            'is_prorata' => true,
             'allocations' => $result
         ];
     }

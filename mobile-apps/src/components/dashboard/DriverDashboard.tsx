@@ -208,7 +208,7 @@ export default function DriverDashboard() {
   const fuelEfficiency = dashboardData?.performance?.fuel_efficiency ?? 0;
 
   const openTask = (taskId: number | string) => {
-    router.push(`/task/${taskId}` as any);
+    router.push(`/(driver)/task/${taskId}` as any);
   };
 
   const showFeatureInfo = (feature: string) => {
