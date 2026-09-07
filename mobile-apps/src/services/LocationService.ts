@@ -1,7 +1,9 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
+import { getStorageItemAsync } from '../context/AuthContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
+import api from './api';
+import axios from 'axios';
 
 const LOCATION_TASK_NAME = 'background-location-task';
 
@@ -18,24 +20,24 @@ TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
     if (location) {
       try {
         const taskId = await AsyncStorage.getItem('active_task_id');
-        const token = await AsyncStorage.getItem('token');
-        let baseURL = await AsyncStorage.getItem('base_url') || 'http://192.168.1.10:8001/api';
+        const token = await getStorageItemAsync('userToken');
+        
+        // Base URL from axios defaults used in app
+        const baseURL = api.defaults.baseURL || 'https://api.aqpa-indonesia.com/api';
         
         // Hanya kirim ke server jika ada task yang aktif dan ada token
         if (taskId && token) {
-          await fetch(`${baseURL}/driver/location`, {
-            method: 'POST',
+          await axios.post(`${baseURL}/driver/location`, {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            heading: location.coords.heading,
+            task_id: taskId
+          }, {
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
               'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-              latitude: location.coords.latitude,
-              longitude: location.coords.longitude,
-              heading: location.coords.heading,
-              task_id: taskId
-            })
+            }
           });
           console.log(`[LocationService] Lokasi terkirim untuk task ${taskId}`);
         }

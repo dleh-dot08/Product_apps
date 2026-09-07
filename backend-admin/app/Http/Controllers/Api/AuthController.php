@@ -44,4 +44,34 @@ class AuthController extends Controller
 
         return response()->json(['message' => 'Logout berhasil']);
     }
+
+    public function updateProfile(Request $request)
+    {
+        $user = $request->user();
+        
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => ['required', 'string', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)],
+            'password' => 'nullable|string|min:8',
+        ]);
+
+        if (!empty($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        } else {
+            unset($validated['password']);
+        }
+
+        $user->update($validated);
+
+        $user->load(['roleRelation', 'division']);
+        
+        $userArray = $user->toArray();
+        $userArray['role'] = $user->roleRelation;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profil berhasil diperbarui',
+            'user' => $userArray,
+        ]);
+    }
 }

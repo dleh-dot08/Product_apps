@@ -31,6 +31,8 @@ Route::middleware('api.router.key')->group(function () {
         return $userArray;
     });
     
+    Route::put('/user/profile', [AuthController::class, 'updateProfile']);
+    
     // User Management writes require both router API key and user auth.
     Route::apiResource('users', App\Http\Controllers\Api\UserController::class)->only([
         'store', 'update', 'destroy',

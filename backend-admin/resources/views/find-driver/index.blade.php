@@ -157,7 +157,7 @@
                             let lat = parseFloat(location.latitude);
                             let lng = parseFloat(location.longitude);
                             
-                            let driverName = location.user.full_name || location.user.username || 'Driver Tidak Diketahui';
+                            let driverName = location.user.name || 'Driver Tidak Diketahui';
                             let popupHtml = `
                                 <div style="min-width: 220px;">
                                     <div class="bg-primary text-white p-3 border-bottom d-flex align-items-center">

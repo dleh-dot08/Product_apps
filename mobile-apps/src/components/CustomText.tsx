@@ -1,5 +1,19 @@
 import React from 'react';
-import { Text as RNText, TextProps, StyleSheet } from 'react-native';
+import { Text as RNText, TextProps, StyleSheet, Dimensions, PixelRatio, Platform } from 'react-native';
+
+const { width } = Dimensions.get('window');
+// 375 adalah standar lebar layar (misal iPhone X / HP ukuran sedang)
+const scale = width / 375;
+
+export function normalize(size: number) {
+  const newSize = size * scale;
+  if (Platform.OS === 'ios') {
+    return Math.round(PixelRatio.roundToNearestPixel(newSize));
+  } else {
+    // Android kadang merender teks sedikit lebih besar
+    return Math.round(PixelRatio.roundToNearestPixel(newSize)) - 1;
+  }
+}
 
 export function Text(props: TextProps) {
   // 1. Flatten styles to read properties easily
@@ -17,11 +31,20 @@ export function Text(props: TextProps) {
   else if (fw === '800') fontFamily = 'Inter_800ExtraBold';
   else if (fw === '900') fontFamily = 'Inter_900Black';
   
-  // 4. Remove fontWeight from the style to prevent Android's "faux bold" 
-  // which makes custom bold fonts look messy.
-  const { fontWeight, ...restStyle } = flatStyle as any;
+  // 4. Remove fontWeight & extract fontSize to scale it
+  const { fontWeight, fontSize, ...restStyle } = flatStyle as any;
+
+  const normalizedFontSize = fontSize ? normalize(fontSize) : undefined;
 
   return (
-    <RNText {...props} style={[restStyle, { fontFamily }]} />
+    <RNText 
+      {...props} 
+      allowFontScaling={false} // Mencegah user membesarkan font dari pengaturan sistem HP
+      style={[
+        restStyle, 
+        { fontFamily }, 
+        normalizedFontSize ? { fontSize: normalizedFontSize } : {}
+      ]} 
+    />
   );
 }

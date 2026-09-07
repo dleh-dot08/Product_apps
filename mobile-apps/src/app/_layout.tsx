@@ -15,6 +15,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Modal, StyleSheet } from 'react-native';
 import { checkAppUpdate } from '../services/updater';
+import '../services/LocationService';
 
 SplashScreen.preventAutoHideAsync();
 

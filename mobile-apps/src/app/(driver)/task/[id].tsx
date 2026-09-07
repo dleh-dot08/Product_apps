@@ -43,6 +43,7 @@ import {
   ModalTiba, 
   ModalSerahTerima 
 } from '@/components/task/TaskModals';
+import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../../services/LocationService';
 
 const BRAND = {
   primary: '#0756C6',
@@ -283,6 +284,14 @@ function TaskDetailScreenContent() {
       
       if (res.data?.status === 'success' || res.status === 200) {
         Alert.alert('Berhasil', 'Status tugas diperbarui');
+        
+        // Mulai / Hentikan tracking GPS berdasarkan status tugas
+        if (newStatus === 'on_route') {
+          await startBackgroundLocationUpdates(String(id));
+        } else if (newStatus === 'delivered' || newStatus === 'failed' || newStatus === 'cancelled') {
+          await stopBackgroundLocationUpdates();
+        }
+
         fetchDetail(); // Reload data
       }
     } catch (error) {

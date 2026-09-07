@@ -26,8 +26,8 @@ const REMOTE_ASSETS = {
 };
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('admin@mail.com');
-  const [password, setPassword] = useState('admin4321');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
