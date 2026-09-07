@@ -61,6 +61,15 @@ Route::middleware('api.router.key')->group(function () {
 Route::post('/internal/ota/publish', [OtaUpdateController::class, 'publish'])
     ->name('ota.publish');
 
+Route::get('/app-version', function () {
+    return response()->json([
+        'latest_version' => '1.0.0', // Nanti jika ada rilis baru, cukup ganti angka ini, misal '1.0.1'
+        'apk_url' => url('/downloads/driverapps-latest.apk'), // Link download APK
+        'changelog' => 'Perbaikan performa dan penambahan fitur baru.',
+        'force_update' => false // Opsi jika ingin mewajibkan update
+    ]);
+});
+
 // Proxy API untuk pencarian SO & PO (Membaca dari Local Database)
 Route::middleware('web')->group(function () {
     
