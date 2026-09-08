@@ -1094,10 +1094,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
         const taskType = getCurrentTaskType();
         const isDelivery = taskType === 'delivery';
-        
-        // Gunakan API Proxy lokal (detail-so / detail-po) dengan helper Laravel url() 
-        // agar tidak 404 jika di-deploy di subfolder (live server)
-        const baseUrl = "{{ url('api/integration') }}";
+
+        // Gunakan API Proxy lokal (detail-so / detail-po) 
+        // Menggunakan path absolute agar browser otomatis memakai HTTPS
+        const baseUrl = "/api/integration";
         const apiUrl = isDelivery 
             ? `${baseUrl}/detail-so/${encodeURIComponent(refNumber)}`
             : `${baseUrl}/detail-po/${encodeURIComponent(refNumber)}`;
