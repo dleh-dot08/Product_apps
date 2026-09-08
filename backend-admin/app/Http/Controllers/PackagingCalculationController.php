@@ -154,27 +154,63 @@ class PackagingCalculationController extends Controller
             \Log::info("PackagingCalculatorService completed successfully.");
             $calculation->refresh();
 
-            // Hitung Manpower
+            // Hitung Manpower (Berdasarkan Manpower Validasi)
+            $qtyPapan = 0;
+            $qtyBalok = 0;
+            $qtyTriplek = 0;
+
+            foreach ($calculation->details as $d) {
+                $code = $d->material_kode ?? '';
+                $nama = $d->material->name ?? $d->material->nama ?? '';
+                $qty = (float) ($d->total_quantity ?? 0);
+
+                if (empty($code) || $code === '-') continue;
+
+                $codeUpper = strtoupper($code);
+                if (str_contains($codeUpper, 'KAYU-PAPAN') || stripos($nama, 'papan') !== false) {
+                    $qtyPapan += $qty;
+                } elseif (str_contains($codeUpper, 'KAYU-BALOK') || stripos($nama, 'balok') !== false) {
+                    $qtyBalok += $qty;
+                } elseif (str_contains($codeUpper, 'KAYU-TRIPL') || str_contains($codeUpper, 'TR') || stripos($nama, 'triplek') !== false) {
+                    $qtyTriplek += $qty;
+                }
+            }
+
+            $waktuRules = \Illuminate\Support\Facades\DB::table('packaging_waktu_manpower')->get()->keyBy('kegiatan');
+            $getRule = function($kegiatan) use ($waktuRules) {
+                $rule = $waktuRules->get($kegiatan);
+                return $rule ? ((int)$rule->prepare_menit + (int)$rule->pekerjaan_menit) : 0;
+            };
+
+            $totalWaktuManpower = 0;
+
+            if ($qtyBalok > 0) {
+                $totalWaktuManpower += $qtyBalok * $getRule('POTONG BALOK');
+                $totalWaktuManpower += $qtyBalok * $getRule('SERUT BALOK');
+            }
+            if ($qtyPapan > 0) {
+                $totalWaktuManpower += $qtyPapan * $getRule('POTONG PAPAN');
+                $totalWaktuManpower += $qtyPapan * $getRule('SERUT PAPAN');
+            }
+            if ($qtyTriplek > 0) {
+                $totalWaktuManpower += $qtyTriplek * $getRule('POTONG TRIPLEK');
+            }
+            
             $panjang = $calculation->panjang ?? 0;
             $lebar = $calculation->lebar ?? 0;
             $tinggi = $calculation->tinggi ?? 0;
-            
-            // Asumsi dimensi dalam mm, maka konversi ke m³ dibagi 1.000.000.000
             $totalM3 = ($panjang * $lebar * $tinggi) / 1000000000;
-
-            $potong = $totalM3 * self::RATE_POTONG;
-            $serut = $totalM3 * self::RATE_SERUT;
-            $perakitan = $totalM3 * self::RATE_PERAKITAN;
-            $prepare = $totalM3 * self::RATE_PREPARE;
             
-            $totalwaktuManpower = $potong + $serut + $perakitan + $prepare;
+            if ($totalM3 > 0) {
+                $totalWaktuManpower += $totalM3 * $getRule('PERAKITAN');
+            }
 
             $calculation->update([
-                'manpower_potong' => $potong,
-                'manpower_serut' => $serut,
-                'manpower_perakitan' => $perakitan,
-                'manpower_prepare' => $prepare,
-                'total_waktu_manpower' => $totalwaktuManpower
+                'manpower_potong' => 0,
+                'manpower_serut' => 0,
+                'manpower_perakitan' => 0,
+                'manpower_prepare' => 0,
+                'total_waktu_manpower' => $totalWaktuManpower
             ]);
 
             return response()->json([
@@ -373,27 +409,63 @@ class PackagingCalculationController extends Controller
             \Log::info("PackagingCalculatorService completed successfully.");
             $calculation->refresh();
 
-            // Hitung Manpower
+            // Hitung Manpower (Berdasarkan Manpower Validasi)
+            $qtyPapan = 0;
+            $qtyBalok = 0;
+            $qtyTriplek = 0;
+
+            foreach ($calculation->details as $d) {
+                $code = $d->material_kode ?? '';
+                $nama = $d->material->name ?? $d->material->nama ?? '';
+                $qty = (float) ($d->total_quantity ?? 0);
+
+                if (empty($code) || $code === '-') continue;
+
+                $codeUpper = strtoupper($code);
+                if (str_contains($codeUpper, 'KAYU-PAPAN') || stripos($nama, 'papan') !== false) {
+                    $qtyPapan += $qty;
+                } elseif (str_contains($codeUpper, 'KAYU-BALOK') || stripos($nama, 'balok') !== false) {
+                    $qtyBalok += $qty;
+                } elseif (str_contains($codeUpper, 'KAYU-TRIPL') || str_contains($codeUpper, 'TR') || stripos($nama, 'triplek') !== false) {
+                    $qtyTriplek += $qty;
+                }
+            }
+
+            $waktuRules = \Illuminate\Support\Facades\DB::table('packaging_waktu_manpower')->get()->keyBy('kegiatan');
+            $getRule = function($kegiatan) use ($waktuRules) {
+                $rule = $waktuRules->get($kegiatan);
+                return $rule ? ((int)$rule->prepare_menit + (int)$rule->pekerjaan_menit) : 0;
+            };
+
+            $totalWaktuManpower = 0;
+
+            if ($qtyBalok > 0) {
+                $totalWaktuManpower += $qtyBalok * $getRule('POTONG BALOK');
+                $totalWaktuManpower += $qtyBalok * $getRule('SERUT BALOK');
+            }
+            if ($qtyPapan > 0) {
+                $totalWaktuManpower += $qtyPapan * $getRule('POTONG PAPAN');
+                $totalWaktuManpower += $qtyPapan * $getRule('SERUT PAPAN');
+            }
+            if ($qtyTriplek > 0) {
+                $totalWaktuManpower += $qtyTriplek * $getRule('POTONG TRIPLEK');
+            }
+            
             $panjang = $calculation->panjang ?? 0;
             $lebar = $calculation->lebar ?? 0;
             $tinggi = $calculation->tinggi ?? 0;
-            
-            // Asumsi dimensi dalam mm, maka konversi ke m³ dibagi 1.000.000.000
             $totalM3 = ($panjang * $lebar * $tinggi) / 1000000000;
-
-            $potong = $totalM3 * self::RATE_POTONG;
-            $serut = $totalM3 * self::RATE_SERUT;
-            $perakitan = $totalM3 * self::RATE_PERAKITAN;
-            $prepare = $totalM3 * self::RATE_PREPARE;
             
-            $totalwaktuManpower = $potong + $serut + $perakitan + $prepare;
+            if ($totalM3 > 0) {
+                $totalWaktuManpower += $totalM3 * $getRule('PERAKITAN');
+            }
 
             $calculation->update([
-                'manpower_potong' => $potong,
-                'manpower_serut' => $serut,
-                'manpower_perakitan' => $perakitan,
-                'manpower_prepare' => $prepare,
-                'total_waktu_manpower' => $totalwaktuManpower
+                'manpower_potong' => 0,
+                'manpower_serut' => 0,
+                'manpower_perakitan' => 0,
+                'manpower_prepare' => 0,
+                'total_waktu_manpower' => $totalWaktuManpower
             ]);
 
             return response()->json([
