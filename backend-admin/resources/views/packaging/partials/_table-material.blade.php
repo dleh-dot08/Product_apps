@@ -244,6 +244,20 @@
                                         </tbody>
                                     </table>
                                 </div>
+
+                                @php
+                                    $totalAll = isset($calculation) ? collect($calculation->details)->sum('subtotal_price') : 0;
+                                @endphp
+                                @if($totalAll > 0)
+                                <div class="p-3 bg-light d-flex justify-content-end tab-footer border-top">
+                                    <div class="card-summary-premium p-3" style="width: 350px;">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-navy fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 0.5px;">Total Biaya Material</span>
+                                            <span class="fs-5 fw-black text-primary">Rp {{ number_format($totalAll, 0, ',', '.') }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endif
                             </div>
 
                             <!-- Tab: PENYANGGA -->
