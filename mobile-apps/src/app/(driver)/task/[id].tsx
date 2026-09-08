@@ -5,7 +5,7 @@ import {
   Alert,
   Image,
   ScrollView,
-  StyleSheet, 
+  StyleSheet,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -23,7 +23,7 @@ const safeFormatDate = (dateString?: string | null) => {
     if (isNaN(d.getTime())) return '-';
     const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
     return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-  } catch(e) { return '-'; }
+  } catch (e) { return '-'; }
 };
 
 const safeFormatTime = (dateString?: string | null) => {
@@ -32,18 +32,18 @@ const safeFormatTime = (dateString?: string | null) => {
     const d = new Date(dateString);
     if (isNaN(d.getTime())) return '-';
     return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')} WIB`;
-  } catch(e) { return '-'; }
+  } catch (e) { return '-'; }
 };
 import { Colors } from '@/constants/theme';
 import { useTheme } from '../../../context/ThemeContext';
 import api from '../../../services/api';
-import { 
-  ModalKeberangkatan, 
-  ModalPengeluaran, 
-  ModalTiba, 
-  ModalSerahTerima 
+import {
+  ModalKeberangkatan,
+  ModalPengeluaran,
+  ModalTiba,
+  ModalSerahTerima
 } from '@/components/task/TaskModals';
-import { startBackgroundLocationUpdates, stopBackgroundLocationUpdates } from '../../../services/LocationService';
+import { startLocationTracking, stopLocationTracking } from '../../../services/LocationService';
 
 const BRAND = {
   primary: '#0756C6',
@@ -80,7 +80,7 @@ type TaskDetail = {
   destination?: string | null;
   destination_name?: string | null;
   assigned_at?: string | null;
-  
+
   vehicle?: {
     plate_number?: string | null;
     vehicle_name?: string | null;
@@ -93,7 +93,7 @@ type TaskDetail = {
     full_name?: string | null;
     employee_id?: string | null;
   } | null;
-  
+
   item_description?: string | null;
   quantity?: string | number | null;
   unit?: string | null;
@@ -103,13 +103,23 @@ type TaskDetail = {
   failure_reason?: string | null;
   completed_odometer?: number | null;
   notes?: string | null;
-  
+
   priority?: string | null;
   pickup_pic_name?: string | null;
   pickup_point?: string | null;
   destination_pic_name?: string | null;
   destination_point?: string | null;
   
+  // Delivery specific fields
+  delivery_pickup_name?: string | null;
+  delivery_sender_pic?: string | null;
+  delivery_origin_point?: string | null;
+  delivery_pickup_location?: string | null;
+  customer_name?: string | null;
+  delivery_receiver_pic?: string | null;
+  delivery_target_point?: string | null;
+  pickup_destination?: string | null;
+
   sales_order?: {
     customer_name?: string | null;
     source_data?: { address?: string | null; };
@@ -205,11 +215,11 @@ function TaskDetailScreenContent() {
   const handleAction = async (newStatus: string, payload?: any) => {
     try {
       setActionLoading(true);
-      
+
       const formData = new FormData();
       formData.append('status', newStatus);
       formData.append('_method', 'PATCH');
-      
+
       if (payload) {
         const keys = Object.keys(payload);
         for (const key of keys) {
@@ -220,7 +230,7 @@ function TaskDetailScreenContent() {
             formData.append('departure_checklist', JSON.stringify(payload[key]));
             continue;
           }
-          
+
           if (key === 'arrival_checklist') {
             formData.append('arrival_checklist', JSON.stringify(payload[key]));
             continue;
@@ -258,26 +268,26 @@ function TaskDetailScreenContent() {
             'tiba_lokasi', 'tiba_gudang',
             'serah_terima_barang', 'serah_terima_penerima', 'serah_terima_surat', 'serah_terima_ttd'
           ];
-          
-          if (fileFields.includes(key)) {
-              const uri = payload[key];
-              const filename = uri.split('/').pop() || 'image.jpg';
-              const match = /\.(\w+)$/.exec(filename);
-              const mimeType = match ? `image/${match[1]}` : `image/jpeg`;
 
-              if (Platform.OS === 'web') {
-                try {
-                  const resp = await fetch(uri);
-                  const blob = await resp.blob();
-                  formData.append(key, blob, filename);
-                } catch (e) {
-                  console.warn('Gagal convert blob:', e);
-                }
-              } else {
-                formData.append(key, { uri, name: filename, type: mimeType } as any);
+          if (fileFields.includes(key)) {
+            const uri = payload[key];
+            const filename = uri.split('/').pop() || 'image.jpg';
+            const match = /\.(\w+)$/.exec(filename);
+            const mimeType = match ? `image/${match[1]}` : `image/jpeg`;
+
+            if (Platform.OS === 'web') {
+              try {
+                const resp = await fetch(uri);
+                const blob = await resp.blob();
+                formData.append(key, blob, filename);
+              } catch (e) {
+                console.warn('Gagal convert blob:', e);
               }
+            } else {
+              formData.append(key, { uri, name: filename, type: mimeType } as any);
+            }
           } else {
-              formData.append(key, payload[key]);
+            formData.append(key, payload[key]);
           }
         }
       }
@@ -287,15 +297,15 @@ function TaskDetailScreenContent() {
           'Content-Type': 'multipart/form-data',
         },
       });
-      
+
       if (res.data?.status === 'success' || res.status === 200) {
         Alert.alert('Berhasil', 'Status tugas diperbarui');
-        
+
         // Mulai / Hentikan tracking GPS berdasarkan status tugas
         if (newStatus === 'on_route') {
-          await startBackgroundLocationUpdates(String(id));
+          await startLocationTracking(String(id));
         } else if (newStatus === 'delivered' || newStatus === 'failed' || newStatus === 'cancelled') {
-          await stopBackgroundLocationUpdates();
+          await stopLocationTracking();
         }
 
         fetchDetail(); // Reload data
@@ -312,7 +322,7 @@ function TaskDetailScreenContent() {
     try {
       setLoading(true);
       const formData = new FormData();
-      
+
       const keys = Object.keys(payload);
       for (const key of keys) {
         if (key === 'receipt' && payload[key]) {
@@ -391,7 +401,7 @@ function TaskDetailScreenContent() {
 
   // Bottom action button logic
   let btnLabel = '';
-  let btnAction = () => {};
+  let btnAction = () => { };
   if (status === 'assigned') {
     btnLabel = 'Mulai Perjalanan';
     btnAction = () => setModalKeberangkatanVisible(true);
@@ -420,7 +430,7 @@ function TaskDetailScreenContent() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}>
-          
+
           <View style={styles.cardHeader}>
             <Text style={[styles.taskRef, { color: textColor }]}>
               {task.reference_number || '-'}
@@ -469,12 +479,17 @@ function TaskDetailScreenContent() {
                   </Text>
                 </View>
                 <Text style={[styles.timelineLocName, { color: textColor }]}>
-                  {task.pickup_name || '-'} {task.pickup_point ? `(${task.pickup_point})` : ''}
+                  {isPickup ? task.pickup_name : task.delivery_pickup_name || '-'} 
+                  {isPickup ? (task.pickup_point ? ` (${task.pickup_point})` : '') : (task.delivery_origin_point ? ` (${task.delivery_origin_point})` : '')}
                 </Text>
-                {task.pickup_pic_name && (
-                   <Text style={[styles.timelineAddress, { color: textColor, fontWeight: '600' }]}>PIC: {task.pickup_pic_name}</Text>
+                {(isPickup ? task.pickup_pic_name : task.delivery_sender_pic) && (
+                  <Text style={[styles.timelineAddress, { color: textColor, fontWeight: '600' }]}>
+                    PIC: {isPickup ? task.pickup_pic_name : task.delivery_sender_pic}
+                  </Text>
                 )}
-                <Text style={[styles.timelineAddress, { color: textMuted }]}>{task.pickup_location || '-'}</Text>
+                <Text style={[styles.timelineAddress, { color: textMuted }]}>
+                  {isPickup ? task.pickup_location : task.delivery_pickup_location || '-'}
+                </Text>
               </View>
               
               <View style={styles.timelineItem}>
@@ -485,13 +500,21 @@ function TaskDetailScreenContent() {
                   </Text>
                 </View>
                 <Text style={[styles.timelineLocName, { color: textColor }]}>
-                  {task.destination_name || (task.sales_order ? task.sales_order.customer_name : task.destination) || '-'}
-                  {task.destination_point ? ` (${task.destination_point})` : ''}
+                  {isPickup 
+                    ? task.destination_name || (task.sales_order ? task.sales_order.customer_name : task.destination) 
+                    : task.customer_name || (task.sales_order ? task.sales_order.customer_name : '-') || '-'}
+                  {isPickup ? (task.destination_point ? ` (${task.destination_point})` : '') : (task.delivery_target_point ? ` (${task.delivery_target_point})` : '')}
                 </Text>
-                {task.destination_pic_name && (
-                   <Text style={[styles.timelineAddress, { color: textColor, fontWeight: '600' }]}>PIC: {task.destination_pic_name}</Text>
+                {(isPickup ? task.destination_pic_name : task.delivery_receiver_pic) && (
+                  <Text style={[styles.timelineAddress, { color: textColor, fontWeight: '600' }]}>
+                    PIC: {isPickup ? task.destination_pic_name : task.delivery_receiver_pic}
+                  </Text>
                 )}
-                <Text style={[styles.timelineAddress, { color: textMuted }]}>{task.task_type === 'delivery' && task.sales_order ? task.sales_order.source_data?.address : task.destination || '-'}</Text>
+                <Text style={[styles.timelineAddress, { color: textMuted }]}>
+                  {isPickup 
+                    ? task.pickup_destination || task.destination || '-' 
+                    : task.pickup_destination || (task.sales_order ? task.sales_order.source_data?.address : '-')}
+                </Text>
               </View>
             </View>
           </View>
@@ -589,8 +612,8 @@ function TaskDetailScreenContent() {
             ].map((step, idx, arr) => {
               const isClickable = step.active || (step.id === 2 && (status === 'on_route' || status === 'arrived'));
               return (
-                <TouchableOpacity 
-                  key={step.id} 
+                <TouchableOpacity
+                  key={step.id}
                   style={styles.progressStepWrap}
                   activeOpacity={isClickable ? 0.7 : 1}
                   onPress={() => {
@@ -615,13 +638,13 @@ function TaskDetailScreenContent() {
         {/* Daftar Barang Bawaan */}
         <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}>
           <Text style={[styles.cardSectionTitle, { color: textColor, marginBottom: 12 }]}>Daftar Barang Bawaan</Text>
-          
+
           <View style={styles.tableHeader}>
             <Text style={[styles.tableColNo, { color: textMuted }]}>No</Text>
             <Text style={[styles.tableColDesc, { color: textMuted }]}>Deskripsi Barang</Text>
             <Text style={[styles.tableColQty, { color: textMuted }]}>Qty</Text>
           </View>
-          
+
           {task.items && task.items.length > 0 ? (
             task.items.map((item, idx) => (
               <View key={item.id || idx} style={[styles.tableRow, { borderBottomColor: BRAND.border }]}>
@@ -669,7 +692,7 @@ function TaskDetailScreenContent() {
         {(task.proof_photo || task.failure_reason || task.completed_odometer) && (
           <View style={[styles.card, { backgroundColor: cardBackground, borderColor, marginBottom: 100 }]}>
             <Text style={[styles.cardSectionTitle, { color: textColor, marginBottom: 12 }]}>Laporan & Bukti Penyelesaian</Text>
-            
+
             {task.completed_odometer && (
               <View style={{ marginBottom: 12 }}>
                 <Text style={{ color: textMuted, fontSize: 12 }}>Odometer Selesai</Text>
@@ -687,8 +710,8 @@ function TaskDetailScreenContent() {
             {task.proof_photo && (
               <View style={{ marginBottom: 8 }}>
                 <Text style={{ color: textMuted, fontSize: 12, marginBottom: 8 }}>Bukti Foto</Text>
-                <Image 
-                  source={{ uri: task.proof_photo.startsWith('http') ? task.proof_photo : `${api.defaults.baseURL?.replace('/api', '')}/storage/${task.proof_photo}` }} 
+                <Image
+                  source={{ uri: task.proof_photo.startsWith('http') ? task.proof_photo : `${api.defaults.baseURL?.replace('/api', '')}/storage/${task.proof_photo}` }}
                   style={{ width: '100%', height: 200, borderRadius: 8, backgroundColor: '#E2E8F0' }}
                   resizeMode="cover"
                 />
@@ -696,7 +719,7 @@ function TaskDetailScreenContent() {
             )}
           </View>
         )}
-        
+
         {/* Helper bottom spacer to ensure scrollability if the proof card is absent */}
         {!(task.proof_photo || task.failure_reason || task.completed_odometer) && (
           <View style={{ height: 100 }} />
@@ -706,8 +729,8 @@ function TaskDetailScreenContent() {
       {/* Sticky Bottom Action Button */}
       {btnLabel ? (
         <View style={[styles.bottomActionArea, { backgroundColor: cardBackground, borderTopColor: borderColor }]}>
-          <TouchableOpacity 
-            style={[styles.actionBtn, { opacity: actionLoading ? 0.7 : 1 }]} 
+          <TouchableOpacity
+            style={[styles.actionBtn, { opacity: actionLoading ? 0.7 : 1 }]}
             onPress={btnAction}
             disabled={actionLoading}
           >
@@ -721,41 +744,41 @@ function TaskDetailScreenContent() {
       ) : null}
 
       {/* Render Modals */}
-      <ModalKeberangkatan 
-        visible={modalKeberangkatanVisible} 
-        onClose={() => setModalKeberangkatanVisible(false)} 
+      <ModalKeberangkatan
+        visible={modalKeberangkatanVisible}
+        onClose={() => setModalKeberangkatanVisible(false)}
         onSubmit={(payload: any) => {
           setModalKeberangkatanVisible(false);
           handleAction('on_route', payload);
-        }} 
-        task={task} 
+        }}
+        task={task}
       />
-      <ModalPengeluaran 
-        visible={modalPengeluaranVisible} 
-        onClose={() => setModalPengeluaranVisible(false)} 
+      <ModalPengeluaran
+        visible={modalPengeluaranVisible}
+        onClose={() => setModalPengeluaranVisible(false)}
         onSubmit={(payload: any) => {
           setModalPengeluaranVisible(false);
           handleExpenseSubmit(payload);
-        }} 
-        task={task} 
+        }}
+        task={task}
       />
-      <ModalTiba 
-        visible={modalTibaVisible} 
-        onClose={() => setModalTibaVisible(false)} 
+      <ModalTiba
+        visible={modalTibaVisible}
+        onClose={() => setModalTibaVisible(false)}
         onSubmit={(payload: any) => {
           setModalTibaVisible(false);
           handleAction('arrived', payload);
-        }} 
-        task={task} 
+        }}
+        task={task}
       />
-      <ModalSerahTerima 
-        visible={modalSerahTerimaVisible} 
-        onClose={() => setModalSerahTerimaVisible(false)} 
+      <ModalSerahTerima
+        visible={modalSerahTerimaVisible}
+        onClose={() => setModalSerahTerimaVisible(false)}
         onSubmit={(payload: any) => {
           setModalSerahTerimaVisible(false);
           handleAction('delivered', payload);
-        }} 
-        task={task} 
+        }}
+        task={task}
       />
     </View>
   );
