@@ -131,14 +131,14 @@ class SyncAkurasiData extends Command
         // --- 2. SINKRONISASI PO ---
         if ($only === 'all' || $only === 'po') {
             $this->info("==> Sinkronisasi Purchase Orders");
-            $offset = 0;
+            $page = 1;
         $poCount = 0;
         $poSkipped = 0;
 
         while (true) {
             // Tetap menggunakan endpoint integration yg support X-API-Key dan format sama
-            $url = "https://akurasi-api.aqpa-indonesia.com/api/integration/pembelian-po?offset={$offset}&limit={$limit}&date_from={$dateFrom}&date_to={$dateTo}";
-            $this->line("Fetching PO offset {$offset}...");
+            $url = "https://akurasi-api.aqpa-indonesia.com/api/integration/pembelian?page={$page}&limit={$limit}";
+            $this->line("Fetching PO page {$page}...");
             
             $response = Http::withHeaders(['X-API-Key' => $apiKey])->timeout(60)->get($url);
             if (!$response->successful()) {
@@ -220,7 +220,7 @@ class SyncAkurasiData extends Command
             if (count($data['data']) < $limit) {
                 break;
             }
-            $offset += $limit;
+            $page++;
         }
         $this->info("Sinkronisasi PO selesai. Tersimpan/Diperbarui: {$poCount}, Skipped: {$poSkipped}");
         }

@@ -847,8 +847,17 @@
 
                         <div class="item-editor">
                             <div class="row g-3 align-items-end">
-                                <div class="col-md-2">
-                                    <label class="form-label">No Barang</label>
+                                <div class="col-md-3">
+                                    <label class="form-label">No Referensi <span class="text-muted">(Opsional)</span></label>
+                                    <input
+                                        type="text"
+                                        id="itemRefNoInput"
+                                        class="form-control"
+                                        placeholder="SO/PO..."
+                                    >
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label">No Barang <span class="text-muted">(Opsional)</span></label>
                                     <input
                                         type="text"
                                         id="itemNumberInput"
@@ -856,27 +865,26 @@
                                         placeholder="Opsional"
                                     >
                                 </div>
-
-                                <div class="col-md-4">
-                                    <label class="form-label">
-                                        Nama / Deskripsi Barang <span class="required-star">*</span>
-                                    </label>
+                                <div class="col-md-6">
+                                    <label class="form-label">Nama / Deskripsi Barang <span class="text-danger">*</span></label>
                                     <input
                                         type="text"
                                         id="itemDescriptionInput"
                                         class="form-control"
                                         placeholder="Wajib diisi"
                                     >
+                                    <div class="invalid-feedback">
+                                        Deskripsi barang tidak boleh kosong.
+                                    </div>
                                 </div>
+                            </div>
 
+                            <div class="row g-3 mb-3">
                                 <div class="col-md-2">
-                                    <label class="form-label">
-                                        Qty <span class="required-star">*</span>
-                                    </label>
+                                    <label class="form-label">Qty <span class="text-danger">*</span></label>
                                     <input
                                         type="number"
-                                        min="0"
-                                        step="0.01"
+                                        min="1"
                                         id="itemQuantityInput"
                                         class="form-control"
                                         placeholder="0"
@@ -1087,10 +1095,11 @@ document.addEventListener('DOMContentLoaded', function () {
         const taskType = getCurrentTaskType();
         const isDelivery = taskType === 'delivery';
         
-        // Langsung tembak ke API asli sesuai permintaan
+        // Gunakan API Proxy lokal (detail-so / detail-po) agar lebih stabil dan formatnya rapi
+        // Route ini sudah disiapkan di routes/api.php
         const apiUrl = isDelivery 
-            ? `https://akurasi-api.aqpa-indonesia.com/api/integration/penjualan-so?search=${encodeURIComponent(refNumber)}`
-            : `https://akurasi-api.aqpa-indonesia.com/api/integration/pembelian?search=${encodeURIComponent(refNumber)}`;
+            ? `/api/integration/detail-so/${encodeURIComponent(refNumber)}`
+            : `/api/integration/detail-po/${encodeURIComponent(refNumber)}`;
 
         syncReferenceValue();
 
@@ -1102,37 +1111,49 @@ document.addEventListener('DOMContentLoaded', function () {
         try {
             const response = await fetch(apiUrl, {
                 headers: {
-                    'Accept': 'application/json',
-                    'X-API-Key': 'Ym95Y29tcG9zaXRpb25leHBsYW5hdGlvbnRob3VnaHRwZWFjZWdpcmxjb2FjaHNlbnM='
+                    'Accept': 'application/json'
                 }
             });
             if (!response.ok) throw new Error('Data tidak ditemukan');
             const resData = await response.json();
             
-            // API mengembalikan { data: [...] }
-            const apiItems = resData.data || [];
-            if (apiItems.length === 0) throw new Error('Data kosong');
-            
-            // Ambil data pertama untuk informasi utama
-            const firstItem = apiItems[0];
+            // Handle format respons yang bisa berupa array {data: [...]} atau object detail {items: [...]}
+            let apiItems = [];
+            let mainInfo = {};
+
+            if (resData.data && Array.isArray(resData.data)) {
+                apiItems = resData.data;
+                if (apiItems.length === 0) throw new Error('Data kosong');
+                mainInfo = apiItems[0];
+            } else if (resData.items && Array.isArray(resData.items)) {
+                apiItems = resData.items;
+                if (apiItems.length === 0) throw new Error('Data kosong');
+                mainInfo = resData;
+            } else {
+                // Jika bentuknya array langsung (meskipun jarang)
+                apiItems = Array.isArray(resData) ? resData : [resData];
+                mainInfo = apiItems[0] || {};
+            }
 
             // Populate Fields
             if (isDelivery) {
-                form.querySelector('input[name="customer_name"]').value = firstItem.nama_pelanggan || '';
-                form.querySelector('textarea[name="delivery_address"]').value = firstItem.shipto || '';
+                form.querySelector('input[name="customer_name"]').value = mainInfo.pelanggan || mainInfo.nama_pelanggan || '';
+                form.querySelector('textarea[name="delivery_address"]').value = mainInfo.shipto || '';
             } else {
-                form.querySelector('input[name="pickup_name"]').value = firstItem.nama_pemasok || '';
+                form.querySelector('input[name="pickup_name"]').value = mainInfo.pemasok || mainInfo.nama_pemasok || '';
             }
 
             // Populate Items
             items = []; // Clear existing items
             apiItems.forEach(apiItem => {
+                const itemRef = mainInfo.no_so || mainInfo.no_po || mainInfo.no_pembelian || refNumber;
                 items.push({
+                    ref_no: itemRef,
                     item_number: apiItem.no_barang || '',
                     item_description: apiItem.deskripsi_barang || apiItem.nama_barang || '',
                     quantity: apiItem.qty || 1,
-                    unit: apiItem.unit || apiItem.satuan || '',
-                    unit_price: apiItem.unit_price || apiItem.harga_satuan || apiItem.harga || 0
+                    unit: apiItem.unit || apiItem.satuan || apiItem.uom || '',
+                    unit_price: apiItem.unit_price || apiItem.harga_satuan || apiItem.harga || apiItem.price || 0
                 });
             });
             renderItems();
@@ -1195,7 +1216,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function resetItemEditor() {
-        editingIndex = null;
+        editingIndex = -1;
+        itemRefNoInput.value = '';
         itemNumberInput.value = '';
         itemDescriptionInput.value = '';
         itemQuantityInput.value = '';
@@ -1215,6 +1237,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if (!item) return;
 
         editingIndex = index;
+        itemRefNoInput.value = item.ref_no || '';
         itemNumberInput.value = item.item_number || '';
         itemDescriptionInput.value = item.item_description || '';
         itemQuantityInput.value = item.quantity || '';
@@ -1252,7 +1275,10 @@ document.addEventListener('DOMContentLoaded', function () {
             tr.innerHTML = `
                 <td class="item-name-cell">
                     <strong>${escapeHtml(item.item_description)}</strong>
-                    ${item.item_number ? `<small>No Barang: ${escapeHtml(item.item_number)}</small>` : ''}
+                    <div class="d-flex flex-column gap-1 mt-1 align-items-start">
+                        ${item.item_number ? `<small class="text-muted"><i class="fa-solid fa-barcode me-1"></i>${escapeHtml(item.item_number)}</small>` : ''}
+                        ${item.ref_no ? `<span class="badge bg-light text-secondary border"><i class="fa-solid fa-file-lines me-1"></i>${escapeHtml(item.ref_no)}</span>` : ''}
+                    </div>
                 </td>
                 <td class="text-end">${formatNumber(item.quantity)}</td>
                 <td>${escapeHtml(item.unit || '-')}</td>
@@ -1282,6 +1308,7 @@ document.addEventListener('DOMContentLoaded', function () {
             tableBody.appendChild(tr);
 
             const values = {
+                ref_no: item.ref_no,
                 item_number: item.item_number,
                 item_description: item.item_description,
                 quantity: item.quantity,
@@ -1300,6 +1327,7 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     btnAddItem.addEventListener('click', function () {
+        const refNo = document.getElementById('itemRefNoInput').value.trim();
         const description = itemDescriptionInput.value.trim();
         const quantity = itemQuantityInput.value;
 
@@ -1319,6 +1347,7 @@ document.addEventListener('DOMContentLoaded', function () {
         itemQuantityInput.classList.remove('is-invalid');
 
         const itemPayload = {
+            ref_no: refNo,
             item_number: itemNumberInput.value.trim(),
             item_description: description,
             quantity: quantity,
@@ -1326,7 +1355,7 @@ document.addEventListener('DOMContentLoaded', function () {
             unit_price: itemPriceInput.value || 0
         };
 
-        if (editingIndex === null) {
+        if (editingIndex === null || editingIndex === -1) {
             items.push(itemPayload);
         } else {
             items[editingIndex] = itemPayload;
