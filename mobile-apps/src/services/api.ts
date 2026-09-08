@@ -10,7 +10,6 @@ const api = axios.create({
 
   headers: {
     Accept: 'application/json',
-    'Content-Type': 'application/json',
 
     // Router API Key
     'X-API-Key': API_KEY,
@@ -25,6 +24,13 @@ api.interceptors.request.use(
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
+      }
+
+      // Jika body adalah FormData, hapus Content-Type agar axios otomatis set multipart/form-data + boundary
+      if (config.data instanceof FormData) {
+        delete config.headers['Content-Type'];
+      } else {
+        config.headers['Content-Type'] = 'application/json';
       }
 
       return config;

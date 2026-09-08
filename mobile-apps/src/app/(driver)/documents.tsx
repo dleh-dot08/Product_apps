@@ -118,7 +118,7 @@ export default function LaporanScreen() {
   const ditolakCount = reports.filter(r => r.status === 'Ditolak').length;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Blue Header Background */}
       <View style={styles.headerBackground}>
         <View style={styles.headerTop}>
@@ -145,135 +145,93 @@ export default function LaporanScreen() {
               <Ionicons name="car" size={40} color="#10B981" style={{ position: 'absolute', bottom: -5, right: -15 }} />
             </View>
           </View>
-          <TouchableOpacity style={styles.heroButton}>
-            <Ionicons name="add" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-            <Text style={styles.heroButtonText}>Buat Laporan Baru</Text>
-          </TouchableOpacity>
+
         </View>
 
-        {/* Summary Stats */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconWrapper, { backgroundColor: '#EFF6FF' }]}>
-              <Ionicons name="document-text" size={22} color="#2563EB" />
-            </View>
-            <Text style={styles.statValue}>{totalLaporan}</Text>
-            <Text style={styles.statLabel}>Total Laporan</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconWrapper, { backgroundColor: '#FEF3C7' }]}>
-              <Ionicons name="time" size={22} color="#F59E0B" />
-            </View>
-            <Text style={styles.statValue}>{menungguCount}</Text>
-            <Text style={styles.statLabel}>Menunggu</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconWrapper, { backgroundColor: '#D1FAE5' }]}>
-              <Ionicons name="checkmark-circle" size={22} color="#10B981" />
-            </View>
-            <Text style={styles.statValue}>{disetujuiCount}</Text>
-            <Text style={styles.statLabel}>Disetujui</Text>
-          </View>
-          <View style={styles.statCard}>
-            <View style={[styles.statIconWrapper, { backgroundColor: '#FEE2E2' }]}>
-              <Ionicons name="close-circle" size={22} color="#EF4444" />
-            </View>
-            <Text style={styles.statValue}>{ditolakCount}</Text>
-            <Text style={styles.statLabel}>Ditolak</Text>
-          </View>
-        </View>
 
         {/* Search & Filter */}
         <View style={styles.searchFilterContainer}>
-          <View style={styles.searchBox}>
-            <Ionicons name="search-outline" size={20} color="#9CA3AF" />
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, paddingHorizontal: 4 }}>
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.text }}>Daftar Laporan</Text>
+            <View style={{ backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+              <Text style={{ fontSize: 12, fontWeight: '600', color: '#2563EB' }}>{totalLaporan} Laporan</Text>
+            </View>
+          </View>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <View style={[styles.searchBox, { flex: 1, backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
+              <Ionicons name="search-outline" size={20} color={colors.icon} />
             <TextInput 
-              style={styles.searchInput}
+              style={[styles.searchInput, { color: colors.text }]}
               placeholder="Cari laporan, lokasi, nomor TRP..."
-              placeholderTextColor="#9CA3AF"
+              placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
           </View>
-          <TouchableOpacity style={styles.filterButton} onPress={() => {
-            setTempFilterType(activeFilterType);
-            setTempFilterDate(activeFilterDate);
-            setFilterVisible(true);
-          }}>
-            <Ionicons name="filter-outline" size={20} color="#2563EB" />
-            <Text style={styles.filterText}>Filter</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.filterButton} onPress={() => {
+              setTempFilterType(activeFilterType);
+              setTempFilterDate(activeFilterDate);
+              setFilterVisible(true);
+            }}>
+              <Ionicons name="filter-outline" size={20} color="#2563EB" />
+            </TouchableOpacity>
+          </View>
         </View>
 
-        {/* Tabs */}
-        <View style={styles.tabsContainer}>
-          {TABS.map(tab => (
-            <TouchableOpacity 
-              key={tab} 
-              style={[styles.tabButton, activeTab === tab && styles.tabButtonActive]}
-              onPress={() => setActiveTab(tab)}
-            >
-              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>{tab}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
 
         {/* Report List */}
         <View style={styles.listContainer}>
           {filteredReports.map((report) => (
             <TouchableOpacity 
               key={report.id} 
-              style={styles.reportCard}
+              style={[styles.reportCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
               activeOpacity={0.7}
               onPress={() => router.push(`/laporan/${(report as any).real_id || report.id}` as any)} // Example ID routing
             >
               <View style={styles.reportHeader}>
                 <View style={styles.reportIdContainer}>
-                  <View style={[styles.iconBox, { backgroundColor: report.status === 'Ditolak' ? '#FEE2E2' : '#E0E7FF' }]}>
-                    <Ionicons name="bus-outline" size={20} color={report.status === 'Ditolak' ? '#EF4444' : '#2563EB'} />
+                  <View style={[styles.iconBox, { backgroundColor: '#E0E7FF' }]}>
+                    <Ionicons name="bus-outline" size={20} color="#2563EB" />
                   </View>
-                  <Text style={styles.reportId}>{report.id}</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusBgColor(report.status) }]}>
-                  <Text style={[styles.statusText, { color: getStatusColor(report.status) }]}>{report.status}</Text>
+                  <Text style={[styles.reportId, { color: colors.text }]}>{report.id}</Text>
                 </View>
               </View>
 
               <View style={styles.routeContainer}>
-                <Text style={[styles.routeText, { flex: 1 }]} numberOfLines={2}>{report.from}</Text>
-                <Ionicons name="arrow-forward" size={16} color="#6B7280" style={{ marginHorizontal: 8 }} />
-                <Text style={[styles.routeText, { flex: 1 }]} numberOfLines={2}>{report.to}</Text>
+                <Text style={[styles.routeText, { flex: 1, color: colors.text }]} numberOfLines={2}>{report.from}</Text>
+                <Ionicons name="arrow-forward" size={16} color={colors.textSecondary} style={{ marginHorizontal: 8 }} />
+                <Text style={[styles.routeText, { flex: 1, color: colors.text }]} numberOfLines={2}>{report.to}</Text>
               </View>
 
               <View style={styles.reportMeta}>
                 <View style={styles.metaItem}>
-                  <Ionicons name="calendar-outline" size={14} color="#6B7280" />
-                  <Text style={styles.metaText}>{report.date}</Text>
+                  <Ionicons name="calendar-outline" size={14} color={colors.textSecondary} />
+                  <Text style={[styles.metaText, { color: colors.textSecondary }]}>{report.date}</Text>
                 </View>
                 <View style={styles.metaItem}>
-                  <Ionicons name="time-outline" size={14} color="#6B7280" />
-                  <Text style={styles.metaText}>{report.time}</Text>
+                  <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+                  <Text style={[styles.metaText, { color: colors.textSecondary }]}>{report.time}</Text>
                 </View>
               </View>
 
               <View style={styles.reportDriver}>
-                <Ionicons name="person-outline" size={14} color="#6B7280" />
-                <Text style={styles.driverText} numberOfLines={1}>{report.driver}</Text>
-                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
+                <Ionicons name="person-outline" size={14} color={colors.textSecondary} />
+                <Text style={[styles.driverText, { color: colors.textSecondary }]} numberOfLines={1}>{report.driver}</Text>
+                <Ionicons name="chevron-forward" size={20} color={colors.icon} style={{ marginLeft: 'auto' }} />
               </View>
             </TouchableOpacity>
           ))}
 
           {filteredReports.length === 0 && (
             <View style={styles.emptyState}>
-              <Ionicons name="document-outline" size={48} color="#D1D5DB" />
-              <Text style={styles.emptyText}>Tidak ada laporan ditemukan</Text>
+              <Ionicons name="document-outline" size={48} color={colors.icon} />
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Tidak ada laporan ditemukan</Text>
             </View>
           )}
 
           <View style={styles.endOfList}>
-             <Ionicons name="add-circle-outline" size={24} color="#D1D5DB" />
-             <Text style={styles.endOfListText}>Tidak ada lagi laporan</Text>
+             <Ionicons name="add-circle-outline" size={24} color={colors.icon} />
+             <Text style={[styles.endOfListText, { color: colors.textSecondary }]}>Tidak ada lagi laporan</Text>
           </View>
         </View>
       </ScrollView>
@@ -281,28 +239,28 @@ export default function LaporanScreen() {
       {/* Filter Modal */}
       <Modal visible={isFilterVisible} transparent animationType="slide">
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { backgroundColor: colors.background }]}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filter Laporan</Text>
+              <Text style={[styles.modalTitle, { color: colors.text }]}>Filter Laporan</Text>
               <TouchableOpacity onPress={() => setFilterVisible(false)}>
-                <Ionicons name="close" size={24} color="#374151" />
+                <Ionicons name="close" size={24} color={colors.text} />
               </TouchableOpacity>
             </View>
             
-            <Text style={styles.filterSectionTitle}>Jenis Laporan</Text>
+            <Text style={[styles.filterSectionTitle, { color: colors.text }]}>Jenis Laporan</Text>
             <View style={styles.filterOptionsContainer}>
               {['Semua', 'Delivery', 'Return'].map(t => (
                 <TouchableOpacity 
                   key={t} 
-                  style={[styles.filterOptionBtn, tempFilterType === t && styles.filterOptionBtnActive]}
+                  style={[styles.filterOptionBtn, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }, tempFilterType === t && styles.filterOptionBtnActive]}
                   onPress={() => setTempFilterType(t as ReportType)}
                 >
-                  <Text style={[styles.filterOptionText, tempFilterType === t && styles.filterOptionTextActive]}>{t}</Text>
+                  <Text style={[styles.filterOptionText, { color: colors.textSecondary }, tempFilterType === t && styles.filterOptionTextActive]}>{t}</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
-            <Text style={styles.filterSectionTitle}>Tanggal</Text>
+            <Text style={[styles.filterSectionTitle, { color: colors.text }]}>Tanggal</Text>
             <View style={styles.filterOptionsContainer}>
               {['Semua Waktu', '15 Mei 2024', '14 Mei 2024', '13 Mei 2024'].map(d => (
                 <TouchableOpacity 
@@ -448,7 +406,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   searchFilterContainer: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     paddingHorizontal: 20,
     marginTop: 20,
     gap: 12,

@@ -4,8 +4,9 @@ import { Platform } from 'react-native';
 import api from '../services/api';
 
 type User = {
-  id: number;
+  id: string | number;
   name: string;
+  full_name?: string;
   email: string;
   phone?: string;
   role?: { id: number; name: string };

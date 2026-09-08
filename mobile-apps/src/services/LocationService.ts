@@ -62,33 +62,78 @@ export const requestLocationPermissions = async () => {
   return true;
 };
 
-export const startLocationTracking = async (taskId: string) => {
-  const hasPermissions = await requestLocationPermissions();
-  if (!hasPermissions) {
-    console.error('Permission for location denied');
-    return;
-  }
+export let _foregroundInterval: ReturnType<typeof setInterval> | null = null;
 
-  // Simpan taskId agar background task tahu task mana yang sedang aktif
-  await AsyncStorage.setItem('active_task_id', taskId);
-
-  const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
-  if (!isRegistered) {
-    await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
-      accuracy: Location.Accuracy.Balanced,
-      timeInterval: 10000, // Update setiap 10 detik
-      distanceInterval: 10, // Atau update setiap pindah 10 meter
-      showsBackgroundLocationIndicator: true,
-      foregroundService: {
-        notificationTitle: "Memantau Lokasi",
-        notificationBody: "Aplikasi sedang melacak lokasi untuk tugas pengiriman.",
-      }
+const sendCurrentLocation = async (taskId: string) => {
+  try {
+    const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+    await api.post('/driver/location', {
+      latitude: loc.coords.latitude,
+      longitude: loc.coords.longitude,
+      heading: loc.coords.heading,
+      task_id: taskId,
     });
-    console.log('[LocationService] Background tracking started.');
+    console.log(`[LocationService] Foreground location sent for task ${taskId}`);
+  } catch (e) {
+    console.warn('[LocationService] Foreground send error:', e);
+  }
+};
+
+export const startLocationTracking = async (taskId: string) => {
+  try {
+    const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
+    if (foregroundStatus !== 'granted') {
+      console.warn('[LocationService] Foreground permission denied, skipping tracking.');
+      return;
+    }
+
+    // Simpan taskId agar background task tahu task mana yang sedang aktif
+    await AsyncStorage.setItem('active_task_id', taskId);
+
+    // Kirim lokasi saat ini segera (agar Find Driver langsung muncul)
+    await sendCurrentLocation(taskId);
+
+    // Background permission - bisa gagal di Expo Go iOS, jadi jangan block
+    let backgroundGranted = false;
+    try {
+      const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+      backgroundGranted = backgroundStatus === 'granted';
+    } catch (e) {
+      console.warn('[LocationService] Background permission not available (Expo Go?):', e);
+    }
+
+    if (backgroundGranted) {
+      const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
+      if (!isRegistered) {
+        await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
+          accuracy: Location.Accuracy.Balanced,
+          timeInterval: 10000,
+          distanceInterval: 10,
+          showsBackgroundLocationIndicator: true,
+          foregroundService: {
+            notificationTitle: "Memantau Lokasi",
+            notificationBody: "Aplikasi sedang melacak lokasi untuk tugas pengiriman.",
+          }
+        });
+        console.log('[LocationService] Background tracking started.');
+      }
+    } else {
+      // Fallback: kirim lokasi via foreground interval setiap 15 detik
+      console.warn('[LocationService] Background not available, using foreground interval.');
+      if (_foregroundInterval) clearInterval(_foregroundInterval);
+      _foregroundInterval = setInterval(() => sendCurrentLocation(taskId), 15000);
+    }
+  } catch (e) {
+    console.error('[LocationService] startLocationTracking error (non-blocking):', e);
   }
 };
 
 export const stopLocationTracking = async () => {
+  // Clear foreground interval fallback
+  if (_foregroundInterval) {
+    clearInterval(_foregroundInterval);
+    _foregroundInterval = null;
+  }
   await AsyncStorage.removeItem('active_task_id');
   const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
   if (isRegistered) {

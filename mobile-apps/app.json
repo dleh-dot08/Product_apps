@@ -13,7 +13,9 @@
         "UIBackgroundModes": [
           "location",
           "fetch"
-        ]
+        ],
+        "NSLocationWhenInUseUsageDescription": "Aplikasi ini membutuhkan akses lokasi untuk melacak perjalanan driver.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Aplikasi ini membutuhkan akses lokasi di latar belakang untuk memantau perjalanan driver saat sedang bertugas."
       }
     },
     "android": {

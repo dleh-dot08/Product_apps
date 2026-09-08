@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/CustomText';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useTheme } from '../../../context/ThemeContext';
+import { Colors } from '@/constants/theme';
 import api from '../../../services/api';
 
 const { width } = Dimensions.get('window');
@@ -11,6 +13,9 @@ const { width } = Dimensions.get('window');
 export default function LaporanDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
+  const { theme } = useTheme();
+  const colors = Colors[theme];
+  const isDark = theme === 'dark';
 
   const [task, setTask] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -99,21 +104,21 @@ export default function LaporanDetailScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.backgroundElement, borderBottomColor: colors.backgroundSelected }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Detail Laporan</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Detail Laporan</Text>
         <View style={{ width: 24 }} />
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Main Info Card */}
-        <View style={styles.mainCard}>
-          <View style={styles.mainCardHeader}>
-            <Text style={styles.reportId}>{reportId}</Text>
+        <View style={[styles.mainCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
+          <View style={[styles.mainCardHeader, { borderBottomColor: colors.backgroundSelected }]}>
+            <Text style={[styles.reportId, { color: colors.text }]}>{reportId}</Text>
             <View style={[styles.statusBadge, { backgroundColor: getStatusBgColor(task.status) }]}>
               <Text style={[styles.statusText, { color: getStatusColor(task.status) }]}>{getStatusLabel(task.status)}</Text>
             </View>
@@ -121,36 +126,36 @@ export default function LaporanDetailScreen() {
           
           <View style={styles.routeContainer}>
             <View style={styles.routeIcons}>
-              <Ionicons name="location" size={20} color="#3B82F6" />
-              <View style={styles.routeLine} />
+              <Ionicons name="location" size={20} color={colors.tint} />
+              <View style={[styles.routeLine, { backgroundColor: colors.backgroundSelected }]} />
               <Ionicons name="location" size={20} color="#10B981" />
             </View>
             <View style={styles.routeTexts}>
-              <Text style={styles.routeOrigin}>{task.pickup_name || 'Lokasi Penjemputan'}</Text>
+              <Text style={[styles.routeOrigin, { color: colors.text }]}>{task.pickup_name || 'Lokasi Penjemputan'}</Text>
               <View style={styles.routeSpacer} />
-              <Text style={styles.routeDestination}>{task.destination || 'Lokasi Tujuan'}</Text>
+              <Text style={[styles.routeDestination, { color: colors.text }]}>{task.destination || 'Lokasi Tujuan'}</Text>
             </View>
           </View>
 
-          <View style={styles.metaDivider} />
+          <View style={[styles.metaDivider, { backgroundColor: colors.backgroundSelected }]} />
 
           <View style={styles.metaInfoGrid}>
             <View style={styles.metaItem}>
-              <View style={styles.metaIconBg}>
-                <Ionicons name="time" size={16} color="#3B82F6" />
+              <View style={[styles.metaIconBg, isDark && { backgroundColor: '#1E3A8A' }]}>
+                <Ionicons name="time" size={16} color={colors.tint} />
               </View>
               <View style={styles.metaTextContainer}>
-                <Text style={styles.metaLabel}>Waktu Mulai</Text>
-                <Text style={styles.metaText}>{formatDateTime(task.started_at)}</Text>
+                <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>Waktu Mulai</Text>
+                <Text style={[styles.metaText, { color: colors.text }]}>{formatDateTime(task.started_at)}</Text>
               </View>
             </View>
             <View style={[styles.metaItem, { marginTop: 12 }]}>
-              <View style={[styles.metaIconBg, { backgroundColor: '#D1FAE5' }]}>
+              <View style={[styles.metaIconBg, { backgroundColor: isDark ? '#064E3B' : '#D1FAE5' }]}>
                 <Ionicons name="checkmark-done" size={16} color="#10B981" />
               </View>
               <View style={styles.metaTextContainer}>
-                <Text style={styles.metaLabel}>Waktu Selesai</Text>
-                <Text style={styles.metaText}>{formatDateTime(task.completed_at)}</Text>
+                <Text style={[styles.metaLabel, { color: colors.textSecondary }]}>Waktu Selesai</Text>
+                <Text style={[styles.metaText, { color: colors.text }]}>{formatDateTime(task.completed_at)}</Text>
               </View>
             </View>
           </View>
@@ -158,23 +163,23 @@ export default function LaporanDetailScreen() {
 
         {/* Lampiran & Bukti Section (Input by Driver) */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Data & Lampiran Tugas</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Data & Lampiran Tugas</Text>
           
           {(!task.attachments || task.attachments.length === 0) ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>Belum ada lampiran</Text>
+            <View style={[styles.emptyCard, { backgroundColor: colors.backgroundElement }]}>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Belum ada lampiran</Text>
             </View>
           ) : (
             task.attachments.map((att: any) => (
-              <View key={att.id} style={styles.attachmentCard}>
+              <View key={att.id} style={[styles.attachmentCard, { backgroundColor: colors.backgroundElement }]}>
                 <View style={styles.attachmentHeader}>
-                  <Ionicons name="image-outline" size={20} color="#0756C6" />
-                  <Text style={styles.attachmentTitle}>{att.category.replace(/_/g, ' ')}</Text>
+                  <Ionicons name="image-outline" size={20} color={colors.tint} />
+                  <Text style={[styles.attachmentTitle, { color: colors.text }]}>{att.category.replace(/_/g, ' ')}</Text>
                 </View>
                 <TouchableOpacity onPress={() => setSelectedImage(getFullImageUrl(att.file_path))}>
-                  <Image source={{ uri: getFullImageUrl(att.file_path) }} style={styles.attachmentImage} />
+                  <Image source={{ uri: getFullImageUrl(att.file_path) }} style={[styles.attachmentImage, { backgroundColor: colors.backgroundSelected }]} />
                 </TouchableOpacity>
-                {att.notes && <Text style={styles.attachmentNote}>Catatan: {att.notes}</Text>}
+                {att.notes && <Text style={[styles.attachmentNote, { color: colors.textSecondary }]}>Catatan: {att.notes}</Text>}
               </View>
             ))
           )}
@@ -182,22 +187,22 @@ export default function LaporanDetailScreen() {
 
         {/* Laporan Keuangan */}
         <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Laporan Keuangan</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Laporan Keuangan</Text>
           
           {(!task.shift?.expenses || task.shift.expenses.length === 0) ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>Tidak ada laporan pengeluaran</Text>
+            <View style={[styles.emptyCard, { backgroundColor: colors.backgroundElement }]}>
+              <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Tidak ada laporan pengeluaran</Text>
             </View>
           ) : (
-            <View style={styles.financeCard}>
+            <View style={[styles.financeCard, { backgroundColor: colors.backgroundElement }]}>
               {task.shift.expenses.map((expense: any, idx: number) => (
-                <View key={expense.id} style={[styles.financeItem, idx > 0 && styles.borderTop]}>
+                <View key={expense.id} style={[styles.financeItem, idx > 0 && [styles.borderTop, { borderTopColor: colors.backgroundSelected }]]}>
                   <View style={styles.financeHeader}>
                     <View style={styles.financeInfo}>
-                      <Text style={styles.financeCategory}>{expense.category}</Text>
-                      {expense.description && <Text style={styles.financeDesc}>{expense.description}</Text>}
+                      <Text style={[styles.financeCategory, { color: colors.text }]}>{expense.category}</Text>
+                      {expense.description && <Text style={[styles.financeDesc, { color: colors.textSecondary }]}>{expense.description}</Text>}
                     </View>
-                    <Text style={styles.financeAmount}>{formatRupiah(Number(expense.amount))}</Text>
+                    <Text style={[styles.financeAmount, { color: colors.text }]}>{formatRupiah(Number(expense.amount))}</Text>
                   </View>
                   {expense.notes && <Text style={styles.financeNotes}>Catatan: {expense.notes}</Text>}
                   {expense.receipt_url && (
@@ -207,9 +212,9 @@ export default function LaporanDetailScreen() {
                   )}
                 </View>
               ))}
-              <View style={styles.financeTotalRow}>
-                <Text style={styles.financeTotalLabel}>Total Pengeluaran</Text>
-                <Text style={styles.financeTotalValue}>
+              <View style={[styles.financeTotalRow, { borderTopColor: colors.backgroundSelected }]}>
+                <Text style={[styles.financeTotalLabel, { color: colors.text }]}>Total Pengeluaran</Text>
+                <Text style={[styles.financeTotalValue, { color: colors.tint }]}>
                   {formatRupiah(task.shift.expenses.reduce((acc: number, val: any) => acc + Number(val.amount), 0))}
                 </Text>
               </View>

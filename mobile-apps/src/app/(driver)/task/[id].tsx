@@ -314,11 +314,7 @@ function TaskDetailScreenContent() {
         }
       }
 
-      const res = await api.post(`/pickup/${id}/status`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const res = await api.post(`/pickup/${id}/status`, formData);
 
       if (res.data?.status === 'success' || res.status === 200) {
         Alert.alert('Berhasil', 'Status tugas diperbarui');
@@ -369,11 +365,7 @@ function TaskDetailScreenContent() {
         }
       }
 
-      const res = await api.post(`/pickup/${id}/expenses`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const res = await api.post(`/pickup/${id}/expenses`, formData);
 
       if (res.data?.status === 'success' || res.status === 201) {
         Alert.alert('Berhasil', 'Pengeluaran berhasil disimpan');
@@ -621,24 +613,39 @@ function TaskDetailScreenContent() {
               <Text style={styles.linkText}>Lihat di Maps</Text>
             </TouchableOpacity>
           </View>
-          <View style={[styles.mapPlaceholder, { backgroundColor: '#E2E8F0', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }]}>
-            <View style={{ alignItems: 'center' }}>
-              <Ionicons name="map-outline" size={48} color={textMuted} style={{ marginBottom: 8, opacity: 0.5 }} />
-              <Text style={{ color: textMuted, fontSize: 13, textAlign: 'center', paddingHorizontal: 20 }}>
-                Pratinjau peta dalam aplikasi dinonaktifkan untuk mencegah aplikasi crash (Blank Putih). Anda wajib melakukan build ulang APK (eas build) agar komponen peta terinstall di HP/Emulator Anda. Silakan gunakan tombol <Text style={{ fontWeight: 'bold' }}>"Lihat di Maps"</Text> di atas.
-              </Text>
+          {Platform.OS === 'web' || !MapView ? (
+            <View style={[styles.mapPlaceholder, { backgroundColor: '#E2E8F0', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }]}>
+              <View style={{ alignItems: 'center' }}>
+                <Ionicons name="map-outline" size={48} color={textMuted} style={{ marginBottom: 8, opacity: 0.5 }} />
+                <Text style={{ color: textMuted, fontSize: 13, textAlign: 'center', paddingHorizontal: 20 }}>
+                  Pratinjau peta dalam aplikasi dinonaktifkan untuk mencegah aplikasi crash (Blank Putih). Anda wajib melakukan build ulang APK (eas build) agar komponen peta terinstall di HP/Emulator Anda. Silakan gunakan tombol <Text style={{ fontWeight: 'bold' }}>"Lihat di Maps"</Text> di atas.
+                </Text>
+              </View>
             </View>
-          </View>
+          ) : (
+            <View style={[styles.mapPlaceholder, { backgroundColor: '#E2E8F0', overflow: 'hidden' }]}>
+              <MapView
+                style={StyleSheet.absoluteFill}
+                initialRegion={{
+                  latitude: -6.200000,
+                  longitude: 106.816666,
+                  latitudeDelta: 0.05,
+                  longitudeDelta: 0.05,
+                }}
+              >
+              </MapView>
+            </View>
+          )}
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
             <View>
               <Text style={[styles.estimasiLabel, { color: textMuted }]}>Berangkat</Text>
-              <Text style={[styles.estimasiValue, { color: textColor }]}>
+              <Text style={[styles.estimasiValue, { color: textColor, fontSize: 12, fontWeight: '500' }]}>
                 {safeFormatDate(task.dispatch_date || task.assigned_at)}, {safeFormatTime(task.dispatch_date || task.assigned_at)}
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={[styles.estimasiLabel, { color: textMuted }]}>Estimasi Tiba</Text>
-              <Text style={[styles.estimasiValue, { color: textColor }]}>
+              <Text style={[styles.estimasiValue, { color: textColor, fontSize: 12, fontWeight: '500' }]}>
                 {task.estimated_arrival ? `${safeFormatDate(task.estimated_arrival)}, ${safeFormatTime(task.estimated_arrival)}` : '-'}
               </Text>
             </View>
@@ -736,8 +743,8 @@ function TaskDetailScreenContent() {
         {/* Catatan & PIC */}
         <View style={[styles.card, { backgroundColor: cardBackground, borderColor, marginBottom: 100 }]}>
           <Text style={[styles.cardSectionTitle, { color: textColor, marginBottom: 8 }]}>Catatan</Text>
-          <Text style={[styles.noteText, { color: textMuted }]}>
-            {task.notes || '-'}
+          <Text style={[styles.noteText, { color: textMuted, fontStyle: task.notes ? 'normal' : 'italic' }]}>
+            {task.notes || 'Tidak ada Catatan'}
           </Text>
 
           <Text style={[styles.cardSectionTitle, { color: textColor, marginTop: 16, marginBottom: 8 }]}>Penugasan Oleh</Text>

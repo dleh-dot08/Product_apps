@@ -2,6 +2,8 @@ import React from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, Platform, Alert, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/CustomText';
+import { useTheme } from '../../context/ThemeContext';
+import { Colors } from '../../constants/theme';
 import { useAuth } from '../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -10,6 +12,8 @@ const { width } = Dimensions.get('window');
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  const { theme } = useTheme();
+  const colors = Colors[theme];
   const router = useRouter();
 
   const handleLogout = () => {
@@ -31,7 +35,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Blue Header Background */}
       <View style={styles.headerBackground}>
         <View style={styles.headerTop}>
@@ -45,16 +49,16 @@ export default function ProfileScreen() {
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Hero Card */}
-        <View style={styles.heroCard}>
+        <View style={[styles.heroCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
           <View style={styles.heroHeader}>
             <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{getInitials(user?.name || '')}</Text>
+              <View style={[styles.avatar, { backgroundColor: colors.backgroundSelected }]}>
+                <Text style={styles.avatarText}>{getInitials(user?.full_name || user?.name || '')}</Text>
               </View>
             </View>
             <View style={styles.heroInfo}>
-              <Text style={styles.userName}>{user?.name || 'Data Belum Tersedia'}</Text>
-              <Text style={styles.userRole}>{user?.role?.name || 'Data Belum Tersedia'}</Text>
+              <Text style={[styles.userName, { color: colors.text }]}>{user?.full_name || user?.name || 'Data Belum Tersedia'}</Text>
+              <Text style={[styles.userRole, { color: colors.textSecondary }]}>{user?.role?.name || 'Data Belum Tersedia'}</Text>
               <View style={styles.statusBadge}>
                 <Ionicons name="checkmark-circle" size={14} color="#10B981" />
                 <Text style={styles.statusText}>Aktif</Text>
@@ -67,90 +71,90 @@ export default function ProfileScreen() {
 
           <View style={styles.heroDetails}>
             <View style={styles.heroDetailItem}>
-              <Text style={styles.detailLabel}>ID Driver</Text>
-              <Text style={styles.detailValue}>{user?.driver_id || user?.id || 'Data Belum Tersedia'}</Text>
+              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>ID Driver</Text>
+              <Text style={[styles.detailValue, { color: colors.text }]}>{user?.driver_id || user?.id || 'Data Belum Tersedia'}</Text>
             </View>
             <View style={styles.heroDetailItem}>
-              <Text style={styles.detailLabel}>No. HP</Text>
-              <Text style={styles.detailValue}>{user?.phone || 'Data Belum Tersedia'}</Text>
+              <Text style={[styles.detailLabel, { color: colors.textSecondary }]}>No. HP</Text>
+              <Text style={[styles.detailValue, { color: colors.text }]}>{user?.phone || 'Data Belum Tersedia'}</Text>
             </View>
           </View>
         </View>
 
         {/* Quick Stats */}
         <View style={styles.statsContainer}>
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: colors.backgroundElement }]}>
             <Ionicons name="clipboard-outline" size={24} color="#0756C6" style={styles.statIcon} />
-            <Text style={styles.statLabel}>Total Tugas</Text>
-            <Text style={styles.statSubLabel}>Selesai</Text>
-            <Text style={styles.statValue}>{user?.stats?.completed_tasks || 0}</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Total Tugas</Text>
+            <Text style={[styles.statSubLabel, { color: colors.textSecondary }]}>Selesai</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{user?.stats?.completed_tasks || 0}</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: colors.backgroundElement }]}>
             <Ionicons name="time-outline" size={24} color="#0756C6" style={styles.statIcon} />
-            <Text style={styles.statLabel}>Tepat Waktu</Text>
-            <Text style={styles.statValue}>{user?.stats?.on_time_percentage || 0}%</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Tepat Waktu</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{user?.stats?.on_time_percentage || 0}%</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: colors.backgroundElement }]}>
             <Ionicons name="star-outline" size={24} color="#0756C6" style={styles.statIcon} />
-            <Text style={styles.statLabel}>Rating</Text>
-            <Text style={styles.statValue}>{user?.stats?.rating || 0}/5</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Rating</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{user?.stats?.rating || 0}/5</Text>
             <View style={styles.starsRow}>
               {[1, 2, 3, 4, 5].map(i => <Ionicons key={i} name="star" size={10} color={i <= (user?.stats?.rating || 0) ? "#FBBF24" : "#E5E7EB"} />)}
             </View>
           </View>
-          <View style={styles.statCard}>
+          <View style={[styles.statCard, { backgroundColor: colors.backgroundElement }]}>
             <Ionicons name="speedometer-outline" size={24} color="#0756C6" style={styles.statIcon} />
-            <Text style={styles.statLabel}>Jam Mengemudi</Text>
-            <Text style={styles.statValue}>{user?.stats?.driving_hours || 0}</Text>
-            <Text style={styles.statSubLabel}>jam</Text>
+            <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Jam Mengemudi</Text>
+            <Text style={[styles.statValue, { color: colors.text }]}>{user?.stats?.driving_hours || 0}</Text>
+            <Text style={[styles.statSubLabel, { color: colors.textSecondary }]}>jam</Text>
           </View>
         </View>
 
         {/* Informasi Pribadi */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Informasi Pribadi</Text>
+        <View style={[styles.sectionContainer, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Informasi Pribadi</Text>
           
           <View style={styles.infoRow}>
-            <Ionicons name="card-outline" size={20} color="#6B7280" />
-            <Text style={styles.infoLabel}>No. SIM</Text>
-            <Text style={styles.infoValue}>{user?.sim_number || 'Data Belum Tersedia'}</Text>
+            <Ionicons name="card-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>No. SIM</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.sim_number || 'Data Belum Tersedia'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Ionicons name="calendar-outline" size={20} color="#6B7280" />
-            <Text style={styles.infoLabel}>Masa Berlaku SIM</Text>
-            <Text style={styles.infoValue}>{user?.sim_expiry || 'Data Belum Tersedia'}</Text>
+            <Ionicons name="calendar-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Masa Berlaku SIM</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.sim_expiry || 'Data Belum Tersedia'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Ionicons name="location-outline" size={20} color="#6B7280" />
-            <Text style={styles.infoLabel}>Alamat</Text>
-            <Text style={styles.infoValue}>{user?.address || 'Data Belum Tersedia'}</Text>
+            <Ionicons name="location-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Alamat</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.address || 'Data Belum Tersedia'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Ionicons name="mail-outline" size={20} color="#6B7280" />
-            <Text style={styles.infoLabel}>Email</Text>
-            <Text style={styles.infoValue}>{user?.email || 'Data Belum Tersedia'}</Text>
+            <Ionicons name="mail-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Email</Text>
+            <Text style={[styles.infoValue, { color: colors.text }]}>{user?.email || 'Data Belum Tersedia'}</Text>
           </View>
           <View style={styles.infoRow}>
-            <Ionicons name="call-outline" size={20} color="#6B7280" />
-            <Text style={styles.infoLabel}>Kontak Darurat</Text>
+            <Ionicons name="call-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.infoLabel, { color: colors.textSecondary }]}>Kontak Darurat</Text>
             <View style={styles.infoValueColumn}>
-              <Text style={styles.infoValue}>{user?.emergency_contact || 'Data Belum Tersedia'}</Text>
+              <Text style={[styles.infoValue, { color: colors.text }]}>{user?.emergency_contact || 'Data Belum Tersedia'}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={16} color={colors.icon} />
           </View>
         </View>
 
         {/* Kendaraan Favorit */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Kendaraan Favorit / Terakhir Digunakan</Text>
-          <TouchableOpacity style={styles.vehicleCard}>
+        <View style={[styles.sectionContainer, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Kendaraan Favorit / Terakhir Digunakan</Text>
+          <TouchableOpacity style={[styles.vehicleCard, { backgroundColor: colors.backgroundSelected }]}>
             <View style={styles.vehicleIconContainer}>
-              <Ionicons name="bus" size={32} color="#4B5563" />
+              <Ionicons name="bus" size={32} color={colors.textSecondary} />
             </View>
             <View style={styles.vehicleInfo}>
-              <Text style={styles.vehicleName}>{user?.vehicle?.name || 'Data Belum Tersedia'}</Text>
+              <Text style={[styles.vehicleName, { color: colors.text }]}>{user?.vehicle?.name || 'Data Belum Tersedia'}</Text>
               <View style={styles.vehicleMeta}>
-                <Text style={styles.vehiclePlate}>{user?.vehicle?.plate || '-'}</Text>
+                <Text style={[styles.vehiclePlate, { color: colors.textSecondary }]}>{user?.vehicle?.plate || '-'}</Text>
                 {user?.vehicle?.status && (
                   <View style={styles.vehicleBadge}>
                     <Text style={styles.vehicleBadgeText}>{user.vehicle.status}</Text>
@@ -158,53 +162,53 @@ export default function ProfileScreen() {
                 )}
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={20} color={colors.icon} />
           </TouchableOpacity>
         </View>
 
         {/* Menu Akun */}
-        <View style={styles.sectionContainer}>
-          <Text style={styles.sectionTitle}>Menu Akun</Text>
+        <View style={[styles.sectionContainer, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Menu Akun</Text>
           
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profile/edit' as any)}>
-            <Ionicons name="pencil-outline" size={20} color="#4B5563" />
-            <Text style={styles.menuItemText}>Edit Profil</Text>
-            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
+            <Ionicons name="pencil-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.menuItemText, { color: colors.text }]}>Edit Profil</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.icon} style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.backgroundSelected }]} />
           
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/dokumen-driver')}>
-            <Ionicons name="document-text-outline" size={20} color="#4B5563" />
-            <Text style={styles.menuItemText}>Dokumen Driver</Text>
-            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profile/dokumen-driver' as any)}>
+            <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.menuItemText, { color: colors.text }]}>Dokumen Driver</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.icon} style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.backgroundSelected }]} />
 
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/riwayat-tugas')}>
-            <Ionicons name="list-outline" size={20} color="#4B5563" />
-            <Text style={styles.menuItemText}>Riwayat Tugas</Text>
-            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
+            <Ionicons name="list-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.menuItemText, { color: colors.text }]}>Riwayat Tugas</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.icon} style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.backgroundSelected }]} />
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/pengaturan-akun')}>
-            <Ionicons name="settings-outline" size={20} color="#4B5563" />
-            <Text style={styles.menuItemText}>Pengaturan Akun</Text>
-            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profile/pengaturan-akun' as any)}>
+            <Ionicons name="settings-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.menuItemText, { color: colors.text }]}>Pengaturan Akun</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.icon} style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.backgroundSelected }]} />
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/(driver)/pembaruan-sistem' as any)}>
-            <Ionicons name="cloud-download-outline" size={20} color="#4B5563" />
-            <Text style={styles.menuItemText}>Cek Pembaruan OTA</Text>
-            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profile/pembaruan-sistem' as any)}>
+            <Ionicons name="cloud-download-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.menuItemText, { color: colors.text }]}>Cek Pembaruan OTA</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.icon} style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.backgroundSelected }]} />
 
-          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/bantuan')}>
-            <Ionicons name="help-circle-outline" size={20} color="#4B5563" />
-            <Text style={styles.menuItemText}>Bantuan</Text>
-            <Ionicons name="chevron-forward" size={16} color="#9CA3AF" style={{ marginLeft: 'auto' }} />
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push('/profile/bantuan' as any)}>
+            <Ionicons name="help-circle-outline" size={20} color={colors.textSecondary} />
+            <Text style={[styles.menuItemText, { color: colors.text }]}>Bantuan</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.icon} style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
           <View style={styles.divider} />
 

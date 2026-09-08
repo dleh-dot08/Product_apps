@@ -1,17 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, TouchableOpacity, ScrollView, TextInput, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/CustomText';
+import { useTheme } from '../../../context/ThemeContext';
+import { Colors } from '../../../constants/theme';
 import { useAuth } from '../../../context/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
 export default function EditProfileScreen() {
   const { user, updateProfile } = useAuth();
+  const { theme } = useTheme();
+  const colors = Colors[theme];
   const router = useRouter();
 
-  const [name, setName] = useState(user?.name || '');
+  const [name, setName] = useState(user?.full_name || user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+
+  useEffect(() => {
+    if (user) {
+      setName(user.full_name || user.name || '');
+      setEmail(user.email || '');
+    }
+  }, [user]);
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
   
@@ -47,7 +58,7 @@ export default function EditProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Blue Header Background */}
       <View style={styles.headerBackground}>
         <View style={styles.headerTop}>
@@ -60,69 +71,69 @@ export default function EditProfileScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.formCard}>
+        <View style={[styles.formCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Nama Lengkap</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="person-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: colors.text }]}>Nama Lengkap</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.background, borderColor: colors.backgroundSelected }]}>
+              <Ionicons name="person-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.text }]}
                 value={name}
                 onChangeText={setName}
                 placeholder="Masukkan nama lengkap"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textSecondary}
               />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="mail-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: colors.text }]}>Email</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.background, borderColor: colors.backgroundSelected }]}>
+              <Ionicons name="mail-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.text }]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="Masukkan email"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textSecondary}
               />
             </View>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.backgroundSelected }]} />
           
-          <Text style={styles.sectionTitle}>Ubah Password (Opsional)</Text>
-          <Text style={styles.sectionSub}>Kosongkan jika tidak ingin mengubah password.</Text>
+          <Text style={[styles.sectionTitle, { color: colors.text }]}>Ubah Password (Opsional)</Text>
+          <Text style={[styles.sectionSub, { color: colors.textSecondary }]}>Kosongkan jika tidak ingin mengubah password.</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password Baru</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="lock-closed-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: colors.text }]}>Password Baru</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.background, borderColor: colors.backgroundSelected }]}>
+              <Ionicons name="lock-closed-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.text }]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Masukkan password baru"
                 secureTextEntry
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textSecondary}
               />
             </View>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Konfirmasi Password Baru</Text>
-            <View style={styles.inputContainer}>
-              <Ionicons name="shield-checkmark-outline" size={20} color="#6B7280" style={styles.inputIcon} />
+            <Text style={[styles.label, { color: colors.text }]}>Konfirmasi Password Baru</Text>
+            <View style={[styles.inputContainer, { backgroundColor: colors.background, borderColor: colors.backgroundSelected }]}>
+              <Ionicons name="shield-checkmark-outline" size={20} color={colors.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={[styles.input, { color: colors.text }]}
                 value={passwordConfirm}
                 onChangeText={setPasswordConfirm}
                 placeholder="Ketik ulang password baru"
                 secureTextEntry
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={colors.textSecondary}
               />
             </View>
           </View>
