@@ -622,24 +622,12 @@ function TaskDetailScreenContent() {
             </TouchableOpacity>
           </View>
           <View style={[styles.mapPlaceholder, { backgroundColor: '#E2E8F0', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }]}>
-            {Platform.OS === 'web' || !MapView ? (
-              <Text style={{ color: textMuted, fontStyle: 'italic' }}>[Peta Aktif Hanya Tersedia di Native/HP]</Text>
-            ) : (
-              <MapView
-                style={{ width: '100%', height: '100%' }}
-                initialRegion={{
-                  latitude: -6.200000, // Default to Jakarta
-                  longitude: 106.816666,
-                  latitudeDelta: 0.0922,
-                  longitudeDelta: 0.0421,
-                }}
-              >
-                <Marker
-                  coordinate={{ latitude: -6.200000, longitude: 106.816666 }}
-                  title={task.destination_name || task.destination || 'Tujuan'}
-                />
-              </MapView>
-            )}
+            <View style={{ alignItems: 'center' }}>
+              <Ionicons name="map-outline" size={48} color={textMuted} style={{ marginBottom: 8, opacity: 0.5 }} />
+              <Text style={{ color: textMuted, fontSize: 13, textAlign: 'center', paddingHorizontal: 20 }}>
+                Pratinjau peta dalam aplikasi dinonaktifkan untuk mencegah aplikasi crash (Blank Putih). Anda wajib melakukan build ulang APK (eas build) agar komponen peta terinstall di HP/Emulator Anda. Silakan gunakan tombol <Text style={{ fontWeight: 'bold' }}>"Lihat di Maps"</Text> di atas.
+              </Text>
+            </View>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 12 }}>
             <View>
