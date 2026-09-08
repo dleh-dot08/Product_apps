@@ -2,10 +2,13 @@ import React from 'react';
 import { Text as RNText, TextProps, StyleSheet, Dimensions, PixelRatio, Platform } from 'react-native';
 
 const { width } = Dimensions.get('window');
-// 375 adalah standar lebar layar (misal iPhone X / HP ukuran sedang)
-const scale = width / 375;
+// Batasi lebar maksimal untuk perhitungan scale (misal tablet/web agar font tidak raksasa)
+const scaleWidth = Math.min(width, 450);
+const scale = scaleWidth / 375;
 
 export function normalize(size: number) {
+  if (Platform.OS === 'web') return size;
+
   const newSize = size * scale;
   if (Platform.OS === 'ios') {
     return Math.round(PixelRatio.roundToNearestPixel(newSize));
