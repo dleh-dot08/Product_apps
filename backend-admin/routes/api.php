@@ -117,7 +117,7 @@ Route::middleware('web')->group(function () {
                 $query->where('tgl_so', '<=', $dateTo);
             }
 
-            // Filter by Status Hold
+            // Filter by Status Hold.
             $statusHold = $request->input('status_hold');
             if ($statusHold !== null && $statusHold !== '') {
                 $query->where('is_held', $statusHold);
