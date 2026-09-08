@@ -140,6 +140,8 @@ export default function DriverDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isNotificationModalVisible, setNotificationModalVisible] = useState(false);
+  const [isPeriodModalVisible, setPeriodModalVisible] = useState(false);
+  const [periodFilter, setPeriodFilter] = useState({ value: '7_days', label: '7 Hari Terakhir' });
 
   const pageBackground = isDark ? colors.background : BRAND.page;
   const cardBackground = isDark ? colors.backgroundElement : BRAND.white;
@@ -170,7 +172,7 @@ export default function DriverDashboard() {
 
   const fetchDashboard = useCallback(async () => {
     try {
-      const response = await api.get('/driver/dashboard');
+      const response = await api.get(`/driver/dashboard?period=${periodFilter.value}`);
 
       if (response.data?.status === 'success') {
         setDashboardData(response.data.data);
@@ -181,7 +183,7 @@ export default function DriverDashboard() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, []);
+  }, [periodFilter.value]);
 
   useFocusEffect(
     useCallback(() => {
@@ -471,6 +473,8 @@ export default function DriverDashboard() {
                 cardBackground={cardBackground}
                 borderColor={borderColor}
                 textColor={textColor}
+                periodLabel={periodFilter.label}
+                onPressPeriod={() => setPeriodModalVisible(true)}
               />
 
             </>
@@ -522,6 +526,56 @@ export default function DriverDashboard() {
               ) : (
                 <Text style={styles.emptyNotificationText}>Tidak ada notifikasi baru.</Text>
               )}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal
+        visible={isPeriodModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setPeriodModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay} 
+          onPress={() => setPeriodModalVisible(false)}
+        >
+          <Pressable style={[styles.modalContent, { backgroundColor: cardBackground }]}>
+            <View style={styles.modalHeader}>
+              <Text style={[styles.modalTitle, { color: textColor }]}>Pilih Periode Performa</Text>
+              <TouchableOpacity onPress={() => setPeriodModalVisible(false)}>
+                <Ionicons name="close" size={24} color={textColor} />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalBody}>
+              {[
+                { value: '7_days', label: '7 Hari Terakhir' },
+                { value: '1_month', label: '1 Bulan Terakhir' },
+                { value: '3_months', label: '3 Bulan Terakhir' },
+                { value: '6_months', label: '6 Bulan Terakhir' },
+                { value: '1_year', label: '1 Tahun Terakhir' },
+                { value: 'all', label: 'Semua Waktu' },
+              ].map(option => (
+                <TouchableOpacity 
+                  key={option.value} 
+                  style={[
+                    styles.notificationItem, 
+                    { borderBottomColor: borderColor, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }
+                  ]}
+                  onPress={() => {
+                    setPeriodFilter(option);
+                    setPeriodModalVisible(false);
+                  }}
+                >
+                  <Text style={[styles.notificationItemTitle, { color: textColor, paddingVertical: 10, fontSize: 14 }]}>
+                    {option.label}
+                  </Text>
+                  {periodFilter.value === option.value && (
+                    <Ionicons name="checkmark-circle" size={22} color={BRAND.primary} />
+                  )}
+                </TouchableOpacity>
+              ))}
             </ScrollView>
           </Pressable>
         </Pressable>
@@ -856,11 +910,15 @@ function PerformanceCard({
   cardBackground,
   borderColor,
   textColor,
+  periodLabel,
+  onPressPeriod,
 }: {
   dashboardData: DashboardData | null;
   cardBackground: string;
   borderColor: string;
   textColor: string;
+  periodLabel: string;
+  onPressPeriod: () => void;
 }) {
   const performance = dashboardData?.performance;
   const onTime = Math.min(Math.max(performance?.on_time_percentage ?? 0, 0), 100);
@@ -879,11 +937,11 @@ function PerformanceCard({
       <View style={styles.performanceHeader}>
         <Text style={[styles.performanceTitle, { color: textColor }]}>Performa Anda</Text>
 
-        <View style={styles.periodChip}>
+        <TouchableOpacity style={styles.periodChip} onPress={onPressPeriod}>
           <Ionicons name="calendar-outline" size={12} color={BRAND.primary} />
-          <Text style={styles.periodChipText}>7 Hari Terakhir</Text>
+          <Text style={styles.periodChipText}>{periodLabel}</Text>
           <Ionicons name="chevron-down" size={11} color={BRAND.primary} />
-        </View>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.performanceScoreRow}>

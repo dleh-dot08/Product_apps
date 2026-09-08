@@ -11,10 +11,21 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Platform } from 'react-native';
+import { Platform, Linking } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 
 let MapView: any = null;
 let Marker: any = null;
+
+if (Platform.OS !== 'web') {
+  try {
+    const Maps = require('react-native-maps');
+    MapView = Maps.default || Maps;
+    Marker = Maps.Marker;
+  } catch (e) {
+    console.log('Error loading react-native-maps:', e);
+  }
+}
 
 const safeFormatDate = (dateString?: string | null) => {
   if (!dateString) return '-';
@@ -47,17 +58,25 @@ import { startLocationTracking, stopLocationTracking } from '../../../services/L
 
 const BRAND = {
   primary: '#0756C6',
+  primaryDark: '#063B8C',
   primarySoft: '#EAF3FF',
-  white: '#FFFFFF',
-  page: '#F8FAFC',
-  text: '#1E293B',
-  muted: '#64748B',
-  border: '#E2E8F0',
-  success: '#10B981',
-  successSoft: '#D1FAE5',
-  warning: '#F59E0B',
-  warningSoft: '#FEF3C7',
+  teal: '#0F9FA8',
+  tealSoft: '#E7F8F8',
+  success: '#16A36A',
+  successSoft: '#EAF8F1',
+  warning: '#F97316',
+  warningSoft: '#FFF2E8',
+  violet: '#6D48D7',
+  violetSoft: '#F2ECFF',
   danger: '#EF4444',
+  white: '#FFFFFF',
+  page: '#F5F7FB',
+  text: '#0F172A',
+  textSecondary: '#475569',
+  muted: '#64748B',
+  subtle: '#94A3B8',
+  border: '#E5EAF1',
+  borderSoft: '#EDF1F6',
 };
 
 type TaskStatus = 'assigned' | 'on_route' | 'arrived' | 'delivered' | 'failed' | 'cancelled' | string;
@@ -94,6 +113,7 @@ type TaskDetail = {
     employee_id?: string | null;
   } | null;
 
+  item_number?: string | null;
   item_description?: string | null;
   quantity?: string | number | null;
   unit?: string | null;
@@ -128,11 +148,13 @@ type TaskDetail = {
   assigner?: {
     name?: string | null;
     full_name?: string | null;
+    phone?: string | null;
   } | null;
 
   assigned_by?: {
     name?: string | null;
     full_name?: string | null;
+    phone?: string | null;
   } | null;
 
   items?: TaskItemDetail[] | null;
@@ -399,6 +421,22 @@ function TaskDetailScreenContent() {
 
   const isPickup = task.task_type === 'pickup';
 
+  const openMap = () => {
+    let query = '';
+    if (isPickup) {
+      query = task.pickup_location || task.pickup_name || '';
+    } else {
+      query = task.sales_order?.source_data?.address || task.destination || task.sales_order?.customer_name || '';
+    }
+    const encodedQuery = encodeURIComponent(query);
+    const url = Platform.select({
+      ios: `maps:0,0?q=${encodedQuery}`,
+      android: `geo:0,0?q=${encodedQuery}`,
+      default: `https://www.google.com/maps/search/?api=1&query=${encodedQuery}`
+    });
+    if (url) Linking.openURL(url);
+  };
+
   // Bottom action button logic
   let btnLabel = '';
   let btnAction = () => { };
@@ -416,7 +454,15 @@ function TaskDetailScreenContent() {
   return (
     <View style={[styles.container, { backgroundColor: pageBackground }]}>
       {/* Blue Header Area */}
-      <View style={styles.headerArea}>
+      <LinearGradient
+        colors={[
+          'rgba(2, 43, 103, 0.95)',
+          'rgba(5, 79, 183, 1)',
+          '#0756C6',
+        ]}
+        locations={[0, 0.5, 1]}
+        style={styles.headerArea}
+      >
         <View style={styles.headerTop}>
           <TouchableOpacity onPress={() => router.canGoBack() && router.back()} style={styles.headerIcon}>
             <Ionicons name="arrow-back" size={24} color="#FFF" />
@@ -426,7 +472,7 @@ function TaskDetailScreenContent() {
             <Ionicons name="ellipsis-vertical" size={24} color="#FFF" />
           </TouchableOpacity>
         </View>
-      </View>
+      </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}>
@@ -466,9 +512,13 @@ function TaskDetailScreenContent() {
           {/* Timeline Route */}
           <View style={styles.timelineRow}>
             <View style={styles.timelineIconCol}>
-              <Ionicons name="location" size={18} color={BRAND.primary} />
-              <View style={[styles.timelineLine, { backgroundColor: BRAND.border }]} />
-              <Ionicons name="location" size={18} color={BRAND.primary} />
+              <View style={styles.timelineIconWrapper}>
+                <Ionicons name="location" size={16} color={BRAND.primary} />
+              </View>
+              <View style={[styles.timelineLine, { backgroundColor: BRAND.primarySoft }]} />
+              <View style={[styles.timelineIconWrapper, { backgroundColor: BRAND.tealSoft }]}>
+                <Ionicons name="flag" size={16} color={BRAND.teal} />
+              </View>
             </View>
             <View style={styles.timelineContentCol}>
               <View style={styles.timelineItem}>
@@ -479,7 +529,7 @@ function TaskDetailScreenContent() {
                   </Text>
                 </View>
                 <Text style={[styles.timelineLocName, { color: textColor }]}>
-                  {isPickup ? task.pickup_name : task.delivery_pickup_name || '-'} 
+                  {isPickup ? task.pickup_name : task.pickup_name || '-'} 
                   {isPickup ? (task.pickup_point ? ` (${task.pickup_point})` : '') : (task.delivery_origin_point ? ` (${task.delivery_origin_point})` : '')}
                 </Text>
                 {(isPickup ? task.pickup_pic_name : task.delivery_sender_pic) && (
@@ -488,7 +538,7 @@ function TaskDetailScreenContent() {
                   </Text>
                 )}
                 <Text style={[styles.timelineAddress, { color: textMuted }]}>
-                  {isPickup ? task.pickup_location : task.delivery_pickup_location || '-'}
+                  {isPickup ? task.pickup_location : task.pickup_location || '-'}
                 </Text>
               </View>
               
@@ -502,7 +552,7 @@ function TaskDetailScreenContent() {
                 <Text style={[styles.timelineLocName, { color: textColor }]}>
                   {isPickup 
                     ? task.destination_name || (task.sales_order ? task.sales_order.customer_name : task.destination) 
-                    : task.customer_name || (task.sales_order ? task.sales_order.customer_name : '-') || '-'}
+                    : task.destination || (task.sales_order ? task.sales_order.customer_name : '-') || '-'}
                   {isPickup ? (task.destination_point ? ` (${task.destination_point})` : '') : (task.delivery_target_point ? ` (${task.delivery_target_point})` : '')}
                 </Text>
                 {(isPickup ? task.destination_pic_name : task.delivery_receiver_pic) && (
@@ -513,7 +563,7 @@ function TaskDetailScreenContent() {
                 <Text style={[styles.timelineAddress, { color: textMuted }]}>
                   {isPickup 
                     ? task.pickup_destination || task.destination || '-' 
-                    : task.pickup_destination || (task.sales_order ? task.sales_order.source_data?.address : '-')}
+                    : task.sales_order && task.sales_order.source_data?.address ? task.sales_order.source_data.address : '-'}
                 </Text>
               </View>
             </View>
@@ -523,34 +573,41 @@ function TaskDetailScreenContent() {
 
           {/* 4 Info Blocks */}
           <View style={styles.grid2x2}>
-            <View style={styles.gridItem}>
-              <Ionicons name="document-text-outline" size={16} color={textMuted} style={styles.gridIcon} />
+            <View style={[styles.gridItem, { backgroundColor: pageBackground, borderColor }]}>
+              <View style={[styles.gridIconWrapper, { backgroundColor: BRAND.primarySoft }]}>
+                <Ionicons name="document-text-outline" size={16} color={BRAND.primary} />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.gridLabel, { color: textMuted }]}>Dokumen</Text>
-                <Text style={[styles.gridValue, { color: textColor }]}>{task.reference_number || '-'}</Text>
+                <Text style={[styles.gridValue, { color: textColor }]} numberOfLines={1}>{task.reference_number || '-'}</Text>
               </View>
             </View>
-            <View style={styles.gridItem}>
-              <Ionicons name="bus-outline" size={16} color={textMuted} style={styles.gridIcon} />
+            <View style={[styles.gridItem, { backgroundColor: pageBackground, borderColor }]}>
+              <View style={[styles.gridIconWrapper, { backgroundColor: BRAND.violetSoft }]}>
+                <Ionicons name="bus-outline" size={16} color={BRAND.violet} />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.gridLabel, { color: textMuted }]}>Kendaraan</Text>
-                <Text style={[styles.gridValue, { color: textColor }]}>{task.vehicle?.name || '-'}</Text>
-                <Text style={[styles.gridValueSub, { color: textMuted }]}>{task.vehicle?.plate_number || '-'}</Text>
+                <Text style={[styles.gridValue, { color: textColor }]} numberOfLines={1}>{task.vehicle?.plate_number || '-'}</Text>
+                <Text style={[styles.gridValueSub, { color: textMuted }]} numberOfLines={1}>{task.vehicle?.name || '-'}</Text>
               </View>
             </View>
-            <View style={styles.gridItem}>
-              <Ionicons name="person-outline" size={16} color={textMuted} style={styles.gridIcon} />
+            <View style={[styles.gridItem, { backgroundColor: pageBackground, borderColor }]}>
+              <View style={[styles.gridIconWrapper, { backgroundColor: BRAND.tealSoft }]}>
+                <Ionicons name="person-outline" size={16} color={BRAND.teal} />
+              </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.gridLabel, { color: textMuted }]}>Driver</Text>
-                <Text style={[styles.gridValue, { color: textColor }]}>{task.driver?.full_name || task.driver?.name || '-'}</Text>
-                <Text style={[styles.gridValueSub, { color: textMuted }]}>{task.driver?.employee_id || task.driver?.id || '-'}</Text>
+                <Text style={[styles.gridValue, { color: textColor }]} numberOfLines={1}>{task.driver?.full_name || task.driver?.name || '-'}</Text>
               </View>
             </View>
-            <View style={styles.gridItem}>
-              <Ionicons name="bar-chart-outline" size={16} color={textMuted} style={styles.gridIcon} />
+            <View style={[styles.gridItem, { backgroundColor: pageBackground, borderColor }]}>
+              <View style={[styles.gridIconWrapper, { backgroundColor: BRAND.warningSoft }]}>
+                <Ionicons name="cube-outline" size={16} color={BRAND.warning} />
+              </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.gridLabel, { color: textMuted }]}>Total Muatan</Text>
-                <Text style={[styles.gridValue, { color: textColor }]}>{task.quantity || '-'} {task.unit || ''}</Text>
+                <Text style={[styles.gridLabel, { color: textMuted }]}>Muatan</Text>
+                <Text style={[styles.gridValue, { color: textColor }]} numberOfLines={1}>{task.quantity ? Number(task.quantity).toString().replace('.', ',') : '-'} {task.unit || ''}</Text>
               </View>
             </View>
           </View>
@@ -560,7 +617,7 @@ function TaskDetailScreenContent() {
         <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}>
           <View style={styles.cardSectionHeader}>
             <Text style={[styles.cardSectionTitle, { color: textColor }]}>Rute & Estimasi</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={openMap}>
               <Text style={styles.linkText}>Lihat di Maps</Text>
             </TouchableOpacity>
           </View>
@@ -588,13 +645,13 @@ function TaskDetailScreenContent() {
             <View>
               <Text style={[styles.estimasiLabel, { color: textMuted }]}>Berangkat</Text>
               <Text style={[styles.estimasiValue, { color: textColor }]}>
-                {safeFormatTime(task.dispatch_date || task.assigned_at)}
+                {safeFormatDate(task.dispatch_date || task.assigned_at)}, {safeFormatTime(task.dispatch_date || task.assigned_at)}
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end' }}>
               <Text style={[styles.estimasiLabel, { color: textMuted }]}>Estimasi Tiba</Text>
               <Text style={[styles.estimasiValue, { color: textColor }]}>
-                {safeFormatTime(task.estimated_arrival)}
+                {task.estimated_arrival ? `${safeFormatDate(task.estimated_arrival)}, ${safeFormatTime(task.estimated_arrival)}` : '-'}
               </Text>
             </View>
           </View>
@@ -622,12 +679,23 @@ function TaskDetailScreenContent() {
                     }
                   }}
                 >
-                  <View style={[styles.progressCircle, { backgroundColor: step.done || step.active ? BRAND.primary : BRAND.border }]}>
-                    <Text style={[styles.progressStepNum, { color: step.done || step.active ? '#FFF' : textMuted }]}>{step.id}</Text>
+                  <View style={[styles.progressCircle, { 
+                    backgroundColor: step.done ? BRAND.successSoft : (step.active ? BRAND.primarySoft : BRAND.borderSoft),
+                    borderColor: step.done ? BRAND.success : (step.active ? BRAND.primary : 'transparent'),
+                    borderWidth: step.done || step.active ? 2 : 0
+                  }]}>
+                    {step.done ? (
+                      <Ionicons name="checkmark" size={16} color={BRAND.success} />
+                    ) : (
+                      <Text style={[styles.progressStepNum, { 
+                        color: step.active ? BRAND.primary : textMuted,
+                        fontWeight: step.active ? 'bold' : 'normal'
+                      }]}>{step.id}</Text>
+                    )}
                   </View>
-                  <Text style={[styles.progressStepLabel, { color: step.done || step.active ? textColor : textMuted, textAlign: 'center' }]}>{step.label}</Text>
+                  <Text style={[styles.progressStepLabel, { color: step.done || step.active ? textColor : textMuted, textAlign: 'center', fontWeight: step.done || step.active ? '600' : '400' }]}>{step.label}</Text>
                   {idx < arr.length - 1 && (
-                    <View style={[styles.progressLine, { backgroundColor: step.done ? BRAND.primary : BRAND.border }]} />
+                    <View style={[styles.progressLine, { backgroundColor: step.done ? BRAND.success : BRAND.borderSoft }]} />
                   )}
                 </TouchableOpacity>
               );
@@ -658,6 +726,17 @@ function TaskDetailScreenContent() {
                 </Text>
               </View>
             ))
+          ) : (task.item_description || task.item_number) ? (
+              <View style={[styles.tableRow, { borderBottomColor: BRAND.border }]}>
+                <Text style={[styles.tableColNo, { color: textColor }]}>1</Text>
+                <View style={[styles.tableColDesc, { paddingRight: 8 }]}>
+                  <Text style={[styles.itemName, { color: textColor }]}>{task.item_description || '-'}</Text>
+                  <Text style={[styles.itemNumber, { color: textMuted }]}>{task.item_number || '-'}</Text>
+                </View>
+                <Text style={[styles.tableColQty, { color: textColor }]}>
+                  {task.quantity ? Number(task.quantity).toString().replace('.', ',') : '-'} {task.unit || ''}
+                </Text>
+              </View>
           ) : (
             <View style={{ paddingVertical: 16, alignItems: 'center' }}>
               <Text style={{ color: textMuted, fontStyle: 'italic' }}>Tidak ada data barang</Text>
@@ -676,13 +755,19 @@ function TaskDetailScreenContent() {
           <Text style={[styles.cardSectionTitle, { color: textColor, marginTop: 16, marginBottom: 8 }]}>Penugasan Oleh</Text>
           <View style={[styles.picCard, { borderColor }]}>
             <View style={styles.picAvatar}>
-              <Ionicons name="person" size={20} color="#FFF" />
+              <Ionicons name="person" size={18} color={BRAND.primary} />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={[styles.picName, { color: textColor }]}>{task.assigner?.full_name || task.assigner?.name || task.assigned_by?.full_name || '-'}</Text>
               <Text style={[styles.picRole, { color: textMuted }]}>Admin</Text>
             </View>
-            <TouchableOpacity style={styles.callButton}>
+            <TouchableOpacity 
+              style={styles.callButton}
+              onPress={() => {
+                const phone = task.assigner?.phone || task.assigned_by?.phone || '081234567890';
+                Linking.openURL(`tel:${phone}`);
+              }}
+            >
               <Ionicons name="call" size={18} color={BRAND.primary} />
             </TouchableOpacity>
           </View>
@@ -802,12 +887,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerArea: {
-    backgroundColor: BRAND.primary,
-    paddingTop: 50,
-    paddingBottom: 20,
+    paddingTop: 55,
+    paddingBottom: 25,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
   },
   headerTop: {
     flexDirection: 'row',
@@ -826,15 +910,16 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   card: {
-    borderRadius: 12,
+    borderRadius: 19,
     borderWidth: 1,
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
     marginBottom: 16,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
+    shadowColor: '#10264B',
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.07,
+    shadowRadius: 14,
+    elevation: 4,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -878,11 +963,22 @@ const styles = StyleSheet.create({
   timelineIconCol: {
     alignItems: 'center',
     marginRight: 16,
+    paddingTop: 4,
+  },
+  timelineIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: BRAND.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 2,
   },
   timelineLine: {
     width: 2,
-    height: 40,
-    marginVertical: 4,
+    height: 60,
+    marginVertical: -6,
+    zIndex: 1,
   },
   timelineContentCol: {
     flex: 1,
@@ -913,28 +1009,36 @@ const styles = StyleSheet.create({
   grid2x2: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    rowGap: 16,
+    justifyContent: 'space-between',
+    rowGap: 12,
   },
   gridItem: {
-    width: '50%',
+    width: '48%',
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    padding: 10,
+    borderRadius: 14,
+    borderWidth: 1,
   },
-  gridIcon: {
+  gridIconWrapper: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: 8,
-    marginTop: 2,
   },
   gridLabel: {
-    fontSize: 11,
+    fontSize: 10,
     marginBottom: 2,
   },
   gridValue: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
   },
   gridValueSub: {
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: 10,
+    marginTop: 1,
   },
   cardSectionHeader: {
     flexDirection: 'row',
@@ -976,9 +1080,9 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   progressCircle: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
@@ -1053,14 +1157,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 14,
     borderWidth: 1,
   },
   picAvatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#94A3B8',
+    backgroundColor: BRAND.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1083,12 +1187,22 @@ const styles = StyleSheet.create({
     right: 0,
     padding: 16,
     borderTopWidth: 1,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
   },
   actionBtn: {
     backgroundColor: BRAND.primary,
     paddingVertical: 14,
-    borderRadius: 12,
+    borderRadius: 16,
     alignItems: 'center',
+    shadowColor: BRAND.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   actionBtnText: {
     color: '#FFF',
