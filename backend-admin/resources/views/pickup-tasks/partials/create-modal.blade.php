@@ -1095,11 +1095,12 @@ document.addEventListener('DOMContentLoaded', function () {
         const taskType = getCurrentTaskType();
         const isDelivery = taskType === 'delivery';
         
-        // Gunakan API Proxy lokal (detail-so / detail-po) agar lebih stabil dan formatnya rapi
-        // Route ini sudah disiapkan di routes/api.php
+        // Gunakan API Proxy lokal (detail-so / detail-po) dengan helper Laravel url() 
+        // agar tidak 404 jika di-deploy di subfolder (live server)
+        const baseUrl = "{{ url('api/integration') }}";
         const apiUrl = isDelivery 
-            ? `/api/integration/detail-so/${encodeURIComponent(refNumber)}`
-            : `/api/integration/detail-po/${encodeURIComponent(refNumber)}`;
+            ? `${baseUrl}/detail-so/${encodeURIComponent(refNumber)}`
+            : `${baseUrl}/detail-po/${encodeURIComponent(refNumber)}`;
 
         syncReferenceValue();
 
