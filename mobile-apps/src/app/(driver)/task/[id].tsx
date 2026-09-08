@@ -104,6 +104,12 @@ type TaskDetail = {
   completed_odometer?: number | null;
   notes?: string | null;
   
+  priority?: string | null;
+  pickup_pic_name?: string | null;
+  pickup_point?: string | null;
+  destination_pic_name?: string | null;
+  destination_point?: string | null;
+  
   sales_order?: {
     customer_name?: string | null;
     source_data?: { address?: string | null; };
@@ -419,8 +425,15 @@ function TaskDetailScreenContent() {
             <Text style={[styles.taskRef, { color: textColor }]}>
               {task.reference_number || '-'}
             </Text>
-            <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
-              <Text style={[styles.statusBadgeText, { color: statusColor }]}>{statusLabel}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {task.priority && task.priority !== 'normal' && (
+                <View style={[styles.statusBadge, { backgroundColor: BRAND.danger + '20' }]}>
+                  <Text style={[styles.statusBadgeText, { color: BRAND.danger, textTransform: 'capitalize' }]}>{task.priority}</Text>
+                </View>
+              )}
+              <View style={[styles.statusBadge, { backgroundColor: statusBg }]}>
+                <Text style={[styles.statusBadgeText, { color: statusColor }]}>{statusLabel}</Text>
+              </View>
             </View>
           </View>
           <Text style={[styles.taskSubtitle, { color: textMuted }]}>
@@ -455,7 +468,12 @@ function TaskDetailScreenContent() {
                     {safeFormatDate(task.dispatch_date || task.assigned_at)} {safeFormatTime(task.dispatch_date || task.assigned_at)}
                   </Text>
                 </View>
-                <Text style={[styles.timelineLocName, { color: textColor }]}>{task.pickup_name || '-'}</Text>
+                <Text style={[styles.timelineLocName, { color: textColor }]}>
+                  {task.pickup_name || '-'} {task.pickup_point ? `(${task.pickup_point})` : ''}
+                </Text>
+                {task.pickup_pic_name && (
+                   <Text style={[styles.timelineAddress, { color: textColor, fontWeight: '600' }]}>PIC: {task.pickup_pic_name}</Text>
+                )}
                 <Text style={[styles.timelineAddress, { color: textMuted }]}>{task.pickup_location || '-'}</Text>
               </View>
               
@@ -466,7 +484,13 @@ function TaskDetailScreenContent() {
                     {task.estimated_arrival ? `${safeFormatDate(task.estimated_arrival)} ${safeFormatTime(task.estimated_arrival)}` : 'Estimasi'}
                   </Text>
                 </View>
-                <Text style={[styles.timelineLocName, { color: textColor }]}>{task.destination_name || (task.sales_order ? task.sales_order.customer_name : task.destination) || '-'}</Text>
+                <Text style={[styles.timelineLocName, { color: textColor }]}>
+                  {task.destination_name || (task.sales_order ? task.sales_order.customer_name : task.destination) || '-'}
+                  {task.destination_point ? ` (${task.destination_point})` : ''}
+                </Text>
+                {task.destination_pic_name && (
+                   <Text style={[styles.timelineAddress, { color: textColor, fontWeight: '600' }]}>PIC: {task.destination_pic_name}</Text>
+                )}
                 <Text style={[styles.timelineAddress, { color: textMuted }]}>{task.task_type === 'delivery' && task.sales_order ? task.sales_order.source_data?.address : task.destination || '-'}</Text>
               </View>
             </View>
