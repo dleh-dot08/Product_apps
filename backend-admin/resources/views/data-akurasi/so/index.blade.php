@@ -611,7 +611,7 @@
             fetchSalesOrders(1);
 
             // Trigger background sync silently
-            fetch('{{ route("api.integration.trigger_sync_so") }}', {
+            fetch('/api/integration/trigger-sync-so', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -732,7 +732,7 @@
                 date_to: dateTo
             });
 
-            fetch(`{{ route("api.integration.search_so") }}?${queryParams.toString()}`)
+            fetch(`/api/integration/search-so?${queryParams.toString()}`)
                 .then(response => response.json())
                 .then(result => {
                     renderTable(result);
@@ -776,7 +776,7 @@
             const modal = new bootstrap.Modal(document.getElementById('detailModal'));
             modal.show();
 
-            fetch(`{{ url('/api/integration/detail-so') }}/${encodeURIComponent(no_so)}`)
+            fetch(`/api/integration/detail-so/${encodeURIComponent(no_so)}`)
                 .then(res => res.json())
                 .then(so => {
                     if(so.error) throw new Error(so.error);
