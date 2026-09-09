@@ -149,4 +149,57 @@ Route::get('/updates', [OtaUpdateController::class, 'manifest'])
 Route::get('/updates/assets', [OtaUpdateController::class, 'asset'])
     ->name('ota.asset');
 
+// ============================================================
+// TEMPORARY RECOVERY ROUTE (HAPUS SETELAH WEB NORMAL)
+// ============================================================
+Route::get('/sys-fix-session-recovery', function () {
+    $results = [];
+
+    // 1. Pastikan folder framework ada di server dan permission aman
+    $directories = [
+        storage_path('framework/sessions'),
+        storage_path('framework/views'),
+        storage_path('framework/cache'),
+        storage_path('logs'),
+    ];
+
+    foreach ($directories as $dir) {
+        if (!\Illuminate\Support\Facades\File::exists($dir)) {
+            \Illuminate\Support\Facades\File::makeDirectory($dir, 0775, true, true);
+            $results[] = "Created directory: {$dir}";
+        } else {
+            @chmod($dir, 0775);
+            $results[] = "Directory exists & chmod checked: {$dir}";
+        }
+    }
+
+    // 2. Cek apakah tabel sessions ada di database
+    try {
+        $hasSessionsTable = \Illuminate\Support\Facades\Schema::hasTable('sessions');
+        $results[] = $hasSessionsTable 
+            ? "Tabel 'sessions' TERSEDIA di database." 
+            : "PERINGATAN: Tabel 'sessions' TIDAK DITEMUKAN di database!";
+    } catch (\Exception $e) {
+        $results[] = "Database check error: " . $e->getMessage();
+    }
+
+    // 3. Clear cache sistem agar token CSRF & config baru termuat
+    try {
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        \Illuminate\Support\Facades\Artisan::call('view:clear');
+        \Illuminate\Support\Facades\Artisan::call('route:clear');
+        $results[] = "Cache, view, route, dan config berhasil di-clear!";
+    } catch (\Exception $e) {
+        $results[] = "Artisan error: " . $e->getMessage();
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'app_key_exists' => !empty(config('app.key')),
+        'session_driver' => config('session.driver'),
+        'details' => $results,
+    ]);
+});
+
 require __DIR__.'/auth.php';
