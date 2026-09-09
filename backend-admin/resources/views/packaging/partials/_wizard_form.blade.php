@@ -811,7 +811,12 @@
                 itemConfigs = {};
                 
                 try {
-                    const response = await fetch(`/api/integration/search-so?q=${encodeURIComponent(query)}`);
+                    const response = await fetch(`/api/integration/search-so?q=${encodeURIComponent(query)}`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
                     const result = await response.json();
                     
                     if (result.data && result.data.length > 0) {

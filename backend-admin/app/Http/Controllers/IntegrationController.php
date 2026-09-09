@@ -205,7 +205,13 @@ class IntegrationController extends Controller
 
             if (!$response->successful()) {
                 Log::error('Akurasi API returned an error', ['endpoint' => $endpoint, 'status' => $response->status(), 'body' => $response->body()]);
-                return response()->json(['error' => 'Akurasi API mengembalikan error', 'upstream_status' => $response->status()], 502);
+                
+                $status = $response->status();
+                if ($status >= 400 && $status < 500) {
+                    return response()->json(['error' => 'Data tidak ditemukan di API Akurasi', 'upstream_status' => $status], 404);
+                }
+                
+                return response()->json(['error' => 'Akurasi API mengembalikan error', 'upstream_status' => $status], 502);
             }
 
             return $response;
