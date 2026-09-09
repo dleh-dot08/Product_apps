@@ -1,8 +1,7 @@
 import axios from 'axios';
-import { getStorageItemAsync } from '../context/AuthContext';
+import { getStorageItemAsync } from '../utils/storage';
 
 const API_BASE_URL = 'https://driverapp.aqpa-indonesia.com/api';
-
 const API_KEY = 'cHJvZHVjdF9hcHBzX2FwaV9yb3V0ZXJfMjAyNg==';
 
 const api = axios.create({

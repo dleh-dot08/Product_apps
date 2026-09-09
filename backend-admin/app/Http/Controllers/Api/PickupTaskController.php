@@ -268,7 +268,10 @@ class PickupTaskController extends Controller
         // Backward compatibility for proof_photo
         if ($newStatus === 'delivered') {
             if ($request->hasFile('proof_photo')) {
-                $updateData['proof_photo'] = $request->file('proof_photo')->store('proofs', 'public');
+                $file = $request->file('proof_photo');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $file->move(public_path('uploads/proofs'), $fileName);
+                $updateData['proof_photo'] = "uploads/proofs/" . $fileName;
             } elseif ($request->has('proof_photo')) {
                 $updateData['proof_photo'] = $request->input('proof_photo');
             }
@@ -323,7 +326,11 @@ class PickupTaskController extends Controller
         
         foreach ($attachmentCategories as $category) {
             if ($request->hasFile($category)) {
-                $filePath = $request->file($category)->store("task_attachments/{$id}", 'public');
+                $file = $request->file($category);
+                $fileName = time() . '_' . $category . '_' . $file->getClientOriginalName();
+                $file->move(public_path("uploads/task_attachments/{$id}"), $fileName);
+                $filePath = "uploads/task_attachments/{$id}/" . $fileName;
+                
                 $task->attachments()->create([
                     'category' => $category,
                     'file_path' => $filePath,
@@ -341,8 +348,11 @@ class PickupTaskController extends Controller
             $attCategory = $request->input('attachment_category', $categoryMap[$newStatus] ?? 'attachments');
 
             $files = $request->file('attachments');
-            foreach ($files as $file) {
-                $filePath = $file->store("task_attachments/{$id}", 'public');
+            foreach ($files as $index => $file) {
+                $fileName = time() . '_' . $index . '_' . $file->getClientOriginalName();
+                $file->move(public_path("uploads/task_attachments/{$id}"), $fileName);
+                $filePath = "uploads/task_attachments/{$id}/" . $fileName;
+
                 $task->attachments()->create([
                     'category' => $attCategory,
                     'file_path' => $filePath,
