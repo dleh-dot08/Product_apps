@@ -1992,6 +1992,47 @@
                             </div>
                         </div>
 
+                        <!-- Manual Input Section (Hidden by default, shown if SO not found) -->
+                        <div class="row g-3 mb-3" id="manualInputSection" style="display: none;">
+                            <div class="col-12">
+                                <section class="ps-card">
+                                    <div class="ps-card-header d-flex justify-content-between align-items-center">
+                                        <h6 class="ps-card-title text-warning mb-0"><i class="fa-solid fa-pen-to-square"></i> Input SO Manual</h6>
+                                        <button type="button" class="btn-close" style="font-size: 10px;" onclick="document.getElementById('manualInputSection').style.display='none'"></button>
+                                    </div>
+                                    <div class="ps-card-body">
+                                        <div class="row g-3">
+                                            <div class="col-12 col-md-2">
+                                                <label class="ps-label">SO <span class="ps-required">*</span></label>
+                                                <input type="text" class="form-control ps-control" id="manualSO" placeholder="No SO">
+                                            </div>
+                                            <div class="col-12 col-md-3">
+                                                <label class="ps-label">Customer <span class="ps-required">*</span></label>
+                                                <input type="text" class="form-control ps-control" id="manualCustomer" placeholder="Nama Customer">
+                                            </div>
+                                            <div class="col-12 col-md-2">
+                                                <label class="ps-label">Part No <span class="ps-required">*</span></label>
+                                                <input type="text" class="form-control ps-control" id="manualPartNo" placeholder="Part Number">
+                                            </div>
+                                            <div class="col-12 col-md-3">
+                                                <label class="ps-label">Deskripsi <span class="ps-required">*</span></label>
+                                                <input type="text" class="form-control ps-control" id="manualDesc" placeholder="Deskripsi Barang">
+                                            </div>
+                                            <div class="col-12 col-md-1">
+                                                <label class="ps-label">Qty <span class="ps-required">*</span></label>
+                                                <input type="number" class="form-control ps-control" id="manualQty" min="1" placeholder="0">
+                                            </div>
+                                            <div class="col-12 col-md-1 d-flex align-items-end">
+                                                <button type="button" class="btn ps-button-primary w-100" id="btnAddManualSO" style="height: 38px; min-width: unset;">
+                                                    <i class="fa-solid fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </section>
+                            </div>
+                        </div>
+
                         <!-- Informasi SO dan Produk: Table based -->
                         <div class="row g-3 ps-info-row">
                             <div class="col-12">
@@ -2202,7 +2243,7 @@
                     <select class="form-select" id="s2_packer">
                         <option value="">Pilih Packer...</option>
                         @php
-                            $users = class_exists('\App\Models\User') ? \App\Models\User::all() : collect();
+                            $users = class_exists('\App\Models\User') ? \App\Models\User::where('role', 'packer')->get() : collect();
                         @endphp
                         @foreach($users as $user)
                             <option value="{{ $user->id }}" {{ auth()->id() == $user->id ? 'selected' : '' }}>
@@ -2212,7 +2253,8 @@
                     </select>
                 </div>
 
-                <div class="s2-field-card">
+                <!-- Qty Packing disembunyikan sesuai permintaan (selalu 1 di belakang layar) -->
+                <!-- <div class="s2-field-card">
                     <label class="s2-label" for="s2_qty_pack">
                         <i class="fa-solid fa-boxes-stacked"></i>
                         Qty Packing
@@ -2221,11 +2263,12 @@
                     <input
                         type="number"
                         class="form-control"
-                        id="s2_qty_pack"
+                        id="s2_qty_pack_visible"
                         value="1"
                         min="1"
                     >
-                </div>
+                </div> -->
+                <input type="hidden" id="s2_qty_pack" value="1">
 
                 <div class="s2-field-card">
                     <label class="s2-label" for="s2_delivery_date">
@@ -3730,19 +3773,104 @@
                         }
 
                         if (window.statusText) {
-                            window.statusText.textContent = `Ditemukan ${result.data.length} barang. Silakan pilih.`;
+                            window.statusText.textContent = `Ditemukan ${apiData.length} barang. Silakan pilih.`;
                         }
                     } else {
                         if (window.showSOEmptyState) {
-                            window.showSOEmptyState('Data tidak ditemukan', result.message || 'SO tidak terdaftar.');
+                            window.showSOEmptyState('Data tidak ditemukan', result.message || 'SO tidak terdaftar. Silakan input manual.');
+                        }
+                        // Tampilkan manual input
+                        const manualSection = document.getElementById('manualInputSection');
+                        if (manualSection) {
+                            manualSection.style.display = 'block';
+                            document.getElementById('manualSO').value = soNumber;
                         }
                     }
                 } catch (error) {
                     console.error('Error fetching SO:', error);
-                    alert('Terjadi kesalahan saat mencari SO.');
+                    alert('Terjadi kesalahan saat mencari SO. Anda bisa menggunakan input manual.');
                     if (window.resetSOHeaderInfo) window.resetSOHeaderInfo();
+                    
+                    // Tampilkan manual input saat terjadi error
+                    const manualSection = document.getElementById('manualInputSection');
+                    if (manualSection) {
+                        manualSection.style.display = 'block';
+                        document.getElementById('manualSO').value = soNumber;
+                    }
                 } finally {
                     if (window.setSOSearchLoading) window.setSOSearchLoading(false);
+                }
+            });
+        }
+
+        // 1.5 Handle Tambah Manual SO
+        const btnAddManualSO = document.getElementById('btnAddManualSO');
+        if (btnAddManualSO) {
+            btnAddManualSO.addEventListener('click', () => {
+                const manualSO = document.getElementById('manualSO')?.value?.trim();
+                const manualCustomer = document.getElementById('manualCustomer')?.value?.trim();
+                const manualPartNo = document.getElementById('manualPartNo')?.value?.trim();
+                const manualDesc = document.getElementById('manualDesc')?.value?.trim();
+                const manualQty = parseInt(document.getElementById('manualQty')?.value) || 1;
+
+                if (!manualSO || !manualCustomer || !manualPartNo || !manualDesc) {
+                    alert('Harap lengkapi semua field manual (SO, Customer, Part No, Deskripsi).');
+                    return;
+                }
+
+                // Push to selectedItemsList
+                window.selectedItemsList.push({
+                    soNumber: manualSO,
+                    itemNumber: manualPartNo,
+                    description: manualDesc,
+                    customer: manualCustomer,
+                    qty: manualQty
+                });
+
+                // Update info globals
+                window.currentFetchedCustomer = manualCustomer;
+                const infoNoSOElem = document.getElementById('infoNoSO');
+                if (infoNoSOElem) infoNoSOElem.textContent = manualSO;
+                const infoCustomerElem = document.getElementById('infoCustomer');
+                if (infoCustomerElem) infoCustomerElem.textContent = manualCustomer;
+
+                // Re-render
+                if (window.renderSelectedItemsTable) {
+                    window.renderSelectedItemsTable();
+                } else {
+                    // Fallback re-render
+                    const tableBody = document.getElementById('productSelectionBody');
+                    if (tableBody) {
+                        tableBody.innerHTML = '';
+                        window.selectedItemsList.forEach((item, index) => {
+                            const row = document.createElement('tr');
+                            row.innerHTML = `
+                                <td>${item.soNumber}</td>
+                                <td>${item.customer}</td>
+                                <td>${item.itemNumber}</td>
+                                <td>${item.description}</td>
+                                <td class="text-center fw-bold align-middle">
+                                    <input type="number" class="form-control form-control-sm text-center row-qty" value="${item.qty}" min="1" data-index="${index}" style="width: 80px; margin: 0 auto;">
+                                </td>
+                                <td class="text-center align-middle">
+                                    <button type="button" class="btn btn-sm btn-outline-danger btn-remove-item" data-index="${index}" style="padding: 2px 6px;">
+                                        <i class="fa-solid fa-minus"></i>
+                                    </button>
+                                </td>
+                            `;
+                            tableBody.appendChild(row);
+                        });
+                    }
+                }
+
+                // Hide manual input and clear
+                document.getElementById('manualInputSection').style.display = 'none';
+                document.getElementById('manualPartNo').value = '';
+                document.getElementById('manualDesc').value = '';
+                document.getElementById('manualQty').value = '';
+                
+                if (window.statusText) {
+                    window.statusText.textContent = 'Data manual berhasil ditambahkan.';
                 }
             });
         }

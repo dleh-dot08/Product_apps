@@ -63,8 +63,10 @@ class ExpenseController extends Controller
         ];
 
         if ($request->hasFile('receipt')) {
-            $path = $request->file('receipt')->store('public/receipts');
-            $expenseData['receipt_url'] = Storage::url($path);
+            $file = $request->file('receipt');
+            $fileName = time() . '_' . $file->getClientOriginalName();
+            $file->move(public_path('uploads/receipts'), $fileName);
+            $expenseData['receipt_url'] = "/uploads/receipts/" . $fileName;
         }
 
         Expense::create($expenseData);
