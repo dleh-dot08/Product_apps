@@ -170,7 +170,7 @@
                                             <i class="fa-solid fa-clipboard-list text-secondary mt-1 me-2" style="width: 16px;"></i>
                                             <div>
                                                 <span class="d-block text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Tugas Aktif</span>
-                                                <span class="fw-medium">${location.task ? (location.task.reference_number + ' - ' + (location.task.pickup_name || '')) : (location.task_id || 'Tidak ada ID Tugas')}</span>
+                                                <span class="fw-medium">${location.task ? (location.task.reference_number + ' - ' + (location.task.pickup_name || '')) : (location.delivery_task && location.delivery_task.sales_order ? (location.delivery_task.sales_order.so_number + ' - ' + (location.delivery_task.sales_order.customer_name || '')) : 'Tugas Aktif')}</span>
                                             </div>
                                         </div>
                                         <div class="d-flex align-items-start">

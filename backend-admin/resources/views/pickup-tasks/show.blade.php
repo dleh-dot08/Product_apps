@@ -2108,7 +2108,7 @@
                                     $expenseDesc = $expenseValue($expense, ['description','notes','note','remark'], '-');
                                     $expenseQty = $expenseValue($expense, ['quantity','qty'], 1);
                                     $expenseAmount = (float)$expenseValue($expense, ['amount','nominal','total','total_amount','value'], 0);
-                                    $proofPath = $expenseValue($expense, ['receipt_path','proof_path','attachment_path','file_path']);
+                                    $proofPath = $expenseValue($expense, ['receipt_url','receipt_path','proof_path','attachment_path','file_path']);
                                 @endphp
                                 <tr>
                                     <td>{{ $expenseDate }}</td>

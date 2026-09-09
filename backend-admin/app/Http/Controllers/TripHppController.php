@@ -18,7 +18,7 @@ class TripHppController extends Controller
     public function index(Request $request)
     {
         // Load Shift
-        $allShifts = Shift::with(['vehicle', 'driver', 'pickupTasks', 'expenses'])
+        $allShifts = Shift::with(['vehicle', 'driver', 'pickupTasks', 'deliveryAssignments.salesOrder', 'expenses'])
             ->orderBy('work_date', 'desc')
             ->get();
 
@@ -43,7 +43,8 @@ class TripHppController extends Controller
             $shift->total_cost = $calc['costs']['total'];
 
             $totalCost += $calc['costs']['total'];
-            $totalItems += $shift->pickupTasks->sum('quantity');
+            $totalItems += $shift->pickupTasks->sum('quantity') + 
+                           $shift->deliveryAssignments->sum(function($d) { return $d->salesOrder->ordered_quantity ?? 0; });
 
             if ($shift->start_odometer && $shift->end_odometer) {
                 $totalJarak += max(0, $shift->end_odometer - $shift->start_odometer);

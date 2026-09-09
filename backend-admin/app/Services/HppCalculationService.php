@@ -12,8 +12,8 @@ class HppCalculationService
     public function calculateProrata(Shift $shift)
     {
         // Pastikan relasi diload
-        $shift->loadMissing(['pickupTasks', 'expenses']);
-        $tasks = $shift->pickupTasks;
+        $shift->loadMissing(['pickupTasks', 'deliveryAssignments.salesOrder', 'expenses']);
+        $tasks = collect()->merge($shift->pickupTasks)->merge($shift->deliveryAssignments);
         
         // 1. Hitung BBM (Otomatis)
         $fuelCost = 0;
@@ -41,13 +41,38 @@ class HppCalculationService
         $totalCost = $fuelCost + $manpowerCost + $tollCost + $parkingCost + $otherCost;
         
         // 1. Hitung Total Nilai Barang dalam 1 Ritase
-        $totalNilai = $tasks->sum('line_total');
+        $totalNilai = $tasks->sum(function($task) {
+            if ($task instanceof \App\Models\DeliveryAssignment) {
+                return $task->salesOrder->total_amount ?? 0;
+            }
+            return $task->line_total ?? 0;
+        });
         
         $result = [];
         
         foreach ($tasks as $task) {
-            $qtyBaris = $task->quantity ?? 0;
-            $nilaiBaris = $task->line_total ?? 0;
+            // Cek apakah ini DeliveryAssignment atau PickupTask
+            $isDelivery = $task instanceof \App\Models\DeliveryAssignment;
+            
+            $qtyBaris = $isDelivery 
+                ? ($task->salesOrder->ordered_quantity ?? 0) 
+                : ($task->quantity ?? 0);
+                
+            $nilaiBaris = $isDelivery 
+                ? ($task->salesOrder->total_amount ?? 0) 
+                : ($task->line_total ?? 0);
+            
+            $refNumber = $isDelivery 
+                ? ($task->salesOrder->so_number ?? '-') 
+                : $task->reference_number;
+                
+            $description = $isDelivery 
+                ? ($task->salesOrder->item_description ?? 'Barang Pengiriman') 
+                : ($task->item_description ?? 'Paket/Barang');
+                
+            $unit = $isDelivery 
+                ? ($task->salesOrder->unit ?? 'pcs') 
+                : ($task->unit ?? 'pcs');
             
             // 2. Hitung Rasio Nilai
             $rasioNilai = $totalNilai > 0 ? ($nilaiBaris / $totalNilai) : ($tasks->count() > 0 ? 1 / $tasks->count() : 0);
@@ -60,10 +85,10 @@ class HppCalculationService
             
             $result[] = [
                 'task_id' => $task->id,
-                'reference_number' => $task->reference_number,
-                'item_description' => $task->item_description ?? 'Paket/Barang',
+                'reference_number' => $refNumber,
+                'item_description' => $description,
                 'quantity' => $qtyBaris,
-                'unit' => $task->unit ?? 'pcs',
+                'unit' => $unit,
                 'line_total' => $nilaiBaris,
                 'hpp_per_baris' => $hppPerBaris,
                 'hpp_per_qty' => $hppPerQty,

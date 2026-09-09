@@ -40,4 +40,9 @@ class Shift extends Model
     {
         return $this->hasMany(PickupTask::class, 'shift_id');
     }
+
+    public function deliveryAssignments()
+    {
+        return $this->hasMany(DeliveryAssignment::class, 'shift_id');
+    }
 }

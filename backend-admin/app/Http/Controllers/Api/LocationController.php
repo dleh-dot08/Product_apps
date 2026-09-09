@@ -41,7 +41,7 @@ class LocationController extends Controller
     {
         // Get all drivers who have updated their location in the last hour
         // and have an active task_id.
-        $locations = DriverLocation::with(['user:id,name,full_name,email', 'task:id,reference_number,pickup_name'])
+        $locations = DriverLocation::with(['user:id,name,full_name,email', 'task:id,reference_number,pickup_name', 'deliveryTask.salesOrder:id,so_number,customer_name'])
             ->whereNotNull('task_id')
             ->where('updated_at', '>=', now()->subHours(1))
             ->get();

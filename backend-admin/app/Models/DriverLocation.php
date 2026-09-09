@@ -23,4 +23,9 @@ class DriverLocation extends Model
     {
         return $this->belongsTo(PickupTask::class, 'task_id');
     }
+
+    public function deliveryTask()
+    {
+        return $this->belongsTo(DeliveryAssignment::class, 'task_id');
+    }
 }
