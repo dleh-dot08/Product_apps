@@ -1462,25 +1462,25 @@
                     <div class="progress-step {{ $departureDone ? 'complete' : '' }}">
                         <div class="progress-icon"><i class="fa-solid fa-play"></i></div>
                         <div class="progress-title">Keberangkatan</div>
-                        <div class="progress-subtitle">{{ $departureDone ? 'Sudah tercatat' : 'Belum tercatat' }}</div>
+                        <div class="progress-subtitle">{{ $task->started_at ? \Carbon\Carbon::parse($task->started_at)->format('d M Y, H:i') : ($departureDone ? 'Sudah tercatat' : 'Belum tercatat') }}</div>
                     </div>
 
                     <div class="progress-step {{ $financeDone ? 'complete' : '' }}">
                         <div class="progress-icon"><i class="fa-solid fa-wallet"></i></div>
                         <div class="progress-title">Keuangan</div>
-                        <div class="progress-subtitle">{{ $financeDone ? 'Sudah ada laporan' : 'Belum laporan' }}</div>
+                        <div class="progress-subtitle">{{ $financeDone && $expenses->count() > 0 ? \Carbon\Carbon::parse($expenses->max('created_at'))->format('d M Y, H:i') : 'Belum laporan' }}</div>
                     </div>
 
                     <div class="progress-step {{ $arrivalDone ? 'complete' : '' }}">
                         <div class="progress-icon"><i class="fa-solid fa-location-dot"></i></div>
                         <div class="progress-title">Sampai</div>
-                        <div class="progress-subtitle">{{ $arrivalDone ? 'Sudah tercatat' : 'Belum tercatat' }}</div>
+                        <div class="progress-subtitle">{{ $task->arrived_at ? \Carbon\Carbon::parse($task->arrived_at)->format('d M Y, H:i') : ($arrivalDone ? 'Sudah tercatat' : 'Belum tercatat') }}</div>
                     </div>
 
                     <div class="progress-step {{ $handoverDone ? 'complete' : '' }}">
                         <div class="progress-icon"><i class="fa-solid fa-file-lines"></i></div>
                         <div class="progress-title">Serah Terima</div>
-                        <div class="progress-subtitle">{{ $handoverDone ? 'Sudah laporan' : 'Belum laporan' }}</div>
+                        <div class="progress-subtitle">{{ $task->completed_at ? \Carbon\Carbon::parse($task->completed_at)->format('d M Y, H:i') : ($handoverDone ? 'Sudah laporan' : 'Belum laporan') }}</div>
                     </div>
                 </div>
             </div>
@@ -1769,28 +1769,6 @@
                                 @endif
                             </div>
                         </div>
-                    </div>
-                </section>
-
-                {{-- RIWAYAT AKTIVITAS --}}
-                <section class="task-card section-card">
-                    <div class="section-heading">
-                        <i class="fa-solid fa-clock"></i>
-                        <span>Riwayat Aktivitas</span>
-                    </div>
-
-                    <div class="activity-list">
-                        @forelse($activities as $activity)
-                            <div class="activity-item">
-                                <div>
-                                    <div class="activity-title">{{ $activity['title'] }}</div>
-                                    <div class="activity-meta">{{ $activity['meta'] }}</div>
-                                </div>
-                                <div class="activity-desc">{{ $activity['desc'] }}</div>
-                            </div>
-                        @empty
-                            <div class="empty-table">Belum ada riwayat aktivitas.</div>
-                        @endforelse
                     </div>
                 </section>
             </div>
