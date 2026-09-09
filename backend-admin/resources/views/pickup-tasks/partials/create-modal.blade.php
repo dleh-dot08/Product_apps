@@ -1115,7 +1115,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     'Accept': 'application/json'
                 }
             });
-            if (!response.ok) throw new Error('Data tidak ditemukan');
+            if (!response.ok) {
+                const errBody = await response.json().catch(() => ({}));
+                const errMsg = errBody.error || 'Data tidak ditemukan';
+                const err = new Error(errMsg);
+                err.status = response.status;
+                throw err;
+            }
             const resData = await response.json();
             
             // Handle format respons yang bisa berupa array {data: [...]} atau object detail {items: [...]}
@@ -1169,15 +1175,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
         } catch (error) {
+            const isUpstreamError = error.status && error.status >= 500;
+            const alertTitle = isUpstreamError ? 'Gagal Menghubungi API' : 'Tidak Ditemukan';
+            const alertText = isUpstreamError
+                ? 'Terjadi kesalahan saat menghubungi API Akurasi. Coba lagi nanti atau isi form secara manual.'
+                : (error.message || 'Data tidak ditemukan di API. Silakan isi form secara manual.');
+
             if (window.Swal) {
                 Swal.fire({
-                    icon: 'info',
-                    title: 'Tidak Ditemukan',
-                    text: 'Data tidak ditemukan di API. Silakan isi form secara manual.',
+                    icon: isUpstreamError ? 'error' : 'info',
+                    title: alertTitle,
+                    text: alertText,
                     confirmButtonColor: '#f97316'
                 });
             } else {
-                alert('Data tidak ditemukan di API. Silakan isi form secara manual.');
+                alert(alertText);
             }
         } finally {
             this.innerHTML = originalIcon;
