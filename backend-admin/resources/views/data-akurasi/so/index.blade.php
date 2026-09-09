@@ -732,7 +732,12 @@
                 date_to: dateTo
             });
 
-            fetch(`/api/integration/search-so?${queryParams.toString()}`)
+            fetch(`/api/integration/search-so?${queryParams.toString()}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
                 .then(response => response.json())
                 .then(result => {
                     renderTable(result);

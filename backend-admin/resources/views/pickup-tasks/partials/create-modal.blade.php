@@ -1098,9 +1098,18 @@ document.addEventListener('DOMContentLoaded', function () {
         // Gunakan API Proxy lokal (detail-so / detail-po) 
         // Menggunakan path absolute agar browser otomatis memakai HTTPS
         const baseUrl = "/api/integration";
-        const apiUrl = isDelivery 
-            ? `${baseUrl}/detail-so/${encodeURIComponent(refNumber)}`
-            : `${baseUrl}/detail-po/${encodeURIComponent(refNumber)}`;
+        let apiUrl;
+        const upperRef = refNumber.toUpperCase();
+        
+        if (upperRef.startsWith('AI-S') || upperRef.startsWith('SO')) {
+            apiUrl = `${baseUrl}/detail-so/${encodeURIComponent(refNumber)}`;
+        } else if (upperRef.startsWith('AI-B') || upperRef.startsWith('PO')) {
+            apiUrl = `${baseUrl}/detail-po/${encodeURIComponent(refNumber)}`;
+        } else {
+            apiUrl = isDelivery 
+                ? `${baseUrl}/detail-so/${encodeURIComponent(refNumber)}`
+                : `${baseUrl}/detail-po/${encodeURIComponent(refNumber)}`;
+        }
 
         syncReferenceValue();
 
@@ -1144,10 +1153,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Populate Fields
             if (isDelivery) {
-                form.querySelector('input[name="customer_name"]').value = mainInfo.pelanggan || mainInfo.nama_pelanggan || '';
+                form.querySelector('input[name="customer_name"]').value = mainInfo.pelanggan || mainInfo.nama_pelanggan || mainInfo.pemasok || mainInfo.nama_pemasok || '';
                 form.querySelector('textarea[name="delivery_address"]').value = mainInfo.shipto || '';
             } else {
-                form.querySelector('input[name="pickup_name"]').value = mainInfo.pemasok || mainInfo.nama_pemasok || '';
+                form.querySelector('input[name="pickup_name"]').value = mainInfo.pemasok || mainInfo.nama_pemasok || mainInfo.pelanggan || mainInfo.nama_pelanggan || '';
             }
 
             // Populate Items

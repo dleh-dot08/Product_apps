@@ -625,6 +625,7 @@
         let currentPage = 1;
         let sortCol = 'tgl_pembelian';
         let sortDir = 'desc';
+        let globalPoData = [];
 
         document.addEventListener('DOMContentLoaded', function() {
             fetchPurchaseOrders(1);
@@ -725,7 +726,12 @@
                 date_to: dateTo
             });
 
-            fetch(`/api/integration/search-po?${queryParams.toString()}`)
+            fetch(`/api/integration/search-po?${queryParams.toString()}`, {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
                 .then(response => response.json())
                 .then(result => {
                     renderTable(result);
@@ -765,93 +771,114 @@
 
         function showDetail(no_po) {
             const modalBody = document.getElementById('modalDetailBody');
-            modalBody.innerHTML = `
-                <div class="text-center py-5">
-                    <div class="loading-spinner mb-3" style="color: var(--po-primary);"></div>
-                    <p class="mb-0 fw-semibold text-muted">Memuat detail Purchase Order...</p>
-                </div>
-            `;
             
             document.querySelector('#detailModal .modal-dialog').classList.add('modal-xl');
             const modal = new bootstrap.Modal(document.getElementById('detailModal'));
             modal.show();
 
-            fetch(`/api/integration/detail-po/${encodeURIComponent(no_po)}`)
-                .then(res => res.json())
-                .then(po => {
-                    if(po.error) throw new Error(po.error);
-                    
-                    let itemsHtml = '';
-                    po.items.forEach((item, i) => {
-                        itemsHtml += `
-                            <tr>
-                                <td class="text-center">${i + 1}</td>
-                                <td class="fw-medium">${item.no_barang || '-'}</td>
-                                <td>${item.deskripsi_barang || '-'}</td>
-                                <td>${item.category_produk || '-'}</td>
-                                <td class="text-center">${item.qty || 0}</td>
-                                <td class="text-center">${item.qty_received || item.qty_diterima || 0}</td>
-                                <td class="text-center">${item.uom || '-'}</td>
-                                <td class="text-end">${formatRupiah(item.price || item.harga_satuan)}</td>
-                                <td class="text-end fw-bold" style="color: var(--po-primary);">${formatRupiah(item.amount)}</td>
-                                <td><span class="badge bg-secondary">${item.status_pembayaran || item.status_bayar || '-'}</span></td>
-                            </tr>
-                        `;
-                    });
+            const items = globalPoData.filter(p => (p.no_pembelian || p.no_po) === no_po);
+            if (items.length === 0) {
+                modalBody.innerHTML = `<div class="alert alert-danger text-center">Gagal memuat detail PO.</div>`;
+                return;
+            }
 
-                    let html = `
-                        <div class="row g-4">
-                            <div class="col-md-6">
-                                <h6 class="fw-bold mb-3" style="color: var(--po-primary);"><i class="fa-solid fa-file-lines me-2"></i>Informasi PO</h6>
-                                <div class="detail-row"><div class="detail-label">No PO</div><div class="detail-value"><span class="badge bg-opacity-10 border px-2 py-1" style="color:var(--po-primary); background-color:rgba(234,88,12,0.1); border-color:var(--po-primary);">${po.no_po || '-'}</span></div></div>
-                                <div class="detail-row"><div class="detail-label">Tgl PO</div><div class="detail-value">${formatTgl(po.tgl_po)}</div></div>
-                                <div class="detail-row"><div class="detail-label">Pemasok</div><div class="detail-value" style="color:var(--po-primary);">${po.pemasok || '-'}</div></div>
-                                <div class="detail-row"><div class="detail-label">Status</div><div class="detail-value">${po.status || '-'}</div></div>
-                            </div>
-                            <div class="col-md-6">
-                                <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-truck me-2"></i>Penerimaan & Nilai</h6>
-                                <div class="detail-row"><div class="detail-label">Dikirim Ke</div><div class="detail-value">${po.shipto || '-'}</div></div>
-                                <div class="detail-row"><div class="detail-label">Tgl Estimasi</div><div class="detail-value">${formatTgl(po.est_kirim)}</div></div>
-                                <div class="detail-row"><div class="detail-label">Total Amount</div><div class="detail-value text-success fs-5">${formatRupiah(po.total_amount)}</div></div>
-                            </div>
-                            <div class="col-12 mt-3">
-                                <h6 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-box me-2"></i>Tabel Barang (${po.items.length} Item)</h6>
-                                <div class="table-responsive rounded-3 border">
-                                    <table class="table table-sm table-hover table-striped mb-0 text-nowrap" style="font-size: 0.85rem;">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th class="text-center py-2">No</th>
-                                                <th class="py-2">No. Barang</th>
-                                                <th class="py-2">Deskripsi Barang</th>
-                                                <th class="py-2">Category</th>
-                                                <th class="text-center py-2">Qty Order</th>
-                                                <th class="text-center py-2">Qty Diterima</th>
-                                                <th class="text-center py-2">UoM</th>
-                                                <th class="text-end py-2">Harga Satuan</th>
-                                                <th class="text-end py-2">Subtotal</th>
-                                                <th class="py-2">Status</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            ${itemsHtml}
-                                        </tbody>
-                                        <tfoot class="table-light fw-bold">
-                                            <tr>
-                                                <td colspan="8" class="text-end py-2">TOTAL KESELURUHAN:</td>
-                                                <td class="text-end text-success py-2">${formatRupiah(po.total_amount)}</td>
-                                                <td></td>
-                                            </tr>
-                                        </tfoot>
-                                    </table>
-                                </div>
-                            </div>
+            const header = items[0];
+            let totalAmount = header.total_amount !== undefined ? parseFloat(header.total_amount) : 0;
+            if (totalAmount === 0 || isNaN(totalAmount)) {
+                totalAmount = items.reduce((sum, item) => {
+                    let amount = item.amount !== undefined ? parseFloat(item.amount) : 0;
+                    if (amount === 0 || isNaN(amount)) {
+                        let subtotal = item.subtotal !== undefined ? parseFloat(item.subtotal) : 0;
+                        if (subtotal !== 0 && !isNaN(subtotal)) amount = subtotal;
+                        else {
+                            let qty = parseFloat(item.qty || 0);
+                            let price = parseFloat(item.price || item.harga_satuan || 0);
+                            amount = qty * price;
+                        }
+                    }
+                    return sum + (isNaN(amount) ? 0 : amount);
+                }, 0);
+            }
+
+            const po = {
+                no_po: header.no_pembelian || header.no_po || no_po,
+                tgl_po: header.tgl_pembelian || header.tgl_po,
+                est_kirim: header.tgl_ekspetasi || header.tgl_estimasi,
+                pemasok: header.nama_pemasok,
+                shipto: header.so_no || header.shipto || header.ship_to,
+                status: header.status_pembayaran || header.status_bayar,
+                total_amount: totalAmount,
+                items: items
+            };
+
+            let itemsHtml = '';
+            po.items.forEach((item, i) => {
+                let amount = parseFloat(item.amount || item.subtotal || ((parseFloat(item.qty || 0)) * parseFloat(item.price || item.harga_satuan || 0)));
+                itemsHtml += `
+                    <tr>
+                        <td class="text-center">${i + 1}</td>
+                        <td class="fw-medium">${item.no_barang || '-'}</td>
+                        <td>${item.deskripsi_barang || '-'}</td>
+                        <td>${item.category_produk || '-'}</td>
+                        <td class="text-center">${item.qty || 0}</td>
+                        <td class="text-center">${item.qty_received || item.qty_diterima || 0}</td>
+                        <td class="text-center">${item.uom || '-'}</td>
+                        <td class="text-end">${formatRupiah(item.price || item.harga_satuan)}</td>
+                        <td class="text-end fw-bold" style="color: var(--po-primary);">${formatRupiah(amount)}</td>
+                        <td><span class="badge bg-secondary">${item.status_pembayaran || item.status_bayar || '-'}</span></td>
+                    </tr>
+                `;
+            });
+
+            let html = `
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <h6 class="fw-bold mb-3" style="color: var(--po-primary);"><i class="fa-solid fa-file-lines me-2"></i>Informasi PO</h6>
+                        <div class="detail-row"><div class="detail-label">No PO</div><div class="detail-value"><span class="badge bg-opacity-10 border px-2 py-1" style="color:var(--po-primary); background-color:rgba(234,88,12,0.1); border-color:var(--po-primary);">${po.no_po || '-'}</span></div></div>
+                        <div class="detail-row"><div class="detail-label">Tgl PO</div><div class="detail-value">${formatTgl(po.tgl_po)}</div></div>
+                        <div class="detail-row"><div class="detail-label">Pemasok</div><div class="detail-value" style="color:var(--po-primary);">${po.pemasok || '-'}</div></div>
+                        <div class="detail-row"><div class="detail-label">Status</div><div class="detail-value">${po.status || '-'}</div></div>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="fw-bold text-success mb-3"><i class="fa-solid fa-truck me-2"></i>Penerimaan & Nilai</h6>
+                        <div class="detail-row"><div class="detail-label">Dikirim Ke</div><div class="detail-value">${po.shipto || '-'}</div></div>
+                        <div class="detail-row"><div class="detail-label">Tgl Estimasi</div><div class="detail-value">${formatTgl(po.est_kirim)}</div></div>
+                        <div class="detail-row"><div class="detail-label">Total Amount</div><div class="detail-value text-success fs-5">${formatRupiah(po.total_amount)}</div></div>
+                    </div>
+                    <div class="col-12 mt-3">
+                        <h6 class="fw-bold text-secondary mb-3"><i class="fa-solid fa-box me-2"></i>Tabel Barang (${po.items.length} Item)</h6>
+                        <div class="table-responsive rounded-3 border">
+                            <table class="table table-sm table-hover table-striped mb-0 text-nowrap" style="font-size: 0.85rem;">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="text-center py-2">No</th>
+                                        <th class="py-2">No. Barang</th>
+                                        <th class="py-2">Deskripsi Barang</th>
+                                        <th class="py-2">Category</th>
+                                        <th class="text-center py-2">Qty Order</th>
+                                        <th class="text-center py-2">Qty Diterima</th>
+                                        <th class="text-center py-2">UoM</th>
+                                        <th class="text-end py-2">Harga Satuan</th>
+                                        <th class="text-end py-2">Subtotal</th>
+                                        <th class="py-2">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${itemsHtml}
+                                </tbody>
+                                <tfoot class="table-light fw-bold">
+                                    <tr>
+                                        <td colspan="8" class="text-end py-2">TOTAL KESELURUHAN:</td>
+                                        <td class="text-end text-success py-2">${formatRupiah(po.total_amount)}</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
-                    `;
-                    modalBody.innerHTML = html;
-                })
-                .catch(err => {
-                    modalBody.innerHTML = `<div class="alert alert-danger text-center">Gagal memuat detail PO.</div>`;
-                });
+                    </div>
+                </div>
+            `;
+            modalBody.innerHTML = html;
         }
         
         function renderPagination(result) {
@@ -917,6 +944,7 @@
             const paginationInfo = document.getElementById('paginationInfo');
             
             const dataList = result.data || [];
+            globalPoData = dataList;
             
             if(!dataList || dataList.length === 0) {
                 tableBody.innerHTML = `
