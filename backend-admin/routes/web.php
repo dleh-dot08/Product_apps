@@ -28,11 +28,25 @@ Route::middleware('auth')->group(function () {
     
     // Master Kendaraan
     Route::resource('vehicles', \App\Http\Controllers\VehicleController::class)->except(['create', 'show', 'edit']);
-    
-    // Pembelian (PO) & Penjualan (SO) - Data Akurasi
-    Route::get('/sales-orders', [\App\Http\Controllers\SalesOrderController::class, 'index'])->name('sales-orders.index');
-    Route::get('/purchase-orders', [\App\Http\Controllers\PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
-    
+        
+    // ============================================================
+    // PEMBELIAN (PO) & PENJUALAN (SO) - DATA AKURASI
+    // ============================================================
+
+    // -------------------------
+    // SALES ORDER
+    // -------------------------
+    Route::get('/sales-orders', [\App\Http\Controllers\SalesOrderController::class,'index'])->name('sales-orders.index');
+    Route::get('/api/integration/search-so', [\App\Http\Controllers\SalesOrderController::class,'search'])->name('api.integration.search_so');
+    Route::get('/api/integration/detail-so/{noSo}', [\App\Http\Controllers\SalesOrderController::class,'detail'])->where('noSo', '.*')->name('api.integration.detail_so');
+    Route::post('/api/integration/trigger-sync-so', [\App\Http\Controllers\SalesOrderController::class,'triggerSync'])->name('api.integration.trigger_sync_so');
+
+    // -------------------------
+    // PURCHASE ORDER
+    // -------------------------
+    Route::get('/purchase-orders', [\App\Http\Controllers\PurchaseOrderController::class,'index'])->name('purchase-orders.index');
+    Route::get('/api/integration/search-po', [\App\Http\Controllers\PurchaseOrderController::class,'search'])->name('api.integration.search_po');
+    Route::get('/api/integration/detail-po/{noPo}', [\App\Http\Controllers\PurchaseOrderController::class,'detail'])->where('noPo', '.*')->name('api.integration.detail_po');
     // Route Daftar Tugas
     Route::get('/daftar-tugas', function () {
         return view('daftar-tugas.index');
