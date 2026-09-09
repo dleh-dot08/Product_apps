@@ -270,8 +270,8 @@ class PickupTaskController extends Controller
             if ($request->hasFile('proof_photo')) {
                 $file = $request->file('proof_photo');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                $file->move(public_path('uploads/proofs'), $fileName);
-                $updateData['proof_photo'] = "uploads/proofs/" . $fileName;
+                $path = $file->storeAs('uploads/proofs', $fileName, 'public');
+                $updateData['proof_photo'] = "storage/" . $path;
             } elseif ($request->has('proof_photo')) {
                 $updateData['proof_photo'] = $request->input('proof_photo');
             }
@@ -328,8 +328,8 @@ class PickupTaskController extends Controller
             if ($request->hasFile($category)) {
                 $file = $request->file($category);
                 $fileName = time() . '_' . $category . '_' . $file->getClientOriginalName();
-                $file->move(public_path("uploads/task_attachments/{$id}"), $fileName);
-                $filePath = "uploads/task_attachments/{$id}/" . $fileName;
+                $path = $file->storeAs("uploads/task_attachments/{$id}", $fileName, 'public');
+                $filePath = "storage/" . $path;
                 
                 $task->attachments()->create([
                     'category' => $category,
@@ -350,8 +350,8 @@ class PickupTaskController extends Controller
             $files = $request->file('attachments');
             foreach ($files as $index => $file) {
                 $fileName = time() . '_' . $index . '_' . $file->getClientOriginalName();
-                $file->move(public_path("uploads/task_attachments/{$id}"), $fileName);
-                $filePath = "uploads/task_attachments/{$id}/" . $fileName;
+                $path = $file->storeAs("uploads/task_attachments/{$id}", $fileName, 'public');
+                $filePath = "storage/" . $path;
 
                 $task->attachments()->create([
                     'category' => $attCategory,
