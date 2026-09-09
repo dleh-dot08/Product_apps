@@ -270,11 +270,7 @@ class PickupTaskController extends Controller
             if ($request->hasFile('proof_photo')) {
                 $file = $request->file('proof_photo');
                 $fileName = time() . '_' . $file->getClientOriginalName();
-                $destinationPath = public_path('uploads/proofs');
-                if (!file_exists($destinationPath)) {
-                    mkdir($destinationPath, 0755, true);
-                }
-                $file->move($destinationPath, $fileName);
+                $file->move(public_path('uploads/proofs'), $fileName);
                 $updateData['proof_photo'] = "uploads/proofs/" . $fileName;
             } elseif ($request->has('proof_photo')) {
                 $updateData['proof_photo'] = $request->input('proof_photo');
@@ -332,11 +328,7 @@ class PickupTaskController extends Controller
             if ($request->hasFile($category)) {
                 $file = $request->file($category);
                 $fileName = time() . '_' . $category . '_' . $file->getClientOriginalName();
-                $destinationPath = public_path("uploads/task_attachments/{$id}");
-                if (!file_exists($destinationPath)) {
-                    mkdir($destinationPath, 0755, true);
-                }
-                $file->move($destinationPath, $fileName);
+                $file->move(public_path("uploads/task_attachments/{$id}"), $fileName);
                 $filePath = "uploads/task_attachments/{$id}/" . $fileName;
                 
                 $task->attachments()->create([
@@ -358,11 +350,7 @@ class PickupTaskController extends Controller
             $files = $request->file('attachments');
             foreach ($files as $index => $file) {
                 $fileName = time() . '_' . $index . '_' . $file->getClientOriginalName();
-                $destinationPath = public_path("uploads/task_attachments/{$id}");
-                if (!file_exists($destinationPath)) {
-                    mkdir($destinationPath, 0755, true);
-                }
-                $file->move($destinationPath, $fileName);
+                $file->move(public_path("uploads/task_attachments/{$id}"), $fileName);
                 $filePath = "uploads/task_attachments/{$id}/" . $fileName;
 
                 $task->attachments()->create([
