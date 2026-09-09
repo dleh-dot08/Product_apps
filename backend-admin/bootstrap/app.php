@@ -21,8 +21,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'api.router.key' => \App\Http\Middleware\EnsureApiRouterKey::class,
         ]);
 
-        $middleware->trustProxies(at: '*');
-
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {
