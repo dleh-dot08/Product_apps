@@ -811,7 +811,7 @@
                 itemConfigs = {};
                 
                 try {
-                    const response = await fetch(`/api/packaging/search-so?q=${encodeURIComponent(query)}`);
+                    const response = await fetch(`/api/integration/search-so?q=${encodeURIComponent(query)}`);
                     const result = await response.json();
                     
                     if (result.data && result.data.length > 0) {
