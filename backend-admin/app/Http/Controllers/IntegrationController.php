@@ -82,12 +82,24 @@ class IntegrationController extends Controller
             ]);
         }
 
-        $response = $this->requestApi('penjualan-so', ['search' => trim($noSo), 'limit' => 200]);
+        $response = $this->requestApi('penjualan-so/' . rawurlencode(trim($noSo)));
         if ($response instanceof JsonResponse) {
             return $response;
         }
 
-        $items = collect($response->json('data', []))->filter(fn ($item) => $this->matches($item, $noSo, ['no_so']))->values();
+        $items = $this->extractItems($response)
+            ->filter(fn ($item) => $this->matches($item, $noSo, ['no_so']))
+            ->values();
+            
+        // Jika detail endpoint tidak membuahkan hasil karena filter,
+        // fallback pakai flat items jika ada.
+        if ($items->isEmpty()) {
+            $data = $response->json('data') ?? $response->json();
+            if (is_array($data) && isset($data['no_so'])) {
+                $items = collect([$data]);
+            }
+        }
+            
         return $items->isEmpty() ? $this->notFound('SO', $noSo) : response()->json($this->formatSoDetail($items));
     }
 
@@ -142,19 +154,7 @@ class IntegrationController extends Controller
             ]);
         }
 
-        // 2. Coba search endpoint dulu (lebih toleran, bisa partial match)
-        $searchResponse = $this->requestApi('pembelian', ['search' => trim($noPo), 'limit' => 200]);
-        if (!$searchResponse instanceof JsonResponse) {
-            $items = $this->extractItems($searchResponse)
-                ->filter(fn ($item) => $this->matches($item, $noPo, ['no_pembelian', 'no_po']))
-                ->values();
-
-            if ($items->isNotEmpty()) {
-                return response()->json($this->formatPoDetail($items));
-            }
-        }
-
-        // 3. Fallback ke detail endpoint (exact match by no_po)
+        // 2. Langsung ke detail endpoint (exact match by no_po)
         $detailResponse = $this->requestApi('pembelian/' . rawurlencode(trim($noPo)));
         if ($detailResponse instanceof JsonResponse) {
             return $detailResponse;
@@ -163,6 +163,14 @@ class IntegrationController extends Controller
         $items = $this->extractItems($detailResponse)
             ->filter(fn ($item) => $this->matches($item, $noPo, ['no_pembelian', 'no_po']))
             ->values();
+            
+        if ($items->isEmpty()) {
+            $data = $detailResponse->json('data') ?? $detailResponse->json();
+            if (is_array($data) && (isset($data['no_pembelian']) || isset($data['no_po']))) {
+                $items = collect([$data]);
+            }
+        }
+            
         return $items->isEmpty() ? $this->notFound('PO', $noPo) : response()->json($this->formatPoDetail($items));
     }
 

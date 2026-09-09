@@ -304,18 +304,15 @@ class AkurasiService{
         }
 
         /**
-         * Search berdasarkan nomor SO.
+         * Gunakan endpoint detail khusus:
+         * GET /api/integration/penjualan-so/{no_so}
          *
-         * Limit dibuat besar karena API mengembalikan
-         * data per item/barang.
+         * Endpoint ini langsung mengembalikan detail SO
+         * beserta daftar item-nya, tanpa perlu search + filter.
          */
         $response = $this->request()
             ->get(
-                $this->baseUrl . '/penjualan-so',
-                [
-                    'search' => $noSo,
-                    'limit' => 200,
-                ]
+                $this->baseUrl . '/penjualan-so/' . urlencode($noSo)
             );
 
         $this->validateResponse(
@@ -332,29 +329,43 @@ class AkurasiService{
         }
 
         /**
-         * Ambil seluruh row yang memiliki no_so sama.
-         *
-         * Satu Sales Order bisa memiliki banyak barang,
-         * sehingga semua row tersebut harus digabung.
+         * Response dari endpoint detail bisa berupa:
+         * - { data: [...items] } (array of items)
+         * - { data: { no_so, items: [...] } } (object with items)
+         * - langsung flat object
          */
-        $items = collect(
-            $json['data'] ?? []
-        )
-            ->filter(function ($item) use ($noSo) {
-                if (!is_array($item)) {
-                    return false;
-                }
+        $data = $json['data'] ?? $json;
 
-                $itemNoSo = trim(
-                    (string) ($item['no_so'] ?? '')
-                );
+        // Jika data adalah object tunggal dengan key 'items'
+        if (isset($data['items']) && is_array($data['items'])) {
+            $items = collect($data['items']);
+            $header = $data;
+        }
+        // Jika data adalah array of items (sama seperti search endpoint)
+        elseif (is_array($data) && isset($data[0])) {
+            $items = collect($data)
+                ->filter(function ($item) use ($noSo) {
+                    if (!is_array($item)) {
+                        return false;
+                    }
 
-                return strcasecmp(
-                    $itemNoSo,
-                    $noSo
-                ) === 0;
-            })
-            ->values();
+                    $itemNoSo = trim(
+                        (string) ($item['no_so'] ?? '')
+                    );
+
+                    return strcasecmp(
+                        $itemNoSo,
+                        $noSo
+                    ) === 0;
+                })
+                ->values();
+            $header = null;
+        }
+        // Fallback: single object tanpa items
+        else {
+            $items = collect([$data]);
+            $header = $data;
+        }
 
         if ($items->isEmpty()) {
             throw new \Exception(
@@ -368,40 +379,48 @@ class AkurasiService{
          * Total.
          *
          * Prioritas:
-         * amount -> subtotal.
+         * header total_amount -> sum(amount) -> sum(subtotal).
          */
-        $totalAmount = $items->sum(
-            function ($item) {
-                if (isset($item['amount'])) {
-                    return (float) $item['amount'];
-                }
+        $totalAmount = isset($header['total_amount'])
+            ? (float) $header['total_amount']
+            : $items->sum(
+                function ($item) {
+                    if (isset($item['amount'])) {
+                        return (float) $item['amount'];
+                    }
 
-                return (float) (
-                    $item['subtotal']
-                    ?? 0
-                );
-            }
-        );
+                    return (float) (
+                        $item['subtotal']
+                        ?? 0
+                    );
+                }
+            );
 
         return [
-            'no_so' => $first['no_so']
+            'no_so' => $header['no_so']
+                ?? $first['no_so']
                 ?? $noSo,
 
-            'tgl_so' => $first['tgl_so']
+            'tgl_so' => $header['tgl_so']
+                ?? $first['tgl_so']
                 ?? null,
 
-            'est_kirim' => $first['tgl_estimasi']
+            'est_kirim' => $header['tgl_estimasi']
+                ?? $first['tgl_estimasi']
                 ?? $first['est_kirim']
                 ?? null,
 
-            'pelanggan' => $first['nama_pelanggan']
+            'pelanggan' => $header['nama_pelanggan']
+                ?? $first['nama_pelanggan']
                 ?? null,
 
-            'shipto' => $first['shipto']
+            'shipto' => $header['shipto']
+                ?? $first['shipto']
                 ?? $first['ship_to']
                 ?? null,
 
-            'status' => $first['status']
+            'status' => $header['status']
+                ?? $first['status']
                 ?? null,
 
             'total_amount' => $totalAmount,
@@ -607,13 +626,16 @@ class AkurasiService{
             );
         }
 
+        /**
+         * Gunakan endpoint detail khusus:
+         * GET /api/integration/pembelian/{no_po}
+         *
+         * Endpoint ini langsung mengembalikan detail PO
+         * beserta daftar item-nya, tanpa perlu search + filter.
+         */
         $response = $this->request()
             ->get(
-                $this->baseUrl . '/pembelian',
-                [
-                    'search' => $noPo,
-                    'limit' => 200,
-                ]
+                $this->baseUrl . '/pembelian/' . urlencode($noPo)
             );
 
         $this->validateResponse(
@@ -630,49 +652,60 @@ class AkurasiService{
         }
 
         /**
-         * Satu PO bisa mempunyai beberapa item.
-         *
-         * API kadang menggunakan:
-         *
-         * no_pembelian
-         * atau
-         * no_po
+         * Response dari endpoint detail bisa berupa:
+         * - { data: [...items] } (array of items)
+         * - { data: { no_po, items: [...] } } (object with items)
+         * - langsung flat object
          */
-        $items = collect(
-            $json['data'] ?? []
-        )
-            ->filter(function ($item) use ($noPo) {
-                if (!is_array($item)) {
-                    return false;
-                }
+        $data = $json['data'] ?? $json;
 
-                $noPembelian = trim(
-                    (string) (
-                        $item['no_pembelian']
-                        ?? ''
-                    )
-                );
+        // Jika data adalah object tunggal dengan key 'items'
+        if (isset($data['items']) && is_array($data['items'])) {
+            $items = collect($data['items']);
+            $header = $data;
+        }
+        // Jika data adalah array of items (sama seperti search endpoint)
+        elseif (is_array($data) && isset($data[0])) {
+            $items = collect($data)
+                ->filter(function ($item) use ($noPo) {
+                    if (!is_array($item)) {
+                        return false;
+                    }
 
-                $poNumber = trim(
-                    (string) (
-                        $item['no_po']
-                        ?? ''
-                    )
-                );
+                    $noPembelian = trim(
+                        (string) (
+                            $item['no_pembelian']
+                            ?? ''
+                        )
+                    );
 
-                return (
-                    strcasecmp(
-                        $noPembelian,
-                        $noPo
-                    ) === 0
-                ) || (
-                    strcasecmp(
-                        $poNumber,
-                        $noPo
-                    ) === 0
-                );
-            })
-            ->values();
+                    $poNumber = trim(
+                        (string) (
+                            $item['no_po']
+                            ?? ''
+                        )
+                    );
+
+                    return (
+                        strcasecmp(
+                            $noPembelian,
+                            $noPo
+                        ) === 0
+                    ) || (
+                        strcasecmp(
+                            $poNumber,
+                            $noPo
+                        ) === 0
+                    );
+                })
+                ->values();
+            $header = null;
+        }
+        // Fallback: single object tanpa items
+        else {
+            $items = collect([$data]);
+            $header = $data;
+        }
 
         if ($items->isEmpty()) {
             throw new \Exception(
@@ -685,61 +718,70 @@ class AkurasiService{
         /**
          * Total keseluruhan PO.
          */
-        $totalAmount = $items->sum(
-            function ($item) {
-                if (isset($item['amount'])) {
-                    return (float) $item['amount'];
+        $totalAmount = isset($header['total_amount'])
+            ? (float) $header['total_amount']
+            : $items->sum(
+                function ($item) {
+                    if (isset($item['amount'])) {
+                        return (float) $item['amount'];
+                    }
+
+                    if (isset($item['subtotal'])) {
+                        return (float) $item['subtotal'];
+                    }
+
+                    /**
+                     * Fallback:
+                     * qty x harga_satuan
+                     */
+                    $qty = (float) (
+                        $item['qty']
+                        ?? 0
+                    );
+
+                    $price = (float) (
+                        $item['price']
+                        ?? $item['harga_satuan']
+                        ?? 0
+                    );
+
+                    return $qty * $price;
                 }
-
-                if (isset($item['subtotal'])) {
-                    return (float) $item['subtotal'];
-                }
-
-                /**
-                 * Fallback:
-                 * qty x harga_satuan
-                 */
-                $qty = (float) (
-                    $item['qty']
-                    ?? 0
-                );
-
-                $price = (float) (
-                    $item['price']
-                    ?? $item['harga_satuan']
-                    ?? 0
-                );
-
-                return $qty * $price;
-            }
-        );
+            );
 
         return [
-            'no_po' => $first['no_pembelian']
+            'no_po' => $header['no_pembelian']
+                ?? $header['no_po']
+                ?? $first['no_pembelian']
                 ?? $first['no_po']
                 ?? $noPo,
 
-            'tgl_po' => $first['tgl_pembelian']
+            'tgl_po' => $header['tgl_pembelian']
+                ?? $first['tgl_pembelian']
                 ?? $first['tgl_po']
                 ?? null,
 
-            'est_kirim' => $first['tgl_ekspetasi']
+            'est_kirim' => $header['tgl_ekspetasi']
+                ?? $first['tgl_ekspetasi']
                 ?? $first['tgl_estimasi']
                 ?? null,
 
-            'pemasok' => $first['nama_pemasok']
+            'pemasok' => $header['nama_pemasok']
+                ?? $first['nama_pemasok']
                 ?? null,
 
             /**
              * Blade lama menggunakan variable shipto,
              * sedangkan API PO memiliki SO NO.
              */
-            'shipto' => $first['so_no']
+            'shipto' => $header['so_no']
+                ?? $first['so_no']
                 ?? $first['shipto']
                 ?? $first['ship_to']
                 ?? null,
 
-            'status' => $first['status_pembayaran']
+            'status' => $header['status_pembayaran']
+                ?? $first['status_pembayaran']
                 ?? $first['status_bayar']
                 ?? null,
 

@@ -725,7 +725,7 @@
                 date_to: dateTo
             });
 
-            fetch(`{{ route("api.integration.search_po") }}?${queryParams.toString()}`)
+            fetch(`/api/integration/search-po?${queryParams.toString()}`)
                 .then(response => response.json())
                 .then(result => {
                     renderTable(result);
@@ -776,7 +776,7 @@
             const modal = new bootstrap.Modal(document.getElementById('detailModal'));
             modal.show();
 
-            fetch(`{{ url('/api/integration/detail-po') }}/${encodeURIComponent(no_po)}`)
+            fetch(`/api/integration/detail-po/${encodeURIComponent(no_po)}`)
                 .then(res => res.json())
                 .then(po => {
                     if(po.error) throw new Error(po.error);
