@@ -20,6 +20,7 @@ import { Colors } from '@/constants/theme';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
+import { ExpenseModal } from '../Modal/ExpenseModal';
 
 const REMOTE_ASSETS = {
   hero: {
@@ -141,6 +142,7 @@ export default function DriverDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [isNotificationModalVisible, setNotificationModalVisible] = useState(false);
   const [isPeriodModalVisible, setPeriodModalVisible] = useState(false);
+  const [isExpenseModalVisible, setExpenseModalVisible] = useState(false);
   const [periodFilter, setPeriodFilter] = useState({ value: '7_days', label: '7 Hari Terakhir' });
 
   const pageBackground = isDark ? colors.background : BRAND.page;
@@ -427,10 +429,10 @@ export default function DriverDashboard() {
                 />
 
                 <QuickAction
-                  title="Upload Bukti"
+                  title="Upload Pengeluaran"
                   icon="camera-outline"
                   color={BRAND.violet}
-                  onPress={() => showFeatureInfo('Upload Bukti')}
+                  onPress={() => setExpenseModalVisible(true)}
                 />
               </View>
 
@@ -490,8 +492,8 @@ export default function DriverDashboard() {
         animationType="fade"
         onRequestClose={() => setNotificationModalVisible(false)}
       >
-        <Pressable 
-          style={styles.modalOverlay} 
+        <Pressable
+          style={styles.modalOverlay}
           onPress={() => setNotificationModalVisible(false)}
         >
           <Pressable style={[styles.modalContent, { backgroundColor: cardBackground }]}>
@@ -504,8 +506,8 @@ export default function DriverDashboard() {
             <ScrollView style={styles.modalBody}>
               {todayTasks.filter(t => t.status === 'assigned').length > 0 ? (
                 todayTasks.filter(t => t.status === 'assigned').map(task => (
-                  <TouchableOpacity 
-                    key={task.id} 
+                  <TouchableOpacity
+                    key={task.id}
                     style={[styles.notificationItem, { borderBottomColor: borderColor }]}
                     onPress={() => {
                       setNotificationModalVisible(false);
@@ -537,8 +539,8 @@ export default function DriverDashboard() {
         animationType="fade"
         onRequestClose={() => setPeriodModalVisible(false)}
       >
-        <Pressable 
-          style={styles.modalOverlay} 
+        <Pressable
+          style={styles.modalOverlay}
           onPress={() => setPeriodModalVisible(false)}
         >
           <Pressable style={[styles.modalContent, { backgroundColor: cardBackground }]}>
@@ -557,10 +559,10 @@ export default function DriverDashboard() {
                 { value: '1_year', label: '1 Tahun Terakhir' },
                 { value: 'all', label: 'Semua Waktu' },
               ].map(option => (
-                <TouchableOpacity 
-                  key={option.value} 
+                <TouchableOpacity
+                  key={option.value}
                   style={[
-                    styles.notificationItem, 
+                    styles.notificationItem,
                     { borderBottomColor: borderColor, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }
                   ]}
                   onPress={() => {
@@ -580,6 +582,13 @@ export default function DriverDashboard() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* Expense Modal */}
+      <ExpenseModal
+        visible={isExpenseModalVisible}
+        onClose={() => setExpenseModalVisible(false)}
+        onSuccess={() => fetchDashboard()}
+      />
     </View>
   );
 }
