@@ -68,7 +68,14 @@ class ExpenseController extends Controller
         if ($request->hasFile('receipt')) {
             $file = $request->file('receipt');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $file->move(public_path('uploads/expenses'), $fileName);
+            $destinationPath = public_path('uploads/expenses');
+            
+            // Buat folder jika belum ada
+            if (!file_exists($destinationPath)) {
+                mkdir($destinationPath, 0755, true);
+            }
+            
+            $file->move($destinationPath, $fileName);
             $expense->receipt_url = "uploads/expenses/" . $fileName;
         }
 
