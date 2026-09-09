@@ -61,8 +61,27 @@ class IntegrationController extends Controller
             'sort_col' => $request->input('sort_col'),
             'sort_dir' => $request->input('sort_dir'),
         ], static fn ($value) => $value !== null && $value !== '');
+        $response = $this->proxyPaginated('penjualan-so', $params, $page, $perPage);
 
-        return $this->proxyPaginated('penjualan-so', $params, $page, $perPage);
+        if ($response->status() >= 400 && $search !== '') {
+            $detailResponse = $this->detailSo($search);
+            if ($detailResponse->status() === 200) {
+                $detailData = $detailResponse->getData(true);
+                $items = $detailData['items'] ?? [];
+                if (!empty($items)) {
+                    return response()->json([
+                        'data' => $items,
+                        'current_page' => 1,
+                        'last_page' => 1,
+                        'total' => count($items),
+                        'from' => 1,
+                        'to' => count($items),
+                    ]);
+                }
+            }
+        }
+
+        return $response;
     }
 
     public function detailSo(string $noSo): JsonResponse
@@ -127,11 +146,31 @@ class IntegrationController extends Controller
             Log::warning('Local PO lookup failed', ['message' => $exception->getMessage()]);
         }
 
-        return $this->proxyPaginated('pembelian', [
+        $response = $this->proxyPaginated('pembelian', [
             'page' => $page,
             'limit' => 20,
             'search' => $search,
         ], $page, 20);
+
+        if ($response->status() >= 400 && $search !== '') {
+            $detailResponse = $this->detailPo($search);
+            if ($detailResponse->status() === 200) {
+                $detailData = $detailResponse->getData(true);
+                $items = $detailData['items'] ?? [];
+                if (!empty($items)) {
+                    return response()->json([
+                        'data' => $items,
+                        'current_page' => 1,
+                        'last_page' => 1,
+                        'total' => count($items),
+                        'from' => 1,
+                        'to' => count($items),
+                    ]);
+                }
+            }
+        }
+
+        return $response;
     }
 
     public function detailPo(string $noPo): JsonResponse
