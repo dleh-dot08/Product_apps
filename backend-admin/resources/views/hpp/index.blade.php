@@ -349,10 +349,11 @@
         place-items: center;
     }
 
-    #hppDashboardPage .donut-box canvas {
-        width: 220px !important;
-        height: 220px !important;
-        max-width: 100%;
+    #hppDashboardPage .chart-container {
+        position: relative;
+        width: 220px;
+        height: 220px;
+        margin: 0 auto;
     }
 
     #hppDashboardPage .composition-list {
@@ -1108,7 +1109,9 @@
 
                 <div class="composition-body">
                     <div class="donut-box">
-                        <canvas id="costChart"></canvas>
+                        <div class="chart-container">
+                            <canvas id="costChart"></canvas>
+                        </div>
                     </div>
 
                     <div class="composition-list">
@@ -1507,6 +1510,9 @@
         </section>
     </div>
 </div>
+
+<!-- Sertakan Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
     function changePerPage(select) {

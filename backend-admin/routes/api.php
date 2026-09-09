@@ -45,7 +45,7 @@ Route::middleware('api.router.key')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     
     // Pickup Tasks API
-    Route::get('/driver/dashboard', [PickupTaskController::class, 'dashboardSummary']);
+    Route::get('/driver/dashboard', [\App\Http\Controllers\Api\Driver\DriverDashboardController::class, 'dashboardSummary']);
     Route::get('/pickup', [PickupTaskController::class, 'index']);
     Route::get('/pickup/{id}', [PickupTaskController::class, 'show']);
     Route::post('/pickup', [PickupTaskController::class, 'store']);
