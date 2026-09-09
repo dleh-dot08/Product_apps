@@ -1286,6 +1286,10 @@
             // abaikan fallback yang tidak tersedia
         }
     }
+    // Jika belum dapat, coba dari relasi shift
+    if ($expenses->count() === 0 && isset($task->shift) && $task->shift->expenses) {
+        $expenses = collect($task->shift->expenses);
+    }
 
     $expenseValue = function($expense, array $keys, $default = null) {
         foreach ($keys as $key) {

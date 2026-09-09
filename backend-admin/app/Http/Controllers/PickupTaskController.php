@@ -271,10 +271,10 @@ class PickupTaskController extends Controller
         $type = $request->query('task_type', 'pickup');
 
         if ($type === 'pickup') {
-            $task = PickupTask::with(['driver', 'vehicle', 'assignedBy', 'attachments'])->findOrFail($id);
+            $task = PickupTask::with(['driver', 'vehicle', 'assignedBy', 'attachments', 'shift.expenses'])->findOrFail($id);
             $task->task_type = 'pickup';
         } else {
-            $task = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'attachments'])->findOrFail($id);
+            $task = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'attachments', 'shift.expenses'])->findOrFail($id);
             $task->task_type = 'delivery';
         }
 
