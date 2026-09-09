@@ -147,7 +147,8 @@
                 fetch('/api/driver/locations', {
                     headers: {
                         'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-API-Key': 'cHJvZHVjdF9hcHBzX2FwaV9yb3V0ZXJfMjAyNg=='
                     }
                 })
                 .then(response => response.json())
