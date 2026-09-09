@@ -1,391 +1,601 @@
-<?php
+﻿<?php
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Artisan;
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PickupTaskController;
 use App\Http\Controllers\OtaUpdateController;
+use App\Services\AkurasiService;
+
+
+/*
+|--------------------------------------------------------------------------
+| API ROUTES
+|--------------------------------------------------------------------------
+*/
+
+
+/*
+|--------------------------------------------------------------------------
+| ROUTER API KEY
+|--------------------------------------------------------------------------
+*/
 
 Route::middleware('api.router.key')->group(function () {
 
+    /*
+    |--------------------------------------------------------------------------
+    | LOGIN
+    |--------------------------------------------------------------------------
+    */
 
-    // API-key-only routes: these endpoints do not depend on the current user.
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [
+        AuthController::class,
+        'login'
+    ]);
 
-    Route::get('/users', [\App\Http\Controllers\Api\UserController::class, 'index'])
-        ->name('api.users.index');
-    Route::get('/users/{user}', [\App\Http\Controllers\Api\UserController::class, 'show'])
-        ->name('api.users.show');
 
-    Route::get('/driver/locations', [\App\Http\Controllers\Api\LocationController::class, 'getActiveDrivers']);
+    /*
+    |--------------------------------------------------------------------------
+    | USER READ
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/users', [
+        \App\Http\Controllers\Api\UserController::class,
+        'index'
+    ])->name('api.users.index');
+
+    Route::get('/users/{user}', [
+        \App\Http\Controllers\Api\UserController::class,
+        'show'
+    ])->name('api.users.show');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | DRIVER LOCATION PUBLIC
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get('/driver/locations', [
+        \App\Http\Controllers\Api\LocationController::class,
+        'getActiveDrivers'
+    ]);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | AUTH SANCTUM
+    |--------------------------------------------------------------------------
+    */
 
     Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user', function (Request $request) {
-        $user = $request->user();
-        $user->load(['roleRelation', 'division']);
-        
-        $userArray = $user->toArray();
-        $userArray['role'] = $user->roleRelation;
-        
-        return $userArray;
-    });
-    
-    Route::put('/user/profile', [AuthController::class, 'updateProfile']);
-    
-    // User Management writes require both router API key and user auth.
-    Route::apiResource('users', App\Http\Controllers\Api\UserController::class)->only([
-        'store', 'update', 'destroy',
-    ])->names([
-        'store' => 'api.users.store',
-        'update' => 'api.users.update',
-        'destroy' => 'api.users.destroy',
-    ]);
-    
-    Route::post('/logout', [AuthController::class, 'logout']);
-    
-    // Pickup Tasks API
-    Route::get('/driver/dashboard', [\App\Http\Controllers\Api\Driver\DriverDashboardController::class, 'dashboardSummary']);
-    Route::get('/pickup', [PickupTaskController::class, 'index']);
-    Route::get('/pickup/{id}', [PickupTaskController::class, 'show']);
-    Route::post('/pickup', [PickupTaskController::class, 'store']);
-    Route::patch('/pickup/{id}/status', [PickupTaskController::class, 'updateStatus']);
-    
-    // Expense API
-    Route::post('/pickup/{id}/expenses', [\App\Http\Controllers\Api\ExpenseController::class, 'storeFromTask']);
-    
-    // Driver Location API
-    Route::post('/driver/location', [\App\Http\Controllers\Api\LocationController::class, 'updateLocation']);
-    });
 
+        Route::get('/user', function (Request $request) {
+
+            $user = $request->user();
+
+            $user->load([
+                'roleRelation',
+                'division'
+            ]);
+
+            $userArray = $user->toArray();
+
+            $userArray['role'] = $user->roleRelation;
+
+            return $userArray;
+        });
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PROFILE
+        |--------------------------------------------------------------------------
+        */
+
+        Route::put('/user/profile', [
+            AuthController::class,
+            'updateProfile'
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | USER MANAGEMENT
+        |--------------------------------------------------------------------------
+        */
+
+        Route::apiResource(
+            'users',
+            \App\Http\Controllers\Api\UserController::class
+        )
+            ->only([
+                'store',
+                'update',
+                'destroy'
+            ])
+            ->names([
+                'store' => 'api.users.store',
+                'update' => 'api.users.update',
+                'destroy' => 'api.users.destroy',
+            ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOGOUT
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('/logout', [
+            AuthController::class,
+            'logout'
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PICKUP TASK
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/driver/dashboard', [
+            \App\Http\Controllers\Api\Driver\DriverDashboardController::class,
+            'dashboardSummary'
+        ]);
+
+        Route::get('/pickup', [
+            PickupTaskController::class,
+            'index'
+        ]);
+
+        Route::get('/pickup/{id}', [
+            PickupTaskController::class,
+            'show'
+        ]);
+
+        Route::post('/pickup', [
+            PickupTaskController::class,
+            'store'
+        ]);
+
+        Route::patch('/pickup/{id}/status', [
+            PickupTaskController::class,
+            'updateStatus'
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | EXPENSE
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('/pickup/{id}/expenses', [
+            \App\Http\Controllers\Api\ExpenseController::class,
+            'storeFromTask'
+        ]);
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | DRIVER LOCATION
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('/driver/location', [
+            \App\Http\Controllers\Api\LocationController::class,
+            'updateLocation'
+        ]);
+    });
 });
 
-Route::post('/internal/ota/publish', [OtaUpdateController::class, 'publish'])
-    ->name('ota.publish');
+
+/*
+|--------------------------------------------------------------------------
+| OTA
+|--------------------------------------------------------------------------
+*/
+
+Route::post('/internal/ota/publish', [
+    OtaUpdateController::class,
+    'publish'
+])->name('ota.publish');
+
 
 Route::get('/app-version', function () {
+
     return response()->json([
-        'latest_version' => '1.0.0', // Nanti jika ada rilis baru, cukup ganti angka ini, misal '1.0.1'
-        'apk_url' => url('/downloads/driverapps-latest.apk'), // Link download APK
-        'changelog' => 'Perbaikan performa dan penambahan fitur baru.',
-        'force_update' => false // Opsi jika ingin mewajibkan update
+        'latest_version' => '1.0.0',
+
+        'apk_url' => url(
+            '/downloads/driverapps-latest.apk'
+        ),
+
+        'changelog' =>
+            'Perbaikan performa dan penambahan fitur baru.',
+
+        'force_update' => false,
     ]);
 });
 
-// Proxy API untuk pencarian SO & PO (Membaca dari Local Database)
-Route::middleware('web')->group(function () {
-    
-    // --- TRIGGER BACKGROUND SYNC ---
-    Route::post('/integration/trigger-sync-so', function() {
-        // Prevent timeout for large syncs
-        set_time_limit(300);
-        \Illuminate\Support\Facades\Artisan::call('akurasi:sync', ['--only' => 'so']);
-        return response()->json([
-            'status' => 'success', 
-            'message' => 'Sync SO berhasil dijalankan di latar belakang'
-        ]);
-    })->name('api.integration.trigger_sync_so');
 
-    // --- SALES ORDERS ---
-    Route::get('/integration/search-so', function(\Illuminate\Http\Request $request) {
-        $search = $request->input('q', '');
-        $page = (int) $request->input('page', 1);
-        $perPage = (int) $request->input('per_page', 20);
-        
-        // 1. Coba ambil dari database lokal terlebih dahulu
-        try {
-            $query = \App\Models\SalesOrderAkurasi::query();
-            
-            if ($search) {
-                $searchStr = strtolower($search);
-                $query->where(function($q) use ($searchStr) {
-                    $q->where('no_so', 'like', "%{$searchStr}%")
-                      ->orWhere('deskripsi_barang', 'like', "%{$searchStr}%")
-                      ->orWhere('no_barang', 'like', "%{$searchStr}%")
-                      ->orWhere('nama_pelanggan', 'like', "%{$searchStr}%");
-                });
-            }
-            
-            // Filter by Date Range
-            $dateFrom = $request->input('date_from');
-            $dateTo = $request->input('date_to');
-            if ($dateFrom && $dateTo) {
-                $query->whereBetween('tgl_so', [$dateFrom, $dateTo]);
-            } elseif ($dateFrom) {
-                $query->where('tgl_so', '>=', $dateFrom);
-            } elseif ($dateTo) {
-                $query->where('tgl_so', '<=', $dateTo);
-            }
+/*
+|--------------------------------------------------------------------------
+| AKURASI INTEGRATION
+|--------------------------------------------------------------------------
+|
+| Route di file api.php otomatis memiliki prefix:
+|
+| /api
+|
+| Jadi:
+|
+| /integration/search-so
+|
+| menjadi:
+|
+| /api/integration/search-so
+|
+|--------------------------------------------------------------------------
+*/
 
-            // Filter by Status Hold.
-            $statusHold = $request->input('status_hold');
-            if ($statusHold !== null && $statusHold !== '') {
-                $query->where('is_held', $statusHold);
-            }
+Route::middleware('web')
+    ->prefix('integration')
+    ->group(function () {
 
-            // Filter by Status
-            $status = $request->input('status');
-            if ($status) {
-                $query->where('status', 'like', "%{$status}%");
-            }
+        /*
+        |--------------------------------------------------------------------------
+        | SALES ORDER - TRIGGER SYNC
+        |--------------------------------------------------------------------------
+        */
 
-            $sortCol = $request->input('sort_col', 'tgl_so');
-            $sortDir = $request->input('sort_dir', 'desc');
-            
-            // Validasi arah sort agar aman dari SQL Injection
-            $sortDir = strtolower($sortDir) === 'asc' ? 'asc' : 'desc';
-            
-            $sortMapping = [
-                'salesman' => 'nama_salesman',
-                'dpp' => 'subtotal',
-                'tgl_kirim' => 'tgl_pengiriman'
-            ];
-            
-            $dbSortCol = $sortMapping[$sortCol] ?? $sortCol;
+        Route::post('/trigger-sync-so', function () {
 
-            // Validasi kolom agar tidak error
-            $allowedSorts = [
-                'no_so', 'tgl_so', 'tgl_estimasi', 'tgl_pengiriman', 'no_pelanggan', 'nama_pelanggan', 
-                'no_po_customer', 'nama_salesman', 'no_barang', 'deskripsi_barang', 
-                'category_produk', 'qty', 'qty_shipped', 'sisa_kirim', 'stok_tersedia', 
-                'unit_price', 'discount_amount', 'ppn_amount', 'subtotal', 'amount', 'no_pengiriman',
-                'salesman', 'dpp', 'tgl_kirim'
-            ];
+            try {
 
-            if (in_array($sortCol, $allowedSorts)) {
-                $query->orderBy($dbSortCol, $sortDir);
-            } else {
-                $query->orderBy('tgl_so', 'desc');
-            }
-            
-            $localData = $query->paginate($perPage, ['*'], 'page', $page);
-            if ($localData->total() > 0) {
-                return response()->json($localData);
-            }
-        } catch (\Exception $e) {
-            // Abaikan error jika table tidak ada, lanjut ke API
-        }
+                /*
+                 * NOTE:
+                 *
+                 * Artisan::call() berjalan synchronous.
+                 * Ini bukan queue/background job sebenarnya.
+                 *
+                 * Tetapi tetap dipertahankan agar kompatibel
+                 * dengan Blade yang sekarang.
+                 */
 
-        // 2. Jika lokal kosong atau table tidak ada, ambil dari API Akurasi
-        $apiKey = 'Ym95Y29tcG9zaXRpb25leHBsYW5hdGlvbnRob3VnaHRwZWFjZWdpcmxjb2FjaHNlbnM=';
-        $url = 'https://akurasi-api.aqpa-indonesia.com/api/integration/penjualan-so';
-        
-        $params = [
-            'page' => $page,
-            'limit' => $perPage,
-            'search' => $search,
-            'date_from' => $request->input('date_from'),
-            'date_to' => $request->input('date_to'),
-            'status' => $request->input('status'),
-            'status_hold' => $request->input('status_hold'),
-            'sort_col' => $request->input('sort_col'),
-            'sort_dir' => $request->input('sort_dir'),
-        ];
-        
-        // Remove empty params
-        $params = array_filter($params, function($v) { return $v !== null && $v !== ''; });
+                set_time_limit(300);
 
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'X-API-Key' => $apiKey,
-            'Accept' => 'application/json',
-        ])->get($url, $params);
+                if (
+                    array_key_exists(
+                        'akurasi:sync',
+                        Artisan::all()
+                    )
+                ) {
 
-        if (!$response->successful()) {
-            return response()->json(['error' => 'Gagal memuat dari API'], 500);
-        }
+                    Artisan::call(
+                        'akurasi:sync',
+                        [
+                            '--only' => 'so'
+                        ]
+                    );
 
-        $resData = $response->json();
-        $meta = $resData['meta'] ?? [];
-        $data = $resData['data'] ?? [];
-        
-        // Memetakan ke struktur pagination Laravel
-        $mapped = [
-            'data' => $data,
-            'current_page' => $meta['current_page'] ?? $page,
-            'last_page' => $meta['total_pages'] ?? 1,
-            'total' => $meta['total_rows'] ?? 0,
-            'from' => count($data) > 0 ? (($page - 1) * $perPage) + 1 : 0,
-            'to' => count($data) > 0 ? (($page - 1) * $perPage) + count($data) : 0,
-        ];
+                    return response()->json([
+                        'success' => true,
+                        'status' => 'success',
+                        'message' => 'Sinkronisasi SO berhasil dijalankan.',
+                    ]);
+                }
 
-        return response()->json($mapped);
-    })->name('api.integration.search_so');
+                /*
+                 * Kalau command sync tidak ada,
+                 * data sekarang tetap menggunakan API realtime.
+                 */
 
-    Route::get('/integration/detail-so/{no_so}', function($no_so) {
-        // 1. Coba dari database lokal
-        try {
-            $itemsLocal = \App\Models\SalesOrderAkurasi::where('no_so', $no_so)->get();
-            if ($itemsLocal->isNotEmpty()) {
                 return response()->json([
-                    'no_so' => $itemsLocal->first()->no_so,
-                    'tgl_so' => $itemsLocal->first()->tgl_so,
-                    'est_kirim' => $itemsLocal->first()->tgl_estimasi,
-                    'pelanggan' => $itemsLocal->first()->nama_pelanggan,
-                    'shipto' => $itemsLocal->first()->shipto,
-                    'status' => $itemsLocal->first()->status,
-                    'total_amount' => $itemsLocal->sum('subtotal'),
-                    'items' => $itemsLocal
+                    'success' => true,
+                    'status' => 'success',
+                    'message' => 'Data SO menggunakan API Akurasi realtime.',
                 ]);
-            }
-        } catch (\Exception $e) {
-            // Lanjut ke API
-        }
 
-        // 2. Ambil dari API
-        $apiKey = 'Ym95Y29tcG9zaXRpb25leHBsYW5hdGlvbnRob3VnaHRwZWFjZWdpcmxjb2FjaHNlbnM=';
-        $url = 'https://akurasi-api.aqpa-indonesia.com/api/integration/penjualan-so';
-        
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'X-API-Key' => $apiKey,
-            'Accept' => 'application/json',
-        ])->get($url, [
-            'search' => $no_so,
-            'limit' => 200
-        ]);
+            } catch (\Throwable $e) {
 
-        if (!$response->successful()) {
-            return response()->json(['error' => 'Data tidak ditemukan'], 404);
-        }
+                report($e);
 
-        $resData = $response->json();
-        $items = collect($resData['data'] ?? [])->filter(function($item) use ($no_so) {
-            return strtolower($item['no_so'] ?? '') === strtolower($no_so);
-        })->values();
-
-        if($items->isEmpty()) return response()->json(['error' => 'Data tidak ditemukan'], 404);
-        
-        $firstItem = $items->first();
-        return response()->json([
-            'no_so' => $firstItem['no_so'] ?? '-',
-            'tgl_so' => $firstItem['tgl_so'] ?? null,
-            'est_kirim' => $firstItem['tgl_estimasi'] ?? null,
-            'pelanggan' => $firstItem['nama_pelanggan'] ?? null,
-            'shipto' => $firstItem['shipto'] ?? null,
-            'status' => $firstItem['status'] ?? null,
-            'total_amount' => $items->sum('subtotal'),
-            'items' => $items
-        ]);
-    })->where('no_so', '.*')->name('api.integration.detail_so');
-
-
-    // --- PURCHASE ORDERS ---
-    Route::get('/integration/search-po', function(\Illuminate\Http\Request $request) {
-        $search = $request->input('q', '');
-        $page = (int) $request->input('page', 1);
-
-        // 1. Coba ambil dari database lokal terlebih dahulu
-        try {
-            $query = \App\Models\PembelianOrderAkurasi::query();
-            
-            if ($search) {
-                $searchStr = strtolower($search);
-                $query->where(function($q) use ($searchStr) {
-                    $q->where('no_pembelian', 'like', "%{$searchStr}%")
-                      ->orWhere('deskripsi_barang', 'like', "%{$searchStr}%")
-                      ->orWhere('no_barang', 'like', "%{$searchStr}%")
-                      ->orWhere('nama_pemasok', 'like', "%{$searchStr}%");
-                });
-            }
-            
-            $localData = $query->orderBy('tgl_pembelian', 'desc')->paginate(20, ['*'], 'page', $page);
-            
-            // Jika data lokal ditemukan, gunakan data tersebut
-            if ($localData->total() > 0) {
-                return response()->json($localData);
-            }
-        } catch (\Exception $e) {
-            // Abaikan error jika table tidak ada, lanjut ke API
-        }
-
-        // 2. Jika lokal kosong atau table tidak ada, ambil dari API Akurasi
-        $apiKey = 'Ym95Y29tcG9zaXRpb25leHBsYW5hdGlvbnRob3VnaHRwZWFjZWdpcmxjb2FjaHNlbnM=';
-        $url = 'https://akurasi-api.aqpa-indonesia.com/api/integration/pembelian';
-        
-        $params = [
-            'page' => $page,
-            'limit' => 20,
-            'search' => $search,
-        ];
-        
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'X-API-Key' => $apiKey,
-            'Accept' => 'application/json',
-        ])->get($url, $params);
-
-        if (!$response->successful()) {
-            return response()->json(['error' => 'Gagal memuat dari API'], 500);
-        }
-
-        $resData = $response->json();
-        $meta = $resData['meta'] ?? [];
-        $data = $resData['data'] ?? [];
-        
-        // Memetakan ke struktur pagination Laravel
-        $mapped = [
-            'data' => $data,
-            'current_page' => $meta['current_page'] ?? $page,
-            'last_page' => $meta['total_pages'] ?? 1,
-            'total' => $meta['total_rows'] ?? 0,
-            'from' => count($data) > 0 ? (($page - 1) * 20) + 1 : 0,
-            'to' => count($data) > 0 ? (($page - 1) * 20) + count($data) : 0,
-        ];
-
-        return response()->json($mapped);
-    })->name('api.integration.search_po');
-
-    Route::get('/integration/detail-po/{no_po}', function($no_po) {
-        // 1. Coba dari database lokal
-        try {
-            $itemsLocal = \App\Models\PembelianOrderAkurasi::where('no_pembelian', $no_po)->get();
-            if ($itemsLocal->isNotEmpty()) {
                 return response()->json([
-                    'no_po' => $itemsLocal->first()->no_pembelian,
-                    'tgl_po' => $itemsLocal->first()->tgl_pembelian,
-                    'est_kirim' => $itemsLocal->first()->tgl_ekspetasi,
-                    'pemasok' => $itemsLocal->first()->nama_pemasok,
-                    'shipto' => $itemsLocal->first()->so_no, 
-                    'status' => $itemsLocal->first()->status_bayar,
-                    'total_amount' => $itemsLocal->sum('amount'),
-                    'items' => $itemsLocal
-                ]);
+                    'success' => false,
+                    'status' => 'error',
+                    'message' => $e->getMessage(),
+                ], 500);
             }
-        } catch (\Exception $e) {
-            // Lanjut ke API
-        }
 
-        // 2. Ambil dari API
-        $apiKey = 'Ym95Y29tcG9zaXRpb25leHBsYW5hdGlvbnRob3VnaHRwZWFjZWdpcmxjb2FjaHNlbnM=';
-        $url = 'https://akurasi-api.aqpa-indonesia.com/api/integration/pembelian';
-        
-        $response = \Illuminate\Support\Facades\Http::withHeaders([
-            'X-API-Key' => $apiKey,
-            'Accept' => 'application/json',
-        ])->get($url, [
-            'search' => $no_po,
-            'limit' => 200
-        ]);
+        })->name('api.integration.trigger_sync_so');
 
-        if (!$response->successful()) {
-            return response()->json(['error' => 'Data tidak ditemukan'], 404);
-        }
 
-        $resData = $response->json();
-        $items = collect($resData['data'] ?? [])->filter(function($item) use ($no_po) {
-            return strtolower($item['no_pembelian'] ?? '') === strtolower($no_po) || strtolower($item['no_po'] ?? '') === strtolower($no_po);
-        })->values();
+        /*
+        |--------------------------------------------------------------------------
+        | SALES ORDER - SEARCH
+        |--------------------------------------------------------------------------
+        */
 
-        if($items->isEmpty()) return response()->json(['error' => 'Data tidak ditemukan'], 404);
-        
-        $firstItem = $items->first();
-        return response()->json([
-            'no_po' => $firstItem['no_pembelian'] ?? '-',
-            'tgl_po' => $firstItem['tgl_pembelian'] ?? null,
-            'est_kirim' => $firstItem['tgl_ekspetasi'] ?? null,
-            'pemasok' => $firstItem['nama_pemasok'] ?? null,
-            'shipto' => $firstItem['so_no'] ?? null,
-            'status' => $firstItem['status_pembayaran'] ?? $firstItem['status_bayar'] ?? null,
-            'total_amount' => $items->sum('amount'),
-            'items' => $items
-        ]);
-    })->where('no_po', '.*')->name('api.integration.detail_po');
-});
+        Route::get('/search-so', function (
+            Request $request,
+            AkurasiService $service
+        ) {
+
+            try {
+
+                /*
+                 * Blade mengirim:
+                 *
+                 * q
+                 *
+                 * sedangkan AkurasiService memakai:
+                 *
+                 * search
+                 */
+
+                $filters = [
+                    'page' => $request->input(
+                        'page',
+                        1
+                    ),
+
+                    'per_page' => $request->input(
+                        'per_page',
+                        20
+                    ),
+
+                    'search' => $request->input(
+                        'q'
+                    ),
+
+                    'date_from' => $request->input(
+                        'date_from'
+                    ),
+
+                    'date_to' => $request->input(
+                        'date_to'
+                    ),
+
+                    'status' => $request->input(
+                        'status'
+                    ),
+
+                    'status_hold' => $request->input(
+                        'status_hold'
+                    ),
+
+                    'sort_col' => $request->input(
+                        'sort_col',
+                        'tgl_so'
+                    ),
+
+                    'sort_dir' => $request->input(
+                        'sort_dir',
+                        'desc'
+                    ),
+                ];
+
+                $result = $service->searchSo(
+                    $filters
+                );
+
+                return response()->json(
+                    $result
+                );
+
+            } catch (\Throwable $e) {
+
+                report($e);
+
+                return response()->json([
+                    'error' => true,
+                    'message' => $e->getMessage(),
+
+                    'data' => [],
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'total' => 0,
+                    'from' => 0,
+                    'to' => 0,
+                ], 500);
+            }
+
+        })->name('api.integration.search_so');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SALES ORDER - DETAIL
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/detail-so/{no_so}', function (
+            string $no_so,
+            AkurasiService $service
+        ) {
+
+            try {
+
+                $noSo = urldecode(
+                    trim($no_so)
+                );
+
+                if ($noSo === '') {
+
+                    return response()->json([
+                        'error' => true,
+                        'message' => 'Nomor Sales Order kosong.',
+                    ], 422);
+                }
+
+                $result = $service->detailSo(
+                    $noSo
+                );
+
+                return response()->json(
+                    $result
+                );
+
+            } catch (\Throwable $e) {
+
+                report($e);
+
+                /*
+                 * JANGAN 404.
+                 *
+                 * Karena route sebenarnya ADA.
+                 *
+                 * 422 menunjukkan bahwa request masuk,
+                 * tetapi proses detail gagal.
+                 */
+
+                return response()->json([
+                    'error' => true,
+                    'message' => $e->getMessage(),
+                    'no_so' => $no_so,
+                ], 422);
+            }
+
+        })
+            ->where('no_so', '.*')
+            ->name('api.integration.detail_so');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PURCHASE ORDER - SEARCH
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/search-po', function (
+            Request $request,
+            AkurasiService $service
+        ) {
+
+            try {
+
+                $filters = [
+                    'page' => $request->input(
+                        'page',
+                        1
+                    ),
+
+                    'per_page' => $request->input(
+                        'per_page',
+                        20
+                    ),
+
+                    /*
+                     * Blade = q
+                     * Service = search
+                     */
+                    'search' => $request->input(
+                        'q'
+                    ),
+
+                    'date_from' => $request->input(
+                        'date_from'
+                    ),
+
+                    'date_to' => $request->input(
+                        'date_to'
+                    ),
+
+                    'sort_col' => $request->input(
+                        'sort_col',
+                        'tgl_pembelian'
+                    ),
+
+                    'sort_dir' => $request->input(
+                        'sort_dir',
+                        'desc'
+                    ),
+                ];
+
+                $result = $service->searchPo(
+                    $filters
+                );
+
+                return response()->json(
+                    $result
+                );
+
+            } catch (\Throwable $e) {
+
+                report($e);
+
+                return response()->json([
+                    'error' => true,
+                    'message' => $e->getMessage(),
+
+                    'data' => [],
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'total' => 0,
+                    'from' => 0,
+                    'to' => 0,
+                ], 500);
+            }
+
+        })->name('api.integration.search_po');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PURCHASE ORDER - DETAIL
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/detail-po/{no_po}', function (
+            string $no_po,
+            AkurasiService $service
+        ) {
+
+            try {
+
+                $noPo = urldecode(
+                    trim($no_po)
+                );
+
+                if ($noPo === '') {
+
+                    return response()->json([
+                        'error' => true,
+                        'message' => 'Nomor Purchase Order kosong.',
+                    ], 422);
+                }
+
+                $result = $service->detailPo(
+                    $noPo
+                );
+
+                return response()->json(
+                    $result
+                );
+
+            } catch (\Throwable $e) {
+
+                report($e);
+
+                /*
+                 * Sama dengan SO:
+                 * route ada, jadi jangan return 404.
+                 */
+
+                return response()->json([
+                    'error' => true,
+                    'message' => $e->getMessage(),
+                    'no_po' => $no_po,
+                ], 422);
+            }
+
+        })
+            ->where('no_po', '.*')
+            ->name('api.integration.detail_po');
+    });
