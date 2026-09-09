@@ -811,7 +811,7 @@
                 itemConfigs = {};
                 
                 try {
-                    const response = await fetch(`/api/integration/search-so?q=${encodeURIComponent(query)}`, {
+                    const response = await fetch(`/api/integration/detail-so/${encodeURIComponent(query)}`, {
                         headers: {
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
@@ -819,9 +819,10 @@
                     });
                     const result = await response.json();
                     
-                    if (result.data && result.data.length > 0) {
-                        currentSOData = result.data;
-                        const headerData = result.data[0];
+                    const apiData = result.data || result.items;
+                    if (apiData && apiData.length > 0) {
+                        currentSOData = apiData;
+                        const headerData = apiData[0];
                         
                         infoNoSO.innerText = headerData.no_so || '-';
                         infoCustomer.innerText = headerData.nama_pelanggan || '-';
@@ -830,11 +831,11 @@
                         
                         // Gunakan fungsi dari step1.blade.php jika ada
                         if (typeof window.renderSOItems === 'function') {
-                            window.renderSOItems(result.data);
+                            window.renderSOItems(apiData);
                         } else {
                             // Fallback jika tidak ada
                             tableBodySO.innerHTML = '';
-                            result.data.forEach((item, index) => {
+                            apiData.forEach((item, index) => {
                                 const tr = document.createElement('tr');
                                 tr.className = 'border-bottom border-secondary border-opacity-10';
                                 tr.innerHTML = `

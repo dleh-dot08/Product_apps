@@ -3687,16 +3687,21 @@
                 if (window.setSOSearchLoading) window.setSOSearchLoading(true);
 
                 try {
-                    const response = await fetch(`/api/integration/search-so?q=${encodeURIComponent(soNumber)}`, {
+                    const response = await fetch(`/api/integration/detail-so/${encodeURIComponent(soNumber)}`, {
                         headers: {
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
                         }
                     });
+                    
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    
                     const result = await response.json();
                     
-                    if (result.data && result.data.length > 0) {
-                        const firstItem = result.data[0];
+                    // Support both structure search (result.data) and detail (result.items)
+                    const apiData = result.data || result.items;
+                    if (apiData && apiData.length > 0) {
+                        const firstItem = apiData[0];
                         
                         // Populate Header Info
                         const setText = (id, text) => {
@@ -3721,7 +3726,7 @@
 
                         // Populate Dropdown
                         if (window.renderSOItems) {
-                            window.renderSOItems(result.data);
+                            window.renderSOItems(apiData);
                         }
 
                         if (window.statusText) {
