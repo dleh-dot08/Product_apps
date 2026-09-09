@@ -1100,16 +1100,9 @@ document.addEventListener('DOMContentLoaded', function () {
         const baseUrl = "/api/integration";
         let apiUrl;
         const upperRef = refNumber.toUpperCase();
-        
-        if (upperRef.startsWith('AI-S') || upperRef.startsWith('SO')) {
-            apiUrl = `${baseUrl}/detail-so/${encodeURIComponent(refNumber)}`;
-        } else if (upperRef.startsWith('AI-B') || upperRef.startsWith('PO')) {
-            apiUrl = `${baseUrl}/detail-po/${encodeURIComponent(refNumber)}`;
-        } else {
-            apiUrl = isDelivery 
-                ? `${baseUrl}/detail-so/${encodeURIComponent(refNumber)}`
-                : `${baseUrl}/detail-po/${encodeURIComponent(refNumber)}`;
-        }
+        apiUrl = isDelivery 
+            ? `${baseUrl}/detail-so/${encodeURIComponent(refNumber)}`
+            : `${baseUrl}/detail-po/${encodeURIComponent(refNumber)}`;
 
         syncReferenceValue();
 
