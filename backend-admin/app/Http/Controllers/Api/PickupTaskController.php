@@ -212,8 +212,14 @@ class PickupTaskController extends Controller
      */
     public function updateStatus(UpdatePickupTaskStatusRequest $request, $id)
     {
-        $task = PickupTask::find($id);
         $isPickup = true;
+        
+        // Prevent searching for non-uuid strings which crashes Postgres
+        if (!\Illuminate\Support\Str::isUuid($id)) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid ID format'], 400);
+        }
+
+        $task = PickupTask::find($id);
         
         if (!$task) {
             $task = \App\Models\DeliveryAssignment::find($id);

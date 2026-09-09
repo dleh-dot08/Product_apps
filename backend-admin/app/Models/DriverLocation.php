@@ -18,4 +18,9 @@ class DriverLocation extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function task()
+    {
+        return $this->belongsTo(PickupTask::class, 'task_id');
+    }
 }

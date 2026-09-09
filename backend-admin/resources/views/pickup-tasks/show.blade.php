@@ -1964,11 +1964,11 @@
                                     $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
                                 @endphp
                                 <div class="attachment-card">
-                                    <a href="{{ $url }}" target="_blank" class="attachment-preview">
+                                    <a href="/storage/{{ $att->file_path }}" target="_blank" class="attachment-preview">
                                         @if($isPdf)
                                             <i class="fa-solid fa-file-pdf"></i>
                                         @else
-                                            <img src="{{ $url }}" alt="{{ $category }}">
+                                            <img src="/storage/{{ $att->file_path }}" alt="{{ $category }}">
                                         @endif
                                     </a>
                                     <div class="attachment-meta">
@@ -2136,7 +2136,7 @@
                                     <td class="text-end money">Rp {{ number_format($expenseAmount,0,',','.') }}</td>
                                     <td class="text-center">
                                         @if($proofPath)
-                                            <a href="{{ asset('storage/'.$proofPath) }}" target="_blank" class="proof-link" title="Lihat bukti">
+                                            <a href="/storage/{{ $proofPath }}" target="_blank" class="proof-link" title="Lihat bukti">
                                                 <i class="fa-regular fa-file-lines"></i>
                                             </a>
                                         @else
