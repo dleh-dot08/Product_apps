@@ -230,6 +230,17 @@ class IntegrationController extends Controller
             return collect($data);
         }
 
+        if (is_array($data) && isset($data['items']) && is_array($data['items'])) {
+            return collect($data['items'])->map(function ($item) use ($data) {
+                foreach ($data as $key => $value) {
+                    if ($key !== 'items' && !isset($item[$key])) {
+                        $item[$key] = $value;
+                    }
+                }
+                return $item;
+            });
+        }
+
         if (is_array($data)) {
             return collect([$data]);
         }
