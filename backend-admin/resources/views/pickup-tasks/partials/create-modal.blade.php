@@ -1167,9 +1167,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     ref_no: itemRef,
                     item_number: apiItem.no_barang || '',
                     item_description: apiItem.deskripsi_barang || apiItem.nama_barang || '',
-                    quantity: apiItem.qty || 1,
-                    unit: apiItem.unit || apiItem.satuan || apiItem.uom || '',
-                    unit_price: apiItem.unit_price || apiItem.harga_satuan || apiItem.harga || apiItem.price || 0
+                    quantity: Number(apiItem.qty || apiItem.quantity || 1),
+                    unit: apiItem.uom || apiItem.satuan || apiItem.unit || '',
+                    unit_price: Number(apiItem.price || apiItem.harga_satuan || apiItem.harga || apiItem.unit_price || (apiItem.amount && apiItem.qty ? (apiItem.amount / apiItem.qty) : 0))
                 });
             });
             renderItems();
