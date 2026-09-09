@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Artisan;
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\PickupTaskController;
+use App\Http\Controllers\IntegrationController;
 use App\Http\Controllers\OtaUpdateController;
 use App\Services\AkurasiService;
 
@@ -221,4 +222,18 @@ Route::get('/app-version', function () {
 
         'force_update' => false,
     ]);
+});
+
+// Proxy API untuk pencarian SO & PO (Membaca dari Local Database)
+Route::middleware('web')->group(function () {
+    Route::post('/integration/trigger-sync-so', [IntegrationController::class, 'triggerSyncSo'])
+        ->name('api.integration.trigger_sync_so');
+    Route::get('/integration/search-so', [IntegrationController::class, 'searchSo'])
+        ->name('api.integration.search_so');
+    Route::get('/integration/detail-so/{no_so}', [IntegrationController::class, 'detailSo'])
+        ->where('no_so', '.*')->name('api.integration.detail_so');
+    Route::get('/integration/search-po', [IntegrationController::class, 'searchPo'])
+        ->name('api.integration.search_po');
+    Route::get('/integration/detail-po/{no_po}', [IntegrationController::class, 'detailPo'])
+        ->where('no_po', '.*')->name('api.integration.detail_po');
 });
