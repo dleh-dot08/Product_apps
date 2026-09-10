@@ -7,6 +7,14 @@ use App\Models\Shift;
 class HppCalculationService
 {
     /**
+     * Mendapatkan rate Manpower per jam (Hardcoded sementara)
+     */
+    private function getManpowerRatePerHour(): float
+    {
+        return 20000.0; // Hardcode 20.000
+    }
+
+    /**
      * Menghitung HPP (Harga Pokok Penjualan) Prorata per Barang dalam 1 Ritase (Shift)
      */
     public function calculateProrata(Shift $shift)
@@ -26,7 +34,7 @@ class HppCalculationService
         $manpowerCost = 0;
         if ($shift->check_in_at && $shift->check_out_at) {
             $durationMinutes = $shift->check_in_at->diffInMinutes($shift->check_out_at);
-            $ratePerHour = $shift->manpower_rate_per_hour ?? 0;
+            $ratePerHour = $this->getManpowerRatePerHour(); // Menggunakan function terpisah
             $manpowerCount = $shift->manpower_count ?? 1;
             $manpowerCost = ($durationMinutes / 60) * $ratePerHour * $manpowerCount;
         }
