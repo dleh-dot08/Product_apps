@@ -16,8 +16,8 @@ class UpdatePickupTaskStatusRequest extends FormRequest
         return [
             'status' => 'required|in:on_route,arrived,delivered,failed,cancelled',
             'failure_reason' => 'required_if:status,failed|nullable|string',
-            'proof_photo' => 'required_if:status,delivered|nullable', // Bisa diisi URL string atau file upload
-            'completed_odometer' => 'required_if:status,delivered|nullable|integer|min:0',
+            'proof_photo' => 'nullable', // Bisa diisi URL string atau file upload
+            'completed_odometer' => 'nullable|integer|min:0',
         ];
     }
 }
