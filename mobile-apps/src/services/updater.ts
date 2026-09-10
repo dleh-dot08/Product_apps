@@ -1,6 +1,6 @@
 // @ts-nocheck
 import * as Application from 'expo-application';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as IntentLauncher from 'expo-intent-launcher';
 import { Alert } from 'react-native';
 

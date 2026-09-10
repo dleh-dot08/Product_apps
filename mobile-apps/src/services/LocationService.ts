@@ -1,9 +1,10 @@
 import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
-import { getStorageItemAsync } from '../context/AuthContext';
+import { getStorageItemAsync } from '../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from './api';
 import axios from 'axios';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 const LOCATION_TASK_NAME = 'background-location-task';
 
@@ -75,7 +76,7 @@ const sendCurrentLocation = async (taskId: string) => {
     });
     console.log(`[LocationService] Foreground location sent for task ${taskId}`);
   } catch (e) {
-    console.warn('[LocationService] Foreground send error:', e);
+    console.log('[LocationService] Foreground send error:', e);
   }
 };
 
@@ -95,14 +96,18 @@ export const startLocationTracking = async (taskId: string) => {
 
     // Background permission - bisa gagal di Expo Go iOS, jadi jangan block
     let backgroundGranted = false;
-    try {
-      const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
-      backgroundGranted = backgroundStatus === 'granted';
-    } catch (e) {
-      console.warn('[LocationService] Background permission not available (Expo Go?):', e);
+    const isExpoGo = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+    
+    if (!isExpoGo) {
+      try {
+        const { status: backgroundStatus } = await Location.requestBackgroundPermissionsAsync();
+        backgroundGranted = backgroundStatus === 'granted';
+      } catch (e) {
+        console.warn('[LocationService] Background permission not available:', e);
+      }
     }
 
-    if (backgroundGranted) {
+    if (backgroundGranted && !isExpoGo) {
       const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
       if (!isRegistered) {
         await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
@@ -119,7 +124,7 @@ export const startLocationTracking = async (taskId: string) => {
       }
     } else {
       // Fallback: kirim lokasi via foreground interval setiap 15 detik
-      console.warn('[LocationService] Background not available, using foreground interval.');
+      console.log('[LocationService] Background not available, using foreground interval.');
       if (_foregroundInterval) clearInterval(_foregroundInterval);
       _foregroundInterval = setInterval(() => sendCurrentLocation(taskId), 15000);
     }
