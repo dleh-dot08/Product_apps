@@ -1313,18 +1313,25 @@
                                 </td>
 
                                 <td>
-                                    @if($shift->task_reference)
-                                        <div class="delivery-code">
-                                            <span class="delivery-code-ref">{{ $shift->task_reference }}</span>
-                                            @if(stripos($shift->task_reference, 'PO') !== false || stripos($shift->task_reference, 'purchase') !== false)
+                                    <div class="d-flex flex-column gap-1">
+                                        @foreach($shift->pickupTasks as $pt)
+                                            <div class="delivery-code mb-1">
+                                                <span class="delivery-code-ref">{{ $pt->reference_number }} (#{{ $pt->id }})</span>
                                                 <span class="delivery-type pickup">Ambil</span>
-                                            @else
+                                            </div>
+                                        @endforeach
+                                        
+                                        @foreach($shift->deliveryAssignments as $da)
+                                            <div class="delivery-code mb-1">
+                                                <span class="delivery-code-ref">{{ $da->salesOrder->so_number ?? '-' }} (#{{ $da->id }})</span>
                                                 <span class="delivery-type delivery">Kirim</span>
-                                            @endif
-                                        </div>
-                                    @else
-                                        <span style="color:#94a3b8;">-</span>
-                                    @endif
+                                            </div>
+                                        @endforeach
+                                        
+                                        @if($shift->pickupTasks->isEmpty() && $shift->deliveryAssignments->isEmpty())
+                                            <span style="color:#94a3b8;">-</span>
+                                        @endif
+                                    </div>
                                 </td>
 
                                 <td>
