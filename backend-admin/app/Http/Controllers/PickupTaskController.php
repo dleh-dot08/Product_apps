@@ -521,7 +521,7 @@ class PickupTaskController extends Controller
         $minio = new \App\Services\Storage\MinioService();
         try {
             $minio->getClient()->putObject([
-                'Bucket' => 'driver_apps',
+                'Bucket' => 'driver-apps',
                 'Key'    => $path,
                 'SourceFile' => $file->getRealPath(),
                 'ContentType' => $file->getMimeType(),

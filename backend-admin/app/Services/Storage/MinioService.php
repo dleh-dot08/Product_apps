@@ -14,7 +14,7 @@ class MinioService
     public function __construct()
     {
         // Hardcoded configuration as requested by user
-        $this->bucket = 'driver_apps';
+        $this->bucket = 'driver-apps';
         
         $this->client = new S3Client([
             'version'                   => 'latest',
