@@ -49,7 +49,10 @@ class DriverDashboardController extends Controller
                 'pickup_tasks.item_condition',
                 'pickup_tasks.completed_at'
             )
-            ->where('pickup_tasks.driver_id', $user->id);
+            ->where(function ($q) use ($user) {
+                $q->where('pickup_tasks.driver_id', $user->id)
+                  ->orWhere('pickup_tasks.co_driver_id', $user->id);
+            });
 
         $deliveries = DB::table('delivery_assignments')
             ->join('sales_orders', 'delivery_assignments.sales_order_id', '=', 'sales_orders.id')
@@ -81,7 +84,10 @@ class DriverDashboardController extends Controller
                 'delivery_assignments.item_condition',
                 'delivery_assignments.completed_at'
             )
-            ->where('delivery_assignments.driver_id', $user->id);
+            ->where(function ($q) use ($user) {
+                $q->where('delivery_assignments.driver_id', $user->id)
+                  ->orWhere('delivery_assignments.co_driver_id', $user->id);
+            });
 
         $unionQuery = $pickups->unionAll($deliveries);
         

@@ -520,9 +520,11 @@
                         <div class="hero-boxes"><span></span><span></span><span></span></div>
                     </div>
                     <div class="hero-actions">
+                        @if(auth()->user()->hasPermission('Create Tugas'))
                         <button type="button" class="btn btn-orange rounded-3 px-4 py-2 fw-bold" onclick="window.openTaskModal('create')">
                             <i class="fa-solid fa-plus me-2"></i>Buat Tugas Baru
                         </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -687,6 +689,9 @@
                                     </td>
                                     <td>
                                         <div class="primary-line">{{ $task->driver->full_name ?? 'N/A' }}</div>
+                                        @if($task->coDriver)
+                                            <div class="secondary-line text-muted" style="font-size: 0.85em;"><i class="fa-solid fa-user-group me-1"></i>{{ $task->coDriver->full_name }}</div>
+                                        @endif
                                     </td>
                                     <td>
                                         <div class="primary-line">{{ $task->vehicle->plate_number ?? 'N/A' }}</div>
@@ -738,6 +743,7 @@
                                                         <i class="fa-solid fa-eye text-info me-3" style="width: 16px;"></i> Lihat Detail
                                                     </a>
                                                 </li>
+                                                @if(auth()->user()->hasPermission('Edit Tugas'))
                                                 @if($task->status === 'assigned')
                                                 <li>
                                                     <button type="button" class="dropdown-item py-2 d-flex align-items-center text-warning"
@@ -755,11 +761,15 @@
                                                     </span>
                                                 </li>
                                                 @endif
+                                                @endif
+                                                @if(auth()->user()->hasPermission('Edit Tugas'))
                                                 <li>
                                                     <button class="dropdown-item py-2 d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#editModal{{ $task->id }}">
                                                         <i class="fa-solid fa-pen-to-square text-primary me-3" style="width: 16px;"></i> Update Status
                                                     </button>
                                                 </li>
+                                                @endif
+                                                @if(auth()->user()->hasPermission('Delete Tugas'))
                                                 <li><hr class="dropdown-divider opacity-10"></li>
                                                 <li>
                                                     <form action="{{ route('pickup-tasks.destroy', ['pickup_task' => $task->id, 'task_type' => $task->task_type]) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tugas ini?');">
@@ -770,6 +780,7 @@
                                                         </button>
                                                     </form>
                                                 </li>
+                                                @endif
                                             </ul>
                                         </div>
                                     </td>

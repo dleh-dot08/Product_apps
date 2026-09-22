@@ -1047,10 +1047,12 @@
                     Filter
                 </button>
 
+                @if(auth()->check() && auth()->user()->hasPermission('Export Data'))
                 <a href="{{ route('hpp.export') }}" class="btn-hpp-export">
                     <i class="fas fa-download"></i>
                     Export Excel
                 </a>
+                @endif
             </div>
         </div>
 
@@ -1240,10 +1242,12 @@
                     <i class="fas fa-rotate-left"></i>
                     Reset
                 </button>
+                @if(auth()->check() && auth()->user()->hasPermission('Export Data'))
                 <a href="{{ route('hpp.export') }}" class="btn-hpp-export" style="height: 36px; padding: 0 14px; font-size: 10px; border-radius: 9px; box-shadow:none;">
                     <i class="fas fa-file-excel"></i>
                     Generate Excel
                 </a>
+                @endif
             </div>
 
             <div class="ritase-table-wrap">

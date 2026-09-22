@@ -560,7 +560,7 @@
 
                             <div class="col-md-4">
                                 <label class="form-label">
-                                    Pilih Driver <span class="required-star">*</span>
+                                    Driver Utama <span class="required-star">*</span>
                                 </label>
                                 <select name="driver_id" class="form-select" required>
                                     <option value="">Pilih driver...</option>
@@ -572,7 +572,19 @@
 
                             <div class="col-md-4">
                                 <label class="form-label">
-                                    Pilih Kendaraan <span class="required-star">*</span>
+                                    Co-Driver <span class="text-muted fw-normal">(Opsional)</span>
+                                </label>
+                                <select name="co_driver_id" class="form-select">
+                                    <option value="">Tanpa co-driver</option>
+                                    @foreach($drivers as $driver)
+                                        <option value="{{ $driver->id }}">{{ $driver->full_name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-md-4">
+                                <label class="form-label">
+                                    Kendaraan <span class="required-star">*</span>
                                 </label>
                                 <select name="vehicle_id" class="form-select" required>
                                     <option value="">Pilih kendaraan...</option>
@@ -584,18 +596,18 @@
 
                             <div class="col-md-4">
                                 <label class="form-label">
-                                    Tanggal Penjemputan / Pengiriman <span class="required-star">*</span>
+                                    Berangkat <span class="required-star">*</span>
                                 </label>
                                 <input type="datetime-local" name="dispatch_date" class="form-control" value="{{ date('Y-m-d\TH:i') }}" required>
                             </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Estimasi Waktu Tiba</label>
+                            <div class="col-md-4">
+                                <label class="form-label">Estimasi Tiba</label>
                                 <input type="datetime-local" name="estimated_arrival" class="form-control">
                             </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label">Prioritas (Opsional)</label>
+                            <div class="col-md-4">
+                                <label class="form-label">Prioritas</label>
                                 <select name="priority" class="form-select">
                                     <option value="normal">Normal</option>
                                     <option value="medium">Medium</option>
@@ -1456,6 +1468,7 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             form.querySelector('select[name="driver_id"]').value = task.driver_id || '';
+            form.querySelector('select[name="co_driver_id"]').value = task.co_driver_id || '';
             form.querySelector('select[name="vehicle_id"]').value = task.vehicle_id || '';
             form.querySelector('select[name="priority"]').value = task.priority || 'normal';
 

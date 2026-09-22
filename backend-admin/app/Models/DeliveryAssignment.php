@@ -33,6 +33,11 @@ class DeliveryAssignment extends Model
         return $this->belongsTo(User::class, 'driver_id');
     }
 
+    public function coDriver()
+    {
+        return $this->belongsTo(User::class, 'co_driver_id');
+    }
+
     public function attachments()
     {
         return $this->morphMany(TaskAttachment::class, 'task');

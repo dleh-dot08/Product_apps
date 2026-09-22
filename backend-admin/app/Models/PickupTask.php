@@ -31,6 +31,11 @@ class PickupTask extends Model
         return $this->belongsTo(User::class, 'driver_id');
     }
 
+    public function coDriver()
+    {
+        return $this->belongsTo(User::class, 'co_driver_id');
+    }
+
     public function vehicle()
     {
         return $this->belongsTo(Vehicle::class, 'vehicle_id');

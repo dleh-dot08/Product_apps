@@ -125,9 +125,11 @@
                 </div>
 
                 <div style="position: relative; z-index: 1;">
+                    @if(auth()->user()->hasPermission('Create Kendaraan'))
                     <button class="btn border-0 shadow-sm rounded-pill fw-bold" style="background-color: #ea580c; color: #fff; padding: 0.6rem 1.2rem;" data-bs-toggle="modal" data-bs-target="#createVehicleModal">
                         <i class="fa-solid fa-plus me-1"></i> Tambah Kendaraan
                     </button>
+                    @endif
                 </div>
             </div>
         </div>
@@ -209,6 +211,25 @@
             <div class="card border-0 data-card h-100 shadow-sm">
                 <div class="card-header bg-transparent border-bottom-0 p-4 pb-0 d-flex justify-content-between align-items-center">
                     <h6 class="fw-bold mb-0">Daftar Inventaris Kendaraan</h6>
+                    <form action="{{ route('vehicles.index') }}" method="GET" class="d-flex align-items-center justify-content-end gap-2 mb-0" style="flex: 1;">
+                        <!-- Filter Status -->
+                        <select name="status" class="form-select form-select-sm shadow-sm border-light-subtle" onchange="this.form.submit()" style="width: auto;">
+                            <option value="all" {{ request('status') == 'all' ? 'selected' : '' }}>Semua Status</option>
+                            <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Aktif</option>
+                            <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Non-Aktif</option>
+                        </select>
+                        
+                        <!-- Limit Data -->
+                        <select name="per_page" class="form-select form-select-sm shadow-sm border-light-subtle" onchange="this.form.submit()" style="width: auto;">
+                            <option value="10" {{ request('per_page') == '10' ? 'selected' : '' }}>10</option>
+                            <option value="20" {{ request('per_page') == '20' ? 'selected' : '' }}>20</option>
+                            <option value="30" {{ request('per_page') == '30' ? 'selected' : '' }}>30</option>
+                            <option value="all" {{ request('per_page') == 'all' ? 'selected' : '' }}>All</option>
+                        </select>
+
+                        <!-- Search Box (Submit on Enter) -->
+                        <input type="search" name="search" class="form-control form-control-sm shadow-sm border-light-subtle" placeholder="Cari..." value="{{ request('search') }}" style="width: 200px;">
+                    </form>
                 </div>
                 <div class="card-body p-0 mt-2">
                     <div class="table-responsive px-4 pb-4">
@@ -217,7 +238,9 @@
                                 <tr>
                                     <th width="5%">No</th>
                                     <th width="15%">Plat Nomor</th>
-                                    <th width="25%">Nama Kendaraan</th>
+                                    <th width="20%">Nama Kendaraan</th>
+                                    <th width="10%">Lokasi</th>
+                                    <th width="10%">Operasional</th>
                                     <th width="15%">Harga BBM/L</th>
                                     <th width="15%">Konsumsi BBM</th>
                                     <th width="10%">Status</th>
@@ -230,6 +253,8 @@
                                     <td>{{ $index + 1 }}</td>
                                     <td><span class="badge bg-light text-dark border fw-bold fs-6">{{ $v->plate_number }}</span></td>
                                     <td class="fw-semibold">{{ $v->name }}</td>
+                                    <td>{{ $v->location ?? '-' }}</td>
+                                    <td>{{ $v->operational ?? '-' }}</td>
                                     <td><span class="text-muted small">Rp</span> {{ number_format($v->fuel_price_per_liter, 0, ',', '.') }}</td>
                                     <td>{{ number_format($v->km_per_liter, 1, ',', '.') }} <span class="text-muted small">KM/L</span></td>
                                     <td>
@@ -240,10 +265,12 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
+                                        @if(auth()->user()->hasPermission('Edit Kendaraan'))
                                         <button class="btn btn-sm btn-light border shadow-sm text-primary rounded-circle" style="width: 32px; height: 32px;" data-bs-toggle="modal" data-bs-target="#editVehicleModal{{ $v->id }}" title="Edit">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
-                                        @if($v->active)
+                                        @endif
+                                        @if($v->active && auth()->user()->hasPermission('Delete Kendaraan'))
                                         <form action="{{ route('vehicles.destroy', $v->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menonaktifkan kendaraan ini?');">
                                             @csrf
                                             @method('DELETE')
@@ -254,46 +281,7 @@
                                         @endif
                                     </td>
                                 </tr>
-                                
-                                <!-- Edit Modal -->
-                                <div class="modal fade" id="editVehicleModal{{ $v->id }}" tabindex="-1" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <form action="{{ route('vehicles.update', $v->id) }}" method="POST" class="w-100">
-                                            @csrf
-                                            @method('PUT')
-                                            <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
-                                                <div class="modal-header bg-light border-bottom-0 p-4">
-                                                    <h5 class="modal-title fw-bold">Edit Kendaraan</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body p-4 text-start">
-                                                    <div class="mb-3">
-                                                        <label class="form-label fw-semibold small text-muted text-uppercase letter-spacing-1">Plat Nomor</label>
-                                                        <input type="text" name="plate_number" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ $v->plate_number }}" required style="text-transform: uppercase;">
-                                                    </div>
-                                                    <div class="mb-3">
-                                                        <label class="form-label fw-semibold small text-muted text-uppercase letter-spacing-1">Nama Kendaraan</label>
-                                                        <input type="text" name="name" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ $v->name }}" required>
-                                                    </div>
-                                                    <div class="row">
-                                                        <div class="col-md-6 mb-3">
-                                                            <label class="form-label fw-semibold small text-muted text-uppercase letter-spacing-1">Harga BBM (Rp)</label>
-                                                            <input type="number" step="1" min="1" name="fuel_price_per_liter" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ (int)$v->fuel_price_per_liter }}" required>
-                                                        </div>
-                                                        <div class="col-md-6 mb-3">
-                                                            <label class="form-label fw-semibold small text-muted text-uppercase letter-spacing-1">Konsumsi (KM/L)</label>
-                                                            <input type="number" step="0.1" min="0.1" name="km_per_liter" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ $v->km_per_liter }}" required>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div class="modal-footer border-top-0 p-4 pt-0 bg-white">
-                                                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
-                                                    <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border: none;">Simpan Perubahan</button>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
+
                                 @empty
                                 <tr>
                                     <td colspan="7" class="text-center py-5 text-muted">
@@ -305,6 +293,11 @@
                             </tbody>
                         </table>
                     </div>
+                    @if(method_exists($vehicles, 'links'))
+                    <div class="px-4 pb-4">
+                        {{ $vehicles->links() }}
+                    </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -336,6 +329,16 @@
                             <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Nama / Tipe Kendaraan</label>
                             <input type="text" name="name" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" placeholder="Contoh: Mitsubishi Colt Diesel" required>
                         </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Lokasi</label>
+                                <input type="text" name="location" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" placeholder="Contoh: Gudang Jakarta">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Operasional</label>
+                                <input type="text" name="operational" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" placeholder="Contoh: Distribusi Lokal">
+                            </div>
+                        </div>
                         <div class="row g-3">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Harga BBM (Rp)</label>
@@ -361,4 +364,68 @@
             </form>
         </div>
     </div>
+    <!-- Edit Modals (Rendered outside table to prevent layout issues) -->
+    @foreach($vehicles as $v)
+    <div class="modal fade" id="editVehicleModal{{ $v->id }}" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form action="{{ route('vehicles.update', $v->id) }}" method="POST" class="w-100">
+                @csrf
+                @method('PUT')
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 16px; overflow: hidden;">
+                    <div class="modal-header border-bottom-0 p-4" style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);">
+                        <h5 class="modal-title fw-bold text-dark">
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center" style="width: 32px; height: 32px; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;">
+                                    <i class="fa-solid fa-pen-to-square fs-6"></i>
+                                </div>
+                                Edit Kendaraan
+                            </div>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4 bg-white text-start">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Plat Nomor</label>
+                            <input type="text" name="plate_number" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ $v->plate_number }}" required style="text-transform: uppercase;">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Nama / Tipe Kendaraan</label>
+                            <input type="text" name="name" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ $v->name }}" required>
+                        </div>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Lokasi</label>
+                                <input type="text" name="location" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ $v->location }}">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Operasional</label>
+                                <input type="text" name="operational" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ $v->operational }}">
+                            </div>
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Harga BBM (Rp)</label>
+                                <div class="input-group input-group-lg shadow-sm border-light-subtle">
+                                    <span class="input-group-text bg-light text-muted border-light-subtle">Rp</span>
+                                    <input type="number" step="1" min="1" name="fuel_price_per_liter" class="form-control border-light-subtle bg-body-tertiary" value="{{ (int)$v->fuel_price_per_liter }}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Konsumsi (KM/L)</label>
+                                <div class="input-group input-group-lg shadow-sm border-light-subtle">
+                                    <input type="number" step="0.1" min="0.1" name="km_per_liter" class="form-control border-light-subtle bg-body-tertiary" value="{{ $v->km_per_liter }}" required>
+                                    <span class="input-group-text bg-light text-muted border-light-subtle">KM</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 p-4 pt-0 bg-white">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4 shadow-sm" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); border: none;">Simpan Perubahan</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    @endforeach
 </x-app-layout>
