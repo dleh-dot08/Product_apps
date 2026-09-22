@@ -105,6 +105,7 @@ class PickupTaskController extends Controller
         $request->validate([
             'task_type' => 'required|in:pickup,delivery',
             'driver_id' => 'required|uuid|exists:users,id',
+            'co_driver_id' => 'nullable|uuid|exists:users,id',
             'vehicle_id' => 'required|uuid|exists:vehicles,id',
             'items' => 'required|array|min:1',
             'items.*.item_description' => 'required|string',
@@ -151,6 +152,7 @@ class PickupTaskController extends Controller
             $pickupTask = PickupTask::create([
                 'reference_number' => $referenceNumber,
                 'driver_id' => $request->driver_id,
+                'co_driver_id' => $request->co_driver_id,
                 'vehicle_id' => $request->vehicle_id,
                 'assigned_by' => Auth::id(),
                 'status' => 'assigned',
@@ -247,6 +249,7 @@ class PickupTaskController extends Controller
             DeliveryAssignment::create([
                 'sales_order_id' => $salesOrder->id,
                 'driver_id' => $request->driver_id,
+                'co_driver_id' => $request->co_driver_id,
                 'vehicle_id' => $request->vehicle_id,
                 'assigned_by' => Auth::id(),
                 'status' => 'assigned',
@@ -309,6 +312,7 @@ class PickupTaskController extends Controller
 
         $request->validate([
             'driver_id' => 'required|exists:users,id',
+            'co_driver_id' => 'nullable|exists:users,id',
             'vehicle_id' => 'required|exists:vehicles,id',
             'items' => 'required|array|min:1',
             'items.*.item_description' => 'required|string',
@@ -355,6 +359,7 @@ class PickupTaskController extends Controller
             $task->update([
                 'reference_number' => $request->pickup_reference ?: $task->reference_number,
                 'driver_id' => $request->driver_id,
+                'co_driver_id' => $request->co_driver_id,
                 'vehicle_id' => $request->vehicle_id,
                 'priority' => $request->priority,
                 'pickup_name' => $request->pickup_name,
@@ -411,6 +416,7 @@ class PickupTaskController extends Controller
 
             $task->update([
                 'driver_id' => $request->driver_id,
+                'co_driver_id' => $request->co_driver_id,
                 'vehicle_id' => $request->vehicle_id,
                 'priority' => $request->priority,
                 'pickup_name' => $request->delivery_pickup_name,
@@ -487,5 +493,52 @@ class PickupTaskController extends Controller
         }
 
         return redirect()->route('pickup-tasks.index')->with('success', 'Tugas berhasil dihapus.');
+    }
+
+    /**
+     * Upload dokumen pendukung ke MinIO dan simpan ke TaskAttachment
+     */
+    public function uploadAttachment(Request $request, $id)
+    {
+        $request->validate([
+            'document_file' => 'required|file|max:10240', // max 10MB
+            'document_type' => 'required|string|max:100',
+        ]);
+
+        // Tentukan task type
+        $type = $request->input('task_type', 'pickup');
+        if ($type === 'pickup') {
+            $task = PickupTask::findOrFail($id);
+        } else {
+            $task = DeliveryAssignment::findOrFail($id);
+        }
+
+        $file = $request->file('document_file');
+        $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $file->getClientOriginalName());
+        $path = "task-driver/{$id}/admin-docs/{$fileName}";
+
+        // Upload ke MinIO
+        $minio = new \App\Services\Storage\MinioService();
+        try {
+            $minio->getClient()->putObject([
+                'Bucket' => 'driver_apps',
+                'Key'    => $path,
+                'SourceFile' => $file->getRealPath(),
+                'ContentType' => $file->getMimeType(),
+            ]);
+        } catch (\Exception $e) {
+            return back()->with('error', 'Gagal upload ke storage: ' . $e->getMessage());
+        }
+
+        // Simpan record ke database
+        $task->attachments()->create([
+            'file_path'     => $path,
+            'file_name'     => $file->getClientOriginalName(),
+            'document_type' => $request->document_type,
+            'category'      => 'dokumen_pendukung',
+            'uploaded_by'   => Auth::id(),
+        ]);
+
+        return back()->with('success', 'Dokumen berhasil diupload.');
     }
 }

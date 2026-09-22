@@ -1506,7 +1506,7 @@
 
                     <div class="assignment-grid">
                         <div class="assignment-cell">
-                            <div class="assignment-label">Driver</div>
+                            <div class="assignment-label">Driver Utama</div>
                             <div class="assignment-value">
                                 <i class="fa-solid fa-user"></i>
                                 <div>
@@ -1517,6 +1517,26 @@
                                 </div>
                             </div>
                         </div>
+
+                        @if($task->coDriver)
+                        <div class="assignment-cell">
+                            <div class="assignment-label">Driver 2 (Pendamping)</div>
+                            <div class="assignment-value">
+                                <i class="fa-solid fa-user-group"></i>
+                                <div>
+                                    {{ $task->coDriver->full_name ?? 'N/A' }}
+                                    @php
+                                        $coDriverPhone = $task->coDriver->phone_number
+                                            ?? $task->coDriver->phone
+                                            ?? $task->coDriver->mobile_phone;
+                                    @endphp
+                                    @if($coDriverPhone)
+                                        <span class="assignment-sub">{{ $coDriverPhone }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        @endif
 
                         <div class="assignment-cell">
                             <div class="assignment-label">Kendaraan</div>
@@ -1932,10 +1952,26 @@
 
                 {{-- BUKTI LAMPIRAN --}}
                 <section class="task-card section-card">
-                    <div class="section-heading">
-                        <i class="fa-solid fa-paperclip"></i>
-                        <span>Bukti Lampiran</span>
+                    <div class="section-heading" style="justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:9px;">
+                            <i class="fa-solid fa-paperclip"></i>
+                            <span>Bukti Lampiran</span>
+                        </div>
+                        <button type="button" onclick="document.getElementById('uploadDocModal').style.display='flex'" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:7px;border:0;background:linear-gradient(135deg,#fb923c,var(--task-orange));color:#fff;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Dokumen
+                        </button>
                     </div>
+
+                    @if(session('success'))
+                        <div style="padding:8px 12px;margin-bottom:10px;background:#ecfdf3;border:1px solid #86efac;border-radius:8px;color:#166534;font-size:13px;font-weight:600;">
+                            <i class="fa-solid fa-circle-check"></i> {{ session('success') }}
+                        </div>
+                    @endif
+                    @if(session('error'))
+                        <div style="padding:8px 12px;margin-bottom:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:13px;font-weight:600;">
+                            <i class="fa-solid fa-circle-xmark"></i> {{ session('error') }}
+                        </div>
+                    @endif
 
                     @if($attachments->count() > 0)
                         <div class="attachment-grid">
@@ -1943,7 +1979,7 @@
                                 @php
                                     $url = asset('storage/' . $att->file_path);
                                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
-                                    $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
+                                    $category = ucwords(str_replace('_',' ', $att->category ?? $att->document_type ?? 'Lampiran'));
                                 @endphp
                                 <div class="attachment-card">
                                     <a href="/storage/{{ $att->file_path }}" target="_blank" class="attachment-preview">
@@ -1966,6 +2002,49 @@
                         <div class="empty-table">Belum ada bukti lampiran pada tugas ini.</div>
                     @endif
                 </section>
+
+                {{-- UPLOAD DOKUMEN MODAL --}}
+                <div id="uploadDocModal" style="display:none;position:fixed;z-index:10000;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
+                    <div style="background:#fff;border-radius:14px;width:95%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15);overflow:hidden;">
+                        <div style="padding:16px 20px;background:linear-gradient(135deg,#fb923c,var(--task-orange));color:#fff;display:flex;align-items:center;justify-content:space-between;">
+                            <div style="font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px;">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Dokumen Pendukung
+                            </div>
+                            <button type="button" onclick="document.getElementById('uploadDocModal').style.display='none'" style="background:none;border:0;color:#fff;font-size:18px;cursor:pointer;">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <form action="{{ route('pickup-tasks.upload-attachment', $task->id) }}" method="POST" enctype="multipart/form-data" style="padding:20px;">
+                            @csrf
+                            <input type="hidden" name="task_type" value="{{ $isPickup ? 'pickup' : 'delivery' }}">
+                            
+                            <div style="margin-bottom:14px;">
+                                <label style="display:block;font-size:12px;font-weight:750;color:#475569;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;">Tipe Dokumen</label>
+                                <select name="document_type" required style="width:100%;height:40px;border:1px solid var(--task-border);border-radius:8px;padding:0 12px;font-size:13px;font-weight:600;">
+                                    <option value="Surat Jalan">Surat Jalan</option>
+                                    <option value="DO (Delivery Order)">DO (Delivery Order)</option>
+                                    <option value="PO (Purchase Order)">PO (Purchase Order)</option>
+                                    <option value="Invoice">Invoice</option>
+                                    <option value="BAST">BAST (Berita Acara Serah Terima)</option>
+                                    <option value="Dokumen Pendukung">Dokumen Pendukung Lainnya</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom:16px;">
+                                <label style="display:block;font-size:12px;font-weight:750;color:#475569;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;">Pilih File</label>
+                                <input type="file" name="document_file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" style="width:100%;font-size:13px;">
+                                <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Maks 10MB • PDF, JPG, PNG, DOC, XLS</div>
+                            </div>
+
+                            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                                <button type="button" onclick="document.getElementById('uploadDocModal').style.display='none'" style="padding:8px 16px;border-radius:8px;border:1px solid var(--task-border);background:#fff;font-size:13px;font-weight:700;cursor:pointer;">Batal</button>
+                                <button type="submit" style="padding:8px 20px;border-radius:8px;border:0;background:linear-gradient(135deg,#fb923c,var(--task-orange));color:#fff;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                                    <i class="fa-solid fa-upload"></i> Upload
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

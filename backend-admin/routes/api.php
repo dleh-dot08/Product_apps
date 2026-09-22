@@ -237,3 +237,10 @@ Route::middleware('web')->group(function () {
     Route::get('/integration/detail-po/{no_po}', [IntegrationController::class, 'detailPo'])
         ->where('no_po', '.*')->name('api.integration.detail_po');
 });
+
+ // MinIO Storage Routes
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/storage/presigned-url', [\App\Http\Controllers\Api\StorageController::class, 'getPresignedUploadUrl']);
+    Route::post('/storage/confirm-upload', [\App\Http\Controllers\Api\StorageController::class, 'confirmUpload']);
+    Route::post('/storage/file-url', [\App\Http\Controllers\Api\StorageController::class, 'getFileUrl']);
+});

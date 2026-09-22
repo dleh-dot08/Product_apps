@@ -84,8 +84,14 @@ class PickupTaskController extends Controller
             );
 
         if ($roleName === 'driver') {
-            $pickups->where('driver_id', $user->id);
-            $deliveries->where('delivery_assignments.driver_id', $user->id);
+            $pickups->where(function ($q) use ($user) {
+                $q->where('driver_id', $user->id)
+                  ->orWhere('co_driver_id', $user->id);
+            });
+            $deliveries->where(function ($q) use ($user) {
+                $q->where('delivery_assignments.driver_id', $user->id)
+                  ->orWhere('delivery_assignments.co_driver_id', $user->id);
+            });
         }
 
         $unionQuery = $pickups->unionAll($deliveries);
@@ -142,7 +148,7 @@ class PickupTaskController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Invalid ID format'], 404);
         }
 
-        $task = PickupTask::with(['driver', 'vehicle', 'shift.expenses', 'items', 'attachments'])->find($id);
+        $task = PickupTask::with(['driver', 'coDriver', 'vehicle', 'shift.expenses', 'items', 'attachments.uploader'])->find($id);
 
         if ($task) {
             $task->task_type = 'pickup';
@@ -152,7 +158,7 @@ class PickupTaskController extends Controller
             ]);
         }
 
-        $delivery = \App\Models\DeliveryAssignment::with(['driver', 'vehicle', 'shift.expenses', 'salesOrder.items', 'attachments'])->find($id);
+        $delivery = \App\Models\DeliveryAssignment::with(['driver', 'coDriver', 'vehicle', 'shift.expenses', 'salesOrder.items', 'attachments.uploader'])->find($id);
 
         if ($delivery) {
             $delivery->task_type = 'delivery';
@@ -233,7 +239,7 @@ class PickupTaskController extends Controller
         $user = Auth::user();
         $roleName = strtolower($user->roleRelation->name ?? $user->role->name ?? '');
         
-        if ($roleName === 'driver' && $task->driver_id !== $user->id) {
+        if ($roleName === 'driver' && $task->driver_id !== $user->id && $task->co_driver_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -283,12 +289,15 @@ class PickupTaskController extends Controller
                 
                 // Auto-generate shift if task doesn't have one
                 if (!$task->shift_id) {
+                    $vehicle = \App\Models\Vehicle::find($task->vehicle_id);
                     $shift = \App\Models\Shift::create([
                         'driver_id' => $task->driver_id,
                         'vehicle_id' => $task->vehicle_id ?? null,
                         'work_date' => now()->toDateString(),
                         'check_in_at' => now(),
                         'start_odometer' => $request->input('start_odometer', 0),
+                        'fuel_price_per_liter' => $vehicle ? $vehicle->fuel_price_per_liter : 0,
+                        'km_per_liter' => $vehicle ? $vehicle->km_per_liter : 0,
                         'source' => 'task',
                         'task_reference' => $task->reference_number ?? ('TASK-' . $task->id),
                     ]);
@@ -334,6 +343,7 @@ class PickupTaskController extends Controller
                 $task->attachments()->create([
                     'category' => $category,
                     'file_path' => $filePath,
+                    'uploaded_by' => Auth::id(),
                 ]);
             }
         }
@@ -356,6 +366,7 @@ class PickupTaskController extends Controller
                 $task->attachments()->create([
                     'category' => $attCategory,
                     'file_path' => $filePath,
+                    'uploaded_by' => Auth::id(),
                 ]);
             }
         }

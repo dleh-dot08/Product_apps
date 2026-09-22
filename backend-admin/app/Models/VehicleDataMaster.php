@@ -14,6 +14,8 @@ class VehicleDataMaster extends Model
     protected $fillable = [
         'plate_number',
         'name',
+        'location',
+        'operational',
         'fuel_price_per_liter',
         'km_per_liter',
         'active',
