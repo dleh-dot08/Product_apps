@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import * as TaskManager from 'expo-task-manager';
 import { getStorageItemAsync } from '../utils/storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import api from './api';
 import axios from 'axios';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
@@ -9,45 +10,47 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
 const LOCATION_TASK_NAME = 'background-location-task';
 
 // Definisikan background task
-TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
-  if (error) {
-    console.error('Background location error:', error);
-    return;
-  }
-  if (data) {
-    const { locations } = data as { locations: Location.LocationObject[] };
-    const location = locations[0];
-    
-    if (location) {
-      try {
-        const taskId = await AsyncStorage.getItem('active_task_id');
-        const token = await getStorageItemAsync('userToken');
-        
-        // Base URL from axios defaults used in app
-        const baseURL = api.defaults.baseURL || 'https://api.aqpa-indonesia.com/api';
-        
-        // Hanya kirim ke server jika ada task yang aktif dan ada token
-        if (taskId && token) {
-          await axios.post(`${baseURL}/driver/location`, {
-            latitude: location.coords.latitude,
-            longitude: location.coords.longitude,
-            heading: location.coords.heading,
-            task_id: taskId
-          }, {
-            headers: {
-              'Content-Type': 'application/json',
-              'Accept': 'application/json',
-              'Authorization': `Bearer ${token}`
-            }
-          });
-          console.log(`[LocationService] Lokasi terkirim untuk task ${taskId}`);
+if (Platform.OS !== 'web') {
+  TaskManager.defineTask(LOCATION_TASK_NAME, async ({ data, error }) => {
+    if (error) {
+      console.error('Background location error:', error);
+      return;
+    }
+    if (data) {
+      const { locations } = data as { locations: Location.LocationObject[] };
+      const location = locations[0];
+      
+      if (location) {
+        try {
+          const taskId = await AsyncStorage.getItem('active_task_id');
+          const token = await getStorageItemAsync('userToken');
+          
+          // Base URL from axios defaults used in app
+          const baseURL = api.defaults.baseURL || 'https://api.aqpa-indonesia.com/api';
+          
+          // Hanya kirim ke server jika ada task yang aktif dan ada token
+          if (taskId && token) {
+            await axios.post(`${baseURL}/driver/location`, {
+              latitude: location.coords.latitude,
+              longitude: location.coords.longitude,
+              heading: location.coords.heading,
+              task_id: taskId
+            }, {
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+              }
+            });
+            console.log(`[LocationService] Lokasi terkirim untuk task ${taskId}`);
+          }
+        } catch (e) {
+          console.error('Error sending background location:', e);
         }
-      } catch (e) {
-        console.error('Error sending background location:', e);
       }
     }
-  }
-});
+  });
+}
 
 export const requestLocationPermissions = async () => {
   const { status: foregroundStatus } = await Location.requestForegroundPermissionsAsync();
@@ -107,7 +110,7 @@ export const startLocationTracking = async (taskId: string) => {
       }
     }
 
-    if (backgroundGranted && !isExpoGo) {
+    if (backgroundGranted && !isExpoGo && Platform.OS !== 'web') {
       const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
       if (!isRegistered) {
         await Location.startLocationUpdatesAsync(LOCATION_TASK_NAME, {
@@ -140,9 +143,11 @@ export const stopLocationTracking = async () => {
     _foregroundInterval = null;
   }
   await AsyncStorage.removeItem('active_task_id');
-  const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
-  if (isRegistered) {
-    await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
-    console.log('[LocationService] Background tracking stopped.');
+  if (Platform.OS !== 'web') {
+    const isRegistered = await TaskManager.isTaskRegisteredAsync(LOCATION_TASK_NAME);
+    if (isRegistered) {
+      await Location.stopLocationUpdatesAsync(LOCATION_TASK_NAME);
+      console.log('[LocationService] Background tracking stopped.');
+    }
   }
 };
