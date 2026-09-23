@@ -791,7 +791,7 @@ function TaskDetailScreenContent() {
               <View style={{ marginBottom: 8 }}>
                 <Text style={{ color: textMuted, fontSize: 12, marginBottom: 8 }}>Bukti Foto</Text>
                 <Image
-                  source={{ uri: task.proof_photo.startsWith('http') ? task.proof_photo : `${api.defaults.baseURL?.replace('/api', '')}/storage/${task.proof_photo}` }}
+                  source={{ uri: task.proof_photo.startsWith('http') ? task.proof_photo : `https://bucket-dash.gte.co.id/[nama storage]/${task.proof_photo}` }}
                   style={{ width: '100%', height: 200, borderRadius: 8, backgroundColor: '#E2E8F0' }}
                   resizeMode="cover"
                 />

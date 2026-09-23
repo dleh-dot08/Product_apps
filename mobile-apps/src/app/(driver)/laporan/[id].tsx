@@ -98,9 +98,12 @@ export default function LaporanDetailScreen() {
     return 'Rp ' + amount.toLocaleString('id-ID');
   };
 
+  // TODO: Sesuaikan [nama storage] dengan nama bucket storage Anda yang sebenarnya
+  const STORAGE_BASE_URL = 'https://bucket-dash.gte.co.id/[nama storage]';
+
   const getFullImageUrl = (path: string) => {
     if (!path) return '';
-    return path.startsWith('http') ? path : `${api.defaults.baseURL?.replace('/api', '')}/storage/${path}`;
+    return path.startsWith('http') ? path : `${STORAGE_BASE_URL}/${path}`;
   };
 
   return (
