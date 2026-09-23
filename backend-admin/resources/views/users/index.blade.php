@@ -65,9 +65,11 @@
                     </div>
                 </form>
 
+                @if(auth()->user()->hasPermission('Create Pengguna'))
                 <button type="button" class="btn btn-primary shadow-sm text-nowrap" style="border-radius: 10px;" onclick="openUserModal(false)">
                     <i class="fa-solid fa-plus me-2"></i> Tambah Pengguna
                 </button>
+                @endif
             </div>
         </div>
         <div class="card-body p-4">
@@ -161,9 +163,12 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="d-flex gap-2 justify-content-end">
+                                        @if(auth()->user()->hasPermission('Edit Pengguna'))
                                         <button type="button" onclick="openUserModal(true, {{ json_encode(['id' => $user->id, 'full_name' => $user->full_name, 'username' => $user->username, 'email' => $user->email, 'division_id' => $user->division_id, 'role_id' => $user->role_id, 'active' => $user->active]) }})" class="btn btn-sm btn-light border rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; transition: all 0.2s;" title="Edit Pengguna" onmouseover="this.classList.replace('btn-light', 'btn-primary'); this.classList.remove('border')" onmouseout="this.classList.replace('btn-primary', 'btn-light'); this.classList.add('border')">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
+                                        @endif
+                                        @if(auth()->user()->hasPermission('Delete Pengguna'))
                                         <form action="{{ route('users.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengguna ini?');">
                                             @csrf
                                             @method('DELETE')
@@ -171,6 +176,7 @@
                                                 <i class="fa-solid fa-trash-can"></i>
                                             </button>
                                         </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

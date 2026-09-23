@@ -68,8 +68,8 @@ class User extends Authenticatable
             return false;
         }
 
-        // 2. Super Admin bypass (Semua role ini punya akses penuh seperti admin)
-        if (in_array(strtoupper($role->name), ['SUPER ADMIN', 'MANAGER', 'SUPERVISOR (SPV)', 'ADMIN STAFF', 'OPERATOR STAFF'])) {
+        // 2. Super Admin bypass
+        if (strtoupper($role->name) === 'SUPER ADMIN') {
             return true;
         }
 
