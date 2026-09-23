@@ -1977,7 +1977,8 @@
                         <div class="attachment-grid">
                             @foreach($attachments->take(8) as $att)
                                 @php
-                                    $url = \Illuminate\Support\Facades\Storage::url($att->file_path);
+                                    // TODO: Sesuaikan [nama storage] dengan nama bucket storage Anda yang sebenarnya
+                                    $url = 'https://bucket-dash.gte.co.id/[nama storage]/' . $att->file_path;
                                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
                                     $category = ucwords(str_replace('_',' ', $att->category ?? $att->document_type ?? 'Lampiran'));
                                 @endphp
@@ -2141,7 +2142,7 @@
         <div class="attachment-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
             @foreach($departureAttachments as $att)
                 @php
-                    $url = \Illuminate\Support\Facades\Storage::url($att->file_path);
+                    $url = 'https://bucket-dash.gte.co.id/[nama storage]/' . $att->file_path;
                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
                     $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
                 @endphp
@@ -2197,7 +2198,7 @@
                                     <td class="text-end money">Rp {{ number_format($expenseAmount,0,',','.') }}</td>
                                     <td class="text-center">
                                         @if($proofPath)
-                                            <a href="{{ \Illuminate\Support\Facades\Storage::url($proofPath) }}" target="_blank" class="proof-link" title="Lihat bukti">
+                                            <a href="{{ 'https://bucket-dash.gte.co.id/[nama storage]/' . $proofPath }}" target="_blank" class="proof-link" title="Lihat bukti">
                                                 <i class="fa-regular fa-file-lines"></i>
                                             </a>
                                         @else
@@ -2225,7 +2226,7 @@
         <div class="attachment-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
             @foreach($arrivalAttachments as $att)
                 @php
-                    $url = \Illuminate\Support\Facades\Storage::url($att->file_path);
+                    $url = 'https://bucket-dash.gte.co.id/[nama storage]/' . $att->file_path;
                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
                     $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
                 @endphp
@@ -2250,7 +2251,7 @@
         <div class="attachment-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
             @foreach($handoverAttachments as $att)
                 @php
-                    $url = \Illuminate\Support\Facades\Storage::url($att->file_path);
+                    $url = 'https://bucket-dash.gte.co.id/[nama storage]/' . $att->file_path;
                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
                     $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
                 @endphp
