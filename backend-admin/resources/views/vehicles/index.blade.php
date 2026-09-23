@@ -106,6 +106,53 @@
         }
         html[data-bs-theme="dark"] .table-premium th { color: #94a3b8; border-color: rgba(255,255,255,0.1); }
         html[data-bs-theme="dark"] .table-premium td { color: #cbd5e1; border-color: rgba(255,255,255,0.1); }
+
+        /* Premium Pagination Styles */
+        .pagination {
+            margin-bottom: 0 !important;
+            gap: 0.35rem !important;
+        }
+        .page-item .page-link {
+            border-radius: 8px !important;
+            padding: 0.5rem 0.95rem !important;
+            color: #475569 !important;
+            border: 1px solid #e2e8f0 !important;
+            background: #fff !important;
+            font-weight: 700 !important;
+            font-size: 0.85rem !important;
+            transition: all 0.2s ease !important;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05) !important;
+        }
+        .page-item .page-link:hover {
+            background: #f8fafc !important;
+            color: #ea580c !important;
+            border-color: #fdba74 !important;
+        }
+        .page-item.active .page-link {
+            background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%) !important;
+            color: #fff !important;
+            border-color: transparent !important;
+            box-shadow: 0 4px 10px rgba(234, 88, 12, 0.25) !important;
+        }
+        .page-item.disabled .page-link {
+            color: #94a3b8 !important;
+            background: #f1f5f9 !important;
+            border-color: #e2e8f0 !important;
+            box-shadow: none !important;
+        }
+        html[data-bs-theme="dark"] .page-item .page-link {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+            color: #cbd5e1 !important;
+        }
+        html[data-bs-theme="dark"] .page-item .page-link:hover {
+            background: #334155 !important;
+            color: #fdba74 !important;
+        }
+        html[data-bs-theme="dark"] .page-item.active .page-link {
+            background: linear-gradient(135deg, #fb923c 0%, #ea580c 100%) !important;
+            color: #fff !important;
+        }
     </style>
 
     <!-- 1. Header Banner -->
@@ -294,8 +341,14 @@
                         </table>
                     </div>
                     @if(method_exists($vehicles, 'links'))
-                    <div class="px-4 pb-4">
-                        {{ $vehicles->links() }}
+                    <div class="px-4 pb-4 d-flex flex-column flex-md-row justify-content-between align-items-center gap-3 border-top pt-4 mt-2 border-light-subtle">
+                        <div class="text-muted small fw-semibold" style="letter-spacing: 0.3px;">
+                            Menampilkan <span class="text-dark fw-bold">{{ $vehicles->firstItem() ?? 0 }}</span> - <span class="text-dark fw-bold">{{ $vehicles->lastItem() ?? 0 }}</span> 
+                            dari <span class="text-primary fw-bold">{{ $vehicles->total() }}</span> kendaraan
+                        </div>
+                        <div class="m-0">
+                            {{ $vehicles->links('pagination::bootstrap-5') }}
+                        </div>
                     </div>
                     @endif
                 </div>
