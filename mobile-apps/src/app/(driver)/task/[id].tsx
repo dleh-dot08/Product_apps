@@ -741,7 +741,7 @@ function TaskDetailScreenContent() {
 
 
         {/* Catatan & PIC */}
-        <View style={[styles.card, { backgroundColor: cardBackground, borderColor, marginBottom: 100 }]}>
+        <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}>
           <Text style={[styles.cardSectionTitle, { color: textColor, marginBottom: 8 }]}>Catatan</Text>
           <Text style={[styles.noteText, { color: textMuted, fontStyle: task.notes ? 'normal' : 'italic' }]}>
             {task.notes || 'Tidak ada Catatan'}
@@ -768,42 +768,40 @@ function TaskDetailScreenContent() {
           </View>
         </View>
 
-        {/* Laporan & Bukti */}
-        {(task.proof_photo || task.failure_reason || task.completed_odometer) && (
-          <View style={[styles.card, { backgroundColor: cardBackground, borderColor, marginBottom: 100 }]}>
-            <Text style={[styles.cardSectionTitle, { color: textColor, marginBottom: 12 }]}>Laporan & Bukti Penyelesaian</Text>
-
-            {task.completed_odometer && (
-              <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: textMuted, fontSize: 12 }}>Odometer Selesai</Text>
-                <Text style={{ color: textColor, fontSize: 14, fontWeight: '600' }}>{task.completed_odometer} KM</Text>
-              </View>
-            )}
-
-            {task.failure_reason && (
-              <View style={{ marginBottom: 12 }}>
-                <Text style={{ color: BRAND.danger, fontSize: 12, fontWeight: '600' }}>Alasan Kegagalan / Kendala</Text>
-                <Text style={{ color: textColor, fontSize: 14 }}>{task.failure_reason}</Text>
-              </View>
-            )}
-
-            {task.proof_photo && (
-              <View style={{ marginBottom: 8 }}>
-                <Text style={{ color: textMuted, fontSize: 12, marginBottom: 8 }}>Bukti Foto</Text>
-                <Image
-                  source={{ uri: task.proof_photo.startsWith('http') ? task.proof_photo : `https://bucket.gte.co.id/driver-apps/${task.proof_photo}` }}
-                  style={{ width: '100%', height: 200, borderRadius: 8, backgroundColor: '#E2E8F0' }}
-                  resizeMode="cover"
-                />
-              </View>
-            )}
+        {/* Dokumen Tambahan */}
+        <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+            <Ionicons name="documents" size={20} color={BRAND.primary} style={{ marginRight: 8 }} />
+            <Text style={[styles.cardSectionTitle, { color: textColor, marginBottom: 0 }]}>
+              Dokumen Tambahan
+            </Text>
           </View>
-        )}
 
-        {/* Helper bottom spacer to ensure scrollability if the proof card is absent */}
-        {!(task.proof_photo || task.failure_reason || task.completed_odometer) && (
-          <View style={{ height: 100 }} />
-        )}
+          {/* Mapping attachments */}
+          {((task as any).attachments && (task as any).attachments.length > 0) ? (
+            (task as any).attachments.map((doc: any, index: number) => {
+              const fileUrl = doc.file_path?.startsWith('http') ? doc.file_path : `https://bucket.gte.co.id/driver-apps/${doc.file_path}`;
+              
+              return (
+                <View key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 8 }}>
+                  <Ionicons name="document-attach" size={24} color={BRAND.primary} style={{ marginRight: 12 }} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: textColor, fontSize: 14, fontWeight: '600', marginBottom: 4 }}>{doc.category || 'Dokumen'}</Text>
+                    <Text style={{ color: textMuted, fontSize: 12 }}>{doc.notes ? doc.notes : 'Ketuk ikon untuk melihat'}</Text>
+                  </View>
+                  <TouchableOpacity onPress={() => Linking.openURL(fileUrl)}>
+                    <Ionicons name="download-outline" size={20} color={BRAND.primary} />
+                  </TouchableOpacity>
+                </View>
+              );
+            })
+          ) : (
+            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+              <Ionicons name="folder-open-outline" size={48} color={textMuted} style={{ opacity: 0.5, marginBottom: 12 }} />
+              <Text style={{ color: textMuted, fontSize: 13, textAlign: 'center' }}>Tidak ada dokumen tambahan dari admin</Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
 
       {/* Sticky Bottom Action Button */}
@@ -903,6 +901,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 16,
+    paddingBottom: 100,
   },
   card: {
     borderRadius: 19,
