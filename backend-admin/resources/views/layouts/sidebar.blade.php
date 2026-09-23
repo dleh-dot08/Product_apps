@@ -414,10 +414,10 @@
             <div class="d-flex align-items-center justify-content-between w-100">
                 <!-- User Info -->
                 <a href="{{ route('profile.edit') }}" class="user-info-wrapper d-flex align-items-center gap-2 text-decoration-none overflow-hidden me-2">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'User') }}&background=ea580c&color=fff&bold=true" class="rounded-circle flex-shrink-0" alt="User Image" style="width: 36px; height: 36px; object-fit: cover;">
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->full_name ?? Auth::user()->username ?? 'User') }}&background=ea580c&color=fff&bold=true" class="rounded-circle flex-shrink-0" alt="User Image" style="width: 36px; height: 36px; object-fit: cover;">
                     <div class="user-text-details d-flex flex-column text-truncate lh-sm">
-                        <span class="fw-bold user-name text-truncate" style="font-size: 0.85rem;">{{ Auth::user()->name ?? 'Administrator' }}</span>
-                        <span class="user-role text-truncate" style="font-size: 0.7rem;">{{ Auth::user()->role->name ?? 'Admin' }}</span>
+                        <span class="fw-bold user-name text-truncate" style="font-size: 0.85rem;">{{ Auth::user()->full_name ?? Auth::user()->username ?? 'User' }}</span>
+                        <span class="user-role text-truncate" style="font-size: 0.7rem;">{{ Auth::user()->roleRelation->name ?? Auth::user()->role ?? 'Role Not Found' }}</span>
                     </div>
                 </a>
 
