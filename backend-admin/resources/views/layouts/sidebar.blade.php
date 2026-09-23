@@ -260,7 +260,7 @@
     <div class="sidebar-brand d-flex align-items-center justify-content-between px-3">
         <a href="{{ route('dashboard') }}" class="brand-link d-flex align-items-center text-decoration-none">
             <div class="brand-icon">
-                <i class="fa-solid fa-bolt text-warning"></i>
+                <img src="{{ asset('logo/aqpa-indonesia-logo.png') }}" alt="AQPA Logo" style="height: 32px; object-fit: contain;">
             </div>
             <span class="brand-text fw-bold ms-2">AQPA</span>
         </a>
