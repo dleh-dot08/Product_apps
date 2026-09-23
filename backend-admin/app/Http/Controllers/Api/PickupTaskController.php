@@ -336,13 +336,25 @@ class PickupTaskController extends Controller
         foreach ($attachmentCategories as $category) {
             if ($request->hasFile($category)) {
                 $file = $request->file($category);
-                $fileName = time() . '_' . $category . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs("uploads/task_attachments/{$id}", $fileName, 'public');
-                $filePath = "storage/" . $path;
+                $fileName = time() . '_' . $category . '_' . preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $file->getClientOriginalName());
+                $path = "task-driver/{$id}/admin-docs/{$fileName}";
+                
+                $minio = new \App\Services\Storage\MinioService();
+                try {
+                    $minio->getClient()->putObject([
+                        'Bucket' => 'driver-apps',
+                        'Key'    => $path,
+                        'SourceFile' => $file->getRealPath(),
+                        'ContentType' => $file->getMimeType(),
+                    ]);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("MinIO Upload Error: " . $e->getMessage());
+                    return response()->json(['status' => 'error', 'message' => 'Gagal upload file lampiran: ' . $e->getMessage()], 500);
+                }
                 
                 $task->attachments()->create([
                     'category' => $category,
-                    'file_path' => $filePath,
+                    'file_path' => $path,
                     'uploaded_by' => Auth::id(),
                 ]);
             }
@@ -359,13 +371,25 @@ class PickupTaskController extends Controller
 
             $files = $request->file('attachments');
             foreach ($files as $index => $file) {
-                $fileName = time() . '_' . $index . '_' . $file->getClientOriginalName();
-                $path = $file->storeAs("uploads/task_attachments/{$id}", $fileName, 'public');
-                $filePath = "storage/" . $path;
+                $fileName = time() . '_' . $index . '_' . preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $file->getClientOriginalName());
+                $path = "task-driver/{$id}/admin-docs/{$fileName}";
+
+                $minio = new \App\Services\Storage\MinioService();
+                try {
+                    $minio->getClient()->putObject([
+                        'Bucket' => 'driver-apps',
+                        'Key'    => $path,
+                        'SourceFile' => $file->getRealPath(),
+                        'ContentType' => $file->getMimeType(),
+                    ]);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("MinIO Upload Error: " . $e->getMessage());
+                    return response()->json(['status' => 'error', 'message' => 'Gagal upload file attachments: ' . $e->getMessage()], 500);
+                }
 
                 $task->attachments()->create([
                     'category' => $attCategory,
-                    'file_path' => $filePath,
+                    'file_path' => $path,
                     'uploaded_by' => Auth::id(),
                 ]);
             }

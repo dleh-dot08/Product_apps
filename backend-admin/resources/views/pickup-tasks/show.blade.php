@@ -1977,7 +1977,7 @@
                         <div class="attachment-grid">
                             @foreach($attachments->take(8) as $att)
                                 @php
-                                    $url = 'https://bucket.gte.co.id/driver-apps/' . $att->file_path;
+                                    $url = app(\App\Services\Storage\MinioService::class)->getFileUrl($att->file_path);
                                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
                                     $category = ucwords(str_replace('_',' ', $att->category ?? $att->document_type ?? 'Lampiran'));
                                 @endphp
@@ -2141,7 +2141,7 @@
         <div class="attachment-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
             @foreach($departureAttachments as $att)
                 @php
-                    $url = 'https://bucket.gte.co.id/driver-apps/' . $att->file_path;
+                    $url = app(\App\Services\Storage\MinioService::class)->getFileUrl($att->file_path);
                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
                     $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
                 @endphp
@@ -2197,7 +2197,8 @@
                                     <td class="text-end money">Rp {{ number_format($expenseAmount,0,',','.') }}</td>
                                     <td class="text-center">
                                         @if($proofPath)
-                                            <a href="{{ 'https://bucket.gte.co.id/driver-apps/' . $proofPath }}" target="_blank" class="proof-link" title="Lihat bukti">
+                                            @php $signedProof = app(\App\Services\Storage\MinioService::class)->getFileUrl($proofPath); @endphp
+                                            <a href="{{ $signedProof }}" target="_blank" class="proof-link" title="Lihat bukti">
                                                 <i class="fa-regular fa-file-lines"></i>
                                             </a>
                                         @else
@@ -2225,7 +2226,7 @@
         <div class="attachment-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
             @foreach($arrivalAttachments as $att)
                 @php
-                    $url = 'https://bucket.gte.co.id/driver-apps/' . $att->file_path;
+                    $url = app(\App\Services\Storage\MinioService::class)->getFileUrl($att->file_path);
                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
                     $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
                 @endphp
@@ -2250,7 +2251,7 @@
         <div class="attachment-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
             @foreach($handoverAttachments as $att)
                 @php
-                    $url = 'https://bucket.gte.co.id/driver-apps/' . $att->file_path;
+                    $url = app(\App\Services\Storage\MinioService::class)->getFileUrl($att->file_path);
                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
                     $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
                 @endphp

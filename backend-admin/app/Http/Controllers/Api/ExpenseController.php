@@ -67,9 +67,22 @@ class ExpenseController extends Controller
         
         if ($request->hasFile('receipt')) {
             $file = $request->file('receipt');
-            $fileName = time() . '_' . $file->getClientOriginalName();
-            $path = $file->storeAs('uploads/expenses', $fileName, 'public');
-            $expense->receipt_url = "storage/" . $path;
+            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $file->getClientOriginalName());
+            $path = "task-driver/{$id}/expenses/{$fileName}";
+            
+            $minio = new \App\Services\Storage\MinioService();
+            try {
+                $minio->getClient()->putObject([
+                    'Bucket' => 'driver-apps',
+                    'Key'    => $path,
+                    'SourceFile' => $file->getRealPath(),
+                    'ContentType' => $file->getMimeType(),
+                ]);
+                $expense->receipt_url = $path;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("MinIO Upload Error: " . $e->getMessage());
+                return response()->json(['message' => 'Gagal upload receipt: ' . $e->getMessage()], 500);
+            }
         }
 
         $expense->save();
