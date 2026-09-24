@@ -111,8 +111,8 @@
                                 @forelse($prorataDetails['allocations'] as $item)
                                 <tr>
                                     <td>
-                                        <strong>{{ $item['reference_number'] }}</strong><br>
-                                        <small>{{ $item['item_description'] }}</small>
+                                        <strong>{{ $item['item_description'] }}</strong><br>
+                                        <small>Ref: {{ $item['reference_number'] }}</small>
                                     </td>
                                     <td>{{ number_format($item['quantity'], 2) }} {{ $item['unit'] }}</td>
                                     <td>Rp {{ number_format($item['line_total'], 2, ',', '.') }}</td>
