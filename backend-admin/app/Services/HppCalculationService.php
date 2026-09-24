@@ -18,19 +18,24 @@ class HppCalculationService
         
         // 1. Hitung BBM (Otomatis)
         $fuelCost = 0;
-        if ($shift->end_odometer && $shift->start_odometer && $shift->km_per_liter > 0) {
+        
+        $shift->loadMissing(['vehicle', 'driver']);
+        $kmPerLiter = $shift->km_per_liter > 0 ? $shift->km_per_liter : ($shift->vehicle ? $shift->vehicle->km_per_liter : 0);
+        $fuelPrice = $shift->fuel_price_per_liter > 0 ? $shift->fuel_price_per_liter : ($shift->vehicle ? $shift->vehicle->fuel_price_per_liter : 0);
+        
+        if ($shift->end_odometer && $shift->start_odometer && $kmPerLiter > 0) {
             $distance = max(0, $shift->end_odometer - $shift->start_odometer);
-            $fuelCost = ($distance / $shift->km_per_liter) * ($shift->fuel_price_per_liter ?? 0);
+            $fuelCost = ($distance / $kmPerLiter) * $fuelPrice;
         }
 
         // 2. Hitung Manpower (Otomatis)
         $manpowerCost = 0;
         if ($shift->check_in_at && $shift->check_out_at) {
-            // Snapshot Rate jika belum ada
-            // Sesuai permintaan: 0-kan saja dulu (jangan tarik tarif global)
-            $rateHour = $shift->manpower_rate_per_hour ?? 0;
-            $rateMinute = $shift->manpower_rate_per_minute ?? 0;
-            $rateSecond = $shift->manpower_rate_per_second ?? 0;
+            $driverRateHour = $shift->driver ? ($shift->driver->manpower_rate_per_hour ?? 0) : 0;
+            
+            $rateHour = $shift->manpower_rate_per_hour > 0 ? $shift->manpower_rate_per_hour : $driverRateHour;
+            $rateMinute = $shift->manpower_rate_per_minute > 0 ? $shift->manpower_rate_per_minute : ($rateHour / 60);
+            $rateSecond = $shift->manpower_rate_per_second > 0 ? $shift->manpower_rate_per_second : ($rateHour / 3600);
 
             $diff = $shift->check_in_at->diff($shift->check_out_at);
             
@@ -40,7 +45,8 @@ class HppCalculationService
             $minutes = $diff->i;
             $seconds = $diff->s;
 
-            $manpowerCount = $shift->manpower_count ?? 1;
+            $driverManpowerCount = $shift->driver ? ($shift->driver->manpower_count ?? 1) : 1;
+            $manpowerCount = $shift->manpower_count > 0 ? $shift->manpower_count : $driverManpowerCount;
             
             // Calculate total manpower cost exactly
             $manpowerCost = (($hours * $rateHour) + ($minutes * $rateMinute) + ($seconds * $rateSecond)) * $manpowerCount;

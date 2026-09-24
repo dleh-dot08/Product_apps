@@ -290,6 +290,9 @@ class PickupTaskController extends Controller
                 // Auto-generate shift if task doesn't have one
                 if (!$task->shift_id) {
                     $vehicle = \App\Models\Vehicle::find($task->vehicle_id);
+                    $driver = \App\Models\User::find($task->driver_id);
+                    $rateHour = $driver ? ($driver->manpower_rate_per_hour ?? 0) : 0;
+
                     $shift = \App\Models\Shift::create([
                         'driver_id' => $task->driver_id,
                         'vehicle_id' => $task->vehicle_id ?? null,
@@ -298,6 +301,10 @@ class PickupTaskController extends Controller
                         'start_odometer' => $request->input('start_odometer', 0),
                         'fuel_price_per_liter' => $vehicle ? $vehicle->fuel_price_per_liter : 0,
                         'km_per_liter' => $vehicle ? $vehicle->km_per_liter : 0,
+                        'manpower_rate_per_hour' => $rateHour,
+                        'manpower_rate_per_minute' => $rateHour / 60,
+                        'manpower_rate_per_second' => $rateHour / 3600,
+                        'manpower_count' => $driver ? ($driver->manpower_count ?? 1) : 1,
                         'source' => 'task',
                         'task_reference' => $task->reference_number ?? ('TASK-' . $task->id),
                     ]);
