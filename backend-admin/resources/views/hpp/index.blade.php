@@ -1053,6 +1053,13 @@
                     Export Excel
                 </a>
                 @endif
+                
+                @if(auth()->check() && auth()->user()->hasPermission('Validasi HPP'))
+                <a href="{{ route('hpp.validasi') }}" class="btn-hpp-export" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #059669; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); text-decoration: none; color: white;">
+                    <i class="fas fa-check-double"></i>
+                    Data Validasi
+                </a>
+                @endif
             </div>
         </div>
 

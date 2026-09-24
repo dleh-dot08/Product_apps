@@ -6,13 +6,6 @@ use App\Models\Shift;
 
 class HppCalculationService
 {
-    /**
-     * Mendapatkan rate Manpower per jam (Hardcoded sementara)
-     */
-    private function getManpowerRatePerHour(): float
-    {
-        return 20000.0; // Hardcode 20.000
-    }
 
     /**
      * Menghitung HPP (Harga Pokok Penjualan) Prorata per Barang dalam 1 Ritase (Shift)
@@ -33,10 +26,33 @@ class HppCalculationService
         // 2. Hitung Manpower (Otomatis)
         $manpowerCost = 0;
         if ($shift->check_in_at && $shift->check_out_at) {
-            $durationMinutes = $shift->check_in_at->diffInMinutes($shift->check_out_at);
-            $ratePerHour = $this->getManpowerRatePerHour(); // Menggunakan function terpisah
+            // Snapshot Rate jika belum ada
+            if ($shift->manpower_rate_per_hour === null) {
+                $globalRate = \App\Models\ValidasiMpDeliveryPickup::first();
+                if ($globalRate) {
+                    $shift->manpower_rate_per_hour = $globalRate->rate_per_hour;
+                    $shift->manpower_rate_per_minute = $globalRate->rate_per_minute;
+                    $shift->manpower_rate_per_second = $globalRate->rate_per_second;
+                    $shift->save(); // Simpan snapshot di level shift agar bersifat historical value
+                }
+            }
+
+            $rateHour = $shift->manpower_rate_per_hour ?? 0;
+            $rateMinute = $shift->manpower_rate_per_minute ?? 0;
+            $rateSecond = $shift->manpower_rate_per_second ?? 0;
+
+            $diff = $shift->check_in_at->diff($shift->check_out_at);
+            
+            // Total hours, minutes, and seconds directly from the difference
+            // diff->days * 24 + diff->h is the total hours
+            $hours = ($diff->days * 24) + $diff->h;
+            $minutes = $diff->i;
+            $seconds = $diff->s;
+
             $manpowerCount = $shift->manpower_count ?? 1;
-            $manpowerCost = ($durationMinutes / 60) * $ratePerHour * $manpowerCount;
+            
+            // Calculate total manpower cost exactly
+            $manpowerCost = (($hours * $rateHour) + ($minutes * $rateMinute) + ($seconds * $rateSecond)) * $manpowerCount;
         }
 
         // 3. Biaya Manual dari Expenses
@@ -104,6 +120,27 @@ class HppCalculationService
             ];
         }
         
+        $hppRitase = \App\Models\HppRitase::updateOrCreate(
+            ['shift_id' => $shift->id],
+            [
+                'fuel_cost' => $fuelCost,
+                'manpower_cost' => $manpowerCost,
+                'toll_cost' => $tollCost,
+                'parking_cost' => $parkingCost,
+                'other_cost' => $otherCost,
+                'total_cost' => $totalCost,
+                'base_value' => $totalNilai,
+                'is_prorata' => true,
+            ]
+        );
+
+        // Hapus item lama jika ada
+        $hppRitase->items()->delete();
+        
+        foreach ($result as $item) {
+            $hppRitase->items()->create($item);
+        }
+
         return [
             'costs' => [
                 'fuel' => $fuelCost,

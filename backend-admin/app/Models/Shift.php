@@ -19,6 +19,8 @@ class Shift extends Model
         'fuel_price_per_liter' => 'decimal:2',
         'km_per_liter' => 'decimal:2',
         'manpower_rate_per_hour' => 'decimal:2',
+        'manpower_rate_per_minute' => 'decimal:2',
+        'manpower_rate_per_second' => 'decimal:2',
     ];
 
     public function driver()
