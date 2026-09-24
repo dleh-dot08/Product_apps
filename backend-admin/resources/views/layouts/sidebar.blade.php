@@ -259,7 +259,7 @@
     <!-- Sidebar Brand & Toggle Burger Button -->
     <div class="sidebar-brand d-flex align-items-center justify-content-between px-3">
         <a href="{{ route('dashboard') }}" class="brand-link d-flex align-items-center text-decoration-none border-0">
-            <img src="{{ asset('logo/aqpa-indonesia-logo.png') }}" alt="AQPA Logo" style="height: 32px; object-fit: contain;">
+            <img src="{{ asset('logo/aqpa-indonesia-logo.png') }}" alt="AQPA Logo" style="height: 22px; object-fit: contain;">
         </a>
 
         <!-- Tombol Burger Toggle Sidebar -->

@@ -26,4 +26,15 @@ class Expense extends Model
     {
         return $this->belongsTo(User::class, 'driver_id');
     }
+
+    public function getReceiptUrlAttribute($value)
+    {
+        if ($value) {
+            if (filter_var($value, FILTER_VALIDATE_URL)) {
+                return $value;
+            }
+            return \Illuminate\Support\Facades\Storage::url($value);
+        }
+        return null;
+    }
 }
