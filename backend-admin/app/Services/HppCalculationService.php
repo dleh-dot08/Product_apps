@@ -23,7 +23,7 @@ class HppCalculationService
         $kmPerLiter = $shift->km_per_liter > 0 ? $shift->km_per_liter : ($shift->vehicle ? $shift->vehicle->km_per_liter : 0);
         $fuelPrice = $shift->fuel_price_per_liter > 0 ? $shift->fuel_price_per_liter : ($shift->vehicle ? $shift->vehicle->fuel_price_per_liter : 0);
         
-        if ($shift->end_odometer && $shift->start_odometer && $kmPerLiter > 0) {
+        if ($shift->end_odometer !== null && $shift->start_odometer !== null && $kmPerLiter > 0) {
             $distance = max(0, $shift->end_odometer - $shift->start_odometer);
             $fuelCost = ($distance / $kmPerLiter) * $fuelPrice;
         }
@@ -33,6 +33,14 @@ class HppCalculationService
         if ($shift->check_in_at && $shift->check_out_at) {
             $driverRateHour = $shift->driver ? ($shift->driver->manpower_rate_per_hour ?? 0) : 0;
             
+            // Fallback ke tabel validasi_mp_deliverypickup jika rate di driver/shift 0
+            if ($driverRateHour <= 0) {
+                $validasiMP = \App\Models\ValidasiMpDeliveryPickup::first();
+                if ($validasiMP) {
+                    $driverRateHour = $validasiMP->rate_per_hour;
+                }
+            }
+
             $rateHour = $shift->manpower_rate_per_hour > 0 ? $shift->manpower_rate_per_hour : $driverRateHour;
             $rateMinute = $shift->manpower_rate_per_minute > 0 ? $shift->manpower_rate_per_minute : ($rateHour / 60);
             $rateSecond = $shift->manpower_rate_per_second > 0 ? $shift->manpower_rate_per_second : ($rateHour / 3600);
