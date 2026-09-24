@@ -17,15 +17,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 let MapView: any = null;
 let Marker: any = null;
 
-if (Platform.OS !== 'web') {
-  try {
-    const Maps = require('react-native-maps');
-    MapView = Maps.default || Maps;
-    Marker = Maps.Marker;
-  } catch (e) {
-    console.log('Error loading react-native-maps:', e);
-  }
-}
+// FORCE DISABLE react-native-maps temporarily to prevent Expo Go crash
+// if (Platform.OS !== 'web') {
+//   try {
+//     const Maps = require('react-native-maps');
+//     MapView = Maps.default || Maps;
+//     Marker = Maps.Marker;
+//   } catch (e) {
+//     console.log('Error loading react-native-maps:', e);
+//   }
+// }
 
 const safeFormatDate = (dateString?: string | null) => {
   if (!dateString) return '-';
@@ -107,6 +108,20 @@ type TaskDetail = {
   } | null;
 
   driver?: {
+    id?: number | string | null;
+    name?: string | null;
+    full_name?: string | null;
+    employee_id?: string | null;
+  } | null;
+
+  co_driver?: {
+    id?: number | string | null;
+    name?: string | null;
+    full_name?: string | null;
+    employee_id?: string | null;
+  } | null;
+
+  coDriver?: {
     id?: number | string | null;
     name?: string | null;
     full_name?: string | null;
@@ -563,7 +578,7 @@ function TaskDetailScreenContent() {
 
           <View style={styles.divider} />
 
-          {/* 4 Info Blocks */}
+          {/* Info Blocks */}
           <View style={styles.grid2x2}>
             <View style={[styles.gridItem, { backgroundColor: pageBackground, borderColor }]}>
               <View style={[styles.gridIconWrapper, { backgroundColor: BRAND.primarySoft }]}>
@@ -575,13 +590,12 @@ function TaskDetailScreenContent() {
               </View>
             </View>
             <View style={[styles.gridItem, { backgroundColor: pageBackground, borderColor }]}>
-              <View style={[styles.gridIconWrapper, { backgroundColor: BRAND.violetSoft }]}>
-                <Ionicons name="bus-outline" size={16} color={BRAND.violet} />
+              <View style={[styles.gridIconWrapper, { backgroundColor: BRAND.warningSoft }]}>
+                <Ionicons name="cube-outline" size={16} color={BRAND.warning} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.gridLabel, { color: textMuted }]}>Kendaraan</Text>
-                <Text style={[styles.gridValue, { color: textColor }]} numberOfLines={1}>{task.vehicle?.plate_number || '-'}</Text>
-                <Text style={[styles.gridValueSub, { color: textMuted }]} numberOfLines={1}>{task.vehicle?.name || '-'}</Text>
+                <Text style={[styles.gridLabel, { color: textMuted }]}>Muatan</Text>
+                <Text style={[styles.gridValue, { color: textColor }]} numberOfLines={1}>{task.quantity ? Number(task.quantity).toString().replace('.', ',') : '-'} {task.unit || ''}</Text>
               </View>
             </View>
             <View style={[styles.gridItem, { backgroundColor: pageBackground, borderColor }]}>
@@ -594,12 +608,24 @@ function TaskDetailScreenContent() {
               </View>
             </View>
             <View style={[styles.gridItem, { backgroundColor: pageBackground, borderColor }]}>
-              <View style={[styles.gridIconWrapper, { backgroundColor: BRAND.warningSoft }]}>
-                <Ionicons name="cube-outline" size={16} color={BRAND.warning} />
+              <View style={[styles.gridIconWrapper, { backgroundColor: BRAND.tealSoft }]}>
+                <Ionicons name="people-outline" size={16} color={BRAND.teal} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.gridLabel, { color: textMuted }]}>Muatan</Text>
-                <Text style={[styles.gridValue, { color: textColor }]} numberOfLines={1}>{task.quantity ? Number(task.quantity).toString().replace('.', ',') : '-'} {task.unit || ''}</Text>
+                <Text style={[styles.gridLabel, { color: textMuted }]}>Co-Driver</Text>
+                <Text style={[styles.gridValue, { color: textColor }]} numberOfLines={1}>
+                  {task.co_driver?.full_name || task.co_driver?.name || task.coDriver?.full_name || task.coDriver?.name || '-'}
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.gridItem, { backgroundColor: pageBackground, borderColor, width: '100%' }]}>
+              <View style={[styles.gridIconWrapper, { backgroundColor: BRAND.violetSoft }]}>
+                <Ionicons name="bus-outline" size={16} color={BRAND.violet} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.gridLabel, { color: textMuted }]}>Kendaraan</Text>
+                <Text style={[styles.gridValue, { color: textColor }]} numberOfLines={1}>{task.vehicle?.plate_number || '-'}</Text>
+                <Text style={[styles.gridValueSub, { color: textMuted }]} numberOfLines={1}>{task.vehicle?.name || '-'}</Text>
               </View>
             </View>
           </View>
@@ -609,19 +635,30 @@ function TaskDetailScreenContent() {
         <View style={[styles.card, { backgroundColor: cardBackground, borderColor }]}>
           <View style={styles.cardSectionHeader}>
             <Text style={[styles.cardSectionTitle, { color: textColor }]}>Rute & Estimasi</Text>
-            <TouchableOpacity onPress={openMap}>
-              <Text style={styles.linkText}>Lihat di Maps</Text>
-            </TouchableOpacity>
+            {(Platform.OS !== 'web' && MapView) && (
+              <TouchableOpacity onPress={openMap}>
+                <Text style={styles.linkText}>Lihat di Maps</Text>
+              </TouchableOpacity>
+            )}
           </View>
           {Platform.OS === 'web' || !MapView ? (
-            <View style={[styles.mapPlaceholder, { backgroundColor: '#E2E8F0', overflow: 'hidden', justifyContent: 'center', alignItems: 'center' }]}>
+            <TouchableOpacity 
+              activeOpacity={0.8}
+              onPress={openMap}
+              style={[styles.mapPlaceholder, { backgroundColor: '#F0F9FF', overflow: 'hidden', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#BAE6FD', borderStyle: 'dashed' }]}
+            >
               <View style={{ alignItems: 'center' }}>
-                <Ionicons name="map-outline" size={48} color={textMuted} style={{ marginBottom: 8, opacity: 0.5 }} />
+                <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: '#E0F2FE', justifyContent: 'center', alignItems: 'center', marginBottom: 12 }}>
+                  <Ionicons name="location" size={32} color={BRAND.primary} />
+                </View>
+                <Text style={{ color: BRAND.primary, fontSize: 16, fontWeight: 'bold', marginBottom: 4 }}>
+                  Buka di Google Maps
+                </Text>
                 <Text style={{ color: textMuted, fontSize: 13, textAlign: 'center', paddingHorizontal: 20 }}>
-                  Pratinjau peta dalam aplikasi dinonaktifkan untuk mencegah aplikasi crash (Blank Putih). Anda wajib melakukan build ulang APK (eas build) agar komponen peta terinstall di HP/Emulator Anda. Silakan gunakan tombol <Text style={{ fontWeight: 'bold' }}>"Lihat di Maps"</Text> di atas.
+                  Ketuk di sini untuk melihat rute dan panduan navigasi secara langsung
                 </Text>
               </View>
-            </View>
+            </TouchableOpacity>
           ) : (
             <View style={[styles.mapPlaceholder, { backgroundColor: '#E2E8F0', overflow: 'hidden' }]}>
               <MapView
@@ -710,7 +747,7 @@ function TaskDetailScreenContent() {
 
           {task.items && task.items.length > 0 ? (
             task.items.map((item, idx) => (
-              <View key={item.id || idx} style={[styles.tableRow, { borderBottomColor: BRAND.border }]}>
+              <View key={idx} style={[styles.tableRow, { borderBottomColor: BRAND.border }]}>
                 <Text style={[styles.tableColNo, { color: textColor }]}>{idx + 1}</Text>
                 <View style={[styles.tableColDesc, { paddingRight: 8 }]}>
                   <Text style={[styles.itemName, { color: textColor }]}>{item.item_description || '-'}</Text>
@@ -780,8 +817,17 @@ function TaskDetailScreenContent() {
           {/* Mapping attachments */}
           {((task as any).attachments && (task as any).attachments.length > 0) ? (
             (task as any).attachments.map((doc: any, index: number) => {
-              const fileUrl = doc.file_path?.startsWith('http') ? doc.file_path : `https://bucket.gte.co.id/driver-apps/${doc.file_path}`;
-              
+              const rawPath = doc.file_path || '';
+              let fileUrl = '';
+              if (rawPath.startsWith('http')) {
+                if (rawPath.includes('bucket.gte.co.id') && !rawPath.includes('/driver-apps/')) {
+                  fileUrl = rawPath.replace('bucket.gte.co.id/', 'bucket.gte.co.id/driver-apps/');
+                } else {
+                  fileUrl = rawPath;
+                }
+              } else {
+                fileUrl = `https://bucket.gte.co.id/driver-apps/${rawPath}`;
+              }              
               return (
                 <View key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 8 }}>
                   <Ionicons name="document-attach" size={24} color={BRAND.primary} style={{ marginRight: 12 }} />

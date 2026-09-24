@@ -38,7 +38,7 @@ class TaskAttachment extends Model
             // Hapus domain bucket lama jika ada, lalu susun ulang dengan struktur baru
             $cleanPath = str_replace(['https://bucket.gte.co.id/', 'http://bucket.gte.co.id/'], '', $cleanPath);
             
-            return 'https://bucket.gte.co.id/' . ltrim($cleanPath, '/');
+            return 'https://bucket.gte.co.id/driver-apps/' . ltrim($cleanPath, '/');
         }
         return null;
     }

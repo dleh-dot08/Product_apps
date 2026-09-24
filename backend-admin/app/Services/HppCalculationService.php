@@ -13,7 +13,7 @@ class HppCalculationService
     public function calculateProrata(Shift $shift)
     {
         // Pastikan relasi diload
-        $shift->loadMissing(['pickupTasks', 'deliveryAssignments.salesOrder', 'expenses']);
+        $shift->loadMissing(['pickupTasks.items', 'deliveryAssignments.salesOrder.items', 'expenses']);
         $tasks = collect()->merge($shift->pickupTasks)->merge($shift->deliveryAssignments);
         
         // 1. Hitung BBM (Otomatis)
@@ -27,16 +27,7 @@ class HppCalculationService
         $manpowerCost = 0;
         if ($shift->check_in_at && $shift->check_out_at) {
             // Snapshot Rate jika belum ada
-            if ($shift->manpower_rate_per_hour === null) {
-                $globalRate = \App\Models\ValidasiMpDeliveryPickup::first();
-                if ($globalRate) {
-                    $shift->manpower_rate_per_hour = $globalRate->rate_per_hour;
-                    $shift->manpower_rate_per_minute = $globalRate->rate_per_minute;
-                    $shift->manpower_rate_per_second = $globalRate->rate_per_second;
-                    $shift->save(); // Simpan snapshot di level shift agar bersifat historical value
-                }
-            }
-
+            // Sesuai permintaan: 0-kan saja dulu (jangan tarik tarif global)
             $rateHour = $shift->manpower_rate_per_hour ?? 0;
             $rateMinute = $shift->manpower_rate_per_minute ?? 0;
             $rateSecond = $shift->manpower_rate_per_second ?? 0;
@@ -64,42 +55,62 @@ class HppCalculationService
         // Total Biaya Ritase
         $totalCost = $fuelCost + $manpowerCost + $tollCost + $parkingCost + $otherCost;
         
-        // 1. Hitung Total Nilai Barang dalam 1 Ritase
-        $totalNilai = $tasks->sum(function($task) {
-            if ($task instanceof \App\Models\DeliveryAssignment) {
-                return $task->salesOrder->total_amount ?? 0;
+        $allItems = collect();
+
+        foreach ($tasks as $task) {
+            $isDelivery = $task instanceof \App\Models\DeliveryAssignment;
+            if ($isDelivery) {
+                $parent = $task->salesOrder;
+                if ($parent && $parent->items && $parent->items->count() > 0) {
+                    foreach ($parent->items as $item) {
+                        $item->task_id = $task->id;
+                        $item->refNumber = $parent->so_number ?? '-';
+                        $allItems->push($item);
+                    }
+                } else {
+                    $fallbackItem = new \stdClass();
+                    $fallbackItem->task_id = $task->id;
+                    $fallbackItem->refNumber = $parent->so_number ?? '-';
+                    $fallbackItem->item_description = $parent->item_description ?? 'Barang Pengiriman';
+                    $fallbackItem->quantity = $parent->ordered_quantity ?? 0;
+                    $fallbackItem->unit = $parent->unit ?? 'pcs';
+                    $fallbackItem->line_total = $parent->total_amount ?? 0;
+                    $allItems->push($fallbackItem);
+                }
+            } else {
+                if ($task->items && $task->items->count() > 0) {
+                    foreach ($task->items as $item) {
+                        $item->task_id = $task->id;
+                        $item->refNumber = $task->reference_number ?? '-';
+                        $allItems->push($item);
+                    }
+                } else {
+                    $fallbackItem = new \stdClass();
+                    $fallbackItem->task_id = $task->id;
+                    $fallbackItem->refNumber = $task->reference_number ?? '-';
+                    $fallbackItem->item_description = $task->item_description ?? 'Paket/Barang';
+                    $fallbackItem->quantity = $task->quantity ?? 0;
+                    $fallbackItem->unit = $task->unit ?? 'pcs';
+                    $fallbackItem->line_total = $task->line_total ?? 0;
+                    $allItems->push($fallbackItem);
+                }
             }
-            return $task->line_total ?? 0;
-        });
+        }
+        
+        // 1. Hitung Total Nilai Barang dalam 1 Ritase
+        $totalNilai = $allItems->sum('line_total');
         
         $result = [];
         
-        foreach ($tasks as $task) {
-            // Cek apakah ini DeliveryAssignment atau PickupTask
-            $isDelivery = $task instanceof \App\Models\DeliveryAssignment;
-            
-            $qtyBaris = $isDelivery 
-                ? ($task->salesOrder->ordered_quantity ?? 0) 
-                : ($task->quantity ?? 0);
-                
-            $nilaiBaris = $isDelivery 
-                ? ($task->salesOrder->total_amount ?? 0) 
-                : ($task->line_total ?? 0);
-            
-            $refNumber = $isDelivery 
-                ? ($task->salesOrder->so_number ?? '-') 
-                : $task->reference_number;
-                
-            $description = $isDelivery 
-                ? ($task->salesOrder->item_description ?? 'Barang Pengiriman') 
-                : ($task->item_description ?? 'Paket/Barang');
-                
-            $unit = $isDelivery 
-                ? ($task->salesOrder->unit ?? 'pcs') 
-                : ($task->unit ?? 'pcs');
+        foreach ($allItems as $item) {
+            $qtyBaris = $item->quantity ?? 0;
+            $nilaiBaris = $item->line_total ?? 0;
+            $refNumber = $item->refNumber;
+            $description = $item->item_description ?? 'Paket/Barang';
+            $unit = $item->unit ?? 'pcs';
             
             // 2. Hitung Rasio Nilai
-            $rasioNilai = $totalNilai > 0 ? ($nilaiBaris / $totalNilai) : ($tasks->count() > 0 ? 1 / $tasks->count() : 0);
+            $rasioNilai = $totalNilai > 0 ? ($nilaiBaris / $totalNilai) : ($allItems->count() > 0 ? 1 / $allItems->count() : 0);
             
             // 3. Hitung HPP per Baris
             $hppPerBaris = $totalCost * $rasioNilai;
@@ -108,7 +119,7 @@ class HppCalculationService
             $hppPerQty = $qtyBaris > 0 ? ($hppPerBaris / $qtyBaris) : 0;
             
             $result[] = [
-                'task_id' => $task->id,
+                'task_id' => $item->task_id,
                 'reference_number' => $refNumber,
                 'item_description' => $description,
                 'quantity' => $qtyBaris,
