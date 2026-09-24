@@ -18,9 +18,9 @@
         @method('patch')
 
         <div class="mb-3">
-            <label for="name" class="form-label">{{ __('Name') }}</label>
-            <input id="name" name="name" type="text" class="form-control" value="{{ old('name', $user->name) }}" required autofocus autocomplete="name">
-            @error('name')
+            <label for="full_name" class="form-label">{{ __('Name') }}</label>
+            <input id="full_name" name="full_name" type="text" class="form-control" value="{{ old('full_name', $user->full_name) }}" required autofocus autocomplete="name">
+            @error('full_name')
                 <div class="text-danger small mt-1">{{ $message }}</div>
             @enderror
         </div>
