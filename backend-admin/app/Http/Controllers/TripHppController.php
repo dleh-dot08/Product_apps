@@ -18,7 +18,7 @@ class TripHppController extends Controller
     public function index(Request $request)
     {
         // Load Shift
-        $allShifts = Shift::with(['vehicle', 'driver', 'pickupTasks', 'deliveryAssignments.salesOrder', 'expenses'])
+        $allShifts = Shift::with(['vehicle', 'driver', 'pickupTasks.items', 'deliveryAssignments.salesOrder.items', 'expenses'])
             ->orderBy('work_date', 'desc')
             ->get();
 
@@ -80,7 +80,7 @@ class TripHppController extends Controller
 
     public function show($id)
     {
-        $shift = Shift::with(['vehicle', 'driver', 'pickupTasks', 'expenses'])->findOrFail($id);
+        $shift = Shift::with(['vehicle', 'driver', 'pickupTasks.items', 'deliveryAssignments.salesOrder.items', 'expenses'])->findOrFail($id);
         
         $prorataDetails = $this->hppService->calculateProrata($shift);
 

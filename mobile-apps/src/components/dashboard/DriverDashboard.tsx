@@ -456,7 +456,7 @@ export default function DriverDashboard() {
                 {todayTasks.length > 0 ? (
                   todayTasks.map((task, index) => (
                     <TaskRow
-                      key={task.id}
+                      key={`${task.id}-${index}`}
                       task={task}
                       index={index}
                       isLast={index === todayTasks.length - 1}
@@ -505,9 +505,9 @@ export default function DriverDashboard() {
             </View>
             <ScrollView style={styles.modalBody}>
               {todayTasks.filter(t => t.status === 'assigned').length > 0 ? (
-                todayTasks.filter(t => t.status === 'assigned').map(task => (
+                todayTasks.filter(t => t.status === 'assigned').map((task, idx) => (
                   <TouchableOpacity
-                    key={task.id}
+                    key={`${task.id}-${idx}`}
                     style={[styles.notificationItem, { borderBottomColor: borderColor }]}
                     onPress={() => {
                       setNotificationModalVisible(false);

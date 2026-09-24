@@ -102,7 +102,13 @@ export default function LaporanDetailScreen() {
 
   const getFullImageUrl = (path: string) => {
     if (!path) return '';
-    return path.startsWith('http') ? path : `${STORAGE_BASE_URL}/${path}`;
+    if (path.startsWith('http')) {
+      if (path.includes('bucket.gte.co.id') && !path.includes('/driver-apps/')) {
+        return path.replace('bucket.gte.co.id/', 'bucket.gte.co.id/driver-apps/');
+      }
+      return path;
+    }
+    return `${STORAGE_BASE_URL}/${path}`;
   };
 
   return (
