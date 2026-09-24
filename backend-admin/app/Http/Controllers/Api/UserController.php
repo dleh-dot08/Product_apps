@@ -91,4 +91,20 @@ class UserController extends Controller
             'message' => 'User deleted successfully'
         ]);
     }
+
+    public function updatePushToken(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string'
+        ]);
+
+        $user = $request->user();
+        $user->expo_push_token = $request->token;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Push token updated successfully'
+        ]);
+    }
 }
