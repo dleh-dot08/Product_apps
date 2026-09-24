@@ -33,7 +33,8 @@ class Expense extends Model
             if (filter_var($value, FILTER_VALIDATE_URL)) {
                 return $value;
             }
-            return \Illuminate\Support\Facades\Storage::url($value);
+            $cleanPath = preg_replace('/^storage\/uploads\//', '', $value);
+            return \Illuminate\Support\Facades\Storage::url($cleanPath);
         }
         return null;
     }
