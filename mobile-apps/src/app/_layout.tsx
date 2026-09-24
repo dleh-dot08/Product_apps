@@ -18,6 +18,7 @@ import { checkAppUpdate } from '../services/updater';
 import { startLocationTracking } from '../services/LocationService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import '../services/LocationService';
+import { registerForPushNotificationsAsync } from '../services/PushNotificationService';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -45,6 +46,9 @@ function RootLayoutNav() {
     if (!user && !isLoginRoute) {
       router.replace('/login');
     } else if (user && isLoginRoute) {
+      // Register for push notifications when user logs in
+      registerForPushNotificationsAsync();
+      
       if ((user as any).role?.name?.toLowerCase() === 'admin') {
         router.replace('/(admin)' as any);
       } else {

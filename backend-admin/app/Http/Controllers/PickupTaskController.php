@@ -207,6 +207,10 @@ class PickupTaskController extends Controller
             foreach ($sourceItems as $item) {
                 $pickupTask->items()->create($item);
             }
+
+            // Send Push Notification
+            $this->sendPushNotification($request->driver_id, 'Tugas Pickup Baru', 'Anda mendapatkan tugas pickup baru dari ' . $request->pickup_name);
+
         } else {
             // Delivery
             $request->validate([
@@ -293,9 +297,25 @@ class PickupTaskController extends Controller
                 'dispatch_date' => $request->dispatch_date,
                 'estimated_arrival' => $request->estimated_arrival,
             ]);
+
+            // Send Push Notification
+            $this->sendPushNotification($request->driver_id, 'Tugas Delivery Baru', 'Anda mendapatkan tugas delivery baru untuk dikirim ke ' . $request->customer_name);
         }
 
         return redirect()->route('pickup-tasks.index')->with('success', 'Tugas berhasil dibuat dengan ' . count($request->items) . ' barang.');
+    }
+
+    protected function sendPushNotification($userId, $title, $body)
+    {
+        $user = \App\Models\User::find($userId);
+        if ($user && $user->expo_push_token) {
+            \Illuminate\Support\Facades\Http::post('https://exp.host/--/api/v2/push/send', [
+                'to' => $user->expo_push_token,
+                'title' => $title,
+                'body' => $body,
+                'sound' => 'default',
+            ]);
+        }
     }
 
     public function show(Request $request, $id)
