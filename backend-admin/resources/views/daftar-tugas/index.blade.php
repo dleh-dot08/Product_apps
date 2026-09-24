@@ -20,26 +20,25 @@
         })->toArray();
 
         $dbPickups = \App\Models\PickupTask::with(['driver'])->latest()->get();
-        $deliveryTasks = $dbPickups->map(function($pt) {
-            // Mapping status
+        $pickupTasks = $dbPickups->map(function($pt) {
             $mappedStatus = 'pending';
             $progress = 0;
             if (in_array($pt->status, ['on_route', 'arrived'])) {
                 $mappedStatus = 'in_progress';
                 $progress = 50;
-            } elseif ($pt->status === 'delivered') {
+            } elseif ($pt->status === 'completed' || $pt->status === 'delivered') {
                 $mappedStatus = 'completed';
                 $progress = 100;
             }
 
             return [
                 'id' => $pt->id,
-                'type' => 'delivery',
-                'number' => $pt->reference_number ?? 'DLV-'.substr($pt->id, 0, 4),
-                'reference' => $pt->so_number ?? '-',
-                'title' => 'Pengiriman: ' . ($pt->item_name ?? 'Barang'),
-                'customer' => $pt->customer_name ?? '-',
-                'description' => $pt->address ?? '-',
+                'type' => 'pickup',
+                'number' => $pt->reference_number ?? 'PCK-'.substr($pt->id, 0, 4),
+                'reference' => '-',
+                'title' => 'Pickup: ' . ($pt->pickup_name ?? 'Barang'),
+                'customer' => '-',
+                'description' => $pt->pickup_address ?? '-',
                 'assignee' => $pt->driver ? $pt->driver->full_name : 'Driver',
                 'initial' => $pt->driver ? strtoupper(substr($pt->driver->full_name, 0, 2)) : 'DR',
                 'due_date' => $pt->created_at ? \Carbon\Carbon::parse($pt->created_at)->format('d M Y') : '-',
@@ -49,12 +48,44 @@
             ];
         })->toArray();
 
-        $tasks = array_merge($packagingTasks, $deliveryTasks);
+        $dbDeliveries = \App\Models\DeliveryAssignment::with(['driver', 'salesOrder'])->latest()->get();
+        $deliveryTasks = $dbDeliveries->map(function($pt) {
+            $mappedStatus = 'pending';
+            $progress = 0;
+            if (in_array($pt->status, ['on_route', 'arrived'])) {
+                $mappedStatus = 'in_progress';
+                $progress = 50;
+            } elseif ($pt->status === 'delivered' || $pt->status === 'completed') {
+                $mappedStatus = 'completed';
+                $progress = 100;
+            }
+            
+            $so = $pt->salesOrder;
+
+            return [
+                'id' => $pt->id,
+                'type' => 'delivery',
+                'number' => $pt->reference_number ?? 'DLV-'.substr($pt->id, 0, 4),
+                'reference' => $so ? $so->so_number : '-',
+                'title' => 'Pengiriman: ' . ($so ? $so->item_name : 'Barang'),
+                'customer' => $so ? $so->customer_name : '-',
+                'description' => $so ? $so->address : '-',
+                'assignee' => $pt->driver ? $pt->driver->full_name : 'Driver',
+                'initial' => $pt->driver ? strtoupper(substr($pt->driver->full_name, 0, 2)) : 'DR',
+                'due_date' => $pt->created_at ? \Carbon\Carbon::parse($pt->created_at)->format('d M Y') : '-',
+                'priority' => 'normal',
+                'status' => $mappedStatus,
+                'progress' => $progress,
+            ];
+        })->toArray();
+
+        $tasks = array_merge($packagingTasks, $pickupTasks, $deliveryTasks);
 
 
         $summary = [
             'total' => count($tasks),
             'packaging' => collect($tasks)->where('type', 'packaging')->count(),
+            'pickup' => collect($tasks)->where('type', 'pickup')->count(),
             'delivery' => collect($tasks)->where('type', 'delivery')->count(),
             'urgent' => collect($tasks)->whereIn('priority', ['urgent', 'high'])->count(),
         ];
@@ -176,7 +207,7 @@
 
         .task-dashboard .td-summary-grid {
             display: grid;
-            grid-template-columns: repeat(4, minmax(0, 1fr));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
             gap: 12px;
             margin-top: 14px;
         }
@@ -315,11 +346,13 @@
             font-size: 13px;
         }
         .task-dashboard .td-type-icon.packaging { color: var(--td-primary); background: var(--td-primary-soft); }
+        .task-dashboard .td-type-icon.pickup { color: var(--td-success); background: rgba(5, 150, 105, .09); }
         .task-dashboard .td-type-icon.delivery { color: var(--td-blue); background: rgba(37, 99, 235, .09); }
 
         .task-dashboard .td-task-number { display: flex; align-items: center; gap: 7px; margin-bottom: 4px; color: var(--td-muted); font-size: 9px; font-weight: 800; }
         .task-dashboard .td-type-label { padding: 2px 6px; border-radius: 999px; font-size: 8px; text-transform: uppercase; }
         .task-dashboard .td-type-label.packaging { color: var(--td-primary); background: var(--td-primary-soft); }
+        .task-dashboard .td-type-label.pickup { color: var(--td-success); background: rgba(5, 150, 105, .09); }
         .task-dashboard .td-type-label.delivery { color: var(--td-blue); background: rgba(37, 99, 235, .09); }
         .task-dashboard .td-task-title { margin: 0; color: var(--td-text); font-size: 11px; font-weight: 850; }
         .task-dashboard .td-task-description { max-width: 480px; margin: 4px 0 0; overflow: hidden; color: var(--td-muted); font-size: 9px; line-height: 1.4; text-overflow: ellipsis; white-space: nowrap; }
@@ -448,6 +481,10 @@
                 <div><div class="td-summary-label">Packaging</div><div class="td-summary-value">{{ $summary['packaging'] }}</div></div>
             </article>
             <article class="td-summary-card">
+                <span class="td-summary-icon" style="color: var(--td-success); background: rgba(5, 150, 105, .09);"><i class="fa-solid fa-cart-flatbed"></i></span>
+                <div><div class="td-summary-label">Pickup</div><div class="td-summary-value">{{ $summary['pickup'] }}</div></div>
+            </article>
+            <article class="td-summary-card">
                 <span class="td-summary-icon green"><i class="fa-solid fa-truck-fast"></i></span>
                 <div><div class="td-summary-label">Delivery</div><div class="td-summary-value">{{ $summary['delivery'] }}</div></div>
             </article>
@@ -462,6 +499,7 @@
                 <div class="td-tabs" role="tablist">
                     <button type="button" class="td-tab is-active" data-task-filter="all"><i class="fa-solid fa-layer-group"></i>Semua</button>
                     <button type="button" class="td-tab" data-task-filter="packaging"><i class="fa-solid fa-box"></i>Packaging</button>
+                    <button type="button" class="td-tab" data-task-filter="pickup"><i class="fa-solid fa-cart-flatbed"></i>Pickup</button>
                     <button type="button" class="td-tab" data-task-filter="delivery"><i class="fa-solid fa-truck-fast"></i>Delivery</button>
                 </div>
 
@@ -497,7 +535,7 @@
                     >
                         <div class="td-task-main">
                             <span class="td-type-icon {{ $task['type'] }}">
-                                <i class="fa-solid {{ $task['type'] === 'packaging' ? 'fa-box' : 'fa-truck-fast' }}"></i>
+                                <i class="fa-solid {{ $task['type'] === 'packaging' ? 'fa-box' : ($task['type'] === 'pickup' ? 'fa-cart-flatbed' : 'fa-truck-fast') }}"></i>
                             </span>
                             <div class="min-w-0">
                                 <div class="td-task-number">
