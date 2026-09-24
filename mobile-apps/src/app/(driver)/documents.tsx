@@ -17,6 +17,7 @@ type ReportType = 'Semua' | 'Delivery' | 'Return';
 
 interface ReportItem {
   id: string;
+  real_id?: number;
   from: string;
   to: string;
   date: string;
@@ -183,7 +184,7 @@ export default function LaporanScreen() {
         <View style={styles.listContainer}>
           {filteredReports.map((report) => (
             <TouchableOpacity 
-              key={report.id} 
+              key={report.real_id || report.id} 
               style={[styles.reportCard, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}
               activeOpacity={0.7}
               onPress={() => router.push(`/laporan/${(report as any).real_id || report.id}` as any)} // Example ID routing

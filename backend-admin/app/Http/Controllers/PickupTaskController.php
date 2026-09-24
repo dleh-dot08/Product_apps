@@ -13,6 +13,37 @@ use Illuminate\Support\Str;
 
 class PickupTaskController extends Controller
 {
+    private function generateReferenceNumber($type)
+    {
+        $prefix = $type === 'delivery' ? 'DLV' : 'PCK';
+        $dateStr = now()->format('dmy'); // DDMMYY
+        
+        $pattern = $prefix . '-' . $dateStr . '-%';
+        
+        if ($type === 'delivery') {
+            $lastOrder = \App\Models\SalesOrder::where('so_number', 'like', $pattern)
+                ->orderBy('so_number', 'desc')
+                ->first();
+                
+            $lastNumber = $lastOrder ? $lastOrder->so_number : null;
+        } else {
+            $lastTask = \App\Models\PickupTask::where('reference_number', 'like', $pattern)
+                ->orderBy('reference_number', 'desc')
+                ->first();
+                
+            $lastNumber = $lastTask ? $lastTask->reference_number : null;
+        }
+
+        if ($lastNumber) {
+            $parts = explode('-', $lastNumber);
+            $sequence = intval(end($parts)) + 1;
+        } else {
+            $sequence = 1;
+        }
+
+        return $prefix . '-' . $dateStr . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+    }
+
     public function index(Request $request)
     {
         $user = Auth::user();
@@ -112,8 +143,6 @@ class PickupTaskController extends Controller
             'items.*.quantity' => 'required|numeric|min:0',
         ]);
 
-        $baseReference = 'MAN-' . now()->format('YmdHis') . '-' . strtoupper(Str::random(4));
-
         if ($request->task_type === 'pickup') {
             $request->validate([
                 'pickup_name' => 'required|string',
@@ -121,7 +150,7 @@ class PickupTaskController extends Controller
                 'pickup_destination' => 'nullable|string',
             ]);
 
-            $referenceNumber = $request->pickup_reference ?: $baseReference;
+            $referenceNumber = $this->generateReferenceNumber('pickup');
             
             $totalQty = 0;
             $totalLine = 0;
@@ -187,7 +216,7 @@ class PickupTaskController extends Controller
                 'delivery_pickup_location' => 'required|string',
             ]);
 
-            $soNumber = $request->delivery_so_number ?: $baseReference;
+            $soNumber = $this->generateReferenceNumber('delivery');
 
             $totalQty = 0;
             $itemDescriptions = [];
