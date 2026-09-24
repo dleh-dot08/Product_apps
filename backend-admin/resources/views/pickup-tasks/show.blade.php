@@ -1706,7 +1706,7 @@
                                 $resumePengeluaran['Tol'] += $eAmount;
                             } elseif (str_contains($eType, 'bensin') || str_contains($eType, 'bbm') || str_contains($eType, 'fuel') || str_contains($eType, 'solar')) {
                                 $resumePengeluaran['Bensin'] += $eAmount;
-                            } elseif (str_contains($eType, 'parkir')) {
+                            } elseif (str_contains($eType, 'parkir') || str_contains($eType, 'parking')) {
                                 $resumePengeluaran['Parkir'] += $eAmount;
                             } else {
                                 $resumePengeluaran['Lainnya'] += $eAmount;
