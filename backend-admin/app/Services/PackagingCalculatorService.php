@@ -1218,7 +1218,7 @@ class PackagingCalculatorService
             return ['qty' => 0, 'length' => 0];
         }
         $dimensiSusun = ($arah === 'Vertikal') ? $outerP : $outerL;
-        $qty = max(0, ceil($dimensiSusun / 800));
+        $qty = max(2, ceil($dimensiSusun / 800));
         $length = ($arah === 'Vertikal') ? $outerL : $outerP;
         return ['qty' => $qty, 'length' => $length];
     }

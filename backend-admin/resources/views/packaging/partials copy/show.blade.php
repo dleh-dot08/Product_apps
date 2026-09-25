@@ -5381,7 +5381,7 @@
                             const incPallet = document.querySelector('select[name="include_pallet_base"]')?.value;
                             const isIncluded = (incPallet === '1' || (typeof incPallet === 'string' && incPallet.toLowerCase() === 'ya'));
                             if (isIncluded) {
-                                kakiBalokInput.value = Math.max(2, Math.floor(pValue / 800) + 1);
+                                kakiBalokInput.value = Math.max(2, Math.ceil(pValue / 800));
                             }
                         }
 
