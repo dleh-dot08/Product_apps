@@ -216,10 +216,17 @@ export default function DriverDashboard() {
   };
 
   const showFeatureInfo = (feature: string) => {
-    Alert.alert(
-      feature,
-      'Halaman ini siap dihubungkan ke modul terkait berikutnya.',
-    );
+    if (feature === 'Laporan Kendala') {
+      Alert.alert(
+        feature,
+        'Halaman ini sedang dalam perbaikan (Under Construction).',
+      );
+    } else {
+      Alert.alert(
+        feature,
+        'Halaman ini siap dihubungkan ke modul terkait berikutnya.',
+      );
+    }
   };
 
   return (
