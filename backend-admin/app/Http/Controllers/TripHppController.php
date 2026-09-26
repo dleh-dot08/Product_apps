@@ -18,7 +18,7 @@ class TripHppController extends Controller
     public function index(Request $request)
     {
         // Load Shift
-        $allShifts = Shift::with(['vehicle', 'driver', 'pickupTasks', 'expenses'])
+        $allShifts = Shift::with(['vehicle', 'driver', 'pickupTasks.items', 'deliveryAssignments.salesOrder.items', 'expenses'])
             ->orderBy('work_date', 'desc')
             ->get();
 
@@ -38,12 +38,13 @@ class TripHppController extends Controller
 
         // Process each shift and attach calculated properties to display in view easily
         foreach ($allShifts as $shift) {
-            $calc = $this->hppService->calculateProrata($shift);
+            $calc = $this->hppService->getSavedOrCalculateProrata($shift);
             $shift->calc_details = $calc;
             $shift->total_cost = $calc['costs']['total'];
 
             $totalCost += $calc['costs']['total'];
-            $totalItems += $shift->pickupTasks->sum('quantity');
+            $totalItems += $shift->pickupTasks->sum('quantity') + 
+                           $shift->deliveryAssignments->sum(function($d) { return $d->salesOrder->ordered_quantity ?? 0; });
 
             if ($shift->start_odometer && $shift->end_odometer) {
                 $totalJarak += max(0, $shift->end_odometer - $shift->start_odometer);
@@ -79,9 +80,9 @@ class TripHppController extends Controller
 
     public function show($id)
     {
-        $shift = Shift::with(['vehicle', 'driver', 'pickupTasks', 'expenses'])->findOrFail($id);
+        $shift = Shift::with(['vehicle', 'driver', 'pickupTasks.items', 'deliveryAssignments.salesOrder.items', 'expenses'])->findOrFail($id);
         
-        $prorataDetails = $this->hppService->calculateProrata($shift);
+        $prorataDetails = $this->hppService->getSavedOrCalculateProrata($shift);
 
         return view('hpp.show', compact('shift', 'prorataDetails'));
     }

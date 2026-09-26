@@ -226,7 +226,7 @@ export default function ListTugas() {
 
       <FlatList
         data={tasks}
-        keyExtractor={(item) => String(item.id)}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
         renderItem={renderItem}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}

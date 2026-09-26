@@ -31,4 +31,15 @@ class SalesOrder extends Model
     {
         return $this->morphMany(TaskItem::class, 'itemable');
     }
+
+    public function getTotalAmountAttribute()
+    {
+        $total = 0;
+        if (isset($this->source_data['items']) && is_array($this->source_data['items'])) {
+            foreach ($this->source_data['items'] as $item) {
+                $total += $item['line_total'] ?? 0;
+            }
+        }
+        return $total;
+    }
 }

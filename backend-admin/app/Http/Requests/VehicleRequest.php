@@ -41,6 +41,8 @@ class VehicleRequest extends FormRequest
                 \Illuminate\Validation\Rule::unique('vehicles', 'plate_number')->ignore($vehicleId)
             ],
             'name' => 'required|string|min:2|max:100',
+            'location' => 'nullable|string|max:255',
+            'operational' => 'nullable|string|max:255',
             'fuel_price_per_liter' => 'required|numeric|min:1',
             'km_per_liter' => 'required|numeric|min:0.1',
         ];

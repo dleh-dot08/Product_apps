@@ -750,6 +750,7 @@
                 </div>
             </div>
 
+            @if(auth()->check() && auth()->user()->hasPermission('Create Pengeluaran'))
             <button
                 type="button"
                 class="btn-create-expense"
@@ -759,6 +760,7 @@
                 <i class="fa-solid fa-plus"></i>
                 Catat Pengeluaran
             </button>
+            @endif
         </div>
 
         {{-- ALERT SUCCESS --}}
@@ -1064,6 +1066,7 @@
                                                 </button>
                                             @endif
 
+                                            @if(auth()->check() && auth()->user()->hasPermission('Delete Pengeluaran'))
                                             <form
                                                 action="{{ route('expenses.destroy', $expense->id) }}"
                                                 method="POST"
@@ -1076,6 +1079,7 @@
                                                     Hapus
                                                 </button>
                                             </form>
+                                            @endif>
                                         </div>
                                     </div>
                                 </td>

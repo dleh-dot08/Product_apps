@@ -349,10 +349,11 @@
         place-items: center;
     }
 
-    #hppDashboardPage .donut-box canvas {
-        width: 220px !important;
-        height: 220px !important;
-        max-width: 100%;
+    #hppDashboardPage .chart-container {
+        position: relative;
+        width: 220px;
+        height: 220px;
+        margin: 0 auto;
     }
 
     #hppDashboardPage .composition-list {
@@ -1046,10 +1047,19 @@
                     Filter
                 </button>
 
+                @if(auth()->check() && auth()->user()->hasPermission('Export Data'))
                 <a href="{{ route('hpp.export') }}" class="btn-hpp-export">
                     <i class="fas fa-download"></i>
                     Export Excel
                 </a>
+                @endif
+                
+                @if(auth()->check() && auth()->user()->hasPermission('Validasi HPP'))
+                <a href="{{ route('hpp.validasi') }}" class="btn-hpp-export" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #059669; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2); text-decoration: none; color: white;">
+                    <i class="fas fa-check-double"></i>
+                    Data Validasi
+                </a>
+                @endif
             </div>
         </div>
 
@@ -1108,7 +1118,9 @@
 
                 <div class="composition-body">
                     <div class="donut-box">
-                        <canvas id="costChart"></canvas>
+                        <div class="chart-container">
+                            <canvas id="costChart"></canvas>
+                        </div>
                     </div>
 
                     <div class="composition-list">
@@ -1237,10 +1249,12 @@
                     <i class="fas fa-rotate-left"></i>
                     Reset
                 </button>
+                @if(auth()->check() && auth()->user()->hasPermission('Export Data'))
                 <a href="{{ route('hpp.export') }}" class="btn-hpp-export" style="height: 36px; padding: 0 14px; font-size: 10px; border-radius: 9px; box-shadow:none;">
                     <i class="fas fa-file-excel"></i>
                     Generate Excel
                 </a>
+                @endif
             </div>
 
             <div class="ritase-table-wrap">
@@ -1310,18 +1324,25 @@
                                 </td>
 
                                 <td>
-                                    @if($shift->task_reference)
-                                        <div class="delivery-code">
-                                            <span class="delivery-code-ref">{{ $shift->task_reference }}</span>
-                                            @if(stripos($shift->task_reference, 'PO') !== false || stripos($shift->task_reference, 'purchase') !== false)
+                                    <div class="d-flex flex-column gap-1">
+                                        @foreach($shift->pickupTasks as $pt)
+                                            <div class="delivery-code mb-1">
+                                                <span class="delivery-code-ref">{{ $pt->reference_number }} (#{{ $pt->id }})</span>
                                                 <span class="delivery-type pickup">Ambil</span>
-                                            @else
+                                            </div>
+                                        @endforeach
+                                        
+                                        @foreach($shift->deliveryAssignments as $da)
+                                            <div class="delivery-code mb-1">
+                                                <span class="delivery-code-ref">{{ $da->salesOrder->so_number ?? '-' }} (#{{ $da->id }})</span>
                                                 <span class="delivery-type delivery">Kirim</span>
-                                            @endif
-                                        </div>
-                                    @else
-                                        <span style="color:#94a3b8;">-</span>
-                                    @endif
+                                            </div>
+                                        @endforeach
+                                        
+                                        @if($shift->pickupTasks->isEmpty() && $shift->deliveryAssignments->isEmpty())
+                                            <span style="color:#94a3b8;">-</span>
+                                        @endif
+                                    </div>
                                 </td>
 
                                 <td>
@@ -1507,6 +1528,9 @@
         </section>
     </div>
 </div>
+
+<!-- Sertakan Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
     function changePerPage(select) {

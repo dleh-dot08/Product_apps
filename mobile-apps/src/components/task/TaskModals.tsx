@@ -9,6 +9,7 @@ import {
   Image,
   Alert,
   Platform,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/CustomText';
@@ -244,7 +245,7 @@ export const ModalKeberangkatan = ({ visible, onClose, onSubmit, task }: any) =>
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.modalBg}>
+      <KeyboardAvoidingView style={styles.modalBg} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={onClose} style={styles.iconBtn}>
@@ -404,7 +405,7 @@ export const ModalKeberangkatan = ({ visible, onClose, onSubmit, task }: any) =>
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -430,7 +431,7 @@ export const ModalPengeluaran = ({ visible, onClose, onSubmit, task }: any) => {
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.modalBg}>
+      <KeyboardAvoidingView style={styles.modalBg} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={onClose} style={styles.iconBtn}>
@@ -506,7 +507,7 @@ export const ModalPengeluaran = ({ visible, onClose, onSubmit, task }: any) => {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -554,7 +555,7 @@ export const ModalTiba = ({ visible, onClose, onSubmit, task }: any) => {
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.modalBg}>
+      <KeyboardAvoidingView style={styles.modalBg} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={onClose} style={styles.iconBtn}>
@@ -696,7 +697,7 @@ export const ModalTiba = ({ visible, onClose, onSubmit, task }: any) => {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -731,7 +732,7 @@ export const ModalSerahTerima = ({ visible, onClose, onSubmit, task }: any) => {
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.modalBg}>
+      <KeyboardAvoidingView style={styles.modalBg} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={onClose} style={styles.iconBtn}>
@@ -862,7 +863,7 @@ export const ModalSerahTerima = ({ visible, onClose, onSubmit, task }: any) => {
             </TouchableOpacity>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };

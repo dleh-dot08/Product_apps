@@ -3,16 +3,17 @@ import React, { useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StatusBar,
   StyleSheet, TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Device from 'expo-device';
@@ -99,9 +100,10 @@ export default function LoginScreen() {
                 <View style={styles.topBar}>
                   <View style={styles.brand}>
                     <View style={styles.logo}>
-                      <Text style={styles.logoLetter}>
-                        A
-                      </Text>
+                      <Image 
+                        source={require('../../assets/images/aqpa-indonesia.png')} 
+                        style={{ width: 28, height: 28, resizeMode: 'contain' }} 
+                      />
                     </View>
 
                     <View>

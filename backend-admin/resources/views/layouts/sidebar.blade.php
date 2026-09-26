@@ -258,11 +258,8 @@
 <aside class="app-sidebar sidebar-floating" data-bs-theme="dark">
     <!-- Sidebar Brand & Toggle Burger Button -->
     <div class="sidebar-brand d-flex align-items-center justify-content-between px-3">
-        <a href="{{ route('dashboard') }}" class="brand-link d-flex align-items-center text-decoration-none">
-            <div class="brand-icon">
-                <i class="fa-solid fa-bolt text-warning"></i>
-            </div>
-            <span class="brand-text fw-bold ms-2">AQPA</span>
+        <a href="{{ route('dashboard') }}" class="brand-link d-flex align-items-center text-decoration-none border-0">
+            <img src="{{ asset('logo/aqpa-indonesia-logo.png') }}" alt="AQPA Logo" style="height: 22px; object-fit: contain;">
         </a>
 
         <!-- Tombol Burger Toggle Sidebar -->
@@ -279,16 +276,19 @@
                 <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="menu" data-accordion="false">
     
                     <!-- 1. Dashboard (Route Asli) -->
+                    @if(auth()->check())
                     <li class="nav-item">
                         <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-chart-simple"></i>
                             <p class="ms-2 mb-0">Dashboard</p>
                         </a>
                     </li>
+                    @endif
 
                     <!-- 2. (Delivery Order is now merged with Tugas Driver) -->
 
                     <!-- 3. Data Akurasi -->
+                    @if(auth()->user()->hasPermission('View Data SO') || auth()->user()->hasPermission('View Data PO'))
                     <li class="nav-item {{ (request()->routeIs('sales-orders.*') || request()->routeIs('purchase-orders.*')) ? 'menu-open' : '' }}">
                         <a href="#" class="nav-link {{ (request()->routeIs('sales-orders.*') || request()->routeIs('purchase-orders.*')) ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-database"></i>
@@ -298,47 +298,59 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview ms-3">
+                            @if(auth()->user()->hasPermission('View Data SO'))
                             <li class="nav-item">
                                 <a href="{{ route('sales-orders.index') }}" class="nav-link {{ request()->routeIs('sales-orders.*') ? 'active' : '' }}">
                                     <i class="nav-icon fa-solid fa-bag-shopping" style="font-size: 0.9rem;"></i>
                                     <p class="ms-2 mb-0" style="font-size: 0.9rem;">Penjualan (SO)</p>
                                 </a>
                             </li>
+                            @endif
+                            @if(auth()->user()->hasPermission('View Data PO'))
                             <li class="nav-item">
                                 <a href="{{ route('purchase-orders.index') }}" class="nav-link {{ request()->routeIs('purchase-orders.*') ? 'active' : '' }}">
                                     <i class="nav-icon fa-solid fa-cart-shopping" style="font-size: 0.9rem;"></i>
                                     <p class="ms-2 mb-0" style="font-size: 0.9rem;">Pembelian (PO)</p>
                                 </a>
                             </li>
+                            @endif
                         </ul>
                     </li>
+                    @endif
 
                     <!-- 4. Packing (Route Asli) -->
+                    @if(auth()->user()->hasPermission('View Packing'))
                     <li class="nav-item">
                         <a href="{{ route('packaging.index') }}" class="nav-link {{ request()->routeIs('packaging.*') ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-box"></i>
                             <p class="ms-2 mb-0">Packing</p>
                         </a>
                     </li>
+                    @endif
 
                     <!-- 5. Tugas Driver -->
+                    @if(auth()->user()->hasPermission('View Tugas'))
                     <li class="nav-item">
                         <a href="{{ route('pickup-tasks.index') }}" class="nav-link {{ request()->routeIs('pickup-tasks.*') ? 'active' : '' }}">
                             <i class="nav-icon fa-regular fa-paper-plane"></i>
                             <p class="ms-2 mb-0">Tugas Driver</p>
                         </a>
                     </li>
+                    @endif
                     
                     <!-- 5.5 Find Driver -->
+                    @if(auth()->user()->hasPermission('View Find Driver'))
                     <li class="nav-item">
                         <a href="{{ route('find-driver') }}" class="nav-link {{ request()->routeIs('find-driver') ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-map-location-dot"></i>
                             <p class="ms-2 mb-0">Find Driver</p>
                         </a>
                     </li>
+                    @endif
 
 
                     <!-- 6. Daftar Tugas (Badge angka 0) -->
+                    @if(auth()->user()->hasPermission('View Daftar Tugas'))
                     <li class="nav-item">
                         <a href="{{ route('daftar-tugas.index') }}" class="nav-link d-flex align-items-center justify-content-between {{ request()->routeIs('daftar-tugas.*') ? 'active' : '' }}">
                             <div class="d-flex align-items-center">
@@ -348,38 +360,47 @@
                             <span class="badge bg-secondary rounded-pill px-2 py-1 fs-7">0</span>
                         </a>
                     </li>
+                    @endif
 
                     <!-- 7. HPP Ritase -->
+                    @if(auth()->user()->hasPermission('View HPP Ritase'))
                     <li class="nav-item">
                         <a href="{{ route('hpp.index') }}" class="nav-link {{ request()->routeIs('hpp.*') ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-dollar-sign"></i>
                             <p class="ms-2 mb-0">HPP Ritase</p>
                         </a>
                     </li>
+                    @endif
 
                     <!-- 7.5 Pengeluaran -->
+                    @if(auth()->user()->hasPermission('View Pengeluaran'))
                     <li class="nav-item">
                         <a href="{{ route('expenses.index') }}" class="nav-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-money-bill-wave"></i>
                             <p class="ms-2 mb-0">Pengeluaran</p>
                         </a>
                     </li>
+                    @endif
 
                     <!-- 8. User Management (Route Asli) -->
+                    @if(auth()->user()->hasPermission('View Daftar Pengguna'))
                     <li class="nav-item">
                         <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
                             <i class="nav-icon fa-regular fa-user"></i>
                             <p class="ms-2 mb-0">User Management</p>
                         </a>
                     </li>
+                    @endif
 
                     <!-- 9. Kendaraan -->
+                    @if(auth()->user()->hasPermission('View Daftar Kendaraan'))
                     <li class="nav-item mt-1">
                         <a href="{{ route('vehicles.index') }}" class="nav-link {{ request()->routeIs('vehicles.*') ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-truck"></i>
                             <p class="ms-2 mb-0">Kendaraan</p>
                         </a>
                     </li>
+                    @endif
 
                 </ul>
             </nav>
@@ -390,10 +411,10 @@
             <div class="d-flex align-items-center justify-content-between w-100">
                 <!-- User Info -->
                 <a href="{{ route('profile.edit') }}" class="user-info-wrapper d-flex align-items-center gap-2 text-decoration-none overflow-hidden me-2">
-                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->name ?? 'User') }}&background=ea580c&color=fff&bold=true" class="rounded-circle flex-shrink-0" alt="User Image" style="width: 36px; height: 36px; object-fit: cover;">
+                    <img src="https://ui-avatars.com/api/?name={{ urlencode(Auth::user()->full_name ?? Auth::user()->username ?? 'User') }}&background=ea580c&color=fff&bold=true" class="rounded-circle flex-shrink-0" alt="User Image" style="width: 36px; height: 36px; object-fit: cover;">
                     <div class="user-text-details d-flex flex-column text-truncate lh-sm">
-                        <span class="fw-bold user-name text-truncate" style="font-size: 0.85rem;">{{ Auth::user()->name ?? 'Administrator' }}</span>
-                        <span class="user-role text-truncate" style="font-size: 0.7rem;">{{ Auth::user()->role->name ?? 'Admin' }}</span>
+                        <span class="fw-bold user-name text-truncate" style="font-size: 0.85rem;">{{ Auth::user()->full_name ?? Auth::user()->username ?? 'User' }}</span>
+                        <span class="user-role text-truncate" style="font-size: 0.7rem;">{{ Auth::user()->roleRelation->name ?? Auth::user()->role ?? 'Role Not Found' }}</span>
                     </div>
                 </a>
 

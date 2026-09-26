@@ -1217,9 +1217,9 @@ class PackagingCalculatorService
         if ($include == 0 || $include === '0' || $include === 'Exclude' || strtolower($include) === 'exclude') {
             return ['qty' => 0, 'length' => 0];
         }
-        $dimensiSusun = ($arah === 'Horizontal') ? $outerP : $outerL;
-        $qty = max(0, ceil($dimensiSusun / 800));
-        $length = ($arah === 'Horizontal') ? $outerL : $outerP;
+        $dimensiSusun = ($arah === 'Vertikal') ? $outerP : $outerL;
+        $qty = max(2, ceil($dimensiSusun / 800));
+        $length = ($arah === 'Vertikal') ? $outerL : $outerP;
         return ['qty' => $qty, 'length' => $length];
     }
 
@@ -1227,8 +1227,8 @@ class PackagingCalculatorService
         if ($include == 0 || $include === '0' || $include === 'Exclude' || strtolower($include) === 'exclude' || $lebarPenyangga <= 0) {
             return ['qty' => 0, 'length' => 0, 'sisa_ujung' => 0];
         }
-        $dimensiSusun = ($arah === 'Horizontal') ? $outerP : $outerL;
-        $length = ($arah === 'Horizontal') ? $outerL : $outerP;
+        $dimensiSusun = ($arah === 'Vertikal') ? $outerP : $outerL;
+        $length = ($arah === 'Vertikal') ? $outerL : $outerP;
         
         $areaPerSisi = ($dimensiSusun - $lebarPenyangga) / 2;
         $langkahPenyangga = $celahPenyangga + $lebarPenyangga;
@@ -1247,7 +1247,7 @@ class PackagingCalculatorService
             return ['qty' => 0, 'length' => 0];
         }
         
-        $length = ($arah === 'Horizontal') ? $outerL : $outerP;
+        $length = ($arah === 'Vertikal') ? $outerL : $outerP;
         
         if ($isTripleks || $lebarPenutup <= 0) {
             return ['qty' => 1, 'length' => $length];

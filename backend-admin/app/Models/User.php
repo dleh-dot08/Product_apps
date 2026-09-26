@@ -60,6 +60,30 @@ class User extends Authenticatable
         return $this->belongsTo(Role::class, 'role_id');
     }
 
+    public function hasPermission($permissionName)
+    {
+        // 1. Cek role relation
+        $role = $this->roleRelation;
+        if (!$role) {
+            return false;
+        }
+
+        // 2. Super Admin bypass
+        if (strtoupper($role->name) === 'SUPER ADMIN') {
+            return true;
+        }
+
+        // 3. Cek di setiap modul
+        foreach ($role->modules as $module) {
+            $granted = json_decode($module->pivot->granted_permissions, true) ?? [];
+            if (in_array($permissionName, $granted)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function driverProfile()
     {
         return $this->hasOne(DriverProfile::class, 'user_id');

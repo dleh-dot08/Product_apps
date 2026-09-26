@@ -84,8 +84,14 @@ class PickupTaskController extends Controller
             );
 
         if ($roleName === 'driver') {
-            $pickups->where('driver_id', $user->id);
-            $deliveries->where('delivery_assignments.driver_id', $user->id);
+            $pickups->where(function ($q) use ($user) {
+                $q->where('driver_id', $user->id)
+                  ->orWhere('co_driver_id', $user->id);
+            });
+            $deliveries->where(function ($q) use ($user) {
+                $q->where('delivery_assignments.driver_id', $user->id)
+                  ->orWhere('delivery_assignments.co_driver_id', $user->id);
+            });
         }
 
         $unionQuery = $pickups->unionAll($deliveries);
@@ -142,7 +148,7 @@ class PickupTaskController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Invalid ID format'], 404);
         }
 
-        $task = PickupTask::with(['driver', 'vehicle', 'shift.expenses', 'items', 'attachments'])->find($id);
+        $task = PickupTask::with(['driver', 'coDriver', 'vehicle', 'shift.expenses', 'items', 'attachments.uploader'])->find($id);
 
         if ($task) {
             $task->task_type = 'pickup';
@@ -152,7 +158,7 @@ class PickupTaskController extends Controller
             ]);
         }
 
-        $delivery = \App\Models\DeliveryAssignment::with(['driver', 'vehicle', 'shift.expenses', 'salesOrder.items', 'attachments'])->find($id);
+        $delivery = \App\Models\DeliveryAssignment::with(['driver', 'coDriver', 'vehicle', 'shift.expenses', 'salesOrder.items', 'attachments.uploader'])->find($id);
 
         if ($delivery) {
             $delivery->task_type = 'delivery';
@@ -212,8 +218,14 @@ class PickupTaskController extends Controller
      */
     public function updateStatus(UpdatePickupTaskStatusRequest $request, $id)
     {
-        $task = PickupTask::find($id);
         $isPickup = true;
+        
+        // Prevent searching for non-uuid strings which crashes Postgres
+        if (!\Illuminate\Support\Str::isUuid($id)) {
+            return response()->json(['status' => 'error', 'message' => 'Invalid ID format'], 400);
+        }
+
+        $task = PickupTask::find($id);
         
         if (!$task) {
             $task = \App\Models\DeliveryAssignment::find($id);
@@ -227,7 +239,7 @@ class PickupTaskController extends Controller
         $user = Auth::user();
         $roleName = strtolower($user->roleRelation->name ?? $user->role->name ?? '');
         
-        if ($roleName === 'driver' && $task->driver_id !== $user->id) {
+        if ($roleName === 'driver' && $task->driver_id !== $user->id && $task->co_driver_id !== $user->id) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -262,7 +274,10 @@ class PickupTaskController extends Controller
         // Backward compatibility for proof_photo
         if ($newStatus === 'delivered') {
             if ($request->hasFile('proof_photo')) {
-                $updateData['proof_photo'] = $request->file('proof_photo')->store('proofs', 'public');
+                $file = $request->file('proof_photo');
+                $fileName = time() . '_' . $file->getClientOriginalName();
+                $path = $file->storeAs('uploads/proofs', $fileName, 'public');
+                $updateData['proof_photo'] = "storage/" . $path;
             } elseif ($request->has('proof_photo')) {
                 $updateData['proof_photo'] = $request->input('proof_photo');
             }
@@ -274,12 +289,22 @@ class PickupTaskController extends Controller
                 
                 // Auto-generate shift if task doesn't have one
                 if (!$task->shift_id) {
+                    $vehicle = \App\Models\Vehicle::find($task->vehicle_id);
+                    $driver = \App\Models\User::find($task->driver_id);
+                    $rateHour = $driver ? ($driver->manpower_rate_per_hour ?? 0) : 0;
+
                     $shift = \App\Models\Shift::create([
                         'driver_id' => $task->driver_id,
                         'vehicle_id' => $task->vehicle_id ?? null,
                         'work_date' => now()->toDateString(),
                         'check_in_at' => now(),
                         'start_odometer' => $request->input('start_odometer', 0),
+                        'fuel_price_per_liter' => $vehicle ? $vehicle->fuel_price_per_liter : 0,
+                        'km_per_liter' => $vehicle ? $vehicle->km_per_liter : 0,
+                        'manpower_rate_per_hour' => $rateHour,
+                        'manpower_rate_per_minute' => $rateHour / 60,
+                        'manpower_rate_per_second' => $rateHour / 3600,
+                        'manpower_count' => $driver ? ($driver->manpower_count ?? 1) : 1,
                         'source' => 'task',
                         'task_reference' => $task->reference_number ?? ('TASK-' . $task->id),
                     ]);
@@ -317,10 +342,27 @@ class PickupTaskController extends Controller
         
         foreach ($attachmentCategories as $category) {
             if ($request->hasFile($category)) {
-                $filePath = $request->file($category)->store("task_attachments/{$id}", 'public');
+                $file = $request->file($category);
+                $fileName = time() . '_' . $category . '_' . preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $file->getClientOriginalName());
+                $path = "task-driver/{$id}/admin-docs/{$fileName}";
+                
+                $minio = new \App\Services\Storage\MinioService();
+                try {
+                    $minio->getClient()->putObject([
+                        'Bucket' => 'driver-apps',
+                        'Key'    => $path,
+                        'SourceFile' => $file->getRealPath(),
+                        'ContentType' => $file->getMimeType(),
+                    ]);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("MinIO Upload Error: " . $e->getMessage());
+                    return response()->json(['status' => 'error', 'message' => 'Gagal upload file lampiran: ' . $e->getMessage()], 500);
+                }
+                
                 $task->attachments()->create([
                     'category' => $category,
-                    'file_path' => $filePath,
+                    'file_path' => $path,
+                    'uploaded_by' => Auth::id(),
                 ]);
             }
         }
@@ -335,11 +377,27 @@ class PickupTaskController extends Controller
             $attCategory = $request->input('attachment_category', $categoryMap[$newStatus] ?? 'attachments');
 
             $files = $request->file('attachments');
-            foreach ($files as $file) {
-                $filePath = $file->store("task_attachments/{$id}", 'public');
+            foreach ($files as $index => $file) {
+                $fileName = time() . '_' . $index . '_' . preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $file->getClientOriginalName());
+                $path = "task-driver/{$id}/admin-docs/{$fileName}";
+
+                $minio = new \App\Services\Storage\MinioService();
+                try {
+                    $minio->getClient()->putObject([
+                        'Bucket' => 'driver-apps',
+                        'Key'    => $path,
+                        'SourceFile' => $file->getRealPath(),
+                        'ContentType' => $file->getMimeType(),
+                    ]);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error("MinIO Upload Error: " . $e->getMessage());
+                    return response()->json(['status' => 'error', 'message' => 'Gagal upload file attachments: ' . $e->getMessage()], 500);
+                }
+
                 $task->attachments()->create([
                     'category' => $attCategory,
-                    'file_path' => $filePath,
+                    'file_path' => $path,
+                    'uploaded_by' => Auth::id(),
                 ]);
             }
         }
@@ -348,185 +406,6 @@ class PickupTaskController extends Controller
             'status' => 'success',
             'message' => "Status tugas berhasil diperbarui menjadi {$newStatus}.",
             'data' => $task
-        ]);
-    }
-    /**
-     * GET /api/driver/dashboard
-     * Mengambil ringkasan dashboard driver (real-time)
-     */
-    public function dashboardSummary(Request $request)
-    {
-        $user = Auth::user();
-        
-        $today = now()->startOfDay();
-        $endOfDay = now()->endOfDay();
-
-        $pickups = DB::table('pickup_tasks')
-            ->leftJoin('vehicles', 'pickup_tasks.vehicle_id', '=', 'vehicles.id')
-            ->select(
-                'pickup_tasks.id', 
-                'pickup_tasks.reference_number', 
-                'pickup_tasks.pickup_name', 
-                'pickup_tasks.pickup_location', 
-                'pickup_tasks.destination', 
-                'pickup_tasks.assigned_at', 
-                'pickup_tasks.status', 
-                DB::raw("'pickup' as task_type"),
-                'pickup_tasks.quantity',
-                'pickup_tasks.unit',
-                DB::raw("NULL as item_category"),
-                'vehicles.plate_number as vehicle_plate_number',
-                'vehicles.name as vehicle_name',
-                'pickup_tasks.dispatch_date',
-                'pickup_tasks.estimated_arrival',
-                'pickup_tasks.proof_photo',
-                'pickup_tasks.failure_reason',
-                'pickup_tasks.completed_odometer',
-                'pickup_tasks.start_odometer',
-                'pickup_tasks.start_fuel',
-                'pickup_tasks.departure_notes',
-                'pickup_tasks.receiver_name',
-                'pickup_tasks.receiver_role',
-                'pickup_tasks.item_condition',
-                'pickup_tasks.completed_at'
-            )
-            ->where('pickup_tasks.driver_id', $user->id);
-
-        $deliveries = DB::table('delivery_assignments')
-            ->join('sales_orders', 'delivery_assignments.sales_order_id', '=', 'sales_orders.id')
-            ->leftJoin('vehicles', 'delivery_assignments.vehicle_id', '=', 'vehicles.id')
-            ->select(
-                'delivery_assignments.id', 
-                'sales_orders.so_number as reference_number', 
-                DB::raw("COALESCE(delivery_assignments.pickup_name, 'Gudang AQPA') as pickup_name"), 
-                DB::raw("COALESCE(delivery_assignments.pickup_location, '-') as pickup_location"), 
-                'sales_orders.customer_name as destination', 
-                'delivery_assignments.assigned_at', 
-                'delivery_assignments.status', 
-                DB::raw("'delivery' as task_type"),
-                'sales_orders.ordered_quantity as quantity',
-                'sales_orders.unit',
-                'sales_orders.item_description as item_category',
-                'vehicles.plate_number as vehicle_plate_number',
-                'vehicles.name as vehicle_name',
-                'delivery_assignments.dispatch_date',
-                'delivery_assignments.estimated_arrival',
-                'delivery_assignments.proof_photo',
-                'delivery_assignments.failure_reason',
-                'delivery_assignments.completed_odometer',
-                'delivery_assignments.start_odometer',
-                'delivery_assignments.start_fuel',
-                'delivery_assignments.departure_notes',
-                'delivery_assignments.receiver_name',
-                'delivery_assignments.receiver_role',
-                'delivery_assignments.item_condition',
-                'delivery_assignments.completed_at'
-            )
-            ->where('delivery_assignments.driver_id', $user->id);
-
-        $unionQuery = $pickups->unionAll($deliveries);
-        
-        // Query untuk HARI INI
-        $todayQuery = DB::query()->fromSub($unionQuery, 'tasks')
-            ->whereBetween('assigned_at', [$today, $endOfDay]);
-
-
-
-        // 1. Total Trip Hari Ini
-        $totalTrips = (clone $todayQuery)->count();
-
-        // 2. Selesai (Hari ini)
-        $completedTrips = (clone $todayQuery)->where('status', 'delivered')->count();
-
-        // 3. Berlangsung (Hari ini)
-        $inProgressTrips = (clone $todayQuery)->whereIn('status', ['assigned', 'on_route', 'arrived'])->count();
-
-        // 4. Jarak Tempuh
-        $distanceKm = 0;
-
-        // 5. List Trip Hari ini
-        $todayTasks = (clone $todayQuery)
-            ->orderByRaw("CASE 
-                WHEN status IN ('on_route', 'arrived') THEN 1 
-                WHEN status = 'assigned' THEN 2 
-                ELSE 3 END")
-            ->orderBy('assigned_at', 'desc')
-            ->limit(5)
-            ->get();
-
-        // 6. Active Task (Tanpa dibatasi hari ini)
-        $activeTask = DB::query()->fromSub($unionQuery, 'tasks')
-            ->whereIn('status', ['on_route', 'arrived'])
-            ->orderBy('assigned_at', 'desc')
-            ->first();
-
-        // 7. KPI Performance (Berdasarkan Filter)
-        $period = $request->input('period', '7_days');
-        
-        $kpiQuery = DB::query()->fromSub($unionQuery, 'tasks')
-            ->where('status', 'delivered');
-            
-        if ($period !== 'all') {
-            $startDate = null;
-            if ($period === '7_days') {
-                $startDate = now()->subDays(7)->startOfDay();
-            } elseif ($period === '1_month') {
-                $startDate = now()->subMonth()->startOfDay();
-            } elseif ($period === '3_months') {
-                $startDate = now()->subMonths(3)->startOfDay();
-            } elseif ($period === '6_months') {
-                $startDate = now()->subMonths(6)->startOfDay();
-            } elseif ($period === '1_year') {
-                $startDate = now()->subYear()->startOfDay();
-            }
-            
-            if ($startDate) {
-                $kpiQuery->where('completed_at', '>=', $startDate);
-            }
-        }
-            
-        $allDeliveredTrips = $kpiQuery->get();
-            
-        $totalDelivered = $allDeliveredTrips->count();
-        $onTimeCount = 0;
-        $totalDistanceAll = 0;
-        $totalFuelAll = 0;
-        
-        foreach($allDeliveredTrips as $trip) {
-            if ($trip->estimated_arrival && $trip->completed_at) {
-                if (\Carbon\Carbon::parse($trip->completed_at)->lte(\Carbon\Carbon::parse($trip->estimated_arrival))) {
-                    $onTimeCount++;
-                }
-            } else {
-                // Asumsi tepat waktu jika tidak ada estimasi atau completed_at belum tersetting dengan benar di db lama
-                $onTimeCount++;
-            }
-
-            // Hitung BBM rata-rata
-            $dist = max(0, (float)$trip->completed_odometer - (float)$trip->start_odometer);
-            $totalDistanceAll += $dist;
-            $totalFuelAll += (float)$trip->start_fuel;
-        }
-        
-        $onTimePercentage = $totalDelivered > 0 ? round(($onTimeCount / $totalDelivered) * 100) : 100;
-        $fuelEfficiency = $totalFuelAll > 0 ? round($totalDistanceAll / $totalFuelAll, 1) : 12.5; // default 12.5 km/l jika blm ada data bbm
-
-        return response()->json([
-            'status' => 'success',
-            'data' => [
-                'today_trips_count' => $totalTrips,
-                'completed_trips_count' => $completedTrips,
-                'in_progress_trips_count' => $inProgressTrips,
-                'distance_today' => $distanceKm,
-                'today_tasks' => $todayTasks,
-                'active_task' => $activeTask,
-                'performance' => [
-                    'on_time_percentage' => $onTimePercentage,
-                    'fuel_efficiency' => $fuelEfficiency,
-                    'total_trip' => $totalDelivered,
-                    'on_time_trip' => $onTimeCount,
-                ]
-            ]
         ]);
     }
 }

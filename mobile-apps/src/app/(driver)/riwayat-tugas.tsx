@@ -1,28 +1,33 @@
 import React from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/CustomText';
 import { Colors } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
+import { useTheme } from '../../context/ThemeContext';
+import ListTugas from '../../components/dashboard/ListTugas';
+
 export default function RiwayatTugasScreen() {
   const router = useRouter();
+  const { theme } = useTheme();
+  const colors = Colors[theme];
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top']}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.backgroundElement, borderBottomColor: colors.backgroundSelected }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
+          <Ionicons name="arrow-back" size={24} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Riwayat Tugas</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Riwayat Tugas</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Riwayat Kosong</Text>
-      </ScrollView>
+      <View style={styles.content}>
+        <ListTugas />
+      </View>
     </SafeAreaView>
   );
 }
@@ -51,13 +56,6 @@ const styles = StyleSheet.create({
     color: '#1F2937',
   },
   content: {
-    padding: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 300,
+    flex: 1,
   },
-  title: {
-    fontSize: 16,
-    color: '#6B7280',
-  }
 });

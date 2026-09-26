@@ -12,13 +12,13 @@
         }
         
         /* Animasi fade in & slide up untuk Leaflet Popup */
-        .leaflet-popup {
+        /* .leaflet-popup {
             animation: slideUpFadeIn 0.4s ease-out forwards;
         }
         @keyframes slideUpFadeIn {
             0% { opacity: 0; transform: translateY(20px); }
             100% { opacity: 1; transform: translateY(0); }
-        }
+        } */
         
         /* Modifikasi Popup Leaflet agar lebih cantik */
         .leaflet-popup-content-wrapper {
@@ -139,15 +139,16 @@
             var driverIcon = L.icon({
                 iconUrl: 'https://cdn-icons-png.flaticon.com/512/3097/3097180.png',
                 iconSize: [38, 38], // size of the icon
-                iconAnchor: [19, 38], // point of the icon which will correspond to marker's location
-                popupAnchor: [0, -38] // point from which the popup should open relative to the iconAnchor
+                iconAnchor: [19, 19], // Pusat icon sebagai penanda
+                popupAnchor: [0, -25] // Popup berada di atas icon
             });
 
             function fetchDriverLocations() {
                 fetch('/api/driver/locations', {
                     headers: {
                         'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-API-Key': 'cHJvZHVjdF9hcHBzX2FwaV9yb3V0ZXJfMjAyNg=='
                     }
                 })
                 .then(response => response.json())
@@ -157,7 +158,7 @@
                             let lat = parseFloat(location.latitude);
                             let lng = parseFloat(location.longitude);
                             
-                            let driverName = location.user.name || 'Driver Tidak Diketahui';
+                            let driverName = location.user.full_name || 'Driver Tidak Diketahui';
                             let popupHtml = `
                                 <div style="min-width: 220px;">
                                     <div class="bg-primary text-white p-3 border-bottom d-flex align-items-center">
@@ -169,7 +170,7 @@
                                             <i class="fa-solid fa-clipboard-list text-secondary mt-1 me-2" style="width: 16px;"></i>
                                             <div>
                                                 <span class="d-block text-muted" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Tugas Aktif</span>
-                                                <span class="fw-medium">${location.task_id || 'Tidak ada ID Tugas'}</span>
+                                                <span class="fw-medium">${location.task ? (location.task.reference_number + ' - ' + (location.task.pickup_name || '')) : (location.delivery_task && location.delivery_task.sales_order ? (location.delivery_task.sales_order.so_number + ' - ' + (location.delivery_task.sales_order.customer_name || '')) : 'Tugas Aktif')}</span>
                                             </div>
                                         </div>
                                         <div class="d-flex align-items-start">

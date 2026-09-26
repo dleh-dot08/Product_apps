@@ -61,6 +61,9 @@ class AuthController extends Controller
             unset($validated['password']);
         }
 
+        $validated['full_name'] = $validated['name'];
+        unset($validated['name']);
+
         $user->update($validated);
 
         $user->load(['roleRelation', 'division']);

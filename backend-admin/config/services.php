@@ -39,4 +39,11 @@ return [
         'publish_token' => env('OTA_PUBLISH_TOKEN'),
     ],
 
+    'akurasi' => [
+        'url' => env('AKURASI_API_URL', 'https://akurasi-api.aqpa-indonesia.com/api/integration'),
+        'api_key' => env('AKURASI_API_KEY'),
+        'verify_ssl' => filter_var(env('AKURASI_VERIFY_SSL', true), FILTER_VALIDATE_BOOL),
+        'timeout' => env('AKURASI_API_TIMEOUT', 30),
+    ],
+
 ];

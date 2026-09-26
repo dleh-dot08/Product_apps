@@ -33,12 +33,22 @@ class ExpenseController extends Controller
         if (!$task->shift_id) {
             // Auto create shift for backward compatibility if task is already on_route or arrived
             if (in_array($task->status, ['on_route', 'arrived'])) {
+                $vehicle = \App\Models\Vehicle::find($task->vehicle_id);
+                $driver = \App\Models\User::find($task->driver_id);
+                $rateHour = $driver ? ($driver->manpower_rate_per_hour ?? 0) : 0;
+
                 $shift = \App\Models\Shift::create([
                     'driver_id' => $task->driver_id,
                     'vehicle_id' => $task->vehicle_id ?? null,
                     'work_date' => now()->toDateString(),
                     'check_in_at' => $task->started_at ?? now(),
                     'start_odometer' => $task->start_odometer ?? 0,
+                    'fuel_price_per_liter' => $vehicle ? $vehicle->fuel_price_per_liter : 0,
+                    'km_per_liter' => $vehicle ? $vehicle->km_per_liter : 0,
+                    'manpower_rate_per_hour' => $rateHour,
+                    'manpower_rate_per_minute' => $rateHour / 60,
+                    'manpower_rate_per_second' => $rateHour / 3600,
+                    'manpower_count' => $driver ? ($driver->manpower_count ?? 1) : 1,
                     'source' => 'task',
                     'task_reference' => $task->reference_number ?? ('TASK-' . $task->id),
                 ]);
@@ -66,7 +76,23 @@ class ExpenseController extends Controller
         $expense->notes = $request->notes; // Additional notes
         
         if ($request->hasFile('receipt')) {
-            $expense->receipt_url = $request->file('receipt')->store('expenses', 'public');
+            $file = $request->file('receipt');
+            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $file->getClientOriginalName());
+            $path = "task-driver/{$id}/expenses/{$fileName}";
+            
+            $minio = new \App\Services\Storage\MinioService();
+            try {
+                $minio->getClient()->putObject([
+                    'Bucket' => 'driver-apps',
+                    'Key'    => $path,
+                    'SourceFile' => $file->getRealPath(),
+                    'ContentType' => $file->getMimeType(),
+                ]);
+                $expense->receipt_url = $path;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("MinIO Upload Error: " . $e->getMessage());
+                return response()->json(['message' => 'Gagal upload receipt: ' . $e->getMessage()], 500);
+            }
         }
 
         $expense->save();

@@ -15,7 +15,10 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Modal, StyleSheet } from 'react-native';
 import { checkAppUpdate } from '../services/updater';
+import { startLocationTracking } from '../services/LocationService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import '../services/LocationService';
+import { registerForPushNotificationsAsync } from '../services/PushNotificationService';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -43,6 +46,9 @@ function RootLayoutNav() {
     if (!user && !isLoginRoute) {
       router.replace('/login');
     } else if (user && isLoginRoute) {
+      // Register for push notifications when user logs in
+      registerForPushNotificationsAsync();
+      
       if ((user as any).role?.name?.toLowerCase() === 'admin') {
         router.replace('/(admin)' as any);
       } else {
@@ -73,6 +79,20 @@ export default function RootLayout() {
     checkAppUpdate((progress: number | null) => {
       setDownloadProgress(progress);
     });
+
+    // Otomatis jalankan ulang tracking jika aplikasi di-force close lalu dibuka lagi
+    const resumeTracking = async () => {
+      try {
+        const activeTaskId = await AsyncStorage.getItem('active_task_id');
+        if (activeTaskId) {
+          console.log('[RootLayout] Ditemukan task aktif, melanjutkan tracking...');
+          await startLocationTracking(activeTaskId);
+        }
+      } catch (e) {
+        console.error('Gagal resume tracking:', e);
+      }
+    };
+    resumeTracking();
   }, []);
 
   return (

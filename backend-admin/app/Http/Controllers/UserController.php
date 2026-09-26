@@ -13,16 +13,78 @@ class UserController extends Controller
     public function index(\Illuminate\Http\Request $request)
     {
         $search = $request->input('search');
+        $status = $request->input('status', 'all');
+        $limit = $request->input('limit', 10);
         
-        $users = User::when($search, function($query) use ($search) {
-            $query->where('full_name', 'ilike', "%{$search}%")
+        $query = User::query();
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('full_name', 'ilike', "%{$search}%")
                   ->orWhere('email', 'ilike', "%{$search}%")
                   ->orWhere('username', 'ilike', "%{$search}%");
-        })->latest()->paginate(10)->withQueryString();
+            });
+        }
+
+        if ($status !== 'all') {
+            $query->where('active', $status === 'active');
+        }
+
+        // Limit allowed values to prevent errors
+        $allowedLimits = [10, 20, 30, 'all'];
+        if (!in_array($limit, $allowedLimits)) {
+            $limit = 10;
+        }
+
+        if ($limit === 'all') {
+            $users = $query->latest()->get(); // Getting all records if 'all' is selected
+            // Create a manual paginator-like object to keep the view compatible if it uses links()
+            $users = new \Illuminate\Pagination\LengthAwarePaginator($users, $users->count(), max(1, $users->count()));
+        } else {
+            $users = $query->latest()->paginate($limit)->withQueryString();
+        }
 
         $divisions = \App\Models\Division::all();
         $roles = \App\Models\Role::all();
-        return view('users.index', compact('users', 'divisions', 'roles', 'search'));
+
+        // Calculate KPI Data
+        $totalUsers = User::count();
+        $activeDivisions = \App\Models\Division::count();
+        $totalRoles = \App\Models\Role::count();
+
+        // Fetch Modules for Privileges Matrix (Do not paginate to prevent sync issues)
+        $modules = \App\Models\Module::all();
+
+        return view('users.index', compact('users', 'divisions', 'roles', 'search', 'status', 'limit', 'totalUsers', 'activeDivisions', 'totalRoles', 'modules'));
+    }
+
+    public function updatePrivileges(Request $request)
+    {
+        $privileges = $request->input('privileges', []);
+
+        $roles = \App\Models\Role::all();
+        
+        foreach ($roles as $role) {
+            $roleModulesData = [];
+            
+            if (isset($privileges[$role->id])) {
+                foreach ($privileges[$role->id] as $moduleId => $permissions) {
+                    // Checkboxes will send an array like ["View Dashboard" => "1", "Create Data" => "1"]
+                    // We only want the keys that were checked.
+                    $granted = array_keys(array_filter($permissions, function($val) {
+                        return $val == '1' || $val === true || $val === 'on';
+                    }));
+
+                    $roleModulesData[$moduleId] = [
+                        'granted_permissions' => json_encode($granted)
+                    ];
+                }
+            }
+            
+            $role->modules()->sync($roleModulesData);
+        }
+
+        return redirect()->back()->with('success', 'Matriks Hak Akses berhasil diperbarui.');
     }
 
     public function create()

@@ -96,7 +96,10 @@ function openUserModal(isEdit, user = null) {
     if (isEdit && user) {
         title.innerText = 'Edit Pengguna';
         icon.className = 'fa-solid fa-user-pen me-2 text-primary';
-        form.action = `/users/${user.id}`;
+        
+        let baseUrl = '{{ url("users") }}';
+        form.action = `${baseUrl}/${user.id}`;
+        
         methodContainer.innerHTML = '<input type="hidden" name="_method" value="PUT">';
         
         document.getElementById('userFullName').value = user.full_name || '';

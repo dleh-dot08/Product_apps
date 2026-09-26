@@ -1181,7 +1181,7 @@
         ? ($task->pickup_destination ?? $task->destination ?? '-')
         : $deliveryAddress;
 
-    $dispatchAtRaw = $task->dispatch_date ?? $task->assigned_at ?? $task->created_at;
+    $dispatchAtRaw = $task->dispatch_date;
     $arrivalAtRaw = $task->estimated_arrival ?? null;
 
     $dispatchAt = $dispatchAtRaw ? \Carbon\Carbon::parse($dispatchAtRaw) : null;
@@ -1268,43 +1268,8 @@
     $arrivalAttachments = $attachmentMatches(['kedatangan','arrival','sampai']);
     $handoverAttachments = $attachmentMatches(['serah','handover','penerimaan']);
 
-    /* =========================================================
-       EXPENSES / LAPORAN PENGELUARAN
-       Mencoba beberapa nama relation/attribute agar aman.
-    ========================================================= */
-    $expenses = collect();
-    foreach (['expenses', 'tripExpenses', 'financialExpenses', 'driverExpenses'] as $expenseKey) {
-        try {
-            $candidate = method_exists($task, $expenseKey)
-                ? $task->{$expenseKey}
-                : $task->getAttribute($expenseKey);
-            if ($candidate) {
-                $expenses = collect($candidate);
-                if ($expenses->count() > 0) break;
-            }
-        } catch (\Throwable $e) {
-            // abaikan fallback yang tidak tersedia
-        }
-    }
-
-    $expenseValue = function($expense, array $keys, $default = null) {
-        foreach ($keys as $key) {
-            $value = data_get($expense, $key);
-            if ($value !== null && $value !== '') return $value;
-        }
-        return $default;
-    };
-
-    $totalExpense = $expenses->sum(function($expense) use ($expenseValue) {
-        return (float)$expenseValue($expense, ['amount','nominal','total','total_amount','value'], 0);
-    });
-
-    /* =========================================================
-       REPORT STATUS (UI ONLY - TIDAK MEMBUAT ROUTE BARU)
-    ========================================================= */
     $departureDone = in_array($currentStatus, ['on_route','arrived','delivered'], true)
         || $departureAttachments->count() > 0;
-    $financeDone = $expenses->count() > 0;
     $arrivalDone = in_array($currentStatus, ['arrived','delivered'], true)
         || $arrivalAttachments->count() > 0;
     $handoverDone = $currentStatus === 'delivered'
@@ -1353,31 +1318,9 @@
             </a>
 
             <div class="topbar-actions">
-                <div class="status-control">
-                    <label for="taskStatusSelect">Status Tugas</label>
-                    <select
-                        id="taskStatusSelect"
-                        class="form-select status-select"
-                        data-task-id="{{ $task->id }}"
-                        aria-label="Status tugas"
-                    >
-                        @if(!array_key_exists($currentStatus, $statusOptions))
-                            <option value="{{ $currentStatus }}" selected>
-                                {{ ucwords(str_replace('_', ' ', $currentStatus)) }}
-                            </option>
-                        @endif
-
-                        @foreach($statusOptions as $value => $label)
-                            <option value="{{ $value }}" {{ $currentStatus === $value ? 'selected' : '' }}>
-                                {{ $label }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <button type="button" class="btn-edit-status" id="btnEditTaskStatus">
-                    <i class="fa-solid fa-pen"></i>
-                    Edit Status
+                <button type="button" class="btn-edit-status" onclick="openEditTaskModal()">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Edit Tugas</span>
                 </button>
 
                 <button type="button" class="btn-more-task" title="Aksi lainnya">
@@ -1458,25 +1401,20 @@
                     <div class="progress-step {{ $departureDone ? 'complete' : '' }}">
                         <div class="progress-icon"><i class="fa-solid fa-play"></i></div>
                         <div class="progress-title">Keberangkatan</div>
-                        <div class="progress-subtitle">{{ $departureDone ? 'Sudah tercatat' : 'Belum tercatat' }}</div>
+                        <div class="progress-subtitle">{{ $task->started_at ? \Carbon\Carbon::parse($task->started_at)->format('d M Y, H:i') : ($departureDone ? 'Sudah tercatat' : 'Belum tercatat') }}</div>
                     </div>
 
-                    <div class="progress-step {{ $financeDone ? 'complete' : '' }}">
-                        <div class="progress-icon"><i class="fa-solid fa-wallet"></i></div>
-                        <div class="progress-title">Keuangan</div>
-                        <div class="progress-subtitle">{{ $financeDone ? 'Sudah ada laporan' : 'Belum laporan' }}</div>
-                    </div>
 
                     <div class="progress-step {{ $arrivalDone ? 'complete' : '' }}">
                         <div class="progress-icon"><i class="fa-solid fa-location-dot"></i></div>
                         <div class="progress-title">Sampai</div>
-                        <div class="progress-subtitle">{{ $arrivalDone ? 'Sudah tercatat' : 'Belum tercatat' }}</div>
+                        <div class="progress-subtitle">{{ $task->arrived_at ? \Carbon\Carbon::parse($task->arrived_at)->format('d M Y, H:i') : ($arrivalDone ? 'Sudah tercatat' : 'Belum tercatat') }}</div>
                     </div>
 
                     <div class="progress-step {{ $handoverDone ? 'complete' : '' }}">
                         <div class="progress-icon"><i class="fa-solid fa-file-lines"></i></div>
                         <div class="progress-title">Serah Terima</div>
-                        <div class="progress-subtitle">{{ $handoverDone ? 'Sudah laporan' : 'Belum laporan' }}</div>
+                        <div class="progress-subtitle">{{ $task->completed_at ? \Carbon\Carbon::parse($task->completed_at)->format('d M Y, H:i') : ($handoverDone ? 'Sudah laporan' : 'Belum laporan') }}</div>
                     </div>
                 </div>
             </div>
@@ -1502,7 +1440,7 @@
 
                     <div class="assignment-grid">
                         <div class="assignment-cell">
-                            <div class="assignment-label">Driver</div>
+                            <div class="assignment-label">Driver Utama</div>
                             <div class="assignment-value">
                                 <i class="fa-solid fa-user"></i>
                                 <div>
@@ -1513,6 +1451,26 @@
                                 </div>
                             </div>
                         </div>
+
+                        @if($task->coDriver)
+                        <div class="assignment-cell">
+                            <div class="assignment-label">Driver 2 (Pendamping)</div>
+                            <div class="assignment-value">
+                                <i class="fa-solid fa-user-group"></i>
+                                <div>
+                                    {{ $task->coDriver->full_name ?? 'N/A' }}
+                                    @php
+                                        $coDriverPhone = $task->coDriver->phone_number
+                                            ?? $task->coDriver->phone
+                                            ?? $task->coDriver->mobile_phone;
+                                    @endphp
+                                    @if($coDriverPhone)
+                                        <span class="assignment-sub">{{ $coDriverPhone }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+                        @endif
 
                         <div class="assignment-cell">
                             <div class="assignment-label">Kendaraan</div>
@@ -1662,67 +1620,6 @@
                     </div>
                 </section>
 
-                {{-- RESUME PENGELUARAN PERJALANAN --}}
-                @php
-                    $resumePengeluaran = [
-                        'Tol' => 0,
-                        'Bensin' => 0,
-                        'Parkir' => 0,
-                        'Lainnya' => 0,
-                    ];
-                    $totalResume = 0;
-                    
-                    if (isset($expenses)) {
-                        foreach($expenses as $exp) {
-                            $eType = strtolower((string)$expenseValue($exp, ['expense_type','type','category','name'], '-'));
-                            $eAmount = (float)$expenseValue($exp, ['amount','nominal','total','total_amount','value'], 0);
-                            $totalResume += $eAmount;
-                            
-                            if (str_contains($eType, 'tol')) {
-                                $resumePengeluaran['Tol'] += $eAmount;
-                            } elseif (str_contains($eType, 'bensin') || str_contains($eType, 'bbm') || str_contains($eType, 'fuel') || str_contains($eType, 'solar')) {
-                                $resumePengeluaran['Bensin'] += $eAmount;
-                            } elseif (str_contains($eType, 'parkir')) {
-                                $resumePengeluaran['Parkir'] += $eAmount;
-                            } else {
-                                $resumePengeluaran['Lainnya'] += $eAmount;
-                            }
-                        }
-                    }
-                @endphp
-                <section class="task-card section-card" style="margin-bottom: 12px;">
-                    <div class="section-heading">
-                        <i class="fa-solid fa-wallet"></i>
-                        <span>Resume Pengeluaran Perjalanan</span>
-                    </div>
-                    <div class="assignment-grid" style="grid-template-columns: repeat(4, 1fr);">
-                        <div class="assignment-cell" style="min-height: 55px;">
-                            <div class="assignment-label">TOL</div>
-                            <div class="assignment-value" style="font-size: 14px;">Rp {{ number_format($resumePengeluaran['Tol'], 0, ',', '.') }}</div>
-                        </div>
-                        <div class="assignment-cell" style="min-height: 55px;">
-                            <div class="assignment-label">BENSIN</div>
-                            <div class="assignment-value" style="font-size: 14px;">Rp {{ number_format($resumePengeluaran['Bensin'], 0, ',', '.') }}</div>
-                        </div>
-                        <div class="assignment-cell" style="min-height: 55px;">
-                            <div class="assignment-label">PARKIR</div>
-                            <div class="assignment-value" style="font-size: 14px;">Rp {{ number_format($resumePengeluaran['Parkir'], 0, ',', '.') }}</div>
-                        </div>
-                        <div class="assignment-cell" style="min-height: 55px;">
-                            <div class="assignment-label">LAINNYA</div>
-                            <div class="assignment-value" style="font-size: 14px;">Rp {{ number_format($resumePengeluaran['Lainnya'], 0, ',', '.') }}</div>
-                        </div>
-                    </div>
-                    <div style="padding: 10px 12px; background: #fcfcfd; border-top: 1px solid var(--task-border-soft); display: flex; justify-content: space-between; align-items: center; border-radius: 0 0 13px 13px;">
-                        <span style="font-size: 12px; font-weight: 850; color: #475569; text-transform: uppercase;">Total Keseluruhan</span>
-                        <div style="display: flex; gap: 15px; align-items: center;">
-                            <strong style="font-size: 14px; color: var(--task-green);">Rp {{ number_format($totalResume, 0, ',', '.') }}</strong>
-                            <button type="button" onclick="openReportModal('finance')" style="padding: 6px 12px; font-size: 13px; font-weight: 700; border-radius: 6px; cursor: pointer; border:none; background: var(--task-blue); color: #fff; display: flex; align-items: center; gap: 5px;">
-                                <i class="fa-solid fa-expand"></i> Lihat Detail Laporan
-                            </button>
-                        </div>
-                    </div>
-                </section>
 
                 {{-- JADWAL & RUTE --}}
                 <section class="task-card section-card">
@@ -1765,28 +1662,6 @@
                                 @endif
                             </div>
                         </div>
-                    </div>
-                </section>
-
-                {{-- RIWAYAT AKTIVITAS --}}
-                <section class="task-card section-card">
-                    <div class="section-heading">
-                        <i class="fa-solid fa-clock"></i>
-                        <span>Riwayat Aktivitas</span>
-                    </div>
-
-                    <div class="activity-list">
-                        @forelse($activities as $activity)
-                            <div class="activity-item">
-                                <div>
-                                    <div class="activity-title">{{ $activity['title'] }}</div>
-                                    <div class="activity-meta">{{ $activity['meta'] }}</div>
-                                </div>
-                                <div class="activity-desc">{{ $activity['desc'] }}</div>
-                            </div>
-                        @empty
-                            <div class="empty-table">Belum ada riwayat aktivitas.</div>
-                        @endforelse
                     </div>
                 </section>
             </div>
@@ -1893,24 +1768,7 @@
                             </div>
                         </div>
 
-                        {{-- KEUANGAN + TABLE PENGELUARAN --}}
-                        <div class="report-row">
-                            <div class="report-main">
-                                <div class="report-icon finance"><i class="fa-solid fa-wallet"></i></div>
-                                <div>
-                                    <div class="report-title">Laporan Keuangan</div>
-                                    <div class="report-desc">Biaya & pengeluaran perjalanan</div>
-                                </div>
-                                <span class="mini-state {{ $financeDone ? 'success' : 'pending' }}">
-                                    {{ $financeDone ? 'Selesai' : 'Belum' }}
-                                </span>
-                                <button type="button" class="report-action" data-report="finance">
-                                    {{ $financeDone ? 'Lihat Laporan' : 'Isi Laporan' }}
-                                </button>
-                            </div>
 
-
-                        </div>
 
                         {{-- SAMPAI --}}
                         <div class="report-row">
@@ -1948,20 +1806,79 @@
                     </div>
                 </section>
 
-                {{-- BUKTI LAMPIRAN --}}
+                {{-- HISTORY TUGAS --}}
                 <section class="task-card section-card">
                     <div class="section-heading">
-                        <i class="fa-solid fa-paperclip"></i>
-                        <span>Bukti Lampiran</span>
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                        <span>History Tugas</span>
                     </div>
+
+                    <div style="padding-left: 10px; margin-top: 10px;">
+                        @if(isset($histories) && $histories->count() > 0)
+                            <div style="border-left: 2px solid var(--task-border); padding-left: 15px; position: relative;">
+                                @foreach($histories as $history)
+                                <div style="position: relative; margin-bottom: 15px;">
+                                    <div style="position: absolute; left: -22px; top: 4px; width: 12px; height: 12px; border-radius: 50%; background: var(--task-orange); border: 2px solid #fff;"></div>
+                                    <div style="color: #1e293b; font-size: 13px; font-weight: 800; text-transform: uppercase;">{{ $history->status }}</div>
+                                    <div style="color: var(--task-muted); font-size: 12px; font-weight: 550; margin-top: 2px;">
+                                        {{ $history->created_at->format('d M Y, H:i') }}
+                                        @if($history->recorder)
+                                            &bull; Oleh: {{ $history->recorder->name }}
+                                        @endif
+                                        @if($history->driver)
+                                            <br>Driver: {{ $history->driver->name }}
+                                        @endif
+                                        @if($history->coDriver)
+                                            &bull; Co-Driver: {{ $history->coDriver->name }}
+                                        @endif
+                                        @if($history->vehicle)
+                                            &bull; Kendaraan: {{ $history->vehicle->name }} ({{ $history->vehicle->license_plate }})
+                                        @endif
+                                    </div>
+                                    @if($history->notes)
+                                    <div style="color: #475569; font-size: 12px; font-weight: 600; margin-top: 4px; padding: 6px 10px; background: #f8fafc; border-radius: 6px; border: 1px solid var(--task-border-soft);">
+                                        {{ $history->notes }}
+                                    </div>
+                                    @endif
+                                </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div style="color: var(--task-muted); font-size: 12px; font-style: italic;">Belum ada history tugas.</div>
+                        @endif
+                    </div>
+                </section>
+
+                {{-- BUKTI LAMPIRAN --}}
+                <section class="task-card section-card">
+                    <div class="section-heading" style="justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:9px;">
+                            <i class="fa-solid fa-paperclip"></i>
+                            <span>Bukti Lampiran</span>
+                        </div>
+                        <button type="button" onclick="document.getElementById('uploadDocModal').style.display='flex'" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:7px;border:0;background:linear-gradient(135deg,#fb923c,var(--task-orange));color:#fff;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Dokumen
+                        </button>
+                    </div>
+
+                    @if(session('success'))
+                        <div style="padding:8px 12px;margin-bottom:10px;background:#ecfdf3;border:1px solid #86efac;border-radius:8px;color:#166534;font-size:13px;font-weight:600;">
+                            <i class="fa-solid fa-circle-check"></i> {{ session('success') }}
+                        </div>
+                    @endif
+                    @if(session('error'))
+                        <div style="padding:8px 12px;margin-bottom:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:13px;font-weight:600;">
+                            <i class="fa-solid fa-circle-xmark"></i> {{ session('error') }}
+                        </div>
+                    @endif
 
                     @if($attachments->count() > 0)
                         <div class="attachment-grid">
                             @foreach($attachments->take(8) as $att)
                                 @php
-                                    $url = asset('storage/' . $att->file_path);
+                                    $url = app(\App\Services\Storage\MinioService::class)->getFileUrl($att->file_path);
                                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
-                                    $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
+                                    $category = ucwords(str_replace('_',' ', $att->document_type ?? $att->category ?? 'Lampiran'));
                                 @endphp
                                 <div class="attachment-card">
                                     <a href="{{ $url }}" target="_blank" class="attachment-preview">
@@ -1984,6 +1901,49 @@
                         <div class="empty-table">Belum ada bukti lampiran pada tugas ini.</div>
                     @endif
                 </section>
+
+                {{-- UPLOAD DOKUMEN MODAL --}}
+                <div id="uploadDocModal" style="display:none;position:fixed;z-index:10000;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
+                    <div style="background:#fff;border-radius:14px;width:95%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.15);overflow:hidden;">
+                        <div style="padding:16px 20px;background:linear-gradient(135deg,#fb923c,var(--task-orange));color:#fff;display:flex;align-items:center;justify-content:space-between;">
+                            <div style="font-size:15px;font-weight:800;display:flex;align-items:center;gap:8px;">
+                                <i class="fa-solid fa-cloud-arrow-up"></i> Upload Dokumen Pendukung
+                            </div>
+                            <button type="button" onclick="document.getElementById('uploadDocModal').style.display='none'" style="background:none;border:0;color:#fff;font-size:18px;cursor:pointer;">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <form action="{{ route('pickup-tasks.upload-attachment', $task->id) }}" method="POST" enctype="multipart/form-data" style="padding:20px;">
+                            @csrf
+                            <input type="hidden" name="task_type" value="{{ $isPickup ? 'pickup' : 'delivery' }}">
+                            
+                            <div style="margin-bottom:14px;">
+                                <label style="display:block;font-size:12px;font-weight:750;color:#475569;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;">Tipe Dokumen</label>
+                                <select name="document_type" required style="width:100%;height:40px;border:1px solid var(--task-border);border-radius:8px;padding:0 12px;font-size:13px;font-weight:600;">
+                                    <option value="Surat Jalan">Surat Jalan</option>
+                                    <option value="DO (Delivery Order)">DO (Delivery Order)</option>
+                                    <option value="PO (Purchase Order)">PO (Purchase Order)</option>
+                                    <option value="Invoice">Invoice</option>
+                                    <option value="BAST">BAST (Berita Acara Serah Terima)</option>
+                                    <option value="Dokumen Pendukung">Dokumen Pendukung Lainnya</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom:16px;">
+                                <label style="display:block;font-size:12px;font-weight:750;color:#475569;margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px;">Pilih File</label>
+                                <input type="file" name="document_file" required accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" style="width:100%;font-size:13px;">
+                                <div style="font-size:11px;color:#94a3b8;margin-top:4px;">Maks 10MB • PDF, JPG, PNG, DOC, XLS</div>
+                            </div>
+
+                            <div style="display:flex;gap:8px;justify-content:flex-end;">
+                                <button type="button" onclick="document.getElementById('uploadDocModal').style.display='none'" style="padding:8px 16px;border-radius:8px;border:1px solid var(--task-border);background:#fff;font-size:13px;font-weight:700;cursor:pointer;">Batal</button>
+                                <button type="submit" style="padding:8px 20px;border-radius:8px;border:0;background:linear-gradient(135deg,#fb923c,var(--task-orange));color:#fff;font-size:13px;font-weight:800;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                                    <i class="fa-solid fa-upload"></i> Upload
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -2080,9 +2040,9 @@
         <div class="attachment-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
             @foreach($departureAttachments as $att)
                 @php
-                    $url = asset('storage/' . $att->file_path);
+                    $url = app(\App\Services\Storage\MinioService::class)->getFileUrl($att->file_path);
                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
-                    $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
+                    $category = ucwords(str_replace('_',' ', $att->document_type ?? $att->category ?? 'Lampiran'));
                 @endphp
                 <div class="attachment-card">
                     <a href="{{ $url }}" target="_blank" class="attachment-preview">
@@ -2097,65 +2057,7 @@
         </div>
     @endif
 </div>
-<div id="tpl-finance" style="display:none;">
-    <p><strong>Total Pengeluaran:</strong> Rp {{ isset($totalExpense) ? number_format($totalExpense, 0, ',', '.') : 0 }}</p>
-    <p><strong>Jumlah Transaksi:</strong> {{ isset($expenses) ? $expenses->count() : 0 }}</p>
-    
-    <div class="expense-wrap" style="margin-top: 15px;">
-        <div class="expense-title">Rincian Laporan Pengeluaran</div>
-        <div class="table-shell">
-            <div class="table-responsive-task">
-                <table class="task-table" style="min-width:535px;">
-                    <thead>
-                        <tr>
-                            <th style="width:84px;">Tanggal</th>
-                            <th style="width:92px;">Jenis Biaya</th>
-                            <th>Keterangan</th>
-                            <th class="text-center" style="width:58px;">Qty</th>
-                            <th class="text-end" style="width:100px;">Nominal</th>
-                            <th class="text-center" style="width:50px;">Bukti</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if(isset($expenses))
-                            @forelse($expenses as $expense)
-                                @php
-                                    $expenseDateRaw = $expenseValue($expense, ['expense_date','date','transaction_date','created_at']);
-                                    $expenseDate = $expenseDateRaw ? \Carbon\Carbon::parse($expenseDateRaw)->format('d/m/Y') : '-';
-                                    $expenseType = $expenseValue($expense, ['expense_type','type','category','name'], '-');
-                                    $expenseDesc = $expenseValue($expense, ['description','notes','note','remark'], '-');
-                                    $expenseQty = $expenseValue($expense, ['quantity','qty'], 1);
-                                    $expenseAmount = (float)$expenseValue($expense, ['amount','nominal','total','total_amount','value'], 0);
-                                    $proofPath = $expenseValue($expense, ['receipt_path','proof_path','attachment_path','file_path']);
-                                @endphp
-                                <tr>
-                                    <td>{{ $expenseDate }}</td>
-                                    <td class="strong">{{ $expenseType }}</td>
-                                    <td>{{ $expenseDesc }}</td>
-                                    <td class="text-center">{{ $expenseQty }}</td>
-                                    <td class="text-end money">Rp {{ number_format($expenseAmount,0,',','.') }}</td>
-                                    <td class="text-center">
-                                        @if($proofPath)
-                                            <a href="{{ asset('storage/'.$proofPath) }}" target="_blank" class="proof-link" title="Lihat bukti">
-                                                <i class="fa-regular fa-file-lines"></i>
-                                            </a>
-                                        @else
-                                            <span style="color:#cbd5e1;">-</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="6" class="empty-table">Belum ada laporan pengeluaran.</td>
-                                </tr>
-                            @endforelse
-                        @endif
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
+
 <div id="tpl-arrival" style="display:none;">
     <p><strong>Waktu Sampai:</strong> {{ $task->arrived_at ? \Carbon\Carbon::parse($task->arrived_at)->format('d M Y, H:i') : 'Belum tercatat' }}</p>
     <p><strong>Catatan:</strong> {{ $task->arrival_notes ?? 'Tidak ada catatan.' }}</p>
@@ -2164,9 +2066,9 @@
         <div class="attachment-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
             @foreach($arrivalAttachments as $att)
                 @php
-                    $url = asset('storage/' . $att->file_path);
+                    $url = app(\App\Services\Storage\MinioService::class)->getFileUrl($att->file_path);
                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
-                    $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
+                    $category = ucwords(str_replace('_',' ', $att->document_type ?? $att->category ?? 'Lampiran'));
                 @endphp
                 <div class="attachment-card">
                     <a href="{{ $url }}" target="_blank" class="attachment-preview">
@@ -2189,9 +2091,9 @@
         <div class="attachment-grid" style="grid-template-columns: repeat(3, minmax(0, 1fr));">
             @foreach($handoverAttachments as $att)
                 @php
-                    $url = asset('storage/' . $att->file_path);
+                    $url = app(\App\Services\Storage\MinioService::class)->getFileUrl($att->file_path);
                     $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
-                    $category = ucwords(str_replace('_',' ', $att->category ?? 'Lampiran'));
+                    $category = ucwords(str_replace('_',' ', $att->document_type ?? $att->category ?? 'Lampiran'));
                 @endphp
                 <div class="attachment-card">
                     <a href="{{ $url }}" target="_blank" class="attachment-preview">
@@ -2216,15 +2118,10 @@ function openReportModal(reportType) {
     
     let label = 'Laporan';
     if(reportType === 'departure') label = 'Laporan Keberangkatan';
-    if(reportType === 'finance') label = 'Laporan Keuangan';
     if(reportType === 'arrival') label = 'Laporan Kedatangan';
     if(reportType === 'handover') label = 'Laporan Serah Terima';
     
-    if (reportType === 'finance') {
-        content.classList.add('modal-lg');
-    } else {
-        content.classList.remove('modal-lg');
-    }
+    content.classList.remove('modal-lg');
     
     title.innerText = label;
     
@@ -2268,5 +2165,19 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+
+function openEditTaskModal() {
+    if (typeof window.openTaskModal === 'function') {
+        const taskData = @json($task);
+        taskData.update_url = "{{ route('pickup-tasks.update', $task->id) }}";
+        const itemsList = @json($itemsList);
+        window.openTaskModal('edit', taskData, itemsList);
+    } else {
+        console.error("openTaskModal function not found.");
+    }
+}
 </script>
+
+@include('pickup-tasks.list-tugas.partials.create-modal')
+
 </x-app-layout>

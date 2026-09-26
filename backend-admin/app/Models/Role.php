@@ -12,4 +12,11 @@ class Role extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function modules()
+    {
+        return $this->belongsToMany(Module::class)
+                    ->withPivot('granted_permissions')
+                    ->withTimestamps();
+    }
 }

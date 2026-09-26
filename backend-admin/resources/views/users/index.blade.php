@@ -65,9 +65,11 @@
                     </div>
                 </form>
 
+                @if(auth()->user()->hasPermission('Create Pengguna'))
                 <button type="button" class="btn btn-primary shadow-sm text-nowrap" style="border-radius: 10px;" onclick="openUserModal(false)">
                     <i class="fa-solid fa-plus me-2"></i> Tambah Pengguna
                 </button>
+                @endif
             </div>
         </div>
         <div class="card-body p-4">
@@ -161,9 +163,12 @@
                                 </td>
                                 <td class="text-end">
                                     <div class="d-flex gap-2 justify-content-end">
+                                        @if(auth()->user()->hasPermission('Edit Pengguna'))
                                         <button type="button" onclick="openUserModal(true, {{ json_encode(['id' => $user->id, 'full_name' => $user->full_name, 'username' => $user->username, 'email' => $user->email, 'division_id' => $user->division_id, 'role_id' => $user->role_id, 'active' => $user->active]) }})" class="btn btn-sm btn-light border rounded-circle d-flex align-items-center justify-content-center" style="width: 35px; height: 35px; transition: all 0.2s;" title="Edit Pengguna" onmouseover="this.classList.replace('btn-light', 'btn-primary'); this.classList.remove('border')" onmouseout="this.classList.replace('btn-primary', 'btn-light'); this.classList.add('border')">
                                             <i class="fa-solid fa-pen-to-square"></i>
                                         </button>
+                                        @endif
+                                        @if(auth()->user()->hasPermission('Delete Pengguna'))
                                         <form action="{{ route('users.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus pengguna ini?');">
                                             @csrf
                                             @method('DELETE')
@@ -171,6 +176,7 @@
                                                 <i class="fa-solid fa-trash-can"></i>
                                             </button>
                                         </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -194,6 +200,7 @@
         
         <hr class="border-secondary border-opacity-25 my-5">
 
+        @if(auth()->check() && auth()->user()->roleRelation && auth()->user()->roleRelation->name === 'Super Admin')
         <!-- Table Hak Akses -->
         <div class="d-flex justify-content-between align-items-center mb-4">
             <div>
@@ -201,80 +208,83 @@
                 <p class="text-muted small mb-0">Atur izin akses modul dan fitur berdasarkan Role di bawah ini.</p>
             </div>
             <div>
-                <button type="button" class="btn btn-sm btn-outline-primary" style="border-radius: 8px;">
+                <button type="submit" form="privilegesForm" class="btn btn-sm btn-outline-primary" style="border-radius: 8px;">
                     <i class="fa-solid fa-floppy-disk me-1"></i> Simpan Perubahan
                 </button>
             </div>
         </div>
 
-        <div class="table-responsive px-1 pb-3">
-            <table class="table custom-table align-middle mb-0">
-                <thead class="text-uppercase">
-                    <tr>
-                        <th class="px-4" style="color: var(--sidebar-link); width: 250px;">Modul / Fitur</th>
-                        @foreach($roles as $role)
-                            <th class="px-4 text-center" style="color: var(--sidebar-link);">{{ $role->name }}</th>
-                        @endforeach
-                    </tr>
-                </thead>
-                <tbody>
+        <form id="privilegesForm" action="{{ route('roles.privileges.update') }}" method="POST">
+            @csrf
+            <div class="table-responsive px-1 pb-3">
+                <table class="table custom-table align-middle mb-0">
+                    <thead class="text-uppercase">
+                        <tr>
+                            <th class="px-4" style="color: var(--sidebar-link); width: 250px;">Modul / Fitur</th>
+                            @foreach($roles as $role)
+                                <th class="px-4 text-center" style="color: var(--sidebar-link);">{{ $role->name }}</th>
+                            @endforeach
+                        </tr>
+                    </thead>
+                    @forelse($modules as $module)
                     @php
-                        $dummyModules = [
-                            ['name' => 'Dashboard & Analytics', 'icon' => 'fa-chart-pie', 'color' => 'text-primary'],
-                            ['name' => 'Manajemen Pengguna', 'icon' => 'fa-users', 'color' => 'text-success'],
-                            ['name' => 'Accounting & Keuangan', 'icon' => 'fa-wallet', 'color' => 'text-warning'],
-                            ['name' => 'Inventory & Gudang', 'icon' => 'fa-boxes-stacked', 'color' => 'text-info'],
-                            ['name' => 'Purchasing (Pembelian)', 'icon' => 'fa-cart-shopping', 'color' => 'text-danger'],
-                        ];
+                        $permissions = $module->available_permissions ?? [];
                     @endphp
-                    @foreach($dummyModules as $module)
-                    <tr>
-                        <td>
-                            <div class="d-flex align-items-center fw-medium">
-                                <div class="bg-light rounded d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">
-                                    <i class="fa-solid {{ $module['icon'] }} {{ $module['color'] }}"></i>
+                    <tbody>
+                        <tr style="cursor: pointer; background-color: rgba(0,0,0,0.02);" data-bs-toggle="collapse" data-bs-target="#module-collapse-{{ $module->id }}" aria-expanded="true">
+                            <td class="fw-bold">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center me-3" style="width: 36px; height: 36px;">
+                                        <i class="fa-solid {{ $module->icon }} {{ $module->color }}"></i>
+                                    </div>
+                                    {{ $module->name }}
                                 </div>
-                                {{ $module['name'] }}
-                            </div>
-                        </td>
-                        @foreach($roles as $role)
-                        <td class="text-center">
-                            @php
-                                // Logic sederhana untuk dummy data (Super Admin selalu on, sisanya random/tergantung)
-                                $isChecked = ($role->name == 'Super Admin' || rand(0,1) == 1) ? 'checked' : '';
-                                $switchId = 'switch_' . Str::slug($module['name']) . '_' . $role->id;
-                            @endphp
-                            <div class="form-check form-switch d-flex justify-content-center mb-0">
-                                <input class="form-check-input shadow-sm" type="checkbox" role="switch" id="{{ $switchId }}" style="width: 2.5em; height: 1.25em; cursor: pointer;" {{ $isChecked }}>
-                            </div>
-                        </td>
+                            </td>
+                            <td colspan="{{ count($roles) }}" class="text-end text-muted pe-4">
+                                <i class="fa-solid fa-chevron-down" style="font-size: 0.8rem;"></i>
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tbody id="module-collapse-{{ $module->id }}" class="collapse show">
+                        @foreach($permissions as $permissionName)
+                        <tr>
+                            <td class="ps-5 py-2 text-muted" style="font-size: 0.9rem;">
+                                <i class="fa-solid fa-arrow-turn-up fa-rotate-90 me-2 opacity-50"></i> {{ $permissionName }}
+                            </td>
+                            @foreach($roles as $role)
+                            <td class="text-center py-2">
+                                @php
+                                    $granted = [];
+                                    $roleModule = $role->modules->where('id', $module->id)->first();
+                                    if ($roleModule && $roleModule->pivot && $roleModule->pivot->granted_permissions) {
+                                        $granted = json_decode($roleModule->pivot->granted_permissions, true) ?? [];
+                                    }
+                                    
+                                    $isChecked = in_array($permissionName, $granted);
+                                    
+                                    // Super Admin always full access in UI
+                                    $isSuper = ($role->name === 'Super Admin');
+                                    if ($isSuper) $isChecked = true;
+                                @endphp
+                                <div class="form-check d-flex justify-content-center mb-0">
+                                    <input class="form-check-input shadow-sm" type="checkbox" name="privileges[{{ $role->id }}][{{ $module->id }}][{{ $permissionName }}]" value="1" {{ $isChecked ? 'checked' : '' }} {{ $isSuper ? 'disabled' : '' }} style="cursor: {{ $isSuper ? 'not-allowed' : 'pointer' }}; width: 1.2rem; height: 1.2rem;">
+                                </div>
+                            </td>
+                            @endforeach
+                        </tr>
                         @endforeach
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-
-        <!-- Pagination Hak Akses (Dummy) -->
-        <div class="d-flex justify-content-between align-items-center mt-4">
-            <div class="text-muted small">
-                Menampilkan 1 hingga 5 dari 12 modul
+                    </tbody>
+                    @empty
+                    <tbody>
+                        <tr>
+                            <td colspan="{{ count($roles) + 1 }}" class="text-center py-4">Belum ada data modul.</td>
+                        </tr>
+                    </tbody>
+                    @endforelse
+                </table>
             </div>
-            <ul class="pagination pagination-sm mb-0">
-                <li class="page-item disabled">
-                    <a class="page-link shadow-sm border-0" href="#" tabindex="-1" aria-disabled="true">Previous</a>
-                </li>
-                <li class="page-item active" aria-current="page">
-                    <a class="page-link shadow-sm border-0" href="#">1</a>
-                </li>
-                <li class="page-item"><a class="page-link shadow-sm border-0 text-secondary" href="#">2</a></li>
-                <li class="page-item"><a class="page-link shadow-sm border-0 text-secondary" href="#">3</a></li>
-                <li class="page-item">
-                    <a class="page-link shadow-sm border-0 text-secondary" href="#">Next</a>
-                </li>
-            </ul>
-        </div>
-    </div>
+        </form>
+        @endif
 
     @include('users.partials._user_modal')
     @include('users.partials._divisions_modal')

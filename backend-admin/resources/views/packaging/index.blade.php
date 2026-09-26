@@ -525,11 +525,13 @@
                         <span class="fw-bold">DATA VALIDASI</span>
                     </button>
 
+                @if(auth()->user()->hasPermission('Create Packing'))
                 <a href="{{ route('packaging.calculations.create', ['auto_open' => 'true']) }}"
                    class="btn pkg-btn-main d-inline-flex align-items-center justify-content-center gap-2 shadow" style="border-radius: 12px; padding: 10px 24px; font-size: 0.85rem;">
                     <i class="fa-solid fa-circle-plus fs-6"></i>
                     CRATE CALCULATION
                 </a>
+                @endif
             </div>
         </div>
 
@@ -829,6 +831,7 @@
                                                     <i class="fa-solid fa-print text-muted"></i> Print
                                                 </a>
                                             </li>
+                                            @if(auth()->user()->hasPermission('Edit Packing'))
                                             <li>
                                                 <a class="dropdown-item d-flex align-items-center gap-2" href="{{ route('packaging.calculations.show', $job->id) }}">
                                                     <i class="fa-solid fa-pen-to-square text-primary"></i> Edit
@@ -869,6 +872,8 @@
                                                     </form>
                                                 </li>
                                             @endif
+                                            @endif
+                                            @if(auth()->user()->hasPermission('Delete Packing'))
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
                                                 <form action="{{ route('packaging.destroy', $job->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data ini?');">
@@ -879,6 +884,7 @@
                                                     </button>
                                                 </form>
                                             </li>
+                                            @endif
                                         </ul>
                                     </div>
                                 </td>
@@ -892,9 +898,11 @@
                                         </span>
                                         <h6 class="fw-bold text-body">Data Belum Tersedia</h6>
                                         <p class="small mb-3">Belum ada data permintaan packaging yang ditambahkan.</p>
+                                        @if(auth()->user()->hasPermission('Create Packing'))
                                         <a href="{{ route('packaging.calculations.create') }}" class="btn pkg-btn-main d-inline-flex align-items-center gap-2">
                                             <i class="fa-solid fa-circle-plus"></i> Tambah Calculation
                                         </a>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

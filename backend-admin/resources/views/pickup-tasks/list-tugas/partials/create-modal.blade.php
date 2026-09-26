@@ -483,6 +483,7 @@
             <input type="hidden" name="task_type" id="taskTypeInput" value="pickup">
             <input type="hidden" name="pickup_reference" id="pickupReferenceHidden">
             <input type="hidden" name="delivery_so_number" id="deliverySoHidden">
+            <input type="hidden" name="manifest_id" id="manifestIdHidden">
 
             <div class="modal-content">
                 <div class="modal-header">
@@ -557,52 +558,9 @@
                                     Otomatis berubah ke Nomor SO saat memilih Delivery.
                                 </div>
                             </div>
+                            
+                            
 
-                            <div class="col-md-4">
-                                <label class="form-label">
-                                    Pilih Driver <span class="required-star">*</span>
-                                </label>
-                                <select name="driver_id" class="form-select" required>
-                                    <option value="">Pilih driver...</option>
-                                    @foreach($drivers as $driver)
-                                        <option value="{{ $driver->id }}">{{ $driver->full_name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">
-                                    Pilih Kendaraan <span class="required-star">*</span>
-                                </label>
-                                <select name="vehicle_id" class="form-select" required>
-                                    <option value="">Pilih kendaraan...</option>
-                                    @foreach($vehicles as $vehicle)
-                                        <option value="{{ $vehicle->id }}">{{ $vehicle->plate_number }} - {{ $vehicle->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">
-                                    Tanggal Penjemputan / Pengiriman <span class="required-star">*</span>
-                                </label>
-                                <input type="datetime-local" name="dispatch_date" class="form-control" value="{{ date('Y-m-d\TH:i') }}" required>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">Estimasi Waktu Tiba</label>
-                                <input type="datetime-local" name="estimated_arrival" class="form-control">
-                            </div>
-
-                            <div class="col-md-6">
-                                <label class="form-label">Prioritas (Opsional)</label>
-                                <select name="priority" class="form-select">
-                                    <option value="normal">Normal</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
-                                </select>
-                            </div>
                         </div>
                     </section>
 
@@ -986,7 +944,7 @@
         </form>
     </div>
 </div>
-
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('createTaskForm');
@@ -1098,7 +1056,9 @@ document.addEventListener('DOMContentLoaded', function () {
         // Gunakan API Proxy lokal (detail-so / detail-po) 
         // Menggunakan path absolute agar browser otomatis memakai HTTPS
         const baseUrl = "/api/integration";
-        const apiUrl = isDelivery 
+        let apiUrl;
+        const upperRef = refNumber.toUpperCase();
+        apiUrl = isDelivery 
             ? `${baseUrl}/detail-so/${encodeURIComponent(refNumber)}`
             : `${baseUrl}/detail-po/${encodeURIComponent(refNumber)}`;
 
@@ -1115,7 +1075,13 @@ document.addEventListener('DOMContentLoaded', function () {
                     'Accept': 'application/json'
                 }
             });
-            if (!response.ok) throw new Error('Data tidak ditemukan');
+            if (!response.ok) {
+                const errBody = await response.json().catch(() => ({}));
+                const errMsg = errBody.error || 'Data tidak ditemukan';
+                const err = new Error(errMsg);
+                err.status = response.status;
+                throw err;
+            }
             const resData = await response.json();
             
             // Handle format respons yang bisa berupa array {data: [...]} atau object detail {items: [...]}
@@ -1138,10 +1104,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             // Populate Fields
             if (isDelivery) {
-                form.querySelector('input[name="customer_name"]').value = mainInfo.pelanggan || mainInfo.nama_pelanggan || '';
+                form.querySelector('input[name="customer_name"]').value = mainInfo.pelanggan || mainInfo.nama_pelanggan || mainInfo.pemasok || mainInfo.nama_pemasok || '';
                 form.querySelector('textarea[name="delivery_address"]').value = mainInfo.shipto || '';
             } else {
-                form.querySelector('input[name="pickup_name"]').value = mainInfo.pemasok || mainInfo.nama_pemasok || '';
+                form.querySelector('input[name="pickup_name"]').value = mainInfo.pemasok || mainInfo.nama_pemasok || mainInfo.pelanggan || mainInfo.nama_pelanggan || '';
             }
 
             // Populate Items
@@ -1152,9 +1118,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     ref_no: itemRef,
                     item_number: apiItem.no_barang || '',
                     item_description: apiItem.deskripsi_barang || apiItem.nama_barang || '',
-                    quantity: apiItem.qty || 1,
-                    unit: apiItem.unit || apiItem.satuan || apiItem.uom || '',
-                    unit_price: apiItem.unit_price || apiItem.harga_satuan || apiItem.harga || apiItem.price || 0
+                    quantity: Number(apiItem.qty || apiItem.quantity || 1),
+                    unit: apiItem.uom || apiItem.satuan || apiItem.unit || '',
+                    unit_price: Number(apiItem.price || apiItem.harga_satuan || apiItem.harga || apiItem.unit_price || (apiItem.amount && apiItem.qty ? (apiItem.amount / apiItem.qty) : 0))
                 });
             });
             renderItems();
@@ -1169,15 +1135,21 @@ document.addEventListener('DOMContentLoaded', function () {
                 });
             }
         } catch (error) {
+            const isUpstreamError = error.status && error.status >= 500;
+            const alertTitle = isUpstreamError ? 'Gagal Menghubungi API' : 'Tidak Ditemukan';
+            const alertText = isUpstreamError
+                ? 'Terjadi kesalahan saat menghubungi API Akurasi. Coba lagi nanti atau isi form secara manual.'
+                : (error.message || 'Data tidak ditemukan di API. Silakan isi form secara manual.');
+
             if (window.Swal) {
                 Swal.fire({
-                    icon: 'info',
-                    title: 'Tidak Ditemukan',
-                    text: 'Data tidak ditemukan di API. Silakan isi form secara manual.',
+                    icon: isUpstreamError ? 'error' : 'info',
+                    title: alertTitle,
+                    text: alertText,
                     confirmButtonColor: '#f97316'
                 });
             } else {
-                alert('Data tidak ditemukan di API. Silakan isi form secara manual.');
+                alert(alertText);
             }
         } finally {
             this.innerHTML = originalIcon;
@@ -1397,8 +1369,14 @@ document.addEventListener('DOMContentLoaded', function () {
         this.classList.remove('is-invalid');
     });
 
-    window.openTaskModal = function(mode, task = null, taskItems = []) {
+    window.openTaskModal = function(mode, task = null, taskItems = [], manifestId = null) {
         document.querySelectorAll('#createTaskModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        if (manifestId) {
+            document.getElementById('manifestIdHidden').value = manifestId;
+        } else {
+            document.getElementById('manifestIdHidden').value = '';
+        }
         resetItemEditor();
 
         const title = document.querySelector('#createTaskModal .modal-title');
@@ -1420,7 +1398,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            form.querySelector('input[name="dispatch_date"]').value = now.toISOString().slice(0, 16);
+            if (form.querySelector('input[name="dispatch_date"]')) {
+                form.querySelector('input[name="dispatch_date"]').value = now.toISOString().slice(0, 16);
+            }
+
 
             referenceInput.value = '';
             pickupReferenceHidden.value = '';
@@ -1441,16 +1422,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 form.insertAdjacentHTML('beforeend', '<input type="hidden" name="_method" value="PUT">');
             }
 
-            form.querySelector('select[name="driver_id"]').value = task.driver_id || '';
-            form.querySelector('select[name="vehicle_id"]').value = task.vehicle_id || '';
-            form.querySelector('select[name="priority"]').value = task.priority || 'normal';
+            if (form.querySelector('select[name="driver_id"]')) form.querySelector('select[name="driver_id"]').value = task.driver_id || '';
+            if (form.querySelector('select[name="co_driver_id"]')) form.querySelector('select[name="co_driver_id"]').value = task.co_driver_id || '';
+            if (form.querySelector('select[name="vehicle_id"]')) form.querySelector('select[name="vehicle_id"]').value = task.vehicle_id || '';
+            if (form.querySelector('select[name="priority"]')) form.querySelector('select[name="priority"]').value = task.priority || '';
 
-            if (task.dispatch_date) {
+            if (task.dispatch_date && form.querySelector('input[name="dispatch_date"]')) {
                 form.querySelector('input[name="dispatch_date"]').value = task.dispatch_date.substring(0, 16);
             }
-            if (task.estimated_arrival) {
+            if (task.estimated_arrival && form.querySelector('input[name="estimated_arrival"]')) {
                 form.querySelector('input[name="estimated_arrival"]').value = task.estimated_arrival.substring(0, 16);
             }
+
 
             const type = task.task_type || 'pickup';
             switchTaskType(type);
@@ -1497,7 +1480,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 form.querySelector('input[name="delivery_target_point"]').value = task.delivery_target_point || '';
             }
 
-            items = Array.isArray(taskItems) ? [...taskItems] : [];
+            items = Array.isArray(taskItems) ? taskItems.map(item => ({
+                item_number: item.no_barang || item.item_number || '',
+                item_description: item.deskripsi_barang || item.item_description || '',
+                quantity: item.qty || item.quantity || 1,
+                unit: item.uom || item.unit || 'UN',
+                unit_price: item.harga_satuan || item.unit_price || 0,
+                ref_no: item.ref_no || ''
+            })) : [];
             renderItems();
         }
 
@@ -1532,4 +1522,7 @@ document.addEventListener('DOMContentLoaded', function () {
     switchTaskType('pickup');
     renderItems();
 });
+    // Add this to your JS
+
 </script>
+@endpush
