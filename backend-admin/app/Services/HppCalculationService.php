@@ -8,6 +8,48 @@ class HppCalculationService
 {
 
     /**
+     * Mengambil data HPP yang sudah tersimpan di database, 
+     * atau menghitung ulang jika belum pernah dihitung.
+     */
+    public function getSavedOrCalculateProrata(Shift $shift)
+    {
+        $hppRitase = \App\Models\HppRitase::with('items')->where('shift_id', $shift->id)->first();
+        
+        if ($hppRitase) {
+            $allocations = [];
+            foreach ($hppRitase->items as $item) {
+                $allocations[] = [
+                    'task_id' => $item->task_id,
+                    'reference_number' => $item->reference_number,
+                    'item_description' => $item->item_description,
+                    'quantity' => $item->quantity,
+                    'unit' => $item->unit,
+                    'line_total' => $item->line_total,
+                    'hpp_per_baris' => $item->hpp_per_baris,
+                    'hpp_per_qty' => $item->hpp_per_qty,
+                    'percentage' => $item->percentage,
+                ];
+            }
+            
+            return [
+                'costs' => [
+                    'fuel' => $hppRitase->fuel_cost,
+                    'manpower' => $hppRitase->manpower_cost,
+                    'toll' => $hppRitase->toll_cost,
+                    'parking' => $hppRitase->parking_cost,
+                    'other' => $hppRitase->other_cost,
+                    'total' => $hppRitase->total_cost
+                ],
+                'base_value' => $hppRitase->base_value,
+                'is_prorata' => (bool)$hppRitase->is_prorata,
+                'allocations' => $allocations
+            ];
+        }
+
+        return $this->calculateProrata($shift);
+    }
+
+    /**
      * Menghitung HPP (Harga Pokok Penjualan) Prorata per Barang dalam 1 Ritase (Shift)
      */
     public function calculateProrata(Shift $shift)

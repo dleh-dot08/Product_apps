@@ -9,3 +9,4 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 Schedule::command('akurasi:sync')->hourly();
+Schedule::command('tasks:auto-pending')->hourly();

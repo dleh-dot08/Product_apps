@@ -64,6 +64,13 @@ Route::middleware('auth')->group(function () {
 
     // Route Tugas Driver
     Route::get('pickup-tasks', [\App\Http\Controllers\PickupTaskController::class, 'index'])->name('pickup-tasks.index')->middleware('permission:View Tugas');
+    Route::get('pickup-tasks/list-penugasan', [\App\Http\Controllers\PickupTaskController::class, 'listPenugasan'])->name('pickup-tasks.list-penugasan')->middleware('permission:View Tugas');
+    Route::get('pickup-tasks/monitoring', [\App\Http\Controllers\PickupTaskController::class, 'monitoring'])->name('pickup-tasks.monitoring')->middleware('permission:View Tugas');
+    Route::post('pickup-tasks/penugasan', [\App\Http\Controllers\PickupTaskController::class, 'storePenugasan'])->name('pickup-tasks.penugasan.store')->middleware('permission:Create Penugasan');
+    Route::put('pickup-tasks/penugasan/{manifest}', [\App\Http\Controllers\PickupTaskController::class, 'updatePenugasan'])->name('pickup-tasks.penugasan.update')->middleware('permission:Edit Tugas');
+    Route::get('api/unassigned-tasks', [\App\Http\Controllers\PickupTaskController::class, 'getUnassignedTasks'])->name('api.unassigned-tasks');
+    Route::get('api/manifest-tasks/{manifest}', [\App\Http\Controllers\PickupTaskController::class, 'getManifestTasks'])->name('api.manifest-tasks');
+    Route::get('pickup-tasks/history-do', [\App\Http\Controllers\PickupTaskController::class, 'historyDo'])->name('pickup-tasks.history-do')->middleware('permission:View Tugas');
     Route::post('pickup-tasks', [\App\Http\Controllers\PickupTaskController::class, 'store'])->name('pickup-tasks.store')->middleware('permission:Create Tugas');
     Route::get('pickup-tasks/{pickup_task}', [\App\Http\Controllers\PickupTaskController::class, 'show'])->name('pickup-tasks.show')->middleware('permission:View Tugas');
     Route::put('pickup-tasks/{pickup_task}', [\App\Http\Controllers\PickupTaskController::class, 'update'])->name('pickup-tasks.update')->middleware('permission:Edit Tugas');
