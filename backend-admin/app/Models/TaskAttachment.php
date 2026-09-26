@@ -11,6 +11,26 @@ class TaskAttachment extends Model
 
     protected $guarded = [];
 
+    protected static function booted()
+    {
+        static::created(function ($attachment) {
+            $task = $attachment->task;
+            if ($task) {
+                $taskType = $task instanceof \App\Models\PickupTask ? 'pickup' : 'delivery';
+                \App\Models\TaskHistory::create([
+                    'task_id' => $task->id,
+                    'task_type' => $taskType,
+                    'driver_id' => $task->driver_id ?? null,
+                    'co_driver_id' => $task->co_driver_id ?? null,
+                    'vehicle_id' => $task->vehicle_id ?? null,
+                    'status' => $task->status ?? 'unknown',
+                    'notes' => 'Dokumen lampiran diunggah (' . ($attachment->category ?? 'Lainnya') . ')',
+                    'recorded_by' => auth()->id() ?? null,
+                ]);
+            }
+        });
+    }
+
     public function task()
     {
         return $this->morphTo();

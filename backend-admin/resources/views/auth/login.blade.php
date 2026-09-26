@@ -121,7 +121,7 @@
                             <span class="absolute left-4 text-slate-400 text-sm">
                                 <i class="fa-regular fa-envelope"></i>
                             </span>
-                            <input type="email" name="email" value="{{ old('email', 'admin@mail.com') }}" placeholder="admin@mail.com" required autofocus
+                            <input type="email" name="email" value="{{ old('email') }}" placeholder="Alamat Email" required autofocus
                                 class="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-slate-500 focus:bg-white/10 focus:border-blue-500 focus:outline-none transition-all">
                         </div>
                     </div>
