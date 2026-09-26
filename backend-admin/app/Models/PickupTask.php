@@ -104,4 +104,9 @@ class PickupTask extends Model
     {
         return $this->morphMany(TaskItem::class, 'itemable');
     }
+
+    public function history()
+    {
+        return $this->hasMany(TaskHistory::class, 'task_id');
+    }
 }

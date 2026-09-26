@@ -53,7 +53,6 @@
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Kendaraan</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Status</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Jumlah Tugas</th>
-                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-end px-4">Action</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -105,14 +104,9 @@
                             <td class="text-center">
                                 <span class="badge bg-secondary badge-sm">{{ $assignment->task_count }} Tugas</span>
                             </td>
-                            <td class="text-end px-4">
-                                <button onclick="event.stopPropagation();" class="btn btn-sm btn-outline-info py-1 px-2" style="font-size: 12px;" title="Cetak DO">
-                                    <i class="fa-solid fa-print me-1"></i> Cetak DO
-                                </button>
-                            </td>
                         </tr>
                         <tr id="collapse-{{ $assignment->id }}" class="collapse bg-light">
-                            <td colspan="9" class="p-0 border-0">
+                            <td colspan="8" class="p-0 border-0">
                                 <div class="p-3 border-bottom shadow-inner" style="background-color: #f8f9fa;">
                                     <h6 class="mb-3 fw-bold" style="font-size: 14px; color: #ea580c;"><i class="fa-solid fa-list-check me-2"></i>Daftar Tugas ({{ $assignment->no_do }})</h6>
                                     <div class="table-responsive bg-white border rounded">
@@ -123,7 +117,6 @@
                                                     <th class="text-secondary text-xs">No Ref / SO</th>
                                                     <th class="text-secondary text-xs">Tujuan / Lokasi</th>
                                                     <th class="text-secondary text-xs">Status</th>
-                                                    <th class="text-end pe-3 text-secondary text-xs">Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -135,8 +128,9 @@
                                                     }
                                                 @endphp
                                                 @forelse($tasks as $task)
-                                                    <tr>
+                                                    <tr data-bs-toggle="collapse" data-bs-target="#task-history-{{ $task->id }}" style="cursor: pointer;" title="Klik untuk melihat riwayat tugas">
                                                         <td class="ps-3">
+                                                            <i class="fa-solid fa-chevron-down me-2 text-muted" style="font-size: 10px;"></i>
                                                             @if($task->type === 'pickup')
                                                                 <span class="badge bg-light text-dark border"><i class="fa-solid fa-box-open text-orange"></i> PICKUP</span>
                                                             @else
@@ -154,15 +148,40 @@
                                                         <td>
                                                             <span class="badge bg-secondary" style="font-size: 10px;">{{ strtoupper(str_replace('_', ' ', $task->status)) }}</span>
                                                         </td>
-                                                        <td class="text-end pe-3">
-                                                            <a href="{{ route('pickup-tasks.show', $task->id) }}" class="btn btn-sm btn-outline-info py-1 px-2" style="font-size: 12px;" title="Lihat Detail Tugas">
-                                                                <i class="fa-solid fa-eye me-1"></i> Detail
-                                                            </a>
+                                                    </tr>
+                                                    <tr id="task-history-{{ $task->id }}" class="collapse bg-white">
+                                                        <td colspan="4" class="p-0 border-0">
+                                                            <div class="p-3 ms-4 my-2 border-start border-3 border-orange" style="background-color: #fff9f5;">
+                                                                <h6 class="mb-2 fw-bold" style="font-size: 12px; color: #ea580c;"><i class="fa-solid fa-clock-rotate-left me-1"></i> Riwayat Status</h6>
+                                                                @if($task->history && $task->history->count() > 0)
+                                                                    <div class="position-relative ms-2">
+                                                                        @foreach($task->history as $hist)
+                                                                            <div class="d-flex mb-2 position-relative">
+                                                                                <div class="me-3 d-flex flex-column align-items-center">
+                                                                                    <div class="rounded-circle bg-orange d-flex align-items-center justify-content-center" style="width: 12px; height: 12px; z-index: 1;"></div>
+                                                                                    @if(!$loop->last)
+                                                                                        <div class="border-start position-absolute" style="height: 100%; top: 12px; left: 5px; z-index: 0; border-color: #fdba74 !important;"></div>
+                                                                                    @endif
+                                                                                </div>
+                                                                                <div class="pb-2">
+                                                                                    <div class="fw-bold" style="font-size: 11px; color: #1e293b;">{{ strtoupper(str_replace('_', ' ', $hist->status)) }}</div>
+                                                                                    <div class="text-muted" style="font-size: 10px;">{{ $hist->created_at->format('d M Y, H:i') }}</div>
+                                                                                    @if($hist->notes)
+                                                                                        <div class="mt-1 text-secondary" style="font-size: 10px; font-style: italic;">{{ $hist->notes }}</div>
+                                                                                    @endif
+                                                                                </div>
+                                                                            </div>
+                                                                        @endforeach
+                                                                    </div>
+                                                                @else
+                                                                    <div class="text-muted" style="font-size: 11px; font-style: italic;">Belum ada riwayat tercatat.</div>
+                                                                @endif
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 @empty
                                                     <tr>
-                                                        <td colspan="5" class="text-center py-3 text-muted" style="font-size: 13px;">Tidak ada detail tugas</td>
+                                                        <td colspan="4" class="text-center py-3 text-muted" style="font-size: 13px;">Tidak ada detail tugas</td>
                                                     </tr>
                                                 @endforelse
                                             </tbody>
@@ -173,7 +192,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="text-center empty-state">
+                            <td colspan="8" class="text-center empty-state">
                                 <div class="empty-icon"><i class="fa-solid fa-clock-rotate-left"></i></div>
                                 <h5 class="fw-bold mb-1" style="color:var(--app-text);">Belum Ada Riwayat</h5>
                                 <p class="secondary-line mb-0">Riwayat pengiriman yang selesai akan muncul di sini.</p>

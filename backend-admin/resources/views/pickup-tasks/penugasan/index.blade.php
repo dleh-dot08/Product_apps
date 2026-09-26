@@ -121,7 +121,7 @@
                                                     <th class="text-secondary text-xs">No Ref / SO</th>
                                                     <th class="text-secondary text-xs">Tujuan / Lokasi</th>
                                                     <th class="text-secondary text-xs">Status</th>
-                                                    <th class="text-end pe-3 text-secondary text-xs">Action</th>
+                                                    <th class="text-end pe-3 text-secondary text-xs">History</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -133,7 +133,7 @@
                                                     }
                                                 @endphp
                                                 @forelse($tasks as $task)
-                                                    <tr>
+                                                    <tr data-bs-toggle="collapse" data-bs-target="#history-{{ $task->id }}" style="cursor: pointer;" title="Klik untuk melihat history">
                                                         <td class="ps-3">
                                                             @if($task->type === 'pickup')
                                                                 <span class="badge bg-light text-dark border"><i class="fa-solid fa-box-open text-orange"></i> PICKUP</span>
@@ -153,9 +153,30 @@
                                                             <span class="badge bg-secondary" style="font-size: 10px;">{{ strtoupper(str_replace('_', ' ', $task->status)) }}</span>
                                                         </td>
                                                         <td class="text-end pe-3">
-                                                            <a href="{{ route('pickup-tasks.show', ['pickup_task' => $task->id, 'task_type' => $task->type]) }}" class="btn btn-sm btn-outline-info py-1 px-2" style="font-size: 12px;" title="Lihat Detail Tugas">
-                                                                <i class="fa-solid fa-eye me-1"></i> Detail
-                                                            </a>
+                                                            <i class="fa-solid fa-chevron-down text-muted" style="font-size: 12px;"></i>
+                                                        </td>
+                                                    </tr>
+                                                    <tr id="history-{{ $task->id }}" class="collapse bg-white">
+                                                        <td colspan="5" class="p-0 border-0">
+                                                            <div class="px-4 py-3 shadow-inner border-bottom" style="background-color: #fafafa;">
+                                                                <h6 class="mb-3 text-secondary" style="font-size: 13px;"><i class="fa-solid fa-clock-rotate-left me-2"></i>History Status Tugas</h6>
+                                                                @if($task->history && $task->history->count() > 0)
+                                                                    <div class="ms-2 border-start border-2 ps-3 border-secondary" style="border-color: #dee2e6 !important;">
+                                                                        @foreach($task->history()->orderBy('created_at', 'desc')->get() as $hist)
+                                                                            <div class="position-relative mb-3">
+                                                                                <div class="position-absolute bg-orange rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 4px;"></div>
+                                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                                    <span class="fw-bold text-dark" style="font-size: 12px;">{{ strtoupper(str_replace('_', ' ', $hist->status)) }}</span>
+                                                                                    <span class="text-muted" style="font-size: 11px;">{{ $hist->created_at->format('d M Y, H:i') }}</span>
+                                                                                </div>
+                                                                                <div class="text-muted" style="font-size: 12px;">{{ $hist->notes ?? '-' }}</div>
+                                                                            </div>
+                                                                        @endforeach
+                                                                    </div>
+                                                                @else
+                                                                    <div class="text-muted text-center py-2" style="font-size: 12px;">Belum ada history tercatat untuk tugas ini</div>
+                                                                @endif
+                                                            </div>
                                                         </td>
                                                     </tr>
                                                 @empty

@@ -217,8 +217,7 @@ class PickupTaskController extends Controller
         
         $user = auth()->user();
         
-        $query = \App\Models\TaskManifest::with(['driver', 'coDriver', 'vehicle', 'pickupTasks', 'deliveryAssignments'])
-            ->whereIn('status', ['delivered', 'completed', 'cancelled'])
+        $query = \App\Models\TaskManifest::with(['driver', 'coDriver', 'vehicle', 'pickupTasks.history', 'deliveryAssignments.history'])
             ->latest('updated_at');
             
         if ($user && strtolower($user->role) === 'driver') {
@@ -359,6 +358,8 @@ class PickupTaskController extends Controller
                 'is_out_of_city' => $request->boolean('is_out_of_city'),
             ]);
 
+            $this->logHistory($pickupTask, 'pickup', 'Tugas pickup dibuat');
+
             // Save items to task_items table
             foreach ($sourceItems as $item) {
                 $pickupTask->items()->create($item);
@@ -437,7 +438,7 @@ class PickupTaskController extends Controller
             DeliveryAssignment::where('sales_order_id', $salesOrder->id)->delete();
 
             // Buat 1 Delivery Assignment
-            DeliveryAssignment::create([
+            $deliveryTask = DeliveryAssignment::create([
                 'manifest_id' => $request->manifest_id,
                 'sales_order_id' => $salesOrder->id,
                 'driver_id' => $driver_id,
@@ -457,6 +458,8 @@ class PickupTaskController extends Controller
                 'estimated_arrival' => $request->estimated_arrival,
                 'is_out_of_city' => $request->boolean('is_out_of_city'),
             ]);
+
+            $this->logHistory($deliveryTask, 'delivery', 'Tugas delivery dibuat');
 
             // Send Push Notification
             if ($request->driver_id) {
@@ -528,9 +531,9 @@ class PickupTaskController extends Controller
         $type = $request->query('task_type', 'pickup');
 
         $request->validate([
-            'driver_id' => 'required|exists:users,id',
+            'driver_id' => 'nullable|exists:users,id',
             'co_driver_id' => 'nullable|exists:users,id',
-            'vehicle_id' => 'required|exists:vehicles,id',
+            'vehicle_id' => 'nullable|exists:vehicles,id',
             'items' => 'required|array|min:1',
             'items.*.item_description' => 'required|string',
         ]);
@@ -573,11 +576,11 @@ class PickupTaskController extends Controller
                 'items' => $sourceItems
             ]);
 
-            $task->update([
+            $task->fill([
                 'reference_number' => $request->pickup_reference ?: $task->reference_number,
-                'driver_id' => $request->driver_id,
-                'co_driver_id' => $request->co_driver_id,
-                'vehicle_id' => $request->vehicle_id,
+                'driver_id' => $request->has('driver_id') ? $request->driver_id : $task->driver_id,
+                'co_driver_id' => $request->has('co_driver_id') ? $request->co_driver_id : $task->co_driver_id,
+                'vehicle_id' => $request->has('vehicle_id') ? $request->vehicle_id : $task->vehicle_id,
                 'priority' => $request->priority,
                 'pickup_name' => $request->pickup_name,
                 'pickup_pic_name' => $request->pickup_pic_name,
@@ -594,6 +597,35 @@ class PickupTaskController extends Controller
                 'estimated_arrival' => $request->estimated_arrival,
                 'is_out_of_city' => $request->boolean('is_out_of_city'),
             ]);
+            
+            $changes = $task->getDirty();
+            $task->save();
+            
+            $changedFields = [];
+            $fieldNames = [
+                'reference_number' => 'No Referensi',
+                'driver_id' => 'Supir',
+                'vehicle_id' => 'Kendaraan',
+                'priority' => 'Prioritas',
+                'pickup_name' => 'Nama Pickup',
+                'pickup_location' => 'Lokasi Pickup',
+                'destination_name' => 'Nama Tujuan',
+                'destination' => 'Lokasi Tujuan',
+                'item_description' => 'Daftar Barang',
+                'dispatch_date' => 'Tanggal Penugasan',
+                'estimated_arrival' => 'Estimasi Kedatangan',
+                'is_out_of_city' => 'Status Luar Kota'
+            ];
+            foreach ($changes as $key => $val) {
+                if (isset($fieldNames[$key])) {
+                    $changedFields[] = $fieldNames[$key];
+                }
+            }
+            $notes = count($changedFields) > 0 
+                ? 'Memperbarui informasi: ' . implode(', ', $changedFields) 
+                : 'Detail tugas diperbarui (atau isi barang diubah)';
+            
+            $this->logHistory($task, 'pickup', $notes);
 
             $task->items()->delete();
             foreach ($sourceItems as $item) {
@@ -632,10 +664,10 @@ class PickupTaskController extends Controller
                 ];
             }
 
-            $task->update([
-                'driver_id' => $request->driver_id,
-                'co_driver_id' => $request->co_driver_id,
-                'vehicle_id' => $request->vehicle_id,
+            $task->fill([
+                'driver_id' => $request->has('driver_id') ? $request->driver_id : $task->driver_id,
+                'co_driver_id' => $request->has('co_driver_id') ? $request->co_driver_id : $task->co_driver_id,
+                'vehicle_id' => $request->has('vehicle_id') ? $request->vehicle_id : $task->vehicle_id,
                 'priority' => $request->priority,
                 'pickup_name' => $request->delivery_pickup_name,
                 'delivery_sender_pic' => $request->delivery_sender_pic,
@@ -647,6 +679,39 @@ class PickupTaskController extends Controller
                 'estimated_arrival' => $request->estimated_arrival,
                 'is_out_of_city' => $request->boolean('is_out_of_city'),
             ]);
+
+            $changes = $task->getDirty();
+            $task->save();
+            
+            $changedFields = [];
+            $fieldNames = [
+                'driver_id' => 'Supir',
+                'vehicle_id' => 'Kendaraan',
+                'priority' => 'Prioritas',
+                'pickup_name' => 'Lokasi Pengambilan',
+                'pickup_location' => 'Alamat Pengambilan',
+                'delivery_target_point' => 'Tujuan',
+                'dispatch_date' => 'Tanggal Penugasan',
+                'estimated_arrival' => 'Estimasi Kedatangan',
+                'is_out_of_city' => 'Status Luar Kota'
+            ];
+            foreach ($changes as $key => $val) {
+                if (isset($fieldNames[$key])) {
+                    $changedFields[] = $fieldNames[$key];
+                }
+            }
+
+            // We also check if Sales Order changed something important like customer name
+            $soWillUpdate = false;
+            if ($task->salesOrder && $task->salesOrder->customer_name !== $request->customer_name) {
+                $changedFields[] = 'Nama Pelanggan';
+            }
+
+            $notes = count($changedFields) > 0 
+                ? 'Memperbarui informasi: ' . implode(', ', $changedFields) 
+                : 'Detail tugas diperbarui (atau isi barang diubah)';
+
+            $this->logHistory($task, 'delivery', $notes);
 
             $salesOrder = $task->salesOrder;
             if ($salesOrder) {
@@ -689,6 +754,7 @@ class PickupTaskController extends Controller
         }
 
         $task->update(['status' => $request->status]);
+        $this->logHistory($task, $request->task_type, 'Status diubah menjadi ' . $request->status);
 
         return redirect()->route('pickup-tasks.index')->with('success', 'Status tugas berhasil diperbarui.');
     }
@@ -874,26 +940,31 @@ class PickupTaskController extends Controller
         }
 
         // Remove tasks no longer selected (set manifest_id = null)
-        PickupTask::where('manifest_id', $manifestId)
+        $removedPickups = PickupTask::where('manifest_id', $manifestId)
             ->whereNotIn('id', $keepPickupIds)
-            ->update([
-                'manifest_id' => null,
-                'status' => 'draft',
-            ]);
+            ->get();
+        foreach ($removedPickups as $t) {
+            $t->update(['manifest_id' => null, 'status' => 'draft']);
+            $this->logHistory($t, 'pickup', 'Dihapus dari manifest ' . $manifest->manifest_number);
+        }
 
-        DeliveryAssignment::where('manifest_id', $manifestId)
+        $removedDeliveries = DeliveryAssignment::where('manifest_id', $manifestId)
             ->whereNotIn('id', $keepDeliveryIds)
-            ->update([
-                'manifest_id' => null,
-                'status' => 'draft',
-            ]);
+            ->get();
+        foreach ($removedDeliveries as $t) {
+            $t->update(['manifest_id' => null, 'status' => 'draft']);
+            $this->logHistory($t, 'delivery', 'Dihapus dari manifest ' . $manifest->manifest_number);
+        }
 
         // Add newly selected tasks
-        PickupTask::whereIn('id', $keepPickupIds)
+        $newPickups = PickupTask::whereIn('id', $keepPickupIds)
             ->where(function($q) use ($manifestId) {
                 $q->whereNull('manifest_id')->orWhere('manifest_id', $manifestId);
             })
-            ->update([
+            ->get();
+        foreach ($newPickups as $t) {
+            $isNew = $t->manifest_id !== $manifest->id;
+            $t->update([
                 'manifest_id' => $manifest->id,
                 'driver_id' => $manifest->driver_id,
                 'co_driver_id' => $manifest->co_driver_id,
@@ -904,12 +975,19 @@ class PickupTaskController extends Controller
                 'is_out_of_city' => $manifest->is_out_of_city,
                 'estimated_arrival' => $manifest->estimated_arrival,
             ]);
+            if ($isNew) {
+                $this->logHistory($t, 'pickup', 'Ditugaskan ke manifest ' . $manifest->manifest_number);
+            }
+        }
 
-        DeliveryAssignment::whereIn('id', $keepDeliveryIds)
+        $newDeliveries = DeliveryAssignment::whereIn('id', $keepDeliveryIds)
             ->where(function($q) use ($manifestId) {
                 $q->whereNull('manifest_id')->orWhere('manifest_id', $manifestId);
             })
-            ->update([
+            ->get();
+        foreach ($newDeliveries as $t) {
+            $isNew = $t->manifest_id !== $manifest->id;
+            $t->update([
                 'manifest_id' => $manifest->id,
                 'driver_id' => $manifest->driver_id,
                 'co_driver_id' => $manifest->co_driver_id,
@@ -920,6 +998,10 @@ class PickupTaskController extends Controller
                 'is_out_of_city' => $manifest->is_out_of_city,
                 'estimated_arrival' => $manifest->estimated_arrival,
             ]);
+            if ($isNew) {
+                $this->logHistory($t, 'delivery', 'Ditugaskan ke manifest ' . $manifest->manifest_number);
+            }
+        }
 
         return redirect()->route('pickup-tasks.list-penugasan')->with('success', 'Daftar tugas pada penugasan ' . $manifest->manifest_number . ' berhasil diperbarui.');
     }
@@ -967,30 +1049,38 @@ class PickupTaskController extends Controller
         foreach ($request->selected_tasks as $taskId) {
             if (strpos($taskId, 'pickup_') === 0) {
                 $id = str_replace('pickup_', '', $taskId);
-                PickupTask::where('id', $id)->update([
-                    'manifest_id' => $manifest->id,
-                    'driver_id' => $manifest->driver_id,
-                    'co_driver_id' => $manifest->co_driver_id,
-                    'vehicle_id' => $manifest->vehicle_id,
-                    'status' => 'assigned',
-                    'assigned_at' => now(),
-                    'dispatch_date' => $manifest->dispatch_date,
-                    'is_out_of_city' => $manifest->is_out_of_city,
-                    'estimated_arrival' => $manifest->estimated_arrival,
-                ]);
+                $task = PickupTask::find($id);
+                if ($task) {
+                    $task->update([
+                        'manifest_id' => $manifest->id,
+                        'driver_id' => $manifest->driver_id,
+                        'co_driver_id' => $manifest->co_driver_id,
+                        'vehicle_id' => $manifest->vehicle_id,
+                        'status' => 'assigned',
+                        'assigned_at' => now(),
+                        'dispatch_date' => $manifest->dispatch_date,
+                        'is_out_of_city' => $manifest->is_out_of_city,
+                        'estimated_arrival' => $manifest->estimated_arrival,
+                    ]);
+                    $this->logHistory($task, 'pickup', 'Ditugaskan ke manifest ' . $manifestNumber);
+                }
             } else if (strpos($taskId, 'delivery_') === 0) {
                 $id = str_replace('delivery_', '', $taskId);
-                DeliveryAssignment::where('id', $id)->update([
-                    'manifest_id' => $manifest->id,
-                    'driver_id' => $manifest->driver_id,
-                    'co_driver_id' => $manifest->co_driver_id,
-                    'vehicle_id' => $manifest->vehicle_id,
-                    'status' => 'assigned',
-                    'assigned_at' => now(),
-                    'dispatch_date' => $manifest->dispatch_date,
-                    'is_out_of_city' => $manifest->is_out_of_city,
-                    'estimated_arrival' => $manifest->estimated_arrival,
-                ]);
+                $task = DeliveryAssignment::find($id);
+                if ($task) {
+                    $task->update([
+                        'manifest_id' => $manifest->id,
+                        'driver_id' => $manifest->driver_id,
+                        'co_driver_id' => $manifest->co_driver_id,
+                        'vehicle_id' => $manifest->vehicle_id,
+                        'status' => 'assigned',
+                        'assigned_at' => now(),
+                        'dispatch_date' => $manifest->dispatch_date,
+                        'is_out_of_city' => $manifest->is_out_of_city,
+                        'estimated_arrival' => $manifest->estimated_arrival,
+                    ]);
+                    $this->logHistory($task, 'delivery', 'Ditugaskan ke manifest ' . $manifestNumber);
+                }
             }
         }
 

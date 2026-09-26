@@ -13,14 +13,14 @@ return new class extends Migration
     {
         Schema::create('task_histories', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('task_id');
+            $table->uuid('task_id');
             $table->string('task_type', 50); // pickup / delivery
-            $table->unsignedBigInteger('driver_id')->nullable();
-            $table->unsignedBigInteger('co_driver_id')->nullable();
-            $table->unsignedBigInteger('vehicle_id')->nullable();
+            $table->uuid('driver_id')->nullable();
+            $table->uuid('co_driver_id')->nullable();
+            $table->uuid('vehicle_id')->nullable();
             $table->string('status', 50);
             $table->text('notes')->nullable();
-            $table->unsignedBigInteger('recorded_by')->nullable(); // user or admin id
+            $table->uuid('recorded_by')->nullable(); // user or admin id
             $table->timestamps();
 
             $table->index(['task_id', 'task_type']);
