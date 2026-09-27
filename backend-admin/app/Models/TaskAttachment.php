@@ -36,6 +36,11 @@ class TaskAttachment extends Model
         return $this->morphTo();
     }
 
+    public function shift()
+    {
+        return $this->belongsTo(Shift::class, 'shift_id');
+    }
+
     public function uploader()
     {
         return $this->belongsTo(User::class, 'uploaded_by');

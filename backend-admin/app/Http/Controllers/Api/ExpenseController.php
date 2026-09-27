@@ -102,4 +102,132 @@ class ExpenseController extends Controller
             'data' => $expense
         ], 201);
     }
+
+    /**
+     * Store a newly created expense from mobile app during a manifest/DO.
+     */
+    public function storeFromManifest(Request $request, $id)
+    {
+        $request->validate([
+            'amount' => 'required|numeric',
+            'category' => 'required|string',
+        ]);
+
+        $manifest = \App\Models\TaskManifest::find($id);
+        if (!$manifest) {
+            return response()->json(['message' => 'Manifest tidak ditemukan'], 404);
+        }
+
+        // Get active shift for driver or create one
+        $driverId = Auth::id() ?? $manifest->driver_id;
+        
+        $shift = \App\Models\Shift::where('driver_id', $driverId)
+            ->whereNull('check_out_at')
+            ->first();
+
+        if (!$shift) {
+            return response()->json(['message' => 'Mulai perjalanan (Clock-in) terlebih dahulu sebelum menambah pengeluaran'], 409);
+        }
+
+        $dbCategory = 'other';
+        $uiCategory = strtolower($request->category);
+        if ($uiCategory === 'bbm') $dbCategory = 'fuel';
+        elseif ($uiCategory === 'tol') $dbCategory = 'toll';
+        elseif ($uiCategory === 'parkir') $dbCategory = 'parking';
+        
+        $expense = new Expense();
+        $expense->shift_id = $shift->id;
+        $expense->driver_id = $driverId;
+        $expense->category = $dbCategory;
+        $expense->amount = $request->amount;
+        $expense->description = $request->description;
+        $expense->notes = $request->notes;
+        
+        if ($request->hasFile('receipt')) {
+            $file = $request->file('receipt');
+            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $file->getClientOriginalName());
+            $path = "manifests/{$id}/expenses/{$fileName}";
+            
+            $minio = new \App\Services\Storage\MinioService();
+            try {
+                $minio->getClient()->putObject([
+                    'Bucket' => 'driver-apps',
+                    'Key'    => $path,
+                    'SourceFile' => $file->getRealPath(),
+                    'ContentType' => $file->getMimeType(),
+                ]);
+                $expense->receipt_url = $path;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("MinIO Upload Error: " . $e->getMessage());
+                return response()->json(['message' => 'Gagal upload receipt: ' . $e->getMessage()], 500);
+            }
+        }
+
+        $expense->save();
+
+        return response()->json([
+            'message' => 'Pengeluaran berhasil disimpan',
+            'data' => $expense
+        ], 201);
+    }
+
+    /**
+     * Store a newly created expense for a specific shift.
+     */
+    public function storeForShift(Request $request, $shift_id)
+    {
+        $request->validate([
+            'amount' => 'required|numeric',
+            'category' => 'required|string',
+        ]);
+
+        $shift = \App\Models\Shift::find($shift_id);
+        if (!$shift) {
+            return response()->json(['message' => 'Shift tidak ditemukan'], 404);
+        }
+
+        $driverId = Auth::id() ?? $shift->driver_id;
+
+        $dbCategory = 'other';
+        $uiCategory = strtolower($request->category);
+        if ($uiCategory === 'bbm') $dbCategory = 'fuel';
+        elseif ($uiCategory === 'tol') $dbCategory = 'toll';
+        elseif ($uiCategory === 'parkir') $dbCategory = 'parking';
+        
+        $expense = new Expense();
+        $expense->shift_id = $shift->id;
+        $expense->driver_id = $driverId;
+        $expense->task_manifest_id = $request->task_manifest_id ?? null;
+        $expense->category = $dbCategory;
+        $expense->amount = $request->amount;
+        $expense->description = $request->description;
+        $expense->notes = $request->notes;
+        
+        if ($request->hasFile('receipt')) {
+            $file = $request->file('receipt');
+            $fileName = time() . '_' . preg_replace('/[^a-zA-Z0-9_\-\.]/', '_', $file->getClientOriginalName());
+            $path = "shifts/{$shift->id}/expenses/{$fileName}";
+            
+            $minio = new \App\Services\Storage\MinioService();
+            try {
+                $minio->getClient()->putObject([
+                    'Bucket' => 'driver-apps',
+                    'Key'    => $path,
+                    'SourceFile' => $file->getRealPath(),
+                    'ContentType' => $file->getMimeType(),
+                ]);
+                $expense->receipt_url = $path;
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("MinIO Upload Error: " . $e->getMessage());
+                return response()->json(['message' => 'Gagal upload receipt: ' . $e->getMessage()], 500);
+            }
+        }
+
+        $expense->save();
+
+        return response()->json([
+            'message' => 'Pengeluaran berhasil disimpan',
+            'data' => $expense
+        ], 201);
+    }
 }

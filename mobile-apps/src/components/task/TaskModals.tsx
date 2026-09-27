@@ -10,6 +10,7 @@ import {
   Alert,
   Platform,
   KeyboardAvoidingView,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Text } from '@/components/CustomText';
@@ -514,42 +515,15 @@ export const ModalPengeluaran = ({ visible, onClose, onSubmit, task }: any) => {
 
 // 3. Modal Tiba di Lokasi
 export const ModalTiba = ({ visible, onClose, onSubmit, task }: any) => {
-  const [notes, setNotes] = useState('');
   const [attachments, setAttachments] = useState<Array<string | null>>([]);
-  const [checklist, setChecklist] = useState<Record<number, ChecklistStatus>>({});
-
-  const handleToggleChecklist = (idx: number) => {
-    setChecklist((prev) => {
-      const current = prev[idx] || null;
-      let next: ChecklistStatus = null;
-      if (current === null) next = 'check';
-      else if (current === 'check') next = 'cross';
-      else if (current === 'cross') next = 'warning';
-      else if (current === 'warning') next = null;
-      return { ...prev, [idx]: next };
-    });
-  };
-
-  const renderCheckIcon = (status: ChecklistStatus) => {
-    switch (status) {
-      case 'check': return <Ionicons name="checkmark-circle" size={22} color={BRAND.success} />;
-      case 'cross': return <Ionicons name="close-circle" size={22} color={BRAND.danger} />;
-      case 'warning': return <Ionicons name="alert-circle" size={22} color={BRAND.warning} />;
-      default: return <Ionicons name="square-outline" size={22} color={BRAND.muted} />;
-    }
-  };
 
   const handleSubmit = () => {
-    const checklistLabeled: Record<string, string> = {};
-    ARRIVAL_CHECKLIST_ITEMS.forEach((label, idx) => {
-      checklistLabeled[label] = checklist[idx] || 'belum_diisi';
-    });
-
     onSubmit({
-      arrival_notes: notes,
+      arrival_notes: '',
       attachments: attachments.filter((uri) => uri),
-      arrival_checklist: checklistLabeled,
+      arrival_checklist: {},
       attachment_category: 'bukti_kedatangan',
+      has_issue: false,
     });
   };
 
@@ -571,43 +545,7 @@ export const ModalTiba = ({ visible, onClose, onSubmit, task }: any) => {
               <View style={styles.badge}><Text style={styles.badgeText}>On Route</Text></View>
             </View>
 
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-              <Text style={styles.sectionTitle}>Checklist Tiba di Lokasi</Text>
-              <Text style={{ fontSize: 11, color: BRAND.muted }}>(Klik untuk ubah status)</Text>
-            </View>
-
-            {ARRIVAL_CHECKLIST_ITEMS.map((item, idx) => {
-              const status = checklist[idx] || null;
-              return (
-                <TouchableOpacity
-                  key={idx}
-                  style={[styles.checkRow, { paddingVertical: 4 }]}
-                  onPress={() => handleToggleChecklist(idx)}
-                  activeOpacity={0.7}
-                >
-                  <View style={{ width: 28, alignItems: 'center' }}>
-                    {renderCheckIcon(status)}
-                  </View>
-                  <Text style={[
-                    styles.checkText,
-                    status === 'cross' && { color: BRAND.danger, fontWeight: '700' },
-                    status === 'warning' && { color: BRAND.warning, fontWeight: '700' },
-                  ]}>{item}</Text>
-                </TouchableOpacity>
-              );
-            })}
-
-            <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Catatan Tiba</Text>
-            <TextInput
-              style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
-              placeholder="Tuliskan catatan kedatangan atau kendala (opsional)..."
-              placeholderTextColor="#94A3B8"
-              multiline
-              value={notes}
-              onChangeText={setNotes}
-            />
-
-            <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Upload Bukti Tiba / Dokumen <Text style={{ color: BRAND.primary }}>(Wajib)</Text></Text>
+            <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Upload Bukti Tiba / Dokumen <Text style={{ color: BRAND.muted }}>(Opsional)</Text></Text>
             {/* Upload Bukti Tiba – cross‑platform */}
             <View style={styles.uploadContainer}>
               {/* Thumbnails for already selected attachments */}
@@ -709,24 +647,38 @@ export const ModalSerahTerima = ({ visible, onClose, onSubmit, task }: any) => {
   const [itemCondition, setItemCondition] = useState('Baik');
   const [completedOdo, setCompletedOdo] = useState('');
   
+  const [hasKendala, setHasKendala] = useState<boolean>(false);
+  const [notes, setNotes] = useState('');
+  
   const [attachments, setAttachments] = useState<Array<string | null>>([]);
-  const [signatureUri, setSignatureUri] = useState<string | null>(null);
 
   const handleSubmit = () => {
     const allAttachments = attachments.filter((uri) => uri);
-    // If signature exists, we can either push it to attachments or send separately
-    // The user suggested storing it in task_attachments, so let's push it if it exists.
-    if (signatureUri) {
-        allAttachments.push(signatureUri);
+    
+    if (allAttachments.length === 0) {
+      Alert.alert('Peringatan', 'Mohon upload minimal 1 bukti dokumentasi (wajib).');
+      return;
+    }
+    
+    if (hasKendala && !notes.trim()) {
+      Alert.alert('Peringatan', 'Silakan isi catatan kendala terlebih dahulu.');
+      return;
+    }
+    
+    if (!completedOdo) {
+      Alert.alert('Peringatan', 'Odometer akhir wajib diisi.');
+      return;
     }
 
     onSubmit({
-      receiver_name: receiverName,
-      receiver_role: receiverRole,
-      item_condition: itemCondition,
+      receiver_name: hasKendala ? '' : receiverName,
+      receiver_role: hasKendala ? '' : receiverRole,
+      item_condition: hasKendala ? '' : itemCondition,
       completed_odometer: completedOdo,
       attachments: allAttachments,
-      attachment_category: 'bukti_serah_terima',
+      attachment_category: hasKendala ? 'bukti_kendala' : 'bukti_serah_terima',
+      arrival_notes: hasKendala ? notes : '',
+      has_issue: hasKendala,
     });
   };
 
@@ -747,28 +699,63 @@ export const ModalSerahTerima = ({ visible, onClose, onSubmit, task }: any) => {
               <Text style={styles.cardRef}>{task?.reference_number || '-'}</Text>
             </View>
 
-            <Text style={styles.sectionTitle}>Informasi Penerima</Text>
-            <Text style={styles.inputLabel}>Nama Penerima</Text>
-            <TextInput style={styles.input} placeholder="Contoh: Agus Setiawan" value={receiverName} onChangeText={setReceiverName} />
-            <Text style={styles.inputLabel}>Jabatan / PIC</Text>
-            <TextInput style={styles.input} placeholder="PIC Gudang" value={receiverRole} onChangeText={setReceiverRole} />
-            <Text style={styles.inputLabel}>Odometer Akhir (KM)</Text>
-            <TextInput style={styles.input} placeholder="Contoh: 34600" keyboardType="numeric" value={completedOdo} onChangeText={setCompletedOdo} />
-
-            <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Kondisi Barang Saat Serah Terima</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-              <TouchableOpacity style={itemCondition === 'Baik' ? styles.chipActive : styles.chip} onPress={() => setItemCondition('Baik')}>
-                <Text style={itemCondition === 'Baik' ? styles.chipTextActive : styles.chipText}>Baik</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={itemCondition === 'Rusak Ringan' ? styles.chipActive : styles.chip} onPress={() => setItemCondition('Rusak Ringan')}>
-                <Text style={itemCondition === 'Rusak Ringan' ? styles.chipTextActive : styles.chipText}>Rusak Ringan</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={itemCondition === 'Rusak Berat' ? styles.chipActive : styles.chip} onPress={() => setItemCondition('Rusak Berat')}>
-                <Text style={itemCondition === 'Rusak Berat' ? styles.chipTextActive : styles.chipText}>Rusak Berat</Text>
-              </TouchableOpacity>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, backgroundColor: '#F1F5F9', padding: 12, borderRadius: 12 }}>
+              <View>
+                <Text style={[styles.sectionTitle, { marginTop: 0 }]}>Ada Kendala (Gagal Kirim)?</Text>
+                <Text style={{ fontSize: 13, color: BRAND.muted, marginTop: 4 }}>
+                  {hasKendala ? 'Ya, gagal terkirim (Isi catatan)' : 'Aman (Terkirim Sukses)'}
+                </Text>
+              </View>
+              <Switch
+                value={hasKendala}
+                onValueChange={(val) => {
+                  setHasKendala(val);
+                  if (!val) setNotes('');
+                }}
+                trackColor={{ false: '#CBD5E1', true: BRAND.danger }}
+                thumbColor={'#FFFFFF'}
+              />
             </View>
 
-            <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Upload Bukti Serah Terima <Text style={{ color: BRAND.primary }}>(Wajib)</Text></Text>
+            {hasKendala ? (
+              <>
+                <Text style={[styles.sectionTitle, { marginTop: 24 }]}>Catatan Kendala <Text style={{ color: BRAND.danger }}>(Wajib)</Text></Text>
+                <TextInput
+                  style={[styles.input, { height: 80, textAlignVertical: 'top', marginTop: 8 }]}
+                  placeholder="Ceritakan kendalanya (contoh: Penerima menolak, barang tidak sesuai, dll)..."
+                  placeholderTextColor="#94A3B8"
+                  multiline
+                  value={notes}
+                  onChangeText={setNotes}
+                />
+              </>
+            ) : (
+              <>
+                <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Informasi Penerima</Text>
+                <Text style={styles.inputLabel}>Nama Penerima</Text>
+                <TextInput style={styles.input} placeholder="Contoh: Agus Setiawan" value={receiverName} onChangeText={setReceiverName} />
+                <Text style={styles.inputLabel}>Jabatan / PIC</Text>
+                <TextInput style={styles.input} placeholder="PIC Gudang" value={receiverRole} onChangeText={setReceiverRole} />
+
+                <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Kondisi Barang Saat Serah Terima</Text>
+                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+                  <TouchableOpacity style={itemCondition === 'Baik' ? styles.chipActive : styles.chip} onPress={() => setItemCondition('Baik')}>
+                    <Text style={itemCondition === 'Baik' ? styles.chipTextActive : styles.chipText}>Baik</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={itemCondition === 'Rusak Ringan' ? styles.chipActive : styles.chip} onPress={() => setItemCondition('Rusak Ringan')}>
+                    <Text style={itemCondition === 'Rusak Ringan' ? styles.chipTextActive : styles.chipText}>Rusak Ringan</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={itemCondition === 'Rusak Berat' ? styles.chipActive : styles.chip} onPress={() => setItemCondition('Rusak Berat')}>
+                    <Text style={itemCondition === 'Rusak Berat' ? styles.chipTextActive : styles.chipText}>Rusak Berat</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+
+            <Text style={[styles.inputLabel, { marginTop: hasKendala ? 16 : 0 }]}>Odometer Akhir (KM) <Text style={{ color: BRAND.danger }}>(Wajib)</Text></Text>
+            <TextInput style={styles.input} placeholder="Contoh: 34600" keyboardType="numeric" value={completedOdo} onChangeText={setCompletedOdo} />
+
+            <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Upload Foto Bukti <Text style={{ color: BRAND.primary }}>(Wajib)</Text></Text>
             {/* Upload Bukti Serah Terima – cross‑platform */}
             <View style={styles.uploadContainer}>
               {/* Thumbnails for already selected attachments */}
@@ -849,11 +836,6 @@ export const ModalSerahTerima = ({ visible, onClose, onSubmit, task }: any) => {
               )}
             </View>
 
-            <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Foto Tanda Tangan Penerima (Opsional)</Text>
-            <View style={{ width: 120, height: 120, marginBottom: 16 }}>
-              <ImageUploadBox title="Tanda Tangan" value={signatureUri} onChange={setSignatureUri} />
-            </View>
-            
             <View style={{ height: 40 }} />
           </ScrollView>
 

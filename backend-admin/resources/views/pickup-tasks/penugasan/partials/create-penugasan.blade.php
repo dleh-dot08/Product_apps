@@ -51,7 +51,7 @@
                                     <select class="form-select select2-assignment" name="driver_id" id="driver_id" required>
                                         <option value="">-- Pilih --</option>
                                         @foreach($drivers as $driver)
-                                            <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                                            <option value="{{ $driver->id }}">{{ $driver->full_name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -60,7 +60,7 @@
                                     <select class="form-select select2-assignment" name="co_driver_id" id="co_driver_id">
                                         <option value="">-- Kosong --</option>
                                         @foreach($drivers as $driver)
-                                            <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                                            <option value="{{ $driver->id }}">{{ $driver->full_name }}</option>
                                         @endforeach
                                     </select>
                                 </div>

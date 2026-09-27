@@ -47,13 +47,31 @@ class AutoPendingExpiredTasks extends Command
                     }
                 }
 
-                $task->update(['status' => 'pending']);
+                $oldManifestId = $task->manifest_id;
+                $oldDriverId = $task->driver_id;
+
+                $task->update([
+                    'status' => 'pending',
+                    'manifest_id' => null,
+                    'driver_id' => null,
+                    'co_driver_id' => null,
+                    'vehicle_id' => null,
+                    'assigned_at' => null,
+                ]);
+
+                // Update tasks_manifest_history
+                if ($oldManifestId) {
+                    \DB::table('tasks_manifest_history')
+                        ->where('manifest_id', $oldManifestId)
+                        ->where('task_id', $task->id)
+                        ->update(['status' => 'pending']);
+                }
 
                 // Log ke history
                 TaskHistory::create([
                     'task_id' => $task->id,
-                    'task_type' => 'auto_pending',
-                    'driver_id' => $task->driver_id,
+                    'task_type' => 'pickup',
+                    'driver_id' => $oldDriverId,
                     'status' => 'pending',
                     'notes' => 'Status otomatis diubah menjadi PENDING - melewati batas waktu dispatch (' . $deadline->format('d/m/Y H:i') . ')' .
                                ($task->is_out_of_city ? ' [Luar Kota - estimasi terlewat]' : ''),
@@ -82,12 +100,29 @@ class AutoPendingExpiredTasks extends Command
                     }
                 }
 
-                $task->update(['status' => 'pending']);
+                $oldManifestId = $task->manifest_id;
+                $oldDriverId = $task->driver_id;
+
+                $task->update([
+                    'status' => 'pending',
+                    'manifest_id' => null,
+                    'driver_id' => null,
+                    'co_driver_id' => null,
+                    'vehicle_id' => null,
+                    'assigned_at' => null,
+                ]);
+
+                if ($oldManifestId) {
+                    \DB::table('tasks_manifest_history')
+                        ->where('manifest_id', $oldManifestId)
+                        ->where('task_id', $task->id)
+                        ->update(['status' => 'pending']);
+                }
 
                 TaskHistory::create([
                     'task_id' => $task->id,
-                    'task_type' => 'auto_pending',
-                    'driver_id' => $task->driver_id,
+                    'task_type' => 'delivery',
+                    'driver_id' => $oldDriverId,
                     'status' => 'pending',
                     'notes' => 'Status otomatis diubah menjadi PENDING - melewati batas waktu dispatch (' . $deadline->format('d/m/Y H:i') . ')' .
                                ($task->is_out_of_city ? ' [Luar Kota - estimasi terlewat]' : ''),

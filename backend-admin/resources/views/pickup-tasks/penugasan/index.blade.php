@@ -100,7 +100,7 @@
                             </td>
                             <td class="text-end px-4">
                                 <div class="btn-group">
-                                    <button onclick="event.stopPropagation(); window.openEditPenugasanModal('{{ $assignment->id }}', '{{ $assignment->no_do }}', '{{ ($assignment->driver->name ?? "-") . ($assignment->coDriver ? " & " . $assignment->coDriver->name : "") }}', '{{ $assignment->vehicle ? "([" . $assignment->vehicle->plate_number . "]) " . $assignment->vehicle->name : "-" }}', '{{ $assignment->is_out_of_city }}', '{{ $assignment->estimated_arrival }}')" class="btn btn-sm btn-outline-primary py-1 px-2" style="font-size: 12px;" title="Kelola Tugas">
+                                    <button onclick="event.stopPropagation(); window.openEditPenugasanModal('{{ $assignment->id }}', '{{ $assignment->no_do }}', '{{ $assignment->driver_id }}', '{{ $assignment->co_driver_id }}', '{{ $assignment->vehicle_id }}', '{{ $assignment->is_out_of_city }}', '{{ $assignment->estimated_arrival }}')" class="btn btn-sm btn-outline-primary py-1 px-2" style="font-size: 12px;" title="Kelola Tugas">
                                         <i class="fa-solid fa-list-check me-1"></i> Kelola Tugas
                                     </button>
                                     <button onclick="event.stopPropagation();" class="btn btn-sm btn-outline-info py-1 px-2" style="font-size: 12px;" title="Cetak DO">
@@ -128,8 +128,8 @@
                                                 @php
                                                     $tasks = collect([]);
                                                     if($assignment->manifest) {
-                                                        $tasks = $assignment->manifest->pickupTasks->map(function($t) { $t->type = 'pickup'; return $t; })
-                                                            ->concat($assignment->manifest->deliveryAssignments->map(function($t) { $t->type = 'delivery'; return $t; }));
+                                                        $tasks = $assignment->manifest->historicalPickupTasks->map(function($t) { $t->type = 'pickup'; return $t; })
+                                                            ->concat($assignment->manifest->historicalDeliveryAssignments->map(function($t) { $t->type = 'delivery'; return $t; }));
                                                     }
                                                 @endphp
                                                 @forelse($tasks as $task)
@@ -150,9 +150,22 @@
                                                             {{ $task->type === 'pickup' ? ($task->pickup_name ?? '-') : ($task->salesOrder->customer_name ?? '-') }}
                                                         </td>
                                                         <td>
-                                                            <span class="badge bg-secondary" style="font-size: 10px;">{{ strtoupper(str_replace('_', ' ', $task->status)) }}</span>
+                                                            @php
+                                                                $displayStatus = $task->status;
+                                                                if (!in_array($task->status, ['completed', 'delivered']) && \Carbon\Carbon::parse($assignment->date)->startOfDay()->lt(\Carbon\Carbon::today())) {
+                                                                    $displayStatus = 'tidak_terkirim';
+                                                                }
+                                                            @endphp
+                                                            <span class="badge bg-secondary" style="font-size: 10px;">{{ strtoupper(str_replace('_', ' ', $displayStatus)) }}</span>
                                                         </td>
                                                         <td class="text-end pe-3">
+                                                            <form action="{{ route('pickup-tasks.penugasan.remove-task', ['manifest' => $assignment->id, 'type' => $task->type, 'taskId' => $task->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin mencabut tugas ini dari penugasan?');">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" onclick="event.stopPropagation();" class="btn btn-sm btn-link text-danger p-0 me-2" title="Cabut Tugas">
+                                                                    <i class="fa-solid fa-xmark" style="font-size: 14px;"></i>
+                                                                </button>
+                                                            </form>
                                                             <i class="fa-solid fa-chevron-down text-muted" style="font-size: 12px;"></i>
                                                         </td>
                                                     </tr>

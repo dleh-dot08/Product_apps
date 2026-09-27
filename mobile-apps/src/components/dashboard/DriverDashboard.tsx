@@ -21,6 +21,8 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import api from '../../services/api';
 import { ExpenseModal } from '../Modal/ExpenseModal';
+import { ClockInModal } from '../Modal/ClockInModal';
+import { ClockOutModal } from '../Modal/ClockOutModal';
 
 const REMOTE_ASSETS = {
   hero: {
@@ -91,6 +93,14 @@ type DashboardData = {
   pending_reports_count?: number;
   today_tasks?: DashboardTask[];
   active_task?: DashboardTask | null;
+  active_shift?: {
+    id: number;
+    start_time: string;
+    start_odometer: string;
+    vehicle_plate_number?: string;
+    vehicle_name?: string;
+    status: 'active' | 'completed';
+  } | null;
   performance?: {
     on_time_percentage?: number;
     rating?: number;
@@ -100,6 +110,10 @@ type DashboardData = {
     total_on_time_trip?: number;
     issue_count?: number;
     fuel_efficiency?: number;
+    kendala_trip?: number;
+    late_trip?: number;
+    failed_trip?: number;
+    distance_period?: number;
   };
 };
 
@@ -143,6 +157,11 @@ export default function DriverDashboard() {
   const [isNotificationModalVisible, setNotificationModalVisible] = useState(false);
   const [isPeriodModalVisible, setPeriodModalVisible] = useState(false);
   const [isExpenseModalVisible, setExpenseModalVisible] = useState(false);
+  
+  // Modal states for Shift
+  const [isClockInModalVisible, setClockInModalVisible] = useState(false);
+  const [isClockOutModalVisible, setClockOutModalVisible] = useState(false);
+
   const [periodFilter, setPeriodFilter] = useState({ value: '7_days', label: '7 Hari Terakhir' });
 
   const pageBackground = isDark ? colors.background : BRAND.page;
@@ -198,11 +217,14 @@ export default function DriverDashboard() {
     fetchDashboard();
   }, [fetchDashboard]);
 
-  const todayTasks = dashboardData?.today_tasks ?? [];
+  const todayTasks = dashboardData?.today_tasks?.filter(
+    task => !['completed', 'delivered', 'failed', 'cancelled', 'selesai', 'pending', 'terkendala'].includes(task.status?.toLowerCase() ?? '')
+  ) ?? [];
   const activeTask = dashboardData?.active_task ?? null;
+  const activeShift = dashboardData?.active_shift ?? null;
 
-  const vehiclePlate = activeTask?.vehicle_plate_number || activeTask?.vehicle?.police_number || activeTask?.vehicle?.plate_number || 'B 1234 CD';
-  const vehicleName = activeTask?.vehicle_name || activeTask?.vehicle?.vehicle_name || activeTask?.vehicle?.name || 'Kendaraan Operasional';
+  const vehiclePlate = activeTask?.vehicle_plate_number || activeTask?.vehicle?.police_number || activeTask?.vehicle?.plate_number || activeShift?.vehicle_plate_number || (todayTasks.length > 0 ? todayTasks[0].vehicle_plate_number : null) || 'Belum Ada';
+  const vehicleName = activeTask?.vehicle_name || activeTask?.vehicle?.vehicle_name || activeTask?.vehicle?.name || activeShift?.vehicle_name || (todayTasks.length > 0 ? todayTasks[0].vehicle_name : null) || '-';
 
   const onTime = Math.min(
     Math.max(dashboardData?.performance?.on_time_percentage ?? 0, 0),
@@ -368,9 +390,9 @@ export default function DriverDashboard() {
               />
 
               <SummaryCard
-                label="Konsumsi BBM"
-                value={formatDecimal(fuelEfficiency)}
-                suffix="km/l rata-rata"
+                label="Jarak Hari Ini"
+                value={formatDecimal(dashboardData?.distance_today ?? 0)}
+                suffix="Km"
                 icon="speedometer-outline"
                 color={BRAND.violet}
                 softColor={BRAND.violetSoft}
@@ -387,15 +409,27 @@ export default function DriverDashboard() {
             <LoadingCard mutedColor={mutedColor} cardBackground={cardBackground} />
           ) : (
             <>
-              <ActiveAssignmentCard
-                task={activeTask}
-                vehiclePlate={vehiclePlate}
-                vehicleName={vehicleName}
+              {/* Shift Card (Clock In / Clock Out) */}
+              <DriverShiftCard 
+                shift={activeShift}
                 cardBackground={cardBackground}
                 borderColor={borderColor}
                 textColor={textColor}
-                onOpenTask={openTask}
+                onClockIn={() => setClockInModalVisible(true)}
+                onClockOut={() => setClockOutModalVisible(true)}
               />
+
+              {activeTask && (
+                <ActiveAssignmentCard
+                  task={activeTask}
+                  vehiclePlate={vehiclePlate}
+                  vehicleName={vehicleName}
+                  cardBackground={cardBackground}
+                  borderColor={borderColor}
+                  textColor={textColor}
+                  onOpenTask={openTask}
+                />
+              )}
 
               <SectionHeader title="Aksi Cepat" textColor={textColor} />
 
@@ -596,6 +630,25 @@ export default function DriverDashboard() {
         onClose={() => setExpenseModalVisible(false)}
         onSuccess={() => fetchDashboard()}
       />
+
+      <ClockInModal
+        visible={isClockInModalVisible}
+        onClose={() => setClockInModalVisible(false)}
+        assignedVehicle={`${vehiclePlate} - ${vehicleName}`}
+        onSuccess={() => {
+          setClockInModalVisible(false);
+          fetchDashboard();
+        }}
+      />
+
+      <ClockOutModal
+        visible={isClockOutModalVisible}
+        onClose={() => setClockOutModalVisible(false)}
+        onSuccess={() => {
+          setClockOutModalVisible(false);
+          fetchDashboard();
+        }}
+      />
     </View>
   );
 }
@@ -742,16 +795,9 @@ function ActiveAssignmentCard({
 
       <View style={styles.assignmentMetaRow}>
         <AssignmentMeta
-          icon="time-outline"
-          label="Tgl Pengiriman"
-          value={`${formatTime(task.dispatch_date || task.assigned_at) || '-'} WIB`}
-          textColor={textColor}
-        />
-
-        <AssignmentMeta
-          icon="timer-outline"
-          label="Estimasi Tiba"
-          value={`${formatTime(task.estimated_arrival || task.estimated_arrival_at) || '-'} WIB`}
+          icon="calendar-outline"
+          label="Tanggal"
+          value={formatDate(task.dispatch_date || task.assigned_at) || '-'}
           textColor={textColor}
         />
 
@@ -890,9 +936,12 @@ function TaskRow({
     >
       <View style={[styles.taskAccent, { backgroundColor: status.accentColor }]} />
 
-      <View style={styles.taskTimeColumn}>
-        <Text style={[styles.taskTime, { color: textColor }]}>
-          {formatTime(task.dispatch_date || task.assigned_at) || '--:--'}
+      <View style={[styles.taskTimeColumn, { justifyContent: 'center', alignItems: 'center' }]}>
+        <Text style={[styles.taskTime, { color: textColor, fontSize: 18, textAlign: 'center', marginBottom: 2 }]}>
+          {formatDayDate(task.dispatch_date || task.assigned_at)}
+        </Text>
+        <Text style={[styles.taskTime, { color: BRAND.primary, fontSize: 11, textAlign: 'center' }]}>
+          {formatMonthName(task.dispatch_date || task.assigned_at)}
         </Text>
       </View>
 
@@ -983,12 +1032,11 @@ function PerformanceCard({
           icon="time-outline"
           color={BRAND.primary}
           softColor={BRAND.primarySoft}
-          label="Tepat Waktu"
+          label="Ketepatan"
           value={`${onTime}%`}
           subValue={
-            performance?.on_time_trip !== undefined &&
-              performance?.total_on_time_trip !== undefined
-              ? `${performance.on_time_trip} dari ${performance.total_on_time_trip}`
+            performance?.late_trip !== undefined && performance?.failed_trip !== undefined
+              ? `${performance.late_trip} Telat, ${performance.failed_trip} Gagal`
               : 'Ketepatan'
           }
           textColor={textColor}
@@ -999,20 +1047,21 @@ function PerformanceCard({
           color={BRAND.warning}
           softColor={BRAND.warningSoft}
           label="Kendala"
-          value={`${issueCount}`}
+          value={`${performance?.kendala_trip ?? issueCount}`}
           subValue="Dilaporkan"
           textColor={textColor}
         />
 
         <PerformanceMetric
-          icon="speedometer-outline"
+          icon="map-outline"
           color={BRAND.violet}
           softColor={BRAND.violetSoft}
-          label="Konsumsi BBM"
-          value={`${formatDecimal(fuelEfficiency)} km/l`}
-          subValue="Rata-rata"
+          label="Jarak Tempuh"
+          value={`${performance?.distance_period ? formatDecimal(performance.distance_period) : 0}`}
+          subValue="Km"
           textColor={textColor}
         />
+
       </View>
     </View>
   );
@@ -1084,6 +1133,92 @@ function EmptySchedule({ textColor }: { textColor: string }) {
       <Ionicons name="calendar-outline" size={25} color={BRAND.subtle} />
       <Text style={[styles.emptyTitle, { color: textColor }]}>Tidak ada tugas hari ini</Text>
       <Text style={styles.emptyDescription}>Saat ini belum ada tugas yang dijadwalkan untuk Anda hari ini.</Text>
+    </View>
+  );
+}
+
+function DriverShiftCard({
+  shift,
+  cardBackground,
+  borderColor,
+  textColor,
+  onClockIn,
+  onClockOut,
+}: {
+  shift: any;
+  cardBackground: string;
+  borderColor: string;
+  textColor: string;
+  onClockIn: () => void;
+  onClockOut: () => void;
+}) {
+  const isShiftActive = !!shift;
+
+  return (
+    <View style={[styles.assignmentCard, { backgroundColor: cardBackground, borderColor, marginBottom: 16 }]}>
+      <View style={styles.assignmentHeader}>
+        <Text style={[styles.assignmentTitle, { color: textColor }]}>
+          Status Shift
+        </Text>
+        <View style={[styles.statusBadge, { backgroundColor: isShiftActive ? BRAND.successSoft : BRAND.warningSoft }]}>
+          <Text style={[styles.statusBadgeText, { color: isShiftActive ? BRAND.success : BRAND.warning }]}>
+            {isShiftActive ? 'Sedang Aktif' : 'Belum Mulai'}
+          </Text>
+        </View>
+      </View>
+
+      {!isShiftActive ? (
+        <View style={{ alignItems: 'center', paddingVertical: 12 }}>
+          <View style={[styles.emptyIcon, { backgroundColor: BRAND.primarySoft, marginBottom: 12 }]}>
+            <MaterialCommunityIcons name="clock-check-outline" size={32} color={BRAND.primary} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: textColor }]}>Anda belum Clock In</Text>
+          <Text style={[styles.emptyDescription, { textAlign: 'center', marginHorizontal: 20, marginBottom: 16 }]}>
+            Silakan Clock In terlebih dahulu untuk mengecek kondisi kendaraan dan memulai shift hari ini.
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.86}
+            style={[styles.primaryButton, { width: '100%', marginTop: 0 }]}
+            onPress={onClockIn}
+          >
+            <MaterialCommunityIcons name="clock-in" size={20} color={BRAND.white} />
+            <Text style={styles.primaryButtonText}>Clock In (Mulai Shift)</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <View style={{ marginTop: 12 }}>
+          <View style={styles.assignmentMetaRow}>
+            <AssignmentMeta
+              icon="time-outline"
+              label="Waktu Mulai"
+              value={formatTime(shift.start_time) + ' WIB'}
+              textColor={textColor}
+            />
+            <AssignmentMeta
+              icon="speedometer-outline"
+              label="Odo Awal"
+              value={`${shift.start_odometer} KM`}
+              textColor={textColor}
+            />
+            <AssignmentMeta
+              icon="car-outline"
+              label="Kendaraan"
+              value={shift.vehicle_plate_number || '-'}
+              secondary={shift.vehicle_name || ''}
+              textColor={textColor}
+              isLast
+            />
+          </View>
+          <TouchableOpacity
+            activeOpacity={0.86}
+            style={[styles.primaryButton, { width: '100%', backgroundColor: BRAND.danger }]}
+            onPress={onClockOut}
+          >
+            <MaterialCommunityIcons name="clock-out" size={20} color={BRAND.white} />
+            <Text style={styles.primaryButtonText}>Clock Out (Akhiri Shift)</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 }
@@ -1169,6 +1304,34 @@ function formatTime(dateString?: string | null) {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
+  });
+}
+
+function formatDayDate(dateString?: string | null) {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.getDate().toString().padStart(2, '0');
+}
+
+function formatMonthName(dateString?: string | null) {
+  if (!dateString) return '-';
+  const date = new Date(dateString);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleDateString('id-ID', { month: 'short' });
+}
+
+function formatDate(dateString?: string | null) {
+  if (!dateString) return '';
+
+  const date = new Date(dateString);
+
+  if (Number.isNaN(date.getTime())) return '';
+
+  return date.toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   });
 }
 

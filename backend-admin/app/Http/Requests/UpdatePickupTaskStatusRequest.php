@@ -14,7 +14,7 @@ class UpdatePickupTaskStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => 'required|in:on_route,arrived,delivered,failed,cancelled',
+            'status' => 'required|in:on_route,arrived,delivered,failed,cancelled,pending',
             'failure_reason' => 'required_if:status,failed|nullable|string',
             'proof_photo' => 'nullable', // Bisa diisi URL string atau file upload
             'completed_odometer' => 'nullable|integer|min:0',

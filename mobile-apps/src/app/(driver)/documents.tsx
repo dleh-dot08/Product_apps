@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, Dimensions, Modal } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, ScrollView, TextInput, Image, Dimensions, Modal, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Text } from '@/components/CustomText';
 import { useTheme } from '../../context/ThemeContext';
@@ -27,13 +27,7 @@ interface ReportItem {
   type: ReportType;
 }
 
-const MOCK_REPORTS: ReportItem[] = [
-  { id: 'TRP-240515-01', from: 'Gudang Pusat Jakarta', to: 'Plant 2 Karawang', date: '15 Mei 2024', time: '07:30 WIB', driver: 'Budi Santoso', status: 'Menunggu', type: 'Delivery' },
-  { id: 'TRP-240514-08', from: 'Gudang Support', to: 'Gudang Subang', date: '14 Mei 2024', time: '10:00 WIB', driver: 'Andi Setiawan', status: 'Disetujui', type: 'Delivery' },
-  { id: 'TRP-240513-05', from: 'Plant 3 Cikarang', to: 'Gudang Pusat Jakarta', date: '13 Mei 2024', time: '09:15 WIB', driver: 'Dedi Kurniawan', status: 'Ditolak', type: 'Return' },
-  { id: 'TRP-240512-03', from: 'Gudang Pusat Jakarta', to: 'Plant 1 Cikarang', date: '12 Mei 2024', time: '08:45 WIB', driver: 'Budi Santoso', status: 'Disetujui', type: 'Delivery' },
-  { id: 'TRP-240511-02', from: 'Gudang Pusat Jakarta', to: 'Depot. Produksi Cikarang', date: '11 Mei 2024', time: '11:25 WIB', driver: 'Agus Setiawan', status: 'Menunggu', type: 'Return' },
-];
+const MOCK_REPORTS: ReportItem[] = [];
 
 const TABS: ReportStatus[] = ['Semua', 'Menunggu', 'Disetujui', 'Ditolak'];
 
@@ -54,34 +48,46 @@ export default function LaporanScreen() {
   const [reports, setReports] = useState<ReportItem[]>(MOCK_REPORTS);
   const [loading, setLoading] = useState(true);
 
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchTasks = useCallback(async (isRefresh = false) => {
+    try {
+      if (!isRefresh && reports.length === 0) setLoading(true);
+      const res = await api.get('/driver/manifests');
+      if (res.data && res.data.data) {
+        const mapped = res.data.data.map((manifest: any) => {
+          const dateObj = manifest.dispatch_date ? new Date(manifest.dispatch_date) : new Date(manifest.created_at || Date.now());
+          return {
+            id: manifest.manifest_number || `DO-${manifest.id}`,
+            real_id: manifest.id,
+            from: 'Penugasan Driver',
+            to: `${manifest.pickup_tasks_count + manifest.delivery_assignments_count} Titik Tujuan`,
+            date: dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
+            time: dateObj.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+            driver: manifest.vehicle?.plate_number || 'Kendaraan',
+            status: manifest.status === 'completed' ? 'Disetujui' : (manifest.status === 'cancelled' ? 'Ditolak' : 'Menunggu'),
+            type: 'Delivery'
+          };
+        });
+        setReports(mapped);
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+      if (isRefresh) setRefreshing(false);
+    }
+  }, [reports.length]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchTasks(true);
+  }, [fetchTasks]);
+
   useFocusEffect(
     useCallback(() => {
-      const fetchTasks = async () => {
-        try {
-          setLoading(true);
-          const res = await api.get('/pickup');
-          if (res.data && res.data.data) {
-            const mapped = res.data.data.map((task: any) => ({
-              id: task.reference_number || `TASK-${task.id}`,
-              real_id: task.id,
-              from: task.pickup_name || '-',
-              to: task.destination || '-',
-              date: new Date(task.assigned_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }),
-              time: new Date(task.assigned_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
-              driver: task.driver?.name || 'Driver',
-              status: task.status === 'assigned' ? 'Menunggu' : task.status === 'delivered' ? 'Disetujui' : task.status === 'failed' || task.status === 'cancelled' ? 'Ditolak' : 'Menunggu',
-              type: task.task_type === 'delivery' ? 'Delivery' : 'Return'
-            }));
-            setReports(mapped);
-          }
-        } catch (error) {
-          console.error(error);
-        } finally {
-          setLoading(false);
-        }
-      };
-      fetchTasks();
-    }, [])
+      fetchTasks(false);
+    }, [fetchTasks])
   );
 
   const filteredReports = reports.filter(report => {
@@ -133,7 +139,13 @@ export default function LaporanScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[colors.tint]} />
+        }
+      >
         {/* Hero Card */}
         <View style={styles.heroCard}>
           <View style={styles.heroContent}>
@@ -163,7 +175,7 @@ export default function LaporanScreen() {
               <Ionicons name="search-outline" size={20} color={colors.icon} />
             <TextInput 
               style={[styles.searchInput, { color: colors.text }]}
-              placeholder="Cari laporan, lokasi, nomor TRP..."
+              placeholder="Cari laporan, DO, atau kendaraan..."
               placeholderTextColor={colors.textSecondary}
               value={searchQuery}
               onChangeText={setSearchQuery}

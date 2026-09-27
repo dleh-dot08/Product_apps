@@ -20,9 +20,32 @@
                                 <div class="col-auto">
                                     <span class="badge rounded-pill bg-primary px-3 py-2" style="font-size: 14px;" id="editPenugasanDO">-</span>
                                 </div>
-                                <div class="col">
-                                    <div class="fw-bold text-dark" id="editPenugasanDriverInfo" style="font-size: 14px;">-</div>
-                                    <div class="text-muted small" id="editPenugasanVehicleInfo">-</div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-secondary small mb-0">Driver Utama</label>
+                                    <select class="form-select form-select-sm" name="driver_id" id="edit_driver_id" required>
+                                        <option value="">Pilih Driver</option>
+                                        @foreach($drivers as $driver)
+                                            <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-bold text-secondary small mb-0">Co Driver</label>
+                                    <select class="form-select form-select-sm" name="co_driver_id" id="edit_co_driver_id">
+                                        <option value="">Tidak Ada</option>
+                                        @foreach($drivers as $driver)
+                                            <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold text-secondary small mb-0">Kendaraan</label>
+                                    <select class="form-select form-select-sm" name="vehicle_id" id="edit_vehicle_id" required>
+                                        <option value="">Pilih Kendaraan</option>
+                                        @foreach($vehicles as $vehicle)
+                                            <option value="{{ $vehicle->id }}">[{{ $vehicle->plate_number }}] {{ $vehicle->name }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="col-auto">
                                     <div class="form-check form-switch mt-1">
@@ -93,10 +116,15 @@
         const editTable = document.getElementById('editTableSelectTasks');
 
         function editUpdateSelectedCount() {
-            let count = document.querySelectorAll('#editTableSelectTasks .edit-task-checkbox:checked').length;
+            let count = document.querySelectorAll('#editTableSelectTasks .edit-task-checkbox:checked, #editTableSelectTasks input[type="hidden"][name="selected_tasks[]"]').length;
             document.getElementById('editSelectedTaskCount').innerText = count + ' Dipilih';
-            document.getElementById('btnSaveEditPenugasan').disabled = (count === 0);
+            document.getElementById('btnSaveEditPenugasan').disabled = false; // Allow saving even if 0 tasks
         }
+
+        window.removeAssignedTask = function(btn) {
+            btn.closest('tr').remove();
+            editUpdateSelectedCount();
+        };
 
         // Check all
         editCheckAll.addEventListener('change', function() {
@@ -127,19 +155,23 @@
          * Open the edit penugasan modal
          * @param {string} manifestId - UUID of the manifest
          * @param {string} noDo - DO number to display
-         * @param {string} driverName - driver info
-         * @param {string} vehicleInfo - vehicle info
+         * @param {string} driverId
+         * @param {string} coDriverId
+         * @param {string} vehicleId
          * @param {string} isOutOfCity
          * @param {string} estimatedArrival
          */
-        window.openEditPenugasanModal = function(manifestId, noDo, driverName, vehicleInfo, isOutOfCity = false, estimatedArrival = '') {
+        window.openEditPenugasanModal = function(manifestId, noDo, driverId, coDriverId, vehicleId, isOutOfCity = false, estimatedArrival = '') {
             // Set form action
             editForm.action = '/pickup-tasks/penugasan/' + manifestId;
 
             // Display info
             document.getElementById('editPenugasanDO').textContent = noDo;
-            document.getElementById('editPenugasanDriverInfo').textContent = driverName;
-            document.getElementById('editPenugasanVehicleInfo').textContent = vehicleInfo;
+            
+            // Set selects
+            if (document.getElementById('edit_driver_id')) document.getElementById('edit_driver_id').value = driverId || '';
+            if (document.getElementById('edit_co_driver_id')) document.getElementById('edit_co_driver_id').value = coDriverId || '';
+            if (document.getElementById('edit_vehicle_id')) document.getElementById('edit_vehicle_id').value = vehicleId || '';
             
             // Set fields
             document.getElementById('is_out_of_city_edit').checked = (isOutOfCity == true || isOutOfCity == '1');
@@ -257,15 +289,32 @@
 
             let statusBadge = task.status || 'draft';
 
-            return `
-                <tr>
-                    <td class="text-center"><input class="form-check-input edit-task-checkbox" type="checkbox" name="selected_tasks[]" value="${valId}" ${checked}></td>
-                    <td>${typeBadge}</td>
-                    <td><span class="fw-bold">${refNumber}</span></td>
-                    <td>${targetName}</td>
-                    <td><span class="badge bg-secondary">${statusBadge.toUpperCase().replace('_', ' ')}</span></td>
-                </tr>
-            `;
+            if (task._group === 'assigned') {
+                return `
+                    <tr>
+                        <td class="text-center align-middle">
+                            <input type="hidden" name="selected_tasks[]" value="${valId}">
+                            <button type="button" class="btn btn-sm text-danger p-0 border-0 bg-transparent" onclick="removeAssignedTask(this)" title="Cabut Tugas">
+                                <i class="fa-solid fa-xmark fs-5"></i>
+                            </button>
+                        </td>
+                        <td class="align-middle">${typeBadge}</td>
+                        <td class="align-middle"><span class="fw-bold">${refNumber}</span></td>
+                        <td class="align-middle">${targetName}</td>
+                        <td class="align-middle"><span class="badge bg-secondary">${statusBadge.toUpperCase().replace('_', ' ')}</span></td>
+                    </tr>
+                `;
+            } else {
+                return `
+                    <tr>
+                        <td class="text-center align-middle"><input class="form-check-input edit-task-checkbox" type="checkbox" name="selected_tasks[]" value="${valId}" ${checked}></td>
+                        <td class="align-middle">${typeBadge}</td>
+                        <td class="align-middle"><span class="fw-bold">${refNumber}</span></td>
+                        <td class="align-middle">${targetName}</td>
+                        <td class="align-middle"><span class="badge bg-secondary">${statusBadge.toUpperCase().replace('_', ' ')}</span></td>
+                    </tr>
+                `;
+            }
         }
     })();
 </script>

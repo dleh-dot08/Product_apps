@@ -21,7 +21,10 @@ class DriverDashboardController extends Controller
         $endOfDay = now()->endOfDay();
 
         $pickups = DB::table('pickup_tasks')
-            ->leftJoin('vehicles', 'pickup_tasks.vehicle_id', '=', 'vehicles.id')
+            ->leftJoin('task_manifests', 'pickup_tasks.manifest_id', '=', 'task_manifests.id')
+            ->leftJoin('vehicles', function ($join) {
+                $join->on('vehicles.id', '=', DB::raw('COALESCE(task_manifests.vehicle_id, pickup_tasks.vehicle_id)'));
+            })
             ->select(
                 'pickup_tasks.id', 
                 'pickup_tasks.reference_number', 
@@ -29,7 +32,10 @@ class DriverDashboardController extends Controller
                 'pickup_tasks.pickup_location', 
                 'pickup_tasks.destination', 
                 'pickup_tasks.assigned_at', 
-                'pickup_tasks.status', 
+                DB::raw("CASE 
+                    WHEN (COALESCE(task_manifests.driver_id, pickup_tasks.driver_id) IS NULL OR (COALESCE(task_manifests.driver_id, pickup_tasks.driver_id) != '" . $user->id . "' AND COALESCE(task_manifests.co_driver_id, pickup_tasks.co_driver_id) != '" . $user->id . "') OR (pickup_tasks.dispatch_date < CURRENT_DATE AND pickup_tasks.status NOT IN ('completed', 'delivered') AND COALESCE(pickup_tasks.is_out_of_city, false) = false)) THEN 'Tidak Terkirim'
+                    ELSE pickup_tasks.status 
+                END as status"), 
                 DB::raw("'pickup' as task_type"),
                 'pickup_tasks.quantity',
                 'pickup_tasks.unit',
@@ -51,12 +57,26 @@ class DriverDashboardController extends Controller
             )
             ->where(function ($q) use ($user) {
                 $q->where('pickup_tasks.driver_id', $user->id)
-                  ->orWhere('pickup_tasks.co_driver_id', $user->id);
+                  ->orWhere('pickup_tasks.co_driver_id', $user->id)
+                  ->orWhereExists(function ($query) use ($user) {
+                      $query->select(DB::raw(1))
+                            ->from('tasks_manifest_history')
+                            ->join('task_manifests', 'tasks_manifest_history.manifest_id', '=', 'task_manifests.id')
+                            ->whereColumn('tasks_manifest_history.task_id', 'pickup_tasks.id')
+                            ->where('tasks_manifest_history.task_type', 'pickup')
+                            ->where(function ($sub) use ($user) {
+                                $sub->where('task_manifests.driver_id', $user->id)
+                                    ->orWhere('task_manifests.co_driver_id', $user->id);
+                            });
+                  });
             });
 
         $deliveries = DB::table('delivery_assignments')
             ->join('sales_orders', 'delivery_assignments.sales_order_id', '=', 'sales_orders.id')
-            ->leftJoin('vehicles', 'delivery_assignments.vehicle_id', '=', 'vehicles.id')
+            ->leftJoin('task_manifests', 'delivery_assignments.manifest_id', '=', 'task_manifests.id')
+            ->leftJoin('vehicles', function ($join) {
+                $join->on('vehicles.id', '=', DB::raw('COALESCE(task_manifests.vehicle_id, delivery_assignments.vehicle_id)'));
+            })
             ->select(
                 'delivery_assignments.id', 
                 'sales_orders.so_number as reference_number', 
@@ -64,7 +84,10 @@ class DriverDashboardController extends Controller
                 DB::raw("COALESCE(delivery_assignments.pickup_location, '-') as pickup_location"), 
                 'sales_orders.customer_name as destination', 
                 'delivery_assignments.assigned_at', 
-                'delivery_assignments.status', 
+                DB::raw("CASE 
+                    WHEN (COALESCE(task_manifests.driver_id, delivery_assignments.driver_id) IS NULL OR (COALESCE(task_manifests.driver_id, delivery_assignments.driver_id) != '" . $user->id . "' AND COALESCE(task_manifests.co_driver_id, delivery_assignments.co_driver_id) != '" . $user->id . "') OR (delivery_assignments.dispatch_date < CURRENT_DATE AND delivery_assignments.status NOT IN ('completed', 'delivered') AND COALESCE(delivery_assignments.is_out_of_city, false) = false)) THEN 'Tidak Terkirim'
+                    ELSE delivery_assignments.status 
+                END as status"), 
                 DB::raw("'delivery' as task_type"),
                 'sales_orders.ordered_quantity as quantity',
                 'sales_orders.unit',
@@ -86,13 +109,25 @@ class DriverDashboardController extends Controller
             )
             ->where(function ($q) use ($user) {
                 $q->where('delivery_assignments.driver_id', $user->id)
-                  ->orWhere('delivery_assignments.co_driver_id', $user->id);
+                  ->orWhere('delivery_assignments.co_driver_id', $user->id)
+                  ->orWhereExists(function ($query) use ($user) {
+                      $query->select(DB::raw(1))
+                            ->from('tasks_manifest_history')
+                            ->join('task_manifests', 'tasks_manifest_history.manifest_id', '=', 'task_manifests.id')
+                            ->whereColumn('tasks_manifest_history.task_id', 'delivery_assignments.id')
+                            ->where('tasks_manifest_history.task_type', 'delivery')
+                            ->where(function ($sub) use ($user) {
+                                $sub->where('task_manifests.driver_id', $user->id)
+                                    ->orWhere('task_manifests.co_driver_id', $user->id);
+                            });
+                  });
             });
 
         $unionQuery = $pickups->unionAll($deliveries);
         
         // Query untuk HARI INI
         $todayQuery = DB::query()->fromSub($unionQuery, 'tasks')
+            ->where('status', '!=', 'Tidak Terkirim')
             ->where(function ($query) use ($today, $endOfDay) {
                 $query->where(function ($q) use ($today, $endOfDay) {
                     // Cek berdasarkan dispatch_date & estimated_arrival jika ada
@@ -112,8 +147,33 @@ class DriverDashboardController extends Controller
         // 3. Berlangsung (Hari ini)
         $inProgressTrips = (clone $todayQuery)->whereIn('status', ['assigned', 'on_route', 'arrived'])->count();
 
-        // 4. Jarak Tempuh
+        // 4. Jarak Tempuh Hari Ini (dari Shift)
         $distanceKm = 0;
+        $todayShifts = DB::table('shifts')
+            ->where('driver_id', $user->id)
+            ->whereDate('work_date', $today)
+            ->get();
+            
+        foreach ($todayShifts as $shift) {
+            if ($shift->start_odometer) {
+                $end = $shift->end_odometer;
+                if (!$end) {
+                    $maxOdoData = DB::query()->fromSub($unionQuery, 'tasks')
+                        ->where(function($q) use ($today, $endOfDay) {
+                             $q->whereDate(DB::raw("COALESCE(dispatch_date, assigned_at)"), '<=', $endOfDay)
+                               ->whereDate(DB::raw("COALESCE(estimated_arrival, dispatch_date, assigned_at)"), '>=', $today);
+                        })
+                        ->selectRaw('MAX(completed_odometer) as max_c, MAX(start_odometer) as max_s')
+                        ->first();
+                    if ($maxOdoData) {
+                        $end = max((float)$maxOdoData->max_c, (float)$maxOdoData->max_s);
+                    }
+                }
+                if ($end > $shift->start_odometer) {
+                    $distanceKm += ($end - $shift->start_odometer);
+                }
+            }
+        }
 
         // 5. List Trip Hari ini
         $todayTasks = (clone $todayQuery)
@@ -134,8 +194,7 @@ class DriverDashboardController extends Controller
         // 7. KPI Performance (Berdasarkan Filter)
         $period = $request->input('period', '7_days');
         
-        $kpiQuery = DB::query()->fromSub($unionQuery, 'tasks')
-            ->where('status', 'delivered');
+        $kpiQueryAll = DB::query()->fromSub($unionQuery, 'tasks');
             
         if ($period !== 'all') {
             $startDate = null;
@@ -152,39 +211,103 @@ class DriverDashboardController extends Controller
             }
             
             if ($startDate) {
-                $kpiQuery->where('completed_at', '>=', $startDate);
+                $kpiQueryAll->where(DB::raw("COALESCE(dispatch_date, assigned_at)"), '>=', $startDate);
             }
         }
             
-        $allDeliveredTrips = $kpiQuery->get();
+        $allPeriodTrips = $kpiQueryAll->get();
             
-        $totalDelivered = $allDeliveredTrips->count();
-        $onTimeCount = 0;
+        $totalValid = 0;
+        $deliveredCount = 0;
+        $kendalaCount = 0;
+        $lateCount = 0;
+        $failedCount = 0;
+        
         $totalDistanceAll = 0;
         $totalFuelAll = 0;
         
-        foreach($allDeliveredTrips as $trip) {
-            if ($trip->estimated_arrival && $trip->completed_at) {
-                if (\Carbon\Carbon::parse($trip->completed_at)->lte(\Carbon\Carbon::parse($trip->estimated_arrival))) {
-                    $onTimeCount++;
-                }
-            } else {
-                // Asumsi tepat waktu jika tidak ada estimasi atau completed_at belum tersetting dengan benar di db lama
-                $onTimeCount++;
+        foreach($allPeriodTrips as $trip) {
+            if ($trip->status === 'pending') {
+                $kendalaCount++;
+                continue; // Kendala tidak masuk valid total
             }
-
-            // Hitung BBM rata-rata
-            $dist = max(0, (float)$trip->completed_odometer - (float)$trip->start_odometer);
-            $totalDistanceAll += $dist;
-            $totalFuelAll += (float)$trip->start_fuel;
+            
+            $totalValid++;
+            
+            if ($trip->status === 'delivered') {
+                $deliveredCount++;
+                
+                // Cek apakah terlambat
+                if ($trip->estimated_arrival && $trip->completed_at) {
+                    if (\Carbon\Carbon::parse($trip->completed_at)->gt(\Carbon\Carbon::parse($trip->estimated_arrival))) {
+                        $lateCount++;
+                    }
+                }
+                
+                $totalFuelAll += (float)$trip->start_fuel;
+            } elseif ($trip->status === 'Tidak Terkirim' || $trip->status === 'failed') {
+                $failedCount++;
+            }
         }
         
-        $onTimePercentage = $totalDelivered > 0 ? round(($onTimeCount / $totalDelivered) * 100) : 100;
+        // Jarak tempuh untuk period ini (dari Shift)
+        $totalDistanceAll = 0;
+        $periodShiftsQuery = DB::table('shifts')->where('driver_id', $user->id);
+        
+        if (isset($startDate)) {
+            $periodShiftsQuery->whereDate('work_date', '>=', $startDate);
+        }
+        
+        $periodShifts = $periodShiftsQuery->get();
+            
+        foreach ($periodShifts as $shift) {
+            if ($shift->start_odometer) {
+                $end = $shift->end_odometer;
+                if (!$end) {
+                    $maxOdoData = DB::query()->fromSub($unionQuery, 'tasks')
+                        ->where(function($q) use ($shift) {
+                             $q->whereDate(DB::raw("COALESCE(dispatch_date, assigned_at)"), '<=', $shift->work_date)
+                               ->whereDate(DB::raw("COALESCE(estimated_arrival, dispatch_date, assigned_at)"), '>=', $shift->work_date);
+                        })
+                        ->selectRaw('MAX(completed_odometer) as max_c, MAX(start_odometer) as max_s')
+                        ->first();
+                    if ($maxOdoData) {
+                        $end = max((float)$maxOdoData->max_c, (float)$maxOdoData->max_s);
+                    }
+                }
+                if ($end > $shift->start_odometer) {
+                    $totalDistanceAll += ($end - $shift->start_odometer);
+                }
+            }
+        }
+        
+        $totalDelivered = $deliveredCount; // Untuk output json total_trip yang sudah delivered
+        
+        // Performa = (Selesai / (Total Tugas - Kendala)) * 100
+        $onTimePercentage = $totalValid > 0 ? round(($deliveredCount / $totalValid) * 100) : 100;
         $fuelEfficiency = $totalFuelAll > 0 ? round($totalDistanceAll / $totalFuelAll, 1) : 12.5; // default 12.5 km/l jika blm ada data bbm
+
+        // 8. Active Shift
+        $shiftRecord = \App\Models\Shift::with('vehicle')->where('driver_id', $user->id)
+            ->whereNull('check_out_at')
+            ->first();
+
+        $activeShift = null;
+        if ($shiftRecord) {
+            $activeShift = [
+                'id' => $shiftRecord->id,
+                'start_time' => $shiftRecord->check_in_at,
+                'start_odometer' => $shiftRecord->start_odometer,
+                'vehicle_plate_number' => $shiftRecord->vehicle ? $shiftRecord->vehicle->plate_number : null,
+                'vehicle_name' => $shiftRecord->vehicle ? $shiftRecord->vehicle->name : null,
+                'status' => 'active'
+            ];
+        }
 
         return response()->json([
             'status' => 'success',
             'data' => [
+                'active_shift' => $activeShift,
                 'today_trips_count' => $totalTrips,
                 'completed_trips_count' => $completedTrips,
                 'in_progress_trips_count' => $inProgressTrips,
@@ -194,8 +317,12 @@ class DriverDashboardController extends Controller
                 'performance' => [
                     'on_time_percentage' => $onTimePercentage,
                     'fuel_efficiency' => $fuelEfficiency,
-                    'total_trip' => $totalDelivered,
-                    'on_time_trip' => $onTimeCount,
+                    'total_trip' => $totalValid,
+                    'on_time_trip' => $deliveredCount,
+                    'kendala_trip' => $kendalaCount,
+                    'late_trip' => $lateCount,
+                    'failed_trip' => $failedCount,
+                    'distance_period' => $totalDistanceAll,
                 ]
             ]
         ]);

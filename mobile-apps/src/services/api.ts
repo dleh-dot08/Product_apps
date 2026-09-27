@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { getStorageItemAsync } from '../utils/storage';
 
-const API_BASE_URL = 'https://driverapp.aqpa-indonesia.com/api';
+// TODO: WAJIB DIKEMBALIKAN KE PRODUCTION SEBELUM PUSH!
+// TODO: WAJIB DIKEMBALIKAN KE PRODUCTION SEBELUM PUSH!
+// const API_BASE_URL = 'https://driverapp.aqpa-indonesia.com/api'; // PRODUCTION
+const API_BASE_URL = 'http://192.168.0.103:8000/api'; // LOCAL TESTING
 const API_KEY = 'cHJvZHVjdF9hcHBzX2FwaV9yb3V0ZXJfMjAyNg==';
 
 const api = axios.create({

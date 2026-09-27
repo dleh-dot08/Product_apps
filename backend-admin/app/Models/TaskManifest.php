@@ -61,4 +61,20 @@ class TaskManifest extends Model
     {
         return $this->hasMany(DeliveryAssignment::class, 'manifest_id');
     }
+
+    public function historicalPickupTasks()
+    {
+        return $this->belongsToMany(PickupTask::class, 'tasks_manifest_history', 'manifest_id', 'task_id')
+                    ->wherePivot('task_type', 'pickup')
+                    ->withPivot('status', 'created_at', 'updated_at')
+                    ->orderBy('tasks_manifest_history.created_at', 'asc');
+    }
+
+    public function historicalDeliveryAssignments()
+    {
+        return $this->belongsToMany(DeliveryAssignment::class, 'tasks_manifest_history', 'manifest_id', 'task_id')
+                    ->wherePivot('task_type', 'delivery')
+                    ->withPivot('status', 'created_at', 'updated_at')
+                    ->orderBy('tasks_manifest_history.created_at', 'asc');
+    }
 }

@@ -149,7 +149,7 @@ class PickupTaskController extends Controller
         
         $user = auth()->user();
         
-        $query = \App\Models\TaskManifest::with(['driver', 'coDriver', 'vehicle', 'pickupTasks', 'deliveryAssignments.salesOrder'])->latest('dispatch_date');
+        $query = \App\Models\TaskManifest::with(['driver', 'coDriver', 'vehicle', 'historicalPickupTasks', 'historicalDeliveryAssignments.salesOrder'])->latest('dispatch_date');
         
         if ($user && strtolower($user->role) === 'driver') {
             $query->where('driver_id', $user->id);
@@ -184,10 +184,13 @@ class PickupTaskController extends Controller
                 'id' => $manifest->id,
                 'no_do' => $manifest->manifest_number,
                 'date' => \Carbon\Carbon::parse($manifest->dispatch_date)->format('Y-m-d'),
+                'driver_id' => $manifest->driver_id,
+                'co_driver_id' => $manifest->co_driver_id,
+                'vehicle_id' => $manifest->vehicle_id,
                 'driver' => $manifest->driver,
                 'coDriver' => $manifest->coDriver,
                 'vehicle' => $manifest->vehicle,
-                'task_count' => $manifest->pickupTasks->count() + $manifest->deliveryAssignments->count(),
+                'task_count' => $manifest->historicalPickupTasks->count() + $manifest->historicalDeliveryAssignments->count(),
                 'status' => $manifest->status,
                 'is_out_of_city' => $manifest->is_out_of_city,
                 'estimated_arrival' => $manifest->estimated_arrival,
@@ -208,7 +211,56 @@ class PickupTaskController extends Controller
     public function monitoring(Request $request)
     {
         $stats = $this->getTaskStatistics();
-        return view('pickup-tasks.monitoring.index', $stats);
+        
+        $query = \App\Models\Shift::with(['driver', 'vehicle', 'expenses']);
+
+        // Filter Date (default to today if empty)
+        $date = $request->input('date', now()->toDateString());
+        if ($date) {
+            $query->whereDate('work_date', $date);
+        }
+
+        // Filter Driver
+        if ($request->has('driver_id') && $request->driver_id != '') {
+            $query->where('driver_id', $request->driver_id);
+        }
+
+        // Search Filter (by Driver Name or Vehicle Plate)
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->whereHas('driver', function($q2) use ($search) {
+                    $q2->where('name', 'like', "%{$search}%")
+                       ->orWhere('full_name', 'like', "%{$search}%");
+                })->orWhereHas('vehicle', function($q2) use ($search) {
+                    $q2->where('plate_number', 'like', "%{$search}%")
+                       ->orWhere('name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        $activeShifts = $query->orderBy('check_in_at', 'desc')->paginate(10);
+            
+        foreach ($activeShifts as $shift) {
+            // Cek apakah ada tugas yang terhubung dengan shift ini
+            $hasTasks = \App\Models\PickupTask::where('shift_id', $shift->id)->exists() 
+                     || \App\Models\DeliveryAssignment::where('shift_id', $shift->id)->exists();
+                     
+            $shift->has_tasks = $hasTasks;
+            $shift->has_expenses = $shift->expenses->count() > 0;
+            
+            // Hitung total jarak
+            $shift->total_distance = ($shift->end_odometer && $shift->start_odometer) 
+                                     ? max(0, $shift->end_odometer - $shift->start_odometer) 
+                                     : 0;
+        }
+
+        $drivers = \App\Models\User::where('role', 'driver')->get();
+
+        return view('pickup-tasks.monitoring.index', array_merge($stats, [
+            'activeShifts' => $activeShifts,
+            'drivers' => $drivers,
+        ]));
     }
 
     public function historyDo(Request $request)
@@ -479,6 +531,8 @@ class PickupTaskController extends Controller
                 'title' => $title,
                 'body' => $body,
                 'sound' => 'default',
+                'priority' => 'high',
+                'channelId' => 'default',
             ]);
         }
     }
@@ -828,7 +882,9 @@ class PickupTaskController extends Controller
     }
     public function getUnassignedTasks(Request $request)
     {
-        $pickups = PickupTask::whereNull('manifest_id')
+        $pickups = PickupTask::where(function($q) {
+                $q->whereNull('manifest_id')->orWhere('status', 'pending');
+            })
             ->whereIn('status', ['draft', 'pending'])
             ->get()
             ->map(function($task) {
@@ -837,7 +893,9 @@ class PickupTaskController extends Controller
             });
 
         $deliveries = DeliveryAssignment::with('salesOrder')
-            ->whereNull('manifest_id')
+            ->where(function($q) {
+                $q->whereNull('manifest_id')->orWhere('status', 'pending');
+            })
             ->whereIn('status', ['draft', 'pending'])
             ->get()
             ->map(function($task) {
@@ -859,27 +917,37 @@ class PickupTaskController extends Controller
         $manifest = \App\Models\TaskManifest::findOrFail($manifestId);
 
         // Tasks currently assigned to this manifest
-        $assignedPickups = PickupTask::where('manifest_id', $manifestId)
+        $assignedPickups = PickupTask::join('tasks_manifest_history', 'pickup_tasks.id', '=', 'tasks_manifest_history.task_id')
+            ->where('tasks_manifest_history.manifest_id', $manifestId)
+            ->where('tasks_manifest_history.task_type', 'pickup')
+            ->select('pickup_tasks.*', 'tasks_manifest_history.status as manifest_task_status')
             ->get()
             ->map(function($task) {
                 $task->task_type = 'pickup';
                 $task->is_assigned = true;
+                $task->status = $task->manifest_task_status;
                 return $task;
             });
 
         $assignedDeliveries = DeliveryAssignment::with('salesOrder')
-            ->where('manifest_id', $manifestId)
+            ->join('tasks_manifest_history', 'delivery_assignments.id', '=', 'tasks_manifest_history.task_id')
+            ->where('tasks_manifest_history.manifest_id', $manifestId)
+            ->where('tasks_manifest_history.task_type', 'delivery')
+            ->select('delivery_assignments.*', 'tasks_manifest_history.status as manifest_task_status')
             ->get()
             ->map(function($task) {
                 $task->task_type = 'delivery';
                 $task->is_assigned = true;
+                $task->status = $task->manifest_task_status;
                 return $task;
             });
 
         $assigned = $assignedPickups->concat($assignedDeliveries)->values();
 
         // Tasks unassigned (available to add)
-        $unassignedPickups = PickupTask::whereNull('manifest_id')
+        $unassignedPickups = PickupTask::where(function($q) {
+                $q->whereNull('manifest_id')->orWhere('status', 'pending');
+            })
             ->whereIn('status', ['draft', 'pending', 'assigned'])
             ->get()
             ->map(function($task) {
@@ -889,7 +957,9 @@ class PickupTaskController extends Controller
             });
 
         $unassignedDeliveries = DeliveryAssignment::with('salesOrder')
-            ->whereNull('manifest_id')
+            ->where(function($q) {
+                $q->whereNull('manifest_id')->orWhere('status', 'pending');
+            })
             ->whereIn('status', ['draft', 'pending', 'assigned'])
             ->get()
             ->map(function($task) {
@@ -914,18 +984,24 @@ class PickupTaskController extends Controller
         $manifest = \App\Models\TaskManifest::findOrFail($manifestId);
 
         $request->validate([
-            'selected_tasks' => 'required|array|min:1',
+            'driver_id' => 'required|uuid|exists:users,id',
+            'co_driver_id' => 'nullable|uuid|exists:users,id',
+            'vehicle_id' => 'required|uuid|exists:vehicles,id',
+            'selected_tasks' => 'nullable|array',
             'is_out_of_city' => 'nullable|boolean',
             'estimated_arrival' => 'nullable|date',
         ]);
 
         $isOutOfCity = $request->boolean('is_out_of_city');
         $manifest->update([
+            'driver_id' => $request->driver_id,
+            'co_driver_id' => $request->co_driver_id,
+            'vehicle_id' => $request->vehicle_id,
             'is_out_of_city' => $isOutOfCity,
             'estimated_arrival' => $isOutOfCity ? $request->estimated_arrival : null,
         ]);
 
-        $selectedTasks = $request->selected_tasks;
+        $selectedTasks = $request->selected_tasks ?? [];
 
         // Collect IDs to keep
         $keepPickupIds = [];
@@ -944,7 +1020,15 @@ class PickupTaskController extends Controller
             ->whereNotIn('id', $keepPickupIds)
             ->get();
         foreach ($removedPickups as $t) {
-            $t->update(['manifest_id' => null, 'status' => 'draft']);
+            $t->update([
+                'manifest_id' => null, 
+                'status' => 'draft',
+                'driver_id' => null,
+                'co_driver_id' => null,
+                'vehicle_id' => null,
+                'assigned_at' => null,
+            ]);
+            \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $t->id)->delete();
             $this->logHistory($t, 'pickup', 'Dihapus dari manifest ' . $manifest->manifest_number);
         }
 
@@ -952,7 +1036,15 @@ class PickupTaskController extends Controller
             ->whereNotIn('id', $keepDeliveryIds)
             ->get();
         foreach ($removedDeliveries as $t) {
-            $t->update(['manifest_id' => null, 'status' => 'draft']);
+            $t->update([
+                'manifest_id' => null, 
+                'status' => 'draft',
+                'driver_id' => null,
+                'co_driver_id' => null,
+                'vehicle_id' => null,
+                'assigned_at' => null,
+            ]);
+            \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $t->id)->delete();
             $this->logHistory($t, 'delivery', 'Dihapus dari manifest ' . $manifest->manifest_number);
         }
 
@@ -964,18 +1056,31 @@ class PickupTaskController extends Controller
             ->get();
         foreach ($newPickups as $t) {
             $isNew = $t->manifest_id !== $manifest->id;
-            $t->update([
+            $updateData = [
                 'manifest_id' => $manifest->id,
                 'driver_id' => $manifest->driver_id,
                 'co_driver_id' => $manifest->co_driver_id,
                 'vehicle_id' => $manifest->vehicle_id,
-                'status' => 'assigned',
-                'assigned_at' => now(),
                 'dispatch_date' => $manifest->dispatch_date,
                 'is_out_of_city' => $manifest->is_out_of_city,
                 'estimated_arrival' => $manifest->estimated_arrival,
-            ]);
+            ];
+
             if ($isNew) {
+                $updateData['status'] = 'assigned';
+                $updateData['assigned_at'] = now();
+            }
+
+            $t->update($updateData);
+            if ($isNew) {
+                \DB::table('tasks_manifest_history')->insert([
+                    'manifest_id' => $manifest->id,
+                    'task_id' => $t->id,
+                    'task_type' => 'pickup',
+                    'status' => 'assigned',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
                 $this->logHistory($t, 'pickup', 'Ditugaskan ke manifest ' . $manifest->manifest_number);
             }
         }
@@ -987,23 +1092,111 @@ class PickupTaskController extends Controller
             ->get();
         foreach ($newDeliveries as $t) {
             $isNew = $t->manifest_id !== $manifest->id;
-            $t->update([
+            $updateData = [
                 'manifest_id' => $manifest->id,
                 'driver_id' => $manifest->driver_id,
                 'co_driver_id' => $manifest->co_driver_id,
                 'vehicle_id' => $manifest->vehicle_id,
-                'status' => 'assigned',
-                'assigned_at' => now(),
                 'dispatch_date' => $manifest->dispatch_date,
                 'is_out_of_city' => $manifest->is_out_of_city,
                 'estimated_arrival' => $manifest->estimated_arrival,
-            ]);
+            ];
+
             if ($isNew) {
+                $updateData['status'] = 'assigned';
+                $updateData['assigned_at'] = now();
+            }
+
+            $t->update($updateData);
+            if ($isNew) {
+                \DB::table('tasks_manifest_history')->insert([
+                    'manifest_id' => $manifest->id,
+                    'task_id' => $t->id,
+                    'task_type' => 'delivery',
+                    'status' => 'assigned',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
                 $this->logHistory($t, 'delivery', 'Ditugaskan ke manifest ' . $manifest->manifest_number);
             }
         }
 
         return redirect()->route('pickup-tasks.list-penugasan')->with('success', 'Daftar tugas pada penugasan ' . $manifest->manifest_number . ' berhasil diperbarui.');
+    }
+
+    public function destroyPenugasan($manifestId)
+    {
+        $manifest = \App\Models\TaskManifest::findOrFail($manifestId);
+        
+        // Remove tasks from this manifest
+        $pickups = \App\Models\PickupTask::where('manifest_id', $manifestId)->get();
+        foreach ($pickups as $t) {
+            $t->update([
+                'manifest_id' => null, 
+                'status' => 'draft',
+                'driver_id' => null,
+                'co_driver_id' => null,
+                'vehicle_id' => null,
+                'assigned_at' => null,
+            ]);
+            \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $t->id)->delete();
+            $this->logHistory($t, 'pickup', 'Dihapus dari manifest ' . $manifest->manifest_number . ' (Penugasan dihapus)');
+        }
+
+        $deliveries = \App\Models\DeliveryAssignment::where('manifest_id', $manifestId)->get();
+        foreach ($deliveries as $t) {
+            $t->update([
+                'manifest_id' => null, 
+                'status' => 'draft',
+                'driver_id' => null,
+                'co_driver_id' => null,
+                'vehicle_id' => null,
+                'assigned_at' => null,
+            ]);
+            \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $t->id)->delete();
+            $this->logHistory($t, 'delivery', 'Dihapus dari manifest ' . $manifest->manifest_number . ' (Penugasan dihapus)');
+        }
+
+        $manifest->delete();
+
+        return redirect()->route('pickup-tasks.list-penugasan')->with('success', 'Penugasan berhasil dihapus dan tugas dikembalikan ke daftar tunggu.');
+    }
+
+    public function removeTaskFromManifest($manifestId, $taskType, $taskId)
+    {
+        $manifest = \App\Models\TaskManifest::findOrFail($manifestId);
+        
+        if ($taskType === 'pickup') {
+            $task = \App\Models\PickupTask::findOrFail($taskId);
+            if ($task->manifest_id == $manifest->id) {
+                $task->update([
+                    'manifest_id' => null, 
+                    'status' => 'draft',
+                    'driver_id' => null,
+                    'co_driver_id' => null,
+                    'vehicle_id' => null,
+                    'assigned_at' => null,
+                ]);
+                \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $taskId)->where('task_type', 'pickup')->delete();
+                $this->logHistory($task, 'pickup', 'Dihapus dari manifest ' . $manifest->manifest_number);
+            }
+        } else {
+            $task = \App\Models\DeliveryAssignment::findOrFail($taskId);
+            if ($task->manifest_id == $manifest->id) {
+                $task->update([
+                    'manifest_id' => null, 
+                    'status' => 'draft',
+                    'driver_id' => null,
+                    'co_driver_id' => null,
+                    'vehicle_id' => null,
+                    'assigned_at' => null,
+                ]);
+                \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $taskId)->where('task_type', 'delivery')->delete();
+                $this->logHistory($task, 'delivery', 'Dihapus dari manifest ' . $manifest->manifest_number);
+            }
+        }
+
+        return redirect()->back()->with('success', 'Tugas berhasil dicabut dari penugasan.');
     }
 
     public function storePenugasan(Request $request)
@@ -1063,6 +1256,14 @@ class PickupTaskController extends Controller
                         'estimated_arrival' => $manifest->estimated_arrival,
                     ]);
                     $this->logHistory($task, 'pickup', 'Ditugaskan ke manifest ' . $manifestNumber);
+                    \DB::table('tasks_manifest_history')->insert([
+                        'manifest_id' => $manifest->id,
+                        'task_id' => $task->id,
+                        'task_type' => 'pickup',
+                        'status' => 'assigned',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
                 }
             } else if (strpos($taskId, 'delivery_') === 0) {
                 $id = str_replace('delivery_', '', $taskId);
@@ -1080,6 +1281,14 @@ class PickupTaskController extends Controller
                         'estimated_arrival' => $manifest->estimated_arrival,
                     ]);
                     $this->logHistory($task, 'delivery', 'Ditugaskan ke manifest ' . $manifestNumber);
+                    \DB::table('tasks_manifest_history')->insert([
+                        'manifest_id' => $manifest->id,
+                        'task_id' => $task->id,
+                        'task_type' => 'delivery',
+                        'status' => 'assigned',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
                 }
             }
         }
