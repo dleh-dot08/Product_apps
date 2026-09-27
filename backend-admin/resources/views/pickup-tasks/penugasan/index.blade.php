@@ -45,6 +45,7 @@
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 px-4" style="width: 50px;">No</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">No Delivery Order</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tanggal</th>
+                        <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Dibuat Oleh</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Driver Utama</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Co Driver</th>
                         <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Kendaraan</th>
@@ -61,6 +62,7 @@
                             </td>
                             <td><span class="primary-line fw-bold">{{ $assignment->no_do }}</span></td>
                             <td><span class="secondary-line">{{ \Carbon\Carbon::parse($assignment->date)->translatedFormat('d M Y') }}</span></td>
+                            <td><span class="secondary-line badge bg-light text-dark border"><i class="fa-solid fa-user-gear me-1"></i> {{ $assignment->assigned_by_name ?? 'Sistem/Admin' }}</span></td>
                             <td>
                                 <div class="d-flex align-items-center">
                                     <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px; font-size: 14px; font-weight: bold;">

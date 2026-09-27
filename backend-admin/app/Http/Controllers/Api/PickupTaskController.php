@@ -366,6 +366,24 @@ class PickupTaskController extends Controller
 
         $task->update($updateData);
 
+        $historyNotes = 'Status diubah menjadi ' . strtoupper(str_replace('_', ' ', $newStatus)) . ' melalui aplikasi mobile';
+        if ($newStatus === 'pending' && $request->has('arrival_notes')) {
+            $historyNotes = 'Alasan tertunda/gagal: ' . $request->input('arrival_notes');
+        } elseif ($newStatus === 'failed' && ($request->has('failure_reason') || $request->has('arrival_notes'))) {
+            $historyNotes = 'Alasan gagal: ' . ($request->input('failure_reason') ?? $request->input('arrival_notes'));
+        } elseif ($request->has('departure_notes') && $newStatus === 'on_route') {
+            $historyNotes = 'Catatan: ' . $request->input('departure_notes');
+        }
+
+        \App\Models\TaskHistory::create([
+            'task_id' => $task->id,
+            'task_type' => $isPickup ? 'pickup' : 'delivery',
+            'driver_id' => $user->id,
+            'status' => $newStatus,
+            'notes' => $historyNotes,
+            'recorded_by' => $user->id,
+        ]);
+
         if ($task->manifest_id) {
             \DB::table('tasks_manifest_history')
                 ->where('manifest_id', $task->manifest_id)
