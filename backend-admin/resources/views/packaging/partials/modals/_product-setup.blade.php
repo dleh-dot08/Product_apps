@@ -35,7 +35,7 @@
         'items' => $jobItems,
 
         'packagingNumber' => $calculation->packaging_number ?? 'PKG-AUTO-001',
-        'packerId' => $calculation->packer_id ?? auth()->id(),
+        'packerId' => $calculation->packer_id ?? '',
         'qtyPacking' => $calculation->qty_packaging ?? 1,
         'deliveryDate' => $calculation->completion_date ?? '',
         'typePackaging' => $calculation->type_packaging ?? 'Box',
@@ -2243,7 +2243,7 @@
                     <select class="form-select" id="s2_packer">
                         <option value="">Pilih Packer...</option>
                         @php
-                            $users = class_exists('\App\Models\User') ? \App\Models\User::where('role', 'packer')->get() : collect();
+                            $users = class_exists('\App\Models\User') ? \App\Models\User::whereIn('role', ['packer'])->get() : collect();
                         @endphp
                         @foreach($users as $user)
                             <option value="{{ $user->id }}" {{ auth()->id() == $user->id ? 'selected' : '' }}>
@@ -2273,7 +2273,7 @@
                 <div class="s2-field-card">
                     <label class="s2-label" for="s2_delivery_date">
                         <i class="fa-solid fa-calendar-days"></i>
-                        Delivery Date
+                        Packaging Date
                     </label>
 
                     <input
@@ -3543,7 +3543,6 @@
 
         const validateStepTwo = () => {
             const requiredIds = [
-                's2_packer',
                 's2_qty_pack',
                 's2_length',
                 's2_width',
@@ -3578,7 +3577,7 @@
 
                 if (statusText) {
                     statusText.textContent =
-                        'Lengkapi Packer, Qty, dan Dimensi terlebih dahulu.';
+                        'Lengkapi Qty dan Dimensi terlebih dahulu.';
                 }
 
                 return false;

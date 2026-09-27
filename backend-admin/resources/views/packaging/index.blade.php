@@ -771,7 +771,7 @@
                             <th>No Packaging</th>
                             <th>No SO</th>
                             <th>Customer</th>
-                            <th>Tgl Delivery</th>
+                            <th>Packaging Date</th>
                             <th>Dimension</th>
                             <th>Status</th>
                             <th class="text-center" style="width:80px;">Action</th>

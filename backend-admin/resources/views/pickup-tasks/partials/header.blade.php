@@ -631,13 +631,7 @@
                         <span class="badge {{ (isset($activeTab) && $activeTab == 'monitoring') ? 'bg-white text-dark' : 'bg-secondary bg-opacity-10 text-secondary' }} rounded-pill" style="font-size: 11px;">{{ $onRouteTasks }}</span>
                     </a>
 
-                    <div style="width: 1px; height: 60%; background: #e9ecef;"></div>
 
-                    <!-- History Delivery Order -->
-                    <a href="{{ route('pickup-tasks.history-do') }}" class="btn d-flex align-items-center justify-content-center m-0 flex-grow-1 {{ (isset($activeTab) && $activeTab == 'history-do') ? '' : 'btn-light text-secondary' }}" style="height: 100%; border-radius: 8px; font-weight: 600; font-size: 13px; gap: 8px; border: none; box-shadow: none; {{ (isset($activeTab) && $activeTab == 'history-do') ? 'background: #ff6a00 !important; color: #ffffff !important;' : 'background: transparent;' }}">
-                        <i class="fa-solid fa-clock-rotate-left" style="{{ (isset($activeTab) && $activeTab == 'history-do') ? 'color: #ffffff;' : '' }}"></i> History Delivery Order 
-                        <span class="badge {{ (isset($activeTab) && $activeTab == 'history-do') ? 'bg-white text-dark' : 'bg-secondary bg-opacity-10 text-secondary' }} rounded-pill" style="font-size: 11px;">{{ $completedTasks }}</span>
-                    </a>
                 </div>
             </div>
             

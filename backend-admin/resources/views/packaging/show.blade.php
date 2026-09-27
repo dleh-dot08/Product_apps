@@ -2733,7 +2733,7 @@
 
                         $packerName = '-';
                         if (isset($calculation) && $calculation->packer_id) {
-                            $packerName = optional(\App\Models\User::find($calculation->packer_id))->name ?? '-';
+                            $packerName = optional(\App\Models\User::find($calculation->packer_id))->full_name ?? optional(\App\Models\User::find($calculation->packer_id))->name ?? '-';
                         }
 
                         $approvedById = isset($calculation)
@@ -2891,7 +2891,7 @@
                                         <span class="material-symbols-rounded">calendar_month</span>
                                     </span>
                                     <div class="min-w-0">
-                                        <small>Delivery Date</small>
+                                        <small>Packaging Date</small>
                                         <strong>{{ $deliveryDate }}</strong>
                                     </div>
                                 </div>

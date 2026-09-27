@@ -79,7 +79,7 @@ class PackagingCalculationController extends Controller
                 'gap_atas' => $request->gap_atas ?? ($item0['gap_atas'] ?? 0),
                 'gap_bawah' => $request->gap_bawah ?? ($item0['gap_bawah'] ?? 0),
                 'status' => 'draft',
-                'packer_id' => auth()->id() ?? ($item0['packer'] ?? null),
+                'packer_id' => $request->packer_id ?? ($item0['packer'] ?? null),
                 'type_packaging' => $request->type_packaging ?? ($item0['type_packaging'] ?? null),
                 'inner_carton_boxes' => $request->has('inner_carton_boxes') 
                     ? json_encode($request->inner_carton_boxes) 

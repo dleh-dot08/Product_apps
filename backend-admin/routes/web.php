@@ -72,7 +72,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('pickup-tasks/penugasan/{delivery_order}/task/{type}/{taskId}', [\App\Http\Controllers\PickupTaskController::class, 'removeTaskFromManifest'])->name('pickup-tasks.penugasan.remove-task')->middleware('permission:Edit Tugas');
     Route::get('api/unassigned-tasks', [\App\Http\Controllers\PickupTaskController::class, 'getUnassignedTasks'])->name('api.unassigned-tasks');
     Route::get('api/delivery-order-tasks/{delivery_order}', [\App\Http\Controllers\PickupTaskController::class, 'getManifestTasks'])->name('api.delivery-order-tasks');
-    Route::get('pickup-tasks/history-do', [\App\Http\Controllers\PickupTaskController::class, 'historyDo'])->name('pickup-tasks.history-do')->middleware('permission:View Tugas');
+
     Route::post('pickup-tasks', [\App\Http\Controllers\PickupTaskController::class, 'store'])->name('pickup-tasks.store')->middleware('permission:Create Tugas');
     Route::get('pickup-tasks/{pickup_task}', [\App\Http\Controllers\PickupTaskController::class, 'show'])->name('pickup-tasks.show')->middleware('permission:View Tugas');
     Route::put('pickup-tasks/{pickup_task}', [\App\Http\Controllers\PickupTaskController::class, 'update'])->name('pickup-tasks.update')->middleware('permission:Edit Tugas');
