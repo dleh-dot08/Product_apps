@@ -264,66 +264,7 @@ class PickupTaskController extends Controller
         ]));
     }
 
-    public function historyDo(Request $request)
-    {
-        $stats = $this->getTaskStatistics();
-        
-        $user = auth()->user();
-        
-        $query = \App\Models\TaskManifest::with(['driver', 'coDriver', 'vehicle', 'pickupTasks.history', 'deliveryAssignments.history'])
-            ->latest('updated_at');
-            
-        if ($user && strtolower($user->role) === 'driver') {
-            $query->where('driver_id', $user->id);
-        }
-        
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('manifest_number', 'like', "%{$search}%")
-                  ->orWhereHas('driver', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
-                  });
-            });
-        }
 
-        if ($request->filled('date')) {
-            $query->whereDate('dispatch_date', $request->date);
-        }
-
-        if ($request->filled('driver_id')) {
-            $query->where(function($q) use ($request) {
-                $q->where('driver_id', $request->driver_id)
-                  ->orWhere('co_driver_id', $request->driver_id);
-            });
-        }
-        
-        $assignmentsPaginated = $query->paginate(10)->withQueryString();
-        
-        $assignmentsPaginated->getCollection()->transform(function($manifest) {
-            return (object) [
-                'id' => $manifest->id,
-                'no_do' => $manifest->manifest_number,
-                'date' => \Carbon\Carbon::parse($manifest->dispatch_date)->format('Y-m-d'),
-                'driver' => $manifest->driver,
-                'coDriver' => $manifest->coDriver,
-                'vehicle' => $manifest->vehicle,
-                'task_count' => $manifest->pickupTasks->count() + $manifest->deliveryAssignments->count(),
-                'status' => $manifest->status,
-                'assigned_by_name' => $manifest->assignedBy ? $manifest->assignedBy->name : 'Sistem/Admin',
-                'manifest' => $manifest
-            ];
-        });
-        
-        $drivers = User::where('role', 'driver')->get();
-        $vehicles = Vehicle::where('active', true)->get();
-        
-        return view('pickup-tasks.history-do.index', array_merge($stats, [
-            'assignments' => $assignmentsPaginated,
-            'drivers' => $drivers,
-            'vehicles' => $vehicles
-        ]));
-    }
 
     public function store(Request $request)
     {

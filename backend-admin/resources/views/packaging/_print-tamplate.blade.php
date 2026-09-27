@@ -585,18 +585,11 @@
                             <div style="padding: 10px 12px; background-color: #ffffff; border-radius: 0 0 8px 8px;">
                                 <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
                                     @php
-                                        $packerData = $calculation->packer ?? ($calculation->job->packer ?? null);
                                         $packerName = '-';
-                                        if (is_string($packerData)) {
-                                            $decoded = json_decode($packerData, true);
-                                            $packerName = $decoded['name'] ?? $packerData;
-                                        } elseif (is_array($packerData)) {
-                                            $packerName = $packerData['name'] ?? '-';
-                                        } elseif (is_object($packerData)) {
-                                            $packerName = $packerData->name ?? '-';
-                                        } elseif ($packerData) {
-                                            $packerName = $packerData;
+                                        if (isset($calculation) && $calculation->packer_id) {
+                                            $packerName = optional(\App\Models\User::find($calculation->packer_id))->full_name ?? optional(\App\Models\User::find($calculation->packer_id))->name ?? '-';
                                         }
+
 
                                         $assignedData = $calculation->assigned_by ?? ($calculation->job->created_by ?? null);
                                         $assignedName = '-';
@@ -633,7 +626,7 @@
                                     </div>
                                     <div>
                                         <div style="font-size: 8px; color: #64748b; margin-bottom: 2px;">
-                                            <span style="font-family: 'Material Symbols Rounded', sans-serif; font-size: 9px; vertical-align: middle;"> Delivery Date
+                                            <span style="font-family: 'Material Symbols Rounded', sans-serif; font-size: 9px; vertical-align: middle;"> Packaging Date
                                         </div>
                                         @php
                                             $deliveryDates = $calculation->items && $calculation->items->count() > 0 

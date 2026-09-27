@@ -165,101 +165,121 @@
 
     /* ========================================================= */
     /* 4. STATE COLLAPSED & HOVER EXPAND (STABILIZED CLICK)      */
+    /* HANYA BERLAKU DI LAYAR DESKTOP (min-width: 992px)         */
     /* ========================================================= */
-    
-    /* A. STATE DITUTUP / DIAM */
-    body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating {
-        width: 4.5rem !important;
-        min-width: 4.5rem !important;
-        max-width: 4.5rem !important;
+    @media (min-width: 992px) {
+        /* A. STATE DITUTUP / DIAM */
+        body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating {
+            width: 4.5rem !important;
+            min-width: 4.5rem !important;
+            max-width: 4.5rem !important;
+        }
+
+        body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .sidebar-brand {
+            padding: 0 0.5rem !important;
+            justify-content: center !important;
+        }
+
+        body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .brand-link {
+            padding: 0 !important;
+            margin: 0 !important;
+            justify-content: center !important;
+            width: auto !important;
+        }
+
+        body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .brand-icon {
+            margin: 0 !important;
+        }
+
+        body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .brand-text,
+        body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .nav-link p,
+        body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .user-info-wrapper {
+            display: none !important;
+        }
+
+        body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .nav-link {
+            padding: 0.75rem 0 !important;
+            justify-content: center !important;
+            align-items: center !important;
+            text-align: center !important;
+            width: 100% !important;
+            margin: 0.25rem 0 !important;
+        }
+
+        body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .nav-link .nav-icon {
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 1.2rem !important;
+        }
+
+        body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .sidebar-user-footer {
+            padding: 0.75rem 0.25rem !important;
+        }
+
+        body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .profile-actions-wrapper {
+            width: 100% !important;
+            flex-direction: column !important;
+            align-items: center !important;
+            gap: 0.5rem !important;
+        }
+
+        /* B. STATE KURSOR DI-HOVER KE SIDEBAR */
+        body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating {
+            width: 250px !important;
+            min-width: 250px !important;
+        }
+
+        body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .brand-text,
+        body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .sidebar-toggle-btn,
+        body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .nav-link p,
+        body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .user-info-wrapper {
+            display: flex !important;
+        }
+
+        body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .profile-actions-wrapper {
+            flex-direction: row !important;
+        }
+
+        body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .nav-link {
+            justify-content: flex-start !important;
+            padding: 0.75rem 1rem !important;
+        }
+
+        body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .nav-link .nav-icon {
+            margin-right: 0.5rem !important;
+        }
+
+        body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .sidebar-brand {
+            justify-content: space-between !important;
+            padding: 0 1rem !important;
+        }
     }
 
-    body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .sidebar-brand {
-        padding: 0 0.5rem !important;
-        justify-content: center !important;
-    }
-
-    body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .brand-link {
-        padding: 0 !important;
-        margin: 0 !important;
-        justify-content: center !important;
-        width: auto !important;
-    }
-
-    body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .brand-icon {
-        margin: 0 !important;
-    }
-
-    body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .brand-text,
-    body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .nav-link p,
-    body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .user-info-wrapper {
-        display: none !important;
-    }
-
-    body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .nav-link {
-        padding: 0.75rem 0 !important;
-        justify-content: center !important;
-        align-items: center !important;
-        text-align: center !important;
-        width: 100% !important;
-        margin: 0.25rem 0 !important;
-    }
-
-    body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .nav-link .nav-icon {
-        margin: 0 !important;
-        padding: 0 !important;
-        font-size: 1.2rem !important;
-    }
-
-    body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .sidebar-user-footer {
-        padding: 0.75rem 0.25rem !important;
-    }
-
-    body.sidebar-collapse:not(.sidebar-hover) .app-sidebar.sidebar-floating .profile-actions-wrapper {
-        width: 100% !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        gap: 0.5rem !important;
-    }
-
-    /* B. STATE KURSOR DI-HOVER KE SIDEBAR */
-    body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating {
-        width: 250px !important;
-        min-width: 250px !important;
-    }
-
-    body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .brand-text,
-    body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .sidebar-toggle-btn,
-    body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .nav-link p,
-    body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .user-info-wrapper {
-        display: flex !important;
-    }
-
-    body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .profile-actions-wrapper {
-        flex-direction: row !important;
-    }
-
-    body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .nav-link {
-        justify-content: flex-start !important;
-        padding: 0.75rem 1rem !important;
-    }
-
-    body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .nav-link .nav-icon {
-        margin-right: 0.5rem !important;
-    }
-
-    body.sidebar-collapse.sidebar-hover .app-sidebar.sidebar-floating .sidebar-brand {
-        justify-content: space-between !important;
-        padding: 0 1rem !important;
+    /* CSS tambahan untuk mobile agar sidebar berfungsi normal sebagai overlay */
+    @media (max-width: 991.98px) {
+        .app-sidebar.sidebar-floating {
+            margin: 0;
+            border-radius: 0 !important;
+            height: 100vh !important;
+            transform: translateX(-100%);
+        }
+        body.sidebar-open .app-sidebar.sidebar-floating {
+            transform: translateX(0);
+        }
+        /* Sembunyikan tombol burger yang ada di dalam sidebar saat di mobile */
+        .sidebar-toggle-btn {
+            display: none !important;
+        }
     }
 </style>
 
 <!-- Sidebar Floating -->
-<aside class="app-sidebar sidebar-floating" data-bs-theme="dark">
+<aside class="app-sidebar sidebar-floating d-none d-lg-flex" data-bs-theme="dark">
     <!-- Sidebar Brand & Toggle Burger Button -->
     <div class="sidebar-brand d-flex align-items-center justify-content-between px-3">
-        <a href="{{ route('dashboard') }}" class="brand-link d-flex align-items-center text-decoration-none border-0">
-            <img src="{{ asset('logo/aqpa-indonesia-logo.png') }}" alt="AQPA Logo" style="height: 22px; object-fit: contain;">
+        <a href="{{ route('dashboard') }}" class="brand-link d-flex align-items-center text-decoration-none border-0 gap-2">
+            <img src="{{ asset('logo/driver-apps-icon.png') }}" alt="Delivery Apps" class="rounded-3 shadow-sm" style="height: 32px; width: 32px; object-fit: contain;">
+            <span class="brand-text fw-bold" style="font-size: 1.15rem; letter-spacing: -0.5px;">Delivery Apps</span>
         </a>
 
         <!-- Tombol Burger Toggle Sidebar -->

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name', 'AQPA Dashboard') }}</title>
+    <link rel="icon" type="image/png" href="{{ asset('logo/driver-apps-icon.png') }}">
 
     <!-- Google Fonts: Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -94,6 +95,9 @@
 <body class="layout-fixed sidebar-expand-lg sidebar-mini bg-body-tertiary">
 
     <div class="app-wrapper">
+        <!-- Header -->
+        @include('layouts.header')
+
         <!-- Sidebar -->
         @include('layouts.sidebar')
 
