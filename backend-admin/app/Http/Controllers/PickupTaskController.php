@@ -1029,7 +1029,7 @@ class PickupTaskController extends Controller
                 'assigned_at' => null,
             ]);
             \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $t->id)->delete();
-            $this->logHistory($t, 'pickup', 'Dihapus dari manifest ' . $manifest->manifest_number);
+            $this->logHistory($t, 'pickup', 'Dihapus dari Delivery Order ' . $manifest->manifest_number);
         }
 
         $removedDeliveries = DeliveryAssignment::where('manifest_id', $manifestId)
@@ -1045,7 +1045,7 @@ class PickupTaskController extends Controller
                 'assigned_at' => null,
             ]);
             \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $t->id)->delete();
-            $this->logHistory($t, 'delivery', 'Dihapus dari manifest ' . $manifest->manifest_number);
+            $this->logHistory($t, 'delivery', 'Dihapus dari Delivery Order ' . $manifest->manifest_number);
         }
 
         // Add newly selected tasks
@@ -1081,7 +1081,7 @@ class PickupTaskController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-                $this->logHistory($t, 'pickup', 'Ditugaskan ke manifest ' . $manifest->manifest_number);
+                $this->logHistory($t, 'pickup', 'Ditugaskan ke Delivery Order ' . $manifest->manifest_number);
             }
         }
 
@@ -1117,7 +1117,7 @@ class PickupTaskController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-                $this->logHistory($t, 'delivery', 'Ditugaskan ke manifest ' . $manifest->manifest_number);
+                $this->logHistory($t, 'delivery', 'Ditugaskan ke Delivery Order ' . $manifest->manifest_number);
             }
         }
 
@@ -1140,7 +1140,7 @@ class PickupTaskController extends Controller
                 'assigned_at' => null,
             ]);
             \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $t->id)->delete();
-            $this->logHistory($t, 'pickup', 'Dihapus dari manifest ' . $manifest->manifest_number . ' (Penugasan dihapus)');
+            $this->logHistory($t, 'pickup', 'Dihapus dari Delivery Order ' . $manifest->manifest_number . ' (Penugasan dihapus)');
         }
 
         $deliveries = \App\Models\DeliveryAssignment::where('manifest_id', $manifestId)->get();
@@ -1154,7 +1154,7 @@ class PickupTaskController extends Controller
                 'assigned_at' => null,
             ]);
             \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $t->id)->delete();
-            $this->logHistory($t, 'delivery', 'Dihapus dari manifest ' . $manifest->manifest_number . ' (Penugasan dihapus)');
+            $this->logHistory($t, 'delivery', 'Dihapus dari Delivery Order ' . $manifest->manifest_number . ' (Penugasan dihapus)');
         }
 
         $manifest->delete();
@@ -1178,7 +1178,7 @@ class PickupTaskController extends Controller
                     'assigned_at' => null,
                 ]);
                 \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $taskId)->where('task_type', 'pickup')->delete();
-                $this->logHistory($task, 'pickup', 'Dihapus dari manifest ' . $manifest->manifest_number);
+                $this->logHistory($task, 'pickup', 'Dihapus dari Delivery Order ' . $manifest->manifest_number);
             }
         } else {
             $task = \App\Models\DeliveryAssignment::findOrFail($taskId);
@@ -1192,7 +1192,7 @@ class PickupTaskController extends Controller
                     'assigned_at' => null,
                 ]);
                 \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $taskId)->where('task_type', 'delivery')->delete();
-                $this->logHistory($task, 'delivery', 'Dihapus dari manifest ' . $manifest->manifest_number);
+                $this->logHistory($task, 'delivery', 'Dihapus dari Delivery Order ' . $manifest->manifest_number);
             }
         }
 
@@ -1255,7 +1255,7 @@ class PickupTaskController extends Controller
                         'is_out_of_city' => $manifest->is_out_of_city,
                         'estimated_arrival' => $manifest->estimated_arrival,
                     ]);
-                    $this->logHistory($task, 'pickup', 'Ditugaskan ke manifest ' . $manifestNumber);
+                    $this->logHistory($task, 'pickup', 'Ditugaskan ke Delivery Order ' . $manifestNumber);
                     \DB::table('tasks_manifest_history')->insert([
                         'manifest_id' => $manifest->id,
                         'task_id' => $task->id,
@@ -1280,7 +1280,7 @@ class PickupTaskController extends Controller
                         'is_out_of_city' => $manifest->is_out_of_city,
                         'estimated_arrival' => $manifest->estimated_arrival,
                     ]);
-                    $this->logHistory($task, 'delivery', 'Ditugaskan ke manifest ' . $manifestNumber);
+                    $this->logHistory($task, 'delivery', 'Ditugaskan ke Delivery Order ' . $manifestNumber);
                     \DB::table('tasks_manifest_history')->insert([
                         'manifest_id' => $manifest->id,
                         'task_id' => $task->id,

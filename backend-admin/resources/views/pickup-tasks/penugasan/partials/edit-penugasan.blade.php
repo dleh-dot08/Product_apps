@@ -153,7 +153,7 @@
 
         /**
          * Open the edit penugasan modal
-         * @param {string} manifestId - UUID of the manifest
+         * @param {string} deliveryOrderId - UUID of the delivery order
          * @param {string} noDo - DO number to display
          * @param {string} driverId
          * @param {string} coDriverId
@@ -161,9 +161,9 @@
          * @param {string} isOutOfCity
          * @param {string} estimatedArrival
          */
-        window.openEditPenugasanModal = function(manifestId, noDo, driverId, coDriverId, vehicleId, isOutOfCity = false, estimatedArrival = '') {
+        window.openEditPenugasanModal = function(deliveryOrderId, noDo, driverId, coDriverId, vehicleId, isOutOfCity = false, estimatedArrival = '') {
             // Set form action
-            editForm.action = '/pickup-tasks/penugasan/' + manifestId;
+            editForm.action = '/pickup-tasks/penugasan/' + deliveryOrderId;
 
             // Display info
             document.getElementById('editPenugasanDO').textContent = noDo;
@@ -183,13 +183,13 @@
             }
 
             // Load tasks
-            loadManifestTasks(manifestId);
+            loadDeliveryOrderTasks(deliveryOrderId);
 
             let modal = new bootstrap.Modal(document.getElementById('editPenugasanModal'));
             modal.show();
         };
 
-        function loadManifestTasks(manifestId) {
+        function loadDeliveryOrderTasks(deliveryOrderId) {
             let tbody = editTable.querySelector('tbody');
             tbody.innerHTML = `
                 <tr>
@@ -202,7 +202,7 @@
             editCheckAll.checked = false;
             editUpdateSelectedCount();
 
-            fetch('/api/manifest-tasks/' + manifestId)
+            fetch('/api/delivery-order-tasks/' + deliveryOrderId)
                 .then(r => r.json())
                 .then(data => {
                     let allTasks = [];

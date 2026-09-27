@@ -115,7 +115,7 @@ class ExpenseController extends Controller
 
         $manifest = \App\Models\TaskManifest::find($id);
         if (!$manifest) {
-            return response()->json(['message' => 'Manifest tidak ditemukan'], 404);
+            return response()->json(['message' => 'Delivery Order tidak ditemukan'], 404);
         }
 
         // Get active shift for driver or create one

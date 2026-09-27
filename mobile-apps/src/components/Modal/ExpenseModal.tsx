@@ -232,7 +232,7 @@ export const ExpenseModal: React.FC<Props> = ({ visible, onClose, onSuccess }) =
                       <Text style={s.taskSub} numberOfLines={2}>
                         Kendaraan: {shift.vehicle_plate_number || '-'} {shift.vehicle_name ? `(${shift.vehicle_name})` : ''}
                       </Text>
-                      {shift.manifests && shift.manifests !== 'Tidak ada manifest/DO' ? (
+                      {shift.manifests && shift.manifests !== 'Tidak ada Delivery Order' ? (
                         <Text style={[s.taskSub, { marginTop: 4, color: BRAND.primary }]} numberOfLines={2}>
                           Delivery Order : {shift.manifests}
                         </Text>

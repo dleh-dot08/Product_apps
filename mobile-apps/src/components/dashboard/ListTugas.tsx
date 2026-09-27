@@ -219,8 +219,8 @@ export default function ListTugas() {
     { id: 'assigned', label: 'Menunggu' },
     { id: 'on_route', label: 'Berjalan' },
     { id: 'delivered', label: 'Selesai' },
-    { id: 'pending', label: 'Kendala' },
-    { id: 'Tidak Terkirim', label: 'Gagal / Tdk Terkirim' },
+    { id: 'pending', label: 'Tertunda' },
+    { id: 'Tidak Terkirim', label: 'Tidak Terkirim' },
   ];
 
   return (
@@ -474,9 +474,10 @@ function TaskCard({
       case 'delivered':
         return { label: 'Selesai', bg: BRAND.successSoft, text: BRAND.success };
       case 'pending':
-        return { label: 'Terkendala', bg: BRAND.dangerSoft, text: BRAND.danger };
+        return { label: 'Tertunda', bg: BRAND.dangerSoft, text: BRAND.danger };
       case 'failed':
-        return { label: 'Gagal / Tidak Terkirim', bg: BRAND.dangerSoft, text: BRAND.danger };
+      case 'Tidak Terkirim':
+        return { label: 'Tidak Terkirim', bg: BRAND.dangerSoft, text: BRAND.danger };
       default:
         return { label: status || 'Unknown', bg: BRAND.border, text: BRAND.text };
     }

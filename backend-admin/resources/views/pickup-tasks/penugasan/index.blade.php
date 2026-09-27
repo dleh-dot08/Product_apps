@@ -155,11 +155,16 @@
                                                                 if (!in_array($task->status, ['completed', 'delivered']) && \Carbon\Carbon::parse($assignment->date)->startOfDay()->lt(\Carbon\Carbon::today())) {
                                                                     $displayStatus = 'tidak_terkirim';
                                                                 }
+                                                                if ($displayStatus === 'pending') {
+                                                                    $displayStatus = 'tertunda';
+                                                                } elseif (in_array($displayStatus, ['completed', 'delivered'])) {
+                                                                    $displayStatus = 'selesai';
+                                                                }
                                                             @endphp
                                                             <span class="badge bg-secondary" style="font-size: 10px;">{{ strtoupper(str_replace('_', ' ', $displayStatus)) }}</span>
                                                         </td>
                                                         <td class="text-end pe-3">
-                                                            <form action="{{ route('pickup-tasks.penugasan.remove-task', ['manifest' => $assignment->id, 'type' => $task->type, 'taskId' => $task->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin mencabut tugas ini dari penugasan?');">
+                                                            <form action="{{ route('pickup-tasks.penugasan.remove-task', ['delivery_order' => $assignment->id, 'type' => $task->type, 'taskId' => $task->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin mencabut tugas ini dari penugasan?');">
                                                                 @csrf
                                                                 @method('DELETE')
                                                                 <button type="submit" onclick="event.stopPropagation();" class="btn btn-sm btn-link text-danger p-0 me-2" title="Cabut Tugas">
@@ -172,23 +177,93 @@
                                                     <tr id="history-{{ $task->id }}" class="collapse bg-white">
                                                         <td colspan="5" class="p-0 border-0">
                                                             <div class="px-4 py-3 shadow-inner border-bottom" style="background-color: #fafafa;">
-                                                                <h6 class="mb-3 text-secondary" style="font-size: 13px;"><i class="fa-solid fa-clock-rotate-left me-2"></i>History Status Tugas</h6>
-                                                                @if($task->history && $task->history->count() > 0)
-                                                                    <div class="ms-2 border-start border-2 ps-3 border-secondary" style="border-color: #dee2e6 !important;">
-                                                                        @foreach($task->history()->orderBy('created_at', 'desc')->get() as $hist)
+                                                                <h6 class="mb-3 text-secondary" style="font-size: 13px;"><i class="fa-solid fa-clock-rotate-left me-2"></i>History Status Tugas ({{ \Carbon\Carbon::parse($assignment->date)->format('d M Y') }})</h6>
+                                                                @php
+                                                                    // Hanya ambil history pada tanggal assignment ini saja
+                                                                    $assignmentDate = \Carbon\Carbon::parse($assignment->date)->format('Y-m-d');
+                                                                    $historyAsc = $task->history()
+                                                                                       ->whereDate('created_at', $assignmentDate)
+                                                                                       ->orderBy('created_at', 'asc')
+                                                                                       ->get();
+                                                                @endphp
+
+                                                                <div class="ms-2 border-start border-2 ps-3 border-secondary" style="border-color: #dee2e6 !important;">
+                                                                    @if($historyAsc->count() > 0)
+                                                                        @foreach($historyAsc as $index => $hist)
+                                                                            @php
+                                                                                $statusName = $hist->status;
+                                                                                $color = 'secondary';
+                                                                                $title = strtoupper($statusName);
+                                                                                
+                                                                                if ($statusName === 'assigned') {
+                                                                                    $title = 'PERSIAPAN';
+                                                                                    $color = 'primary';
+                                                                                } elseif ($statusName === 'on_route') {
+                                                                                    $title = 'PERJALANAN';
+                                                                                    $color = 'info';
+                                                                                } elseif ($statusName === 'arrived') {
+                                                                                    $title = 'TIBA';
+                                                                                    $color = 'warning';
+                                                                                } elseif (in_array($statusName, ['completed', 'delivered'])) {
+                                                                                    $title = 'SELESAI';
+                                                                                    $color = 'success';
+                                                                                } elseif ($statusName === 'pending') {
+                                                                                    $title = 'TERTUNDA';
+                                                                                    $color = 'danger';
+                                                                                } elseif ($statusName === 'failed') {
+                                                                                    $title = 'TIDAK TERKIRIM';
+                                                                                    $color = 'danger';
+                                                                                }
+
+                                                                                // For the very last item if it's a final state, we can pull the task properties (photo, receiver)
+                                                                                $isLast = $index === $historyAsc->count() - 1;
+                                                                                $isFinalState = in_array($statusName, ['completed', 'delivered', 'failed', 'pending']);
+                                                                            @endphp
+
                                                                             <div class="position-relative mb-3">
-                                                                                <div class="position-absolute bg-orange rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 4px;"></div>
+                                                                                <div class="position-absolute bg-{{ $color }} rounded-circle" style="width: 10px; height: 10px; left: -22px; top: 4px;"></div>
                                                                                 <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                                    <span class="fw-bold text-dark" style="font-size: 12px;">{{ strtoupper(str_replace('_', ' ', $hist->status)) }}</span>
+                                                                                    <span class="fw-bold text-dark" style="font-size: 12px;">{{ $title }}</span>
                                                                                     <span class="text-muted" style="font-size: 11px;">{{ $hist->created_at->format('d M Y, H:i') }}</span>
                                                                                 </div>
-                                                                                <div class="text-muted" style="font-size: 12px;">{{ $hist->notes ?? '-' }}</div>
+                                                                                
+                                                                                @if($statusName === 'assigned')
+                                                                                    @php
+                                                                                        $adminName = $hist->recorder->name ?? ($task->assignedBy->name ?? ($task->assigner->name ?? 'Admin'));
+                                                                                    @endphp
+                                                                                    <div class="text-muted" style="font-size: 12px;">Tugas di-assign oleh: <strong>{{ $adminName }}</strong>. {{ $hist->notes ? '('.$hist->notes.')' : '' }}</div>
+                                                                                @elseif($statusName === 'pending' || $statusName === 'failed')
+                                                                                    <div class="text-muted mb-1" style="font-size: 12px;">
+                                                                                        <span class="text-danger fw-bold">Alasan:</span> {{ ($isLast ? $task->failure_reason : null) ?? $hist->notes ?? '-' }}
+                                                                                    </div>
+                                                                                @else
+                                                                                    @if($hist->notes)
+                                                                                        <div class="text-muted mb-1" style="font-size: 12px;">{{ $hist->notes }}</div>
+                                                                                    @endif
+                                                                                @endif
+
+                                                                                {{-- Only show task-level properties (receiver, condition, photo) on the last final state event --}}
+                                                                                @if($isLast && $isFinalState)
+                                                                                    @if($task->receiver_name)
+                                                                                        <div class="text-muted mb-1" style="font-size: 12px;">Penerima: {{ $task->receiver_name }} {{ $task->receiver_role ? '('.$task->receiver_role.')' : '' }}</div>
+                                                                                    @endif
+                                                                                    @if($task->item_condition)
+                                                                                        <div class="text-muted mb-1" style="font-size: 12px;">Kondisi: {{ $task->item_condition }}</div>
+                                                                                    @endif
+                                                                                    @if($task->proof_of_delivery_path)
+                                                                                        <div class="mt-2">
+                                                                                            <a href="{{ Storage::url($task->proof_of_delivery_path) }}" target="_blank" class="btn btn-sm btn-outline-primary" style="font-size: 11px; padding: 2px 8px;">
+                                                                                                <i class="fa-solid fa-image me-1"></i> Lihat Foto Bukti
+                                                                                            </a>
+                                                                                        </div>
+                                                                                    @endif
+                                                                                @endif
                                                                             </div>
                                                                         @endforeach
-                                                                    </div>
-                                                                @else
-                                                                    <div class="text-muted text-center py-2" style="font-size: 12px;">Belum ada history tercatat untuk tugas ini</div>
-                                                                @endif
+                                                                    @else
+                                                                        <div class="text-muted text-center py-2" style="font-size: 12px;">Belum ada history tercatat untuk tugas ini</div>
+                                                                    @endif
+                                                                </div>
                                                             </div>
                                                         </td>
                                                     </tr>

@@ -284,7 +284,7 @@ class DriverShiftController extends Controller
                         'check_out_at' => null,
                         'vehicle_plate_number' => null,
                         'vehicle_name' => null,
-                        'manifests' => empty($manifestText) ? "Tidak ada manifest/DO" : $manifestText,
+                        'manifests' => empty($manifestText) ? "Tidak ada Delivery Order" : $manifestText,
                         'manifest_list' => $dailyManifests->toArray(),
                     ]);
                 }
@@ -300,7 +300,7 @@ class DriverShiftController extends Controller
                         'check_out_at' => $shift->check_out_at,
                         'vehicle_plate_number' => $shift->vehicle->plate_number ?? null,
                         'vehicle_name' => $shift->vehicle->name ?? null,
-                        'manifests' => empty($manifestText) ? "Tidak ada manifest/DO" : $manifestText,
+                        'manifests' => empty($manifestText) ? "Tidak ada Delivery Order" : $manifestText,
                         'manifest_list' => $dailyManifests->toArray(),
                     ]);
                 }
