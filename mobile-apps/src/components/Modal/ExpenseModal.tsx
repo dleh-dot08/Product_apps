@@ -21,14 +21,16 @@ const BRAND = {
   card: '#f8fafc',
 };
 
-interface Task {
-  id: string;
-  reference_number: string;
-  pickup_name?: string;
-  destination?: string;
-  status: string;
-  task_type: string;
-  completed_at?: string;
+interface Shift {
+  id: number | string;
+  work_date: string;
+  vehicle_name?: string;
+  vehicle_plate_number?: string;
+  check_in_at?: string;
+  check_out_at?: string;
+  status: string; // 'active' | 'completed'
+  manifests?: string;
+  manifest_list?: { id: string; manifest_number: string }[];
 }
 
 interface Props {
@@ -37,14 +39,42 @@ interface Props {
   onSuccess?: () => void;
 }
 
-type Step = 'select_task' | 'form';
+type Step = 'select_shift' | 'form';
+
+// Helper for formatting date
+const formatDate = (dateString: string) => {
+  if (!dateString) return '-';
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    return d.toLocaleDateString('id-ID', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    });
+  } catch (e) {
+    return dateString;
+  }
+};
+
+const formatTime = (dateString?: string) => {
+  if (!dateString) return '-';
+  try {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return '-';
+    return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  } catch (e) {
+    return '-';
+  }
+};
 
 export const ExpenseModal: React.FC<Props> = ({ visible, onClose, onSuccess }) => {
-  const [step, setStep] = useState<Step>('select_task');
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [step, setStep] = useState<Step>('select_shift');
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [selectedShift, setSelectedShift] = useState<Shift | null>(null);
+  const [selectedManifest, setSelectedManifest] = useState<string | null>(null);
 
   // Form
   const [category, setCategory] = useState('BBM');
@@ -53,57 +83,15 @@ export const ExpenseModal: React.FC<Props> = ({ visible, onClose, onSuccess }) =
   const [notes, setNotes] = useState('');
   const [receipt, setReceipt] = useState<string | null>(null);
 
-  const fetchTasks = useCallback(async () => {
+  const fetchShifts = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.get('/driver/dashboard');
-      const data = res.data?.data;
-      const allTasks: Task[] = [];
-
-      // Active task
-      if (data?.active_task) {
-        allTasks.push(data.active_task);
-      }
-
-      // Today tasks (assigned/on_route/arrived + delivered within 4 days)
-      const fourDaysAgo = new Date();
-      fourDaysAgo.setDate(fourDaysAgo.getDate() - 4);
-
-      if (data?.today_tasks) {
-        data.today_tasks.forEach((t: Task) => {
-          if (!allTasks.find(x => x.id === t.id)) {
-            if (['assigned', 'on_route', 'arrived'].includes(t.status)) {
-              allTasks.push(t);
-            } else if (t.status === 'delivered' && t.completed_at) {
-              if (new Date(t.completed_at) >= fourDaysAgo) {
-                allTasks.push(t);
-              }
-            }
-          }
-        });
-      }
-
-      // Also fetch recent completed tasks via pickup API
-      try {
-        const pickupRes = await api.get('/pickup');
-        const pickupTasks = pickupRes.data?.data || [];
-        pickupTasks.forEach((t: Task) => {
-          if (!allTasks.find(x => x.id === t.id)) {
-            if (['assigned', 'on_route', 'arrived'].includes(t.status)) {
-              allTasks.push(t);
-            } else if (t.status === 'delivered' && t.completed_at) {
-              if (new Date(t.completed_at) >= fourDaysAgo) {
-                allTasks.push(t);
-              }
-            }
-          }
-        });
-      } catch {}
-
-      setTasks(allTasks);
+      const res = await api.get('/driver/recent-shifts'); 
+      const data = res.data?.data || [];
+      setShifts(data);
     } catch (err) {
-      console.error('Fetch tasks error', err);
-      Alert.alert('Gagal', 'Tidak bisa memuat daftar tugas.');
+      console.error('Fetch shifts error', err);
+      // Fallback
     } finally {
       setLoading(false);
     }
@@ -112,13 +100,13 @@ export const ExpenseModal: React.FC<Props> = ({ visible, onClose, onSuccess }) =
   useEffect(() => {
     if (visible) {
       resetForm();
-      setStep('select_task');
-      fetchTasks();
+      setStep('select_shift');
+      fetchShifts();
     }
-  }, [visible, fetchTasks]);
+  }, [visible, fetchShifts]);
 
   const resetForm = () => {
-    setSelectedTask(null);
+    setSelectedShift(null);
     setCategory('BBM');
     setCustomCategory('');
     setAmount('');
@@ -126,8 +114,9 @@ export const ExpenseModal: React.FC<Props> = ({ visible, onClose, onSuccess }) =
     setReceipt(null);
   };
 
-  const handleSelectTask = (task: Task) => {
-    setSelectedTask(task);
+  const handleSelectShift = (shift: Shift) => {
+    setSelectedShift(shift);
+    setSelectedManifest(null);
     setStep('form');
   };
 
@@ -163,7 +152,7 @@ export const ExpenseModal: React.FC<Props> = ({ visible, onClose, onSuccess }) =
   };
 
   const handleSubmit = async () => {
-    if (!amount || !selectedTask) {
+    if (!amount || !selectedShift) {
       Alert.alert('Perhatian', 'Nominal wajib diisi.');
       return;
     }
@@ -176,6 +165,10 @@ export const ExpenseModal: React.FC<Props> = ({ visible, onClose, onSuccess }) =
       formData.append('notes', notes);
       formData.append('description', category === 'Lainnya' ? customCategory : category);
 
+      if (selectedManifest) {
+        formData.append('task_manifest_id', selectedManifest);
+      }
+
       if (receipt) {
         const filename = receipt.split('/').pop() || 'receipt.jpg';
         const ext = filename.split('.').pop()?.toLowerCase();
@@ -183,7 +176,8 @@ export const ExpenseModal: React.FC<Props> = ({ visible, onClose, onSuccess }) =
         formData.append('receipt', { uri: receipt, name: filename, type: mimeType } as any);
       }
 
-      await api.post(`/pickup/${selectedTask.id}/expenses`, formData);
+      await api.post(`/driver/shifts/${selectedShift.id}/expenses`, formData);
+      
       Alert.alert('Berhasil', 'Pengeluaran berhasil disimpan.');
       onSuccess?.();
       onClose();
@@ -195,16 +189,6 @@ export const ExpenseModal: React.FC<Props> = ({ visible, onClose, onSuccess }) =
     }
   };
 
-  const statusLabel = (status: string) => {
-    const map: Record<string, { label: string; color: string }> = {
-      assigned: { label: 'Ditugaskan', color: BRAND.warning },
-      on_route: { label: 'Dalam Perjalanan', color: BRAND.primary },
-      arrived: { label: 'Tiba', color: '#8b5cf6' },
-      delivered: { label: 'Selesai', color: BRAND.success },
-    };
-    return map[status] || { label: status, color: BRAND.muted };
-  };
-
   return (
     <Modal visible={visible} animationType="slide" transparent>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -212,41 +196,57 @@ export const ExpenseModal: React.FC<Props> = ({ visible, onClose, onSuccess }) =
           <View style={s.container}>
             {/* Header */}
             <View style={s.header}>
-              <TouchableOpacity onPress={step === 'form' ? () => setStep('select_task') : onClose} style={s.iconBtn}>
+              <TouchableOpacity onPress={step === 'form' ? () => setStep('select_shift') : onClose} style={s.iconBtn}>
                 <Ionicons name={step === 'form' ? 'arrow-back' : 'close'} size={24} color={BRAND.text} />
               </TouchableOpacity>
-              <Text style={s.title}>{step === 'select_task' ? 'Pilih Tugas' : 'Pengeluaran Perjalanan'}</Text>
+              <Text style={s.title}>{step === 'select_shift' ? 'Pilih Shift / Hari' : 'Pengeluaran Shift'}</Text>
               <View style={{ width: 24 }} />
             </View>
 
-            {step === 'select_task' ? (
-              /* ---- STEP 1: Task Picker ---- */
+            {step === 'select_shift' ? (
+              /* ---- STEP 1: Shift Picker ---- */
               <ScrollView style={s.body}>
+                <Text style={s.instructionText}>
+                  Silakan pilih shift dalam kurun waktu 3 hari terakhir (H-3) untuk melampirkan pengeluaran tambahan.
+                </Text>
+                
                 {loading ? (
                   <ActivityIndicator size="large" color={BRAND.primary} style={{ marginTop: 40 }} />
-                ) : tasks.length === 0 ? (
+                ) : shifts.length === 0 ? (
                   <View style={s.emptyBox}>
-                    <Ionicons name="document-text-outline" size={48} color={BRAND.border} />
-                    <Text style={{ color: BRAND.muted, marginTop: 12 }}>Tidak ada tugas aktif atau baru selesai.</Text>
+                    <Ionicons name="calendar-outline" size={48} color={BRAND.border} />
+                    <Text style={{ color: BRAND.muted, marginTop: 12 }}>Tidak ada riwayat shift di 3 hari terakhir.</Text>
                   </View>
                 ) : (
-                  tasks.map(task => {
-                    const st = statusLabel(task.status);
-                    return (
-                      <TouchableOpacity key={task.id} style={s.taskCard} onPress={() => handleSelectTask(task)}>
-                        <View style={s.taskCardTop}>
-                          <Text style={s.taskRef}>{task.reference_number}</Text>
-                          <View style={[s.statusBadge, { backgroundColor: st.color + '18' }]}>
-                            <View style={[s.statusDot, { backgroundColor: st.color }]} />
-                            <Text style={[s.statusText, { color: st.color }]}>{st.label}</Text>
-                          </View>
+                  shifts.map(shift => (
+                    <TouchableOpacity key={shift.id} style={s.taskCard} onPress={() => handleSelectShift(shift)}>
+                      <View style={s.taskCardTop}>
+                        <Text style={s.taskRef}>Shift: {formatDate(shift.work_date)}</Text>
+                        <View style={[s.statusBadge, { backgroundColor: shift.status === 'active' ? BRAND.primarySoft : BRAND.success + '18' }]}>
+                          <View style={[s.statusDot, { backgroundColor: shift.status === 'active' ? BRAND.primary : BRAND.success }]} />
+                          <Text style={[s.statusText, { color: shift.status === 'active' ? BRAND.primary : BRAND.success }]}>
+                            {shift.status === 'active' ? 'Sedang Aktif' : 'Selesai'}
+                          </Text>
                         </View>
-                        <Text style={s.taskSub} numberOfLines={1}>
-                          {task.task_type === 'pickup' ? '📦 Pickup' : '🚚 Delivery'} • {task.destination || task.pickup_name || '-'}
+                      </View>
+                      <Text style={s.taskSub} numberOfLines={2}>
+                        Kendaraan: {shift.vehicle_plate_number || '-'} {shift.vehicle_name ? `(${shift.vehicle_name})` : ''}
+                      </Text>
+                      {shift.manifests && shift.manifests !== 'Tidak ada Delivery Order' ? (
+                        <Text style={[s.taskSub, { marginTop: 4, color: BRAND.primary }]} numberOfLines={2}>
+                          Delivery Order : {shift.manifests}
                         </Text>
-                      </TouchableOpacity>
-                    );
-                  })
+                      ) : null}
+                      <View style={{ flexDirection: 'row', gap: 16, marginTop: 8 }}>
+                        <Text style={[s.taskSub, { color: BRAND.text, fontWeight: '600' }]}>
+                          Clock In: {formatTime(shift.check_in_at)}
+                        </Text>
+                        <Text style={[s.taskSub, { color: BRAND.text, fontWeight: '600' }]}>
+                          Clock Out: {formatTime(shift.check_out_at)}
+                        </Text>
+                      </View>
+                    </TouchableOpacity>
+                  ))
                 )}
                 <View style={{ height: 30 }} />
               </ScrollView>
@@ -255,9 +255,28 @@ export const ExpenseModal: React.FC<Props> = ({ visible, onClose, onSuccess }) =
               <>
                 <ScrollView style={s.body}>
                   <View style={s.selectedInfo}>
-                    <Ionicons name="document-text" size={16} color={BRAND.primary} />
-                    <Text style={s.selectedRef}>{selectedTask?.reference_number}</Text>
+                    <Ionicons name="calendar" size={16} color={BRAND.primary} />
+                    <Text style={s.selectedRef}>Pengeluaran untuk Shift {selectedShift ? formatDate(selectedShift.work_date) : ''}</Text>
                   </View>
+
+                  {selectedShift?.manifest_list && selectedShift.manifest_list.length > 0 && (
+                    <>
+                      <Text style={[s.label, { marginTop: 16 }]}>Untuk Delivery Order (Opsional)</Text>
+                      <View style={s.chipRow}>
+                        {selectedShift.manifest_list.map((m) => (
+                          <TouchableOpacity
+                            key={m.id}
+                            style={selectedManifest === m.id ? s.chipActive : s.chip}
+                            onPress={() => setSelectedManifest(selectedManifest === m.id ? null : m.id)}
+                          >
+                            <Text style={selectedManifest === m.id ? s.chipTextActive : s.chipText}>
+                              {m.manifest_number}
+                            </Text>
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    </>
+                  )}
 
                   <View style={s.totalBox}>
                     <Text style={{ color: BRAND.muted, fontSize: 12 }}>Total Pengeluaran (Nominal)</Text>
@@ -350,7 +369,9 @@ const s = StyleSheet.create({
   title: { fontSize: 16, fontWeight: '700', color: BRAND.text },
   body: { paddingHorizontal: 16, paddingTop: 12 },
   emptyBox: { alignItems: 'center', justifyContent: 'center', paddingVertical: 60 },
-  // Task card
+  instructionText: { color: BRAND.muted, fontSize: 13, marginBottom: 16, lineHeight: 20 },
+  
+  // Task/Shift card
   taskCard: { backgroundColor: BRAND.card, borderRadius: 12, padding: 14, marginBottom: 10, borderWidth: 1, borderColor: BRAND.border },
   taskCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
   taskRef: { fontSize: 14, fontWeight: '700', color: BRAND.text, flex: 1 },
@@ -358,6 +379,7 @@ const s = StyleSheet.create({
   statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 99 },
   statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 5 },
   statusText: { fontSize: 10, fontWeight: '700' },
+  
   // Form
   selectedInfo: { flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: BRAND.primarySoft, padding: 10, borderRadius: 8, marginBottom: 12 },
   selectedRef: { fontSize: 13, fontWeight: '700', color: BRAND.primary },

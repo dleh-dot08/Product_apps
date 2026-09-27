@@ -246,8 +246,19 @@ class IntegrationController extends Controller
                 Log::error('Akurasi API returned an error', ['endpoint' => $endpoint, 'status' => $response->status(), 'body' => $response->body()]);
                 
                 $status = $response->status();
-                if ($status >= 400 && $status < 500) {
+                
+                if ($status === 401) {
+                    return response()->json(['error' => 'API Key Akurasi tidak valid atau belum diatur', 'upstream_status' => $status], 401);
+                }
+                
+                if ($status === 404) {
                     return response()->json(['error' => 'Data tidak ditemukan di API Akurasi', 'upstream_status' => $status], 404);
+                }
+                
+                if ($status >= 400 && $status < 500) {
+                    $body = $response->json();
+                    $message = $body['message'] ?? 'Permintaan ke API Akurasi ditolak';
+                    return response()->json(['error' => $message, 'upstream_status' => $status], $status);
                 }
                 
                 return response()->json(['error' => 'Akurasi API mengembalikan error', 'upstream_status' => $status], 502);

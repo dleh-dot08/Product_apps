@@ -13,6 +13,45 @@ class DeliveryAssignment extends Model
     protected $guarded = [];
     public $timestamps = false;
 
+    protected static function booted()
+    {
+        static::created(function ($task) {
+            \App\Models\TaskHistory::create([
+                'task_id' => $task->id,
+                'task_type' => 'delivery',
+                'driver_id' => $task->driver_id,
+                'co_driver_id' => $task->co_driver_id,
+                'vehicle_id' => $task->vehicle_id,
+                'status' => $task->status ?? 'draft',
+                'notes' => 'Tugas dibuat',
+                'recorded_by' => auth()->id() ?? null,
+            ]);
+        });
+
+        static::updated(function ($task) {
+            if ($task->isDirty('status') || $task->isDirty('driver_id') || $task->isDirty('vehicle_id') || $task->isDirty('co_driver_id')) {
+                $notes = [];
+                if ($task->isDirty('status')) {
+                    $notes[] = "Status berubah dari {$task->getOriginal('status')} menjadi {$task->status}";
+                }
+                if ($task->isDirty('driver_id') || $task->isDirty('vehicle_id') || $task->isDirty('co_driver_id')) {
+                    $notes[] = "Informasi penugasan driver/kendaraan diperbarui";
+                }
+                
+                \App\Models\TaskHistory::create([
+                    'task_id' => $task->id,
+                    'task_type' => 'delivery',
+                    'driver_id' => $task->driver_id,
+                    'co_driver_id' => $task->co_driver_id,
+                    'vehicle_id' => $task->vehicle_id,
+                    'status' => $task->status,
+                    'notes' => implode(', ', $notes),
+                    'recorded_by' => auth()->id() ?? null,
+                ]);
+            }
+        });
+    }
+
     protected $casts = [
         'assigned_at' => 'datetime',
         'started_at' => 'datetime',
@@ -22,6 +61,11 @@ class DeliveryAssignment extends Model
         'departure_checklist' => 'array',
         'arrival_checklist' => 'array',
     ];
+
+    public function manifest()
+    {
+        return $this->belongsTo(TaskManifest::class, 'manifest_id');
+    }
 
     public function salesOrder()
     {
@@ -56,5 +100,10 @@ class DeliveryAssignment extends Model
     public function assigner()
     {
         return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function history()
+    {
+        return $this->hasMany(TaskHistory::class, 'task_id');
     }
 }

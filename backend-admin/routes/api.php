@@ -152,6 +152,48 @@ Route::middleware('api.router.key')->group(function () {
 
         /*
         |--------------------------------------------------------------------------
+        | DRIVER SHIFT (ABSENSI)
+        |--------------------------------------------------------------------------
+        */
+
+        Route::post('/driver/shift/start', [
+            \App\Http\Controllers\Api\DriverShiftController::class,
+            'startShift'
+        ]);
+
+        Route::post('/driver/shift/end', [
+            \App\Http\Controllers\Api\DriverShiftController::class,
+            'endShift'
+        ]);
+
+        Route::get('/driver/recent-shifts', [
+            \App\Http\Controllers\Api\DriverShiftController::class,
+            'recentShifts'
+        ]);
+
+        Route::get('/vehicles', [
+            \App\Http\Controllers\Api\VehicleController::class,
+            'index'
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
+        | DRIVER MANIFEST / PENUGASAN
+        |--------------------------------------------------------------------------
+        */
+
+        Route::get('/driver/manifests', [
+            \App\Http\Controllers\Api\Driver\DriverManifestController::class,
+            'index'
+        ]);
+
+        Route::get('/driver/manifests/{id}', [
+            \App\Http\Controllers\Api\Driver\DriverManifestController::class,
+            'show'
+        ]);
+
+        /*
+        |--------------------------------------------------------------------------
         | PICKUP TASK
         |--------------------------------------------------------------------------
         */
@@ -191,6 +233,16 @@ Route::middleware('api.router.key')->group(function () {
         Route::post('/pickup/{id}/expenses', [
             \App\Http\Controllers\Api\ExpenseController::class,
             'storeFromTask'
+        ]);
+        
+        Route::post('/manifests/{id}/expenses', [
+            \App\Http\Controllers\Api\ExpenseController::class,
+            'storeFromManifest'
+        ]);
+
+        Route::post('/driver/shifts/{id}/expenses', [
+            \App\Http\Controllers\Api\ExpenseController::class,
+            'storeForShift'
         ]);
 
 

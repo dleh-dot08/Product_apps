@@ -483,6 +483,7 @@
             <input type="hidden" name="task_type" id="taskTypeInput" value="pickup">
             <input type="hidden" name="pickup_reference" id="pickupReferenceHidden">
             <input type="hidden" name="delivery_so_number" id="deliverySoHidden">
+            <input type="hidden" name="manifest_id" id="manifestIdHidden">
 
             <div class="modal-content">
                 <div class="modal-header">
@@ -557,64 +558,9 @@
                                     Otomatis berubah ke Nomor SO saat memilih Delivery.
                                 </div>
                             </div>
+                            
+                            
 
-                            <div class="col-md-4">
-                                <label class="form-label">
-                                    Driver Utama <span class="required-star">*</span>
-                                </label>
-                                <select name="driver_id" class="form-select" required>
-                                    <option value="">Pilih driver...</option>
-                                    @foreach($drivers as $driver)
-                                        <option value="{{ $driver->id }}">{{ $driver->full_name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">
-                                    Co-Driver <span class="text-muted fw-normal">(Opsional)</span>
-                                </label>
-                                <select name="co_driver_id" class="form-select">
-                                    <option value="">Tanpa co-driver</option>
-                                    @foreach($drivers as $driver)
-                                        <option value="{{ $driver->id }}">{{ $driver->full_name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">
-                                    Kendaraan <span class="required-star">*</span>
-                                </label>
-                                <select name="vehicle_id" class="form-select" required>
-                                    <option value="">Pilih kendaraan...</option>
-                                    @foreach($vehicles as $vehicle)
-                                        <option value="{{ $vehicle->id }}">{{ $vehicle->plate_number }} - {{ $vehicle->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">
-                                    Berangkat <span class="required-star">*</span>
-                                </label>
-                                <input type="datetime-local" name="dispatch_date" class="form-control" value="{{ date('Y-m-d\TH:i') }}" required>
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">Estimasi Tiba</label>
-                                <input type="datetime-local" name="estimated_arrival" class="form-control">
-                            </div>
-
-                            <div class="col-md-4">
-                                <label class="form-label">Prioritas</label>
-                                <select name="priority" class="form-select">
-                                    <option value="normal">Normal</option>
-                                    <option value="medium">Medium</option>
-                                    <option value="high">High</option>
-                                    <option value="urgent">Urgent</option>
-                                </select>
-                            </div>
                         </div>
                     </section>
 
@@ -998,7 +944,7 @@
         </form>
     </div>
 </div>
-
+@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('createTaskForm');
@@ -1423,8 +1369,14 @@ document.addEventListener('DOMContentLoaded', function () {
         this.classList.remove('is-invalid');
     });
 
-    window.openTaskModal = function(mode, task = null, taskItems = []) {
+    window.openTaskModal = function(mode, task = null, taskItems = [], manifestId = null) {
         document.querySelectorAll('#createTaskModal .is-invalid').forEach(el => el.classList.remove('is-invalid'));
+        
+        if (manifestId) {
+            document.getElementById('manifestIdHidden').value = manifestId;
+        } else {
+            document.getElementById('manifestIdHidden').value = '';
+        }
         resetItemEditor();
 
         const title = document.querySelector('#createTaskModal .modal-title');
@@ -1446,7 +1398,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-            form.querySelector('input[name="dispatch_date"]').value = now.toISOString().slice(0, 16);
+            if (form.querySelector('input[name="dispatch_date"]')) {
+                form.querySelector('input[name="dispatch_date"]').value = now.toISOString().slice(0, 16);
+            }
+
 
             referenceInput.value = '';
             pickupReferenceHidden.value = '';
@@ -1467,17 +1422,18 @@ document.addEventListener('DOMContentLoaded', function () {
                 form.insertAdjacentHTML('beforeend', '<input type="hidden" name="_method" value="PUT">');
             }
 
-            form.querySelector('select[name="driver_id"]').value = task.driver_id || '';
-            form.querySelector('select[name="co_driver_id"]').value = task.co_driver_id || '';
-            form.querySelector('select[name="vehicle_id"]').value = task.vehicle_id || '';
-            form.querySelector('select[name="priority"]').value = task.priority || 'normal';
+            if (form.querySelector('select[name="driver_id"]')) form.querySelector('select[name="driver_id"]').value = task.driver_id || '';
+            if (form.querySelector('select[name="co_driver_id"]')) form.querySelector('select[name="co_driver_id"]').value = task.co_driver_id || '';
+            if (form.querySelector('select[name="vehicle_id"]')) form.querySelector('select[name="vehicle_id"]').value = task.vehicle_id || '';
+            if (form.querySelector('select[name="priority"]')) form.querySelector('select[name="priority"]').value = task.priority || '';
 
-            if (task.dispatch_date) {
+            if (task.dispatch_date && form.querySelector('input[name="dispatch_date"]')) {
                 form.querySelector('input[name="dispatch_date"]').value = task.dispatch_date.substring(0, 16);
             }
-            if (task.estimated_arrival) {
+            if (task.estimated_arrival && form.querySelector('input[name="estimated_arrival"]')) {
                 form.querySelector('input[name="estimated_arrival"]').value = task.estimated_arrival.substring(0, 16);
             }
+
 
             const type = task.task_type || 'pickup';
             switchTaskType(type);
@@ -1524,7 +1480,14 @@ document.addEventListener('DOMContentLoaded', function () {
                 form.querySelector('input[name="delivery_target_point"]').value = task.delivery_target_point || '';
             }
 
-            items = Array.isArray(taskItems) ? [...taskItems] : [];
+            items = Array.isArray(taskItems) ? taskItems.map(item => ({
+                item_number: item.no_barang || item.item_number || '',
+                item_description: item.deskripsi_barang || item.item_description || '',
+                quantity: item.qty || item.quantity || 1,
+                unit: item.uom || item.unit || 'UN',
+                unit_price: item.harga_satuan || item.unit_price || 0,
+                ref_no: item.ref_no || ''
+            })) : [];
             renderItems();
         }
 
@@ -1559,4 +1522,7 @@ document.addEventListener('DOMContentLoaded', function () {
     switchTaskType('pickup');
     renderItems();
 });
+    // Add this to your JS
+
 </script>
+@endpush

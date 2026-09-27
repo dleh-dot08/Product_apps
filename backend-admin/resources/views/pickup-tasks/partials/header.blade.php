@@ -1,4 +1,4 @@
-<x-app-layout>
+
     <style>
         :root {
             --orange-50: #fff7ed;
@@ -430,7 +430,7 @@
 
         .hero-visual {
             position:absolute;
-            right: 220px;
+            right: 380px;
             bottom: 0;
             width: 290px;
             height: 132px;
@@ -519,10 +519,16 @@
                         <div class="hero-truck"><i class="fa-solid fa-truck"></i></div>
                         <div class="hero-boxes"><span></span><span></span><span></span></div>
                     </div>
-                    <div class="hero-actions">
+                    <div class="hero-actions d-flex gap-2">
                         @if(auth()->user()->hasPermission('Create Tugas'))
                         <button type="button" class="btn btn-orange rounded-3 px-4 py-2 fw-bold" onclick="window.openTaskModal('create')">
-                            <i class="fa-solid fa-plus me-2"></i>Buat Tugas Baru
+                            <i class="fa-solid fa-plus me-2"></i>Buat Tugas
+                        </button>
+                        @endif
+                        
+                        @if(auth()->user()->hasPermission('Create Penugasan'))
+                        <button type="button" class="btn btn-primary rounded-3 px-4 py-2 fw-bold" onclick="window.openAssignmentModal('create')">
+                            <i class="fa-solid fa-clipboard-check me-2"></i>Tambah Penugasan
                         </button>
                         @endif
                     </div>
@@ -554,7 +560,7 @@
             @endif
 
             <!-- Statistik Tugas -->
-            <div class="row g-4 mb-4 stats-row">
+            <div class="row g-4 mb-2 stats-row">
                 <div class="col-md-3">
                     <div class="card card-premium stat-card h-100">
                         <div class="card-body">
@@ -601,271 +607,39 @@
                 </div>
             </div>
 
-            <!-- Tabel Tugas -->
-            <div class="card card-premium table-panel">
-                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                    <div>
-                        <h5 class="table-panel-title"><i class="fa-solid fa-list-check me-2 text-orange"></i>Daftar Tugas Pickup & Pengiriman</h5>
-                        <div class="secondary-line mt-1">Pantau tugas aktif dan perbarui status operasional driver.</div>
-                    </div>
-                    <i class="fa-solid fa-clipboard-check table-header-art" aria-hidden="true"></i>
-                </div>
-                
-                <!-- Filter Bar inside Card Body -->
-                <div class="filter-panel">
-                    <form action="{{ route('pickup-tasks.index') }}" method="GET" class="row g-2 align-items-center mb-3">
-                        <div class="col-md-3">
-                            <div class="input-group input-group-sm filter-search overflow-hidden">
-                                <span class="input-group-text bg-white border-0"><i class="fa-solid fa-magnifying-glass text-muted"></i></span>
-                                <input type="text" name="search" class="form-control border-0 shadow-none" placeholder="Cari No. Referensi..." value="{{ request('search') }}">
-                            </div>
-                        </div>
-                        <div class="col-md-2">
-                            <select name="task_type" class="form-select form-select-sm filter-control px-3">
-                                <option value="">Semua Jenis Tugas</option>
-                                <option value="pickup" {{ request('task_type') == 'pickup' ? 'selected' : '' }}>Pickup</option>
-                                <option value="delivery" {{ request('task_type') == 'delivery' ? 'selected' : '' }}>Delivery</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <select name="status" class="form-select form-select-sm filter-control px-3">
-                                <option value="">Semua Status</option>
-                                <option value="assigned" {{ request('status') == 'assigned' ? 'selected' : '' }}>Assigned</option>
-                                <option value="on_route" {{ request('status') == 'on_route' ? 'selected' : '' }}>On Route</option>
-                                <option value="arrived" {{ request('status') == 'arrived' ? 'selected' : '' }}>Arrived</option>
-                                <option value="delivered" {{ request('status') == 'delivered' ? 'selected' : '' }}>Delivered/Completed</option>
-                                <option value="failed" {{ request('status') == 'failed' ? 'selected' : '' }}>Failed</option>
-                                <option value="cancelled" {{ request('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <select name="driver_id" class="form-select form-select-sm filter-control px-3">
-                                <option value="">Semua Driver</option>
-                                @foreach($drivers as $driver)
-                                    <option value="{{ $driver->id }}" {{ request('driver_id') == $driver->id ? 'selected' : '' }}>{{ $driver->full_name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2 d-flex gap-2 filter-actions">
-                            <button type="submit" class="btn btn-sm btn-orange w-100 fw-bold rounded-3"><i class="fa-solid fa-filter me-1"></i> Filter</button>
-                            <a href="{{ route('pickup-tasks.index') }}" class="btn btn-sm btn-light border w-100 rounded-3" title="Reset"><i class="fa-solid fa-rotate-right me-1"></i> Reset</a>
-                        </div>
-                    </form>
-                </div>
-
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table task-table align-middle mb-0">
-                            <thead>
-                                <tr>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 px-4" style="width: 50px;">No</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tipe</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nomor SO / Ref</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Driver</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Kendaraan</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Lokasi Awal</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Lokasi Tujuan</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tgl Pengiriman</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Estimasi Sampai</th>
-                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-end px-4">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse ($tasks as $task)
-                                <tr>
-                                    <td class="text-center px-4">
-                                        <span class="secondary-line">{{ ($tasks->currentPage() - 1) * $tasks->perPage() + $loop->iteration }}</span>
-                                    </td>
-                                    <td>
-                                        @if($task->task_type === 'pickup')
-                                            <span class="task-kind pickup m-0"><i class="fa-solid fa-box-open"></i> PICKUP</span>
-                                        @else
-                                            <span class="task-kind delivery m-0"><i class="fa-solid fa-truck-fast"></i> DELIVERY</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <span class="primary-line fw-bold">{{ $task->task_type === 'pickup' ? $task->reference_number : ($task->salesOrder->so_number ?? '-') }}</span>
-                                    </td>
-                                    <td>
-                                        <div class="primary-line">{{ $task->driver->full_name ?? 'N/A' }}</div>
-                                        @if($task->coDriver)
-                                            <div class="secondary-line text-muted" style="font-size: 0.85em;"><i class="fa-solid fa-user-group me-1"></i>{{ $task->coDriver->full_name }}</div>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <div class="primary-line">{{ $task->vehicle->plate_number ?? 'N/A' }}</div>
-                                    </td>
-                                    <td>
-                                        <div class="primary-line fw-bold">{{ $task->pickup_name ?? '-' }}</div>
-                                        <div class="secondary-line" title="{{ $task->pickup_location }}">{{ $task->pickup_location ? Str::limit($task->pickup_location, 30) : '-' }}</div>
-                                    </td>
-                                    <td>
-                                        @if($task->task_type === 'pickup')
-                                            <div class="primary-line fw-bold">{{ $task->destination_name ?? '-' }}</div>
-                                            <div class="secondary-line" title="{{ $task->destination }}">{{ $task->destination ? Str::limit($task->destination, 30) : '-' }}</div>
-                                        @else
-                                            <div class="primary-line fw-bold">{{ $task->salesOrder->customer_name ?? '-' }}</div>
-                                            <div class="secondary-line" title="{{ $task->salesOrder->source_data['address'] ?? '' }}">{{ Str::limit($task->salesOrder->source_data['address'] ?? '-', 30) }}</div>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @php
-                                            $badges = [
-                                                'pending' => ['bg' => 'bg-secondary', 'text' => 'text-secondary', 'icon' => 'fa-hourglass'],
-                                                'assigned' => ['bg' => 'bg-warning', 'text' => 'text-warning', 'icon' => 'fa-clock'],
-                                                'on_route' => ['bg' => 'bg-info', 'text' => 'text-info', 'icon' => 'fa-truck-fast'],
-                                                'arrived' => ['bg' => 'bg-primary', 'text' => 'text-primary', 'icon' => 'fa-map-marker-alt'],
-                                                'delivered' => ['bg' => 'bg-success', 'text' => 'text-success', 'icon' => 'fa-check'],
-                                                'failed' => ['bg' => 'bg-danger', 'text' => 'text-danger', 'icon' => 'fa-xmark'],
-                                                'cancelled' => ['bg' => 'bg-secondary', 'text' => 'text-secondary', 'icon' => 'fa-ban']
-                                            ];
-                                            $badgeStyle = $badges[$task->status] ?? ['bg' => 'bg-secondary', 'text' => 'text-secondary', 'icon' => 'fa-circle'];
-                                        @endphp
-                                        <span class="status-badge {{ $badgeStyle['bg'] }} bg-opacity-10 {{ $badgeStyle['text'] }} border border-{{ str_replace('bg-', '', $badgeStyle['bg']) }} border-opacity-25">
-                                            <i class="fa-solid {{ $badgeStyle['icon'] }} me-1"></i> {{ str_replace('_', ' ', $task->status) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="primary-line">{{ $task->dispatch_date ? \Carbon\Carbon::parse($task->dispatch_date)->format('d M Y H:i') : ($task->sort_date ? \Carbon\Carbon::parse($task->sort_date)->format('d M Y H:i') : '-') }}</div>
-                                    </td>
-                                    <td>
-                                        <div class="primary-line" style="color: var(--app-orange);">{{ $task->estimated_arrival ? \Carbon\Carbon::parse($task->estimated_arrival)->format('d M Y H:i') : '-' }}</div>
-                                    </td>
-                                    <td class="text-end px-4">
-                                        <div class="dropdown">
-                                            <button class="btn btn-sm btn-light border shadow-none bg-transparent" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;">
-                                                <i class="fa-solid fa-ellipsis-vertical" style="color: var(--app-muted);"></i>
-                                            </button>
-                                            <ul class="dropdown-menu dropdown-menu-end shadow border border-opacity-10" style="border-radius: 12px; min-width: 160px;">
-                                                <li>
-                                                    <a class="dropdown-item py-2 d-flex align-items-center" href="{{ route('pickup-tasks.show', ['pickup_task' => $task->id, 'task_type' => $task->task_type]) }}">
-                                                        <i class="fa-solid fa-eye text-info me-3" style="width: 16px;"></i> Lihat Detail
-                                                    </a>
-                                                </li>
-                                                @if(auth()->user()->hasPermission('Edit Tugas'))
-                                                @if($task->status === 'assigned')
-                                                <li>
-                                                    <button type="button" class="dropdown-item py-2 d-flex align-items-center text-warning"
-                                                        onclick="openEditTaskModal(this)"
-                                                        data-task="{{ json_encode($task) }}"
-                                                        data-items="{{ json_encode($task->task_type === 'pickup' ? $task->items : ($task->salesOrder ? $task->salesOrder->items : [])) }}"
-                                                        data-url="{{ route('pickup-tasks.update-detail', ['pickup_task' => $task->id, 'task_type' => $task->task_type]) }}">
-                                                        <i class="fa-solid fa-edit me-3" style="width: 16px;"></i> Edit Tugas
-                                                    </button>
-                                                </li>
-                                                @else
-                                                <li>
-                                                    <span class="dropdown-item py-2 d-flex align-items-center text-muted" title="Tidak dapat mengedit tugas yang sedang berjalan atau selesai" style="cursor: not-allowed; background-color: transparent;">
-                                                        <i class="fa-solid fa-edit text-muted me-3" style="width: 16px;"></i> Edit Tugas
-                                                    </span>
-                                                </li>
-                                                @endif
-                                                @endif
-                                                @if(auth()->user()->hasPermission('Edit Tugas'))
-                                                <li>
-                                                    <button class="dropdown-item py-2 d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#editModal{{ $task->id }}">
-                                                        <i class="fa-solid fa-pen-to-square text-primary me-3" style="width: 16px;"></i> Update Status
-                                                    </button>
-                                                </li>
-                                                @endif
-                                                @if(auth()->user()->hasPermission('Delete Tugas'))
-                                                <li><hr class="dropdown-divider opacity-10"></li>
-                                                <li>
-                                                    <form action="{{ route('pickup-tasks.destroy', ['pickup_task' => $task->id, 'task_type' => $task->task_type]) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus tugas ini?');">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="dropdown-item py-2 text-danger d-flex align-items-center">
-                                                            <i class="fa-solid fa-trash me-3" style="width: 16px;"></i> Hapus
-                                                        </button>
-                                                    </form>
-                                                </li>
-                                                @endif
-                                            </ul>
-                                        </div>
-                                    </td>
-                                </tr>
-                                @empty
-                                <tr>
-                                    <td colspan="11" class="text-center empty-state">
-                                        <div class="empty-icon"><i class="fa-solid fa-inbox"></i></div>
-                                        <h5 class="fw-bold mb-1" style="color:var(--app-text);">Belum Ada Tugas</h5>
-                                        <p class="secondary-line mb-0">Tugas pickup dan delivery akan muncul di sini.</p>
-                                    </td>
-                                </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                @php
-                    $isPaginator = method_exists($tasks, 'currentPage') && method_exists($tasks, 'lastPage');
-                    $currentPage = $isPaginator ? $tasks->currentPage() : 1;
-                    $lastPage = $isPaginator ? $tasks->lastPage() : 1;
-                    $firstItem = $isPaginator ? ($tasks->firstItem() ?? 0) : ($tasks->count() ? 1 : 0);
-                    $lastItem = $isPaginator ? ($tasks->lastItem() ?? 0) : $tasks->count();
-                    $totalItem = $isPaginator ? $tasks->total() : $tasks->count();
-                @endphp
-                <div class="table-footer">
-                    <div>Menampilkan <strong>{{ $firstItem }}</strong> - <strong>{{ $lastItem }}</strong> dari <strong>{{ $totalItem }}</strong> data</div>
-                    @if($isPaginator && $lastPage > 1)
-                        <div class="table-pagination">
-                            <a class="page-chip {{ $currentPage <= 1 ? 'disabled' : '' }}" href="{{ $currentPage > 1 ? $tasks->previousPageUrl() : '#' }}"><i class="fa-solid fa-chevron-left"></i></a>
-                            @for($page = max(1, $currentPage - 1); $page <= min($lastPage, $currentPage + 1); $page++)
-                                <a class="page-chip {{ $page === $currentPage ? 'active' : '' }}" href="{{ $tasks->url($page) }}">{{ $page }}</a>
-                            @endfor
-                            <a class="page-chip {{ $currentPage >= $lastPage ? 'disabled' : '' }}" href="{{ $currentPage < $lastPage ? $tasks->nextPageUrl() : '#' }}"><i class="fa-solid fa-chevron-right"></i></a>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @foreach ($tasks as $task)
-    <!-- Modal Update Status -->
-    <div class="modal fade" id="editModal{{ $task->id }}" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-premium">
-            <div class="modal-content">
-                <form action="{{ route('pickup-tasks.update', ['pickup_task' => $task->id]) }}" method="POST" class="w-100">
-                    @csrf
-                    @method('PUT')
-                    <input type="hidden" name="task_type" value="{{ $task->task_type }}">
+            <div class="card card-premium mb-2 border-0 shadow-sm" style="height: 50px; overflow: hidden; border-radius: 12px;">
+                <div class="card-body p-1 d-flex align-items-center justify-content-between h-100" style="gap: 5px;">
+                    <!-- List Tugas -->
+                    <a href="{{ route('pickup-tasks.index') }}" class="btn d-flex align-items-center justify-content-center m-0 flex-grow-1 {{ (isset($activeTab) && $activeTab == 'list-tugas') ? '' : 'btn-light text-secondary' }}" style="height: 100%; border-radius: 8px; font-weight: 600; font-size: 13px; gap: 8px; border: none; box-shadow: none; {{ (isset($activeTab) && $activeTab == 'list-tugas') ? 'background: #ff6a00 !important; color: #ffffff !important;' : 'background: transparent;' }}">
+                        <i class="fa-solid fa-file-invoice" style="{{ (isset($activeTab) && $activeTab == 'list-tugas') ? 'color: #ffffff;' : '' }}"></i> List Tugas 
+                        <span class="badge {{ (isset($activeTab) && $activeTab == 'list-tugas') ? 'bg-white text-dark' : 'bg-secondary bg-opacity-10 text-secondary' }} rounded-pill" style="font-size: 11px;">{{ $totalTasks }}</span>
+                    </a>
                     
-                    <div class="modal-header bg-orange-gradient text-white border-0 py-3">
-                        <h5 class="modal-title fw-bold"><i class="fa-solid fa-pen-to-square me-2"></i>Update Status Tugas ({{ ucfirst($task->task_type) }})</h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body text-start">
-                        <div class="mb-3">
-                            <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Status Saat Ini</label>
-                            <select name="status" class="form-select">
-                                <option value="assigned" {{ $task->status == 'assigned' ? 'selected' : '' }}>Assigned (Baru)</option>
-                                <option value="on_route" {{ $task->status == 'on_route' ? 'selected' : '' }}>On Route (Sedang Jalan)</option>
-                                <option value="arrived" {{ $task->status == 'arrived' ? 'selected' : '' }}>Arrived (Telah Sampai)</option>
-                                <option value="delivered" {{ $task->status == 'delivered' ? 'selected' : '' }}>Delivered (Selesai Dikirim)</option>
-                                <option value="failed" {{ $task->status == 'failed' ? 'selected' : '' }}>Failed (Gagal)</option>
-                                <option value="cancelled" {{ $task->status == 'cancelled' ? 'selected' : '' }}>Cancelled (Dibatalkan)</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-light rounded-3 px-4 fw-semibold border" data-bs-dismiss="modal">Batal</button>
-                        <button type="submit" class="btn btn-orange rounded-3 px-4 fw-semibold"><i class="fa-solid fa-save me-2"></i>Simpan Perubahan</button>
-                    </div>
-                </form>
+                    <div style="width: 1px; height: 60%; background: #e9ecef;"></div>
+
+                    <!-- List Penugasan -->
+                    <a href="{{ route('pickup-tasks.list-penugasan') }}" class="btn d-flex align-items-center justify-content-center m-0 flex-grow-1 {{ (isset($activeTab) && $activeTab == 'list-penugasan') ? '' : 'btn-light text-secondary' }}" style="height: 100%; border-radius: 8px; font-weight: 600; font-size: 13px; gap: 8px; border: none; box-shadow: none; {{ (isset($activeTab) && $activeTab == 'list-penugasan') ? 'background: #ff6a00 !important; color: #ffffff !important;' : 'background: transparent;' }}">
+                        <i class="fa-solid fa-user-group" style="{{ (isset($activeTab) && $activeTab == 'list-penugasan') ? 'color: #ffffff;' : '' }}"></i> List Penugasan 
+                        <span class="badge {{ (isset($activeTab) && $activeTab == 'list-penugasan') ? 'bg-white text-dark' : 'bg-secondary bg-opacity-10 text-secondary' }} rounded-pill" style="font-size: 11px;">{{ $assignedTasks }}</span>
+                    </a>
+
+                    <div style="width: 1px; height: 60%; background: #e9ecef;"></div>
+
+                    <!-- Monitoring Driver -->
+                    <a href="{{ route('pickup-tasks.monitoring') }}" class="btn d-flex align-items-center justify-content-center m-0 flex-grow-1 {{ (isset($activeTab) && $activeTab == 'monitoring') ? '' : 'btn-light text-secondary' }}" style="height: 100%; border-radius: 8px; font-weight: 600; font-size: 13px; gap: 8px; border: none; box-shadow: none; {{ (isset($activeTab) && $activeTab == 'monitoring') ? 'background: #ff6a00 !important; color: #ffffff !important;' : 'background: transparent;' }}">
+                        <i class="fa-solid fa-map" style="{{ (isset($activeTab) && $activeTab == 'monitoring') ? 'color: #ffffff;' : '' }}"></i> Monitoring Driver 
+                        <span class="badge {{ (isset($activeTab) && $activeTab == 'monitoring') ? 'bg-white text-dark' : 'bg-secondary bg-opacity-10 text-secondary' }} rounded-pill" style="font-size: 11px;">{{ $onRouteTasks }}</span>
+                    </a>
+
+                    <div style="width: 1px; height: 60%; background: #e9ecef;"></div>
+
+                    <!-- History Delivery Order -->
+                    <a href="{{ route('pickup-tasks.history-do') }}" class="btn d-flex align-items-center justify-content-center m-0 flex-grow-1 {{ (isset($activeTab) && $activeTab == 'history-do') ? '' : 'btn-light text-secondary' }}" style="height: 100%; border-radius: 8px; font-weight: 600; font-size: 13px; gap: 8px; border: none; box-shadow: none; {{ (isset($activeTab) && $activeTab == 'history-do') ? 'background: #ff6a00 !important; color: #ffffff !important;' : 'background: transparent;' }}">
+                        <i class="fa-solid fa-clock-rotate-left" style="{{ (isset($activeTab) && $activeTab == 'history-do') ? 'color: #ffffff;' : '' }}"></i> History Delivery Order 
+                        <span class="badge {{ (isset($activeTab) && $activeTab == 'history-do') ? 'bg-white text-dark' : 'bg-secondary bg-opacity-10 text-secondary' }} rounded-pill" style="font-size: 11px;">{{ $completedTasks }}</span>
+                    </a>
+                </div>
             </div>
-        </div>
-    </div>
-    @endforeach
-    @include('pickup-tasks.partials.create-modal')
-    <script>
-        function openEditTaskModal(btn) {
-            let task = JSON.parse(btn.getAttribute('data-task'));
-            let items = JSON.parse(btn.getAttribute('data-items'));
-            task.update_url = btn.getAttribute('data-url');
-            window.openTaskModal('edit', task, items);
-        }
-    </script>
-</x-app-layout>
+            
+            @include('pickup-tasks.list-tugas.partials.create-modal')
+            @include('pickup-tasks.penugasan.partials.create-penugasan')

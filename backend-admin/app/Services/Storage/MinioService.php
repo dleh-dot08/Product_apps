@@ -68,9 +68,24 @@ class MinioService
     public function getFileUrl($path, $expirationMinutes = 60)
     {
         try {
+            // Jika path adalah full URL dari MinIO, ambil key-nya saja
+            $prefix = rtrim($this->client->getEndpoint(), '/') . '/' . $this->bucket . '/';
+            if (strpos($path, $prefix) === 0) {
+                $path = substr($path, strlen($prefix));
+            } elseif (strpos($path, 'http') === 0) {
+                // Alternatif fallback jika URL formatnya sedikit berbeda
+                $urlParts = parse_url($path);
+                if (isset($urlParts['path'])) {
+                    $pathParts = explode('/' . $this->bucket . '/', $urlParts['path']);
+                    if (count($pathParts) > 1) {
+                        $path = $pathParts[1];
+                    }
+                }
+            }
+
             $cmd = $this->client->getCommand('GetObject', [
                 'Bucket' => $this->bucket,
-                'Key'    => $path
+                'Key'    => ltrim($path, '/')
             ]);
 
             $request = $this->client->createPresignedRequest($cmd, "+{$expirationMinutes} minutes");

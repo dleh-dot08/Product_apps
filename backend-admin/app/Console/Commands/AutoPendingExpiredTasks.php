@@ -1,0 +1,140 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\PickupTask;
+use App\Models\DeliveryAssignment;
+use App\Models\TaskHistory;
+use Illuminate\Console\Command;
+use Carbon\Carbon;
+
+class AutoPendingExpiredTasks extends Command
+{
+    /**
+     * The name and signature of the console command.
+     */
+    protected $signature = 'tasks:auto-pending';
+
+    /**
+     * The console command description.
+     */
+    protected $description = 'Otomatis ubah status tugas menjadi pending jika sudah melewati dispatch_date pukul 23:00 dan belum selesai. Tugas luar kota dikecualikan jika masih dalam estimasi.';
+
+    /**
+     * Execute the console command.
+     */
+    public function handle()
+    {
+        $now = Carbon::now();
+        $affected = 0;
+
+        // ===== PICKUP TASKS =====
+        $pickupQuery = PickupTask::whereIn('status', ['assigned', 'on_route'])
+            ->whereNotNull('dispatch_date');
+
+        $pickups = $pickupQuery->get();
+
+        foreach ($pickups as $task) {
+            $deadline = Carbon::parse($task->dispatch_date)->setTime(23, 0, 0);
+
+            if ($now->greaterThan($deadline)) {
+                // Pengecualian: Luar kota dengan estimasi sampai yang belum lewat
+                if ($task->is_out_of_city && $task->estimated_arrival) {
+                    $eta = Carbon::parse($task->estimated_arrival);
+                    if ($now->lessThanOrEqualTo($eta)) {
+                        // Masih dalam estimasi, skip
+                        continue;
+                    }
+                }
+
+                $oldManifestId = $task->manifest_id;
+                $oldDriverId = $task->driver_id;
+
+                $task->update([
+                    'status' => 'pending',
+                    'manifest_id' => null,
+                    'driver_id' => null,
+                    'co_driver_id' => null,
+                    'vehicle_id' => null,
+                    'assigned_at' => null,
+                ]);
+
+                // Update tasks_manifest_history
+                if ($oldManifestId) {
+                    \DB::table('tasks_manifest_history')
+                        ->where('manifest_id', $oldManifestId)
+                        ->where('task_id', $task->id)
+                        ->update(['status' => 'pending']);
+                }
+
+                // Log ke history
+                TaskHistory::create([
+                    'task_id' => $task->id,
+                    'task_type' => 'pickup',
+                    'driver_id' => $oldDriverId,
+                    'status' => 'pending',
+                    'notes' => 'Status otomatis diubah menjadi PENDING - melewati batas waktu dispatch (' . $deadline->format('d/m/Y H:i') . ')' .
+                               ($task->is_out_of_city ? ' [Luar Kota - estimasi terlewat]' : ''),
+                    'recorded_by' => null, // system
+                ]);
+
+                $affected++;
+            }
+        }
+
+        // ===== DELIVERY ASSIGNMENTS =====
+        $deliveryQuery = DeliveryAssignment::whereIn('status', ['assigned', 'on_route'])
+            ->whereNotNull('dispatch_date');
+
+        $deliveries = $deliveryQuery->get();
+
+        foreach ($deliveries as $task) {
+            $deadline = Carbon::parse($task->dispatch_date)->setTime(23, 0, 0);
+
+            if ($now->greaterThan($deadline)) {
+                // Pengecualian: Luar kota dengan estimasi sampai yang belum lewat
+                if ($task->is_out_of_city && $task->estimated_arrival) {
+                    $eta = Carbon::parse($task->estimated_arrival);
+                    if ($now->lessThanOrEqualTo($eta)) {
+                        continue;
+                    }
+                }
+
+                $oldManifestId = $task->manifest_id;
+                $oldDriverId = $task->driver_id;
+
+                $task->update([
+                    'status' => 'pending',
+                    'manifest_id' => null,
+                    'driver_id' => null,
+                    'co_driver_id' => null,
+                    'vehicle_id' => null,
+                    'assigned_at' => null,
+                ]);
+
+                if ($oldManifestId) {
+                    \DB::table('tasks_manifest_history')
+                        ->where('manifest_id', $oldManifestId)
+                        ->where('task_id', $task->id)
+                        ->update(['status' => 'pending']);
+                }
+
+                TaskHistory::create([
+                    'task_id' => $task->id,
+                    'task_type' => 'delivery',
+                    'driver_id' => $oldDriverId,
+                    'status' => 'pending',
+                    'notes' => 'Status otomatis diubah menjadi PENDING - melewati batas waktu dispatch (' . $deadline->format('d/m/Y H:i') . ')' .
+                               ($task->is_out_of_city ? ' [Luar Kota - estimasi terlewat]' : ''),
+                    'recorded_by' => null,
+                ]);
+
+                $affected++;
+            }
+        }
+
+        $this->info("✅ Selesai: {$affected} tugas diubah ke status PENDING.");
+
+        return Command::SUCCESS;
+    }
+}

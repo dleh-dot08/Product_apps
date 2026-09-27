@@ -1,5 +1,6 @@
 import { Text } from '@/components/CustomText';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
   FlatList,
@@ -9,6 +10,7 @@ import {
   TouchableOpacity,
   View,
   Modal,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -29,6 +31,8 @@ const BRAND = {
   successSoft: '#D1FAE5',
   warning: '#F59E0B',
   warningSoft: '#FEF3C7',
+  danger: '#EF4444',
+  dangerSoft: '#FEE2E2',
 };
 
 type TaskStatus = 'assigned' | 'on_route' | 'arrived' | 'delivered' | 'failed' | string;
@@ -156,6 +160,12 @@ export default function ListTugas() {
     return () => clearTimeout(timeout);
   }, [fetchTasks, search, status]);
 
+  useFocusEffect(
+    useCallback(() => {
+      fetchTasks(1);
+    }, [fetchTasks])
+  );
+
   const handleLoadMore = () => {
     if (!loadingMore && hasMore && !loading) {
       setLoadingMore(true);
@@ -209,6 +219,8 @@ export default function ListTugas() {
     { id: 'assigned', label: 'Menunggu' },
     { id: 'on_route', label: 'Berjalan' },
     { id: 'delivered', label: 'Selesai' },
+    { id: 'pending', label: 'Tertunda' },
+    { id: 'Tidak Terkirim', label: 'Tidak Terkirim' },
   ];
 
   return (
@@ -243,14 +255,20 @@ export default function ListTugas() {
         ListHeaderComponent={
           <View style={styles.headerContent}>
             {/* Segmented Tabs */}
-            <View style={[styles.segmentedTabs, { backgroundColor: cardBackground, borderColor }]}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={{ marginBottom: 16 }}
+              contentContainerStyle={[styles.segmentedTabs, { backgroundColor: cardBackground, borderColor, marginBottom: 0 }]}
+            >
               {TABS.map((tab) => {
-                const isActive = status === tab.id || (tab.id === 'on_route' && status === 'arrived');
+                const isActive = status === tab.id || (tab.id === 'on_route' && (status === 'arrived'));
                 return (
                   <TouchableOpacity
                     key={tab.id}
                     style={[
                       styles.tabButton,
+                      { flex: 0, paddingHorizontal: 16 },
                       isActive && styles.tabButtonActive
                     ]}
                     onPress={() => setStatus(tab.id)}
@@ -265,7 +283,7 @@ export default function ListTugas() {
                   </TouchableOpacity>
                 );
               })}
-            </View>
+            </ScrollView>
 
             {/* Search and Filter */}
             <View style={styles.searchRow}>
@@ -455,6 +473,11 @@ function TaskCard({
         return { label: 'Berjalan', bg: BRAND.primarySoft, text: BRAND.primary };
       case 'delivered':
         return { label: 'Selesai', bg: BRAND.successSoft, text: BRAND.success };
+      case 'pending':
+        return { label: 'Tertunda', bg: BRAND.dangerSoft, text: BRAND.danger };
+      case 'failed':
+      case 'Tidak Terkirim':
+        return { label: 'Tidak Terkirim', bg: BRAND.dangerSoft, text: BRAND.danger };
       default:
         return { label: status || 'Unknown', bg: BRAND.border, text: BRAND.text };
     }
@@ -523,51 +546,12 @@ function TaskCard({
         </Text>
       </View>
 
-      {/* Date & Time */}
+      {/* Date */}
       <View style={styles.dateTimeRow}>
         <View style={styles.dateTimeItem}>
           <Ionicons name="calendar-outline" size={14} color={textMuted} />
           <Text style={[styles.dateTimeText, { color: textMuted }]}>{formatDate(task.assigned_at)}</Text>
         </View>
-        <View style={styles.dateTimeItem}>
-          <Ionicons name="time-outline" size={14} color={textMuted} />
-          <Text style={[styles.dateTimeText, { color: textMuted }]}>{formatTime(task.assigned_at)}</Text>
-        </View>
-        <View style={styles.dateTimeItem}>
-          <Ionicons name="hourglass-outline" size={14} color={textMuted} />
-          <Text style={[styles.dateTimeText, { color: textMuted }]}>
-            {task.assigned_at ? 'Estimasi' : '-'}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.divider} />
-
-      {/* Vehicle & Driver */}
-      <View style={styles.metaRow}>
-        <View style={styles.metaItem}>
-          <Ionicons name="bus-outline" size={18} color={textMuted} />
-          <View>
-            <Text style={[styles.metaTitle, { color: textColor }]} numberOfLines={1}>
-              {task.vehicle?.vehicle_name || task.vehicle_name || '-'}
-            </Text>
-            <Text style={[styles.metaSub, { color: textMuted }]} numberOfLines={1}>
-              {task.vehicle?.plate_number || task.vehicle_plate_number || '-'}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.metaItem}>
-          <Ionicons name="person-outline" size={18} color={textMuted} />
-          <View>
-            <Text style={[styles.metaTitle, { color: textColor }]} numberOfLines={1}>
-              {task.driver?.name || '-'}
-            </Text>
-            <Text style={[styles.metaSub, { color: textMuted }]} numberOfLines={1}>
-              {task.driver?.employee_id || '-'}
-            </Text>
-          </View>
-        </View>
-        <Ionicons name="chevron-forward" size={20} color={textMuted} />
       </View>
     </TouchableOpacity>
   );

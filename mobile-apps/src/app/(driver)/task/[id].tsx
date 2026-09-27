@@ -70,6 +70,7 @@ const BRAND = {
   violet: '#6D48D7',
   violetSoft: '#F2ECFF',
   danger: '#EF4444',
+  dangerSoft: '#FEE2E2',
   white: '#FFFFFF',
   page: '#F5F7FB',
   text: '#0F172A',
@@ -144,7 +145,7 @@ type TaskDetail = {
   pickup_point?: string | null;
   destination_pic_name?: string | null;
   destination_point?: string | null;
-  
+
   // Delivery specific fields
   delivery_pickup_name?: string | null;
   delivery_sender_pic?: string | null;
@@ -419,6 +420,11 @@ function TaskDetailScreenContent() {
       statusBg = BRAND.primarySoft;
       statusColor = BRAND.primary;
       break;
+    case 'pending':
+      statusLabel = 'Terkendala';
+      statusBg = BRAND.dangerSoft;
+      statusColor = BRAND.danger;
+      break;
     case 'delivered':
       statusLabel = 'Selesai';
       statusBg = BRAND.successSoft;
@@ -449,10 +455,48 @@ function TaskDetailScreenContent() {
   let btnAction = () => { };
   if (status === 'assigned') {
     btnLabel = 'Mulai Perjalanan';
-    btnAction = () => setModalKeberangkatanVisible(true);
+    btnAction = () => {
+      Alert.alert(
+        'Mulai Perjalanan',
+        'Apakah Anda yakin ingin memulai perjalanan ini?',
+        [
+          { text: 'Batal', style: 'cancel' },
+          { 
+            text: 'Ya, Mulai', 
+            onPress: async () => {
+              try {
+                setActionLoading(true);
+                const dashRes = await api.get('/driver/dashboard');
+                if (!dashRes.data?.data?.active_shift) {
+                  Alert.alert('Perhatian', 'Mohon Clock In terlebih dahulu sebelum memulai perjalanan.');
+                  setActionLoading(false);
+                  return;
+                }
+                await handleAction('on_route');
+              } catch (err) {
+                Alert.alert('Error', 'Gagal memverifikasi status Clock In');
+                setActionLoading(false);
+              }
+            }
+          }
+        ]
+      );
+    };
   } else if (status === 'on_route') {
     btnLabel = 'Selesaikan Perjalanan';
-    btnAction = () => setModalTibaVisible(true);
+    btnAction = () => {
+      Alert.alert(
+        'Konfirmasi Tiba',
+        'Apakah Anda yakin sudah sampai di lokasi tujuan?',
+        [
+          { text: 'Batal', style: 'cancel' },
+          { 
+            text: 'Ya, Sudah Sampai', 
+            onPress: () => handleAction('arrived', {}) 
+          }
+        ]
+      );
+    };
   } else if (status === 'arrived') {
     btnLabel = 'Bukti Serah Terima';
     btnAction = () => setModalSerahTerimaVisible(true);
@@ -536,7 +580,7 @@ function TaskDetailScreenContent() {
                   </Text>
                 </View>
                 <Text style={[styles.timelineLocName, { color: textColor }]}>
-                  {isPickup ? task.pickup_name : task.pickup_name || '-'} 
+                  {isPickup ? task.pickup_name : task.pickup_name || '-'}
                   {isPickup ? (task.pickup_point ? ` (${task.pickup_point})` : '') : (task.delivery_origin_point ? ` (${task.delivery_origin_point})` : '')}
                 </Text>
                 {(isPickup ? task.pickup_pic_name : task.delivery_sender_pic) && (
@@ -548,7 +592,7 @@ function TaskDetailScreenContent() {
                   {isPickup ? task.pickup_location : task.pickup_location || '-'}
                 </Text>
               </View>
-              
+
               <View style={styles.timelineItem}>
                 <View style={styles.timelineItemHeader}>
                   <Text style={[styles.timelineTitle, { color: BRAND.primary }]}>Lokasi Dropoff</Text>
@@ -557,8 +601,8 @@ function TaskDetailScreenContent() {
                   </Text>
                 </View>
                 <Text style={[styles.timelineLocName, { color: textColor }]}>
-                  {isPickup 
-                    ? task.destination_name || (task.sales_order ? task.sales_order.customer_name : task.destination) 
+                  {isPickup
+                    ? task.destination_name || (task.sales_order ? task.sales_order.customer_name : task.destination)
                     : task.destination || (task.sales_order ? task.sales_order.customer_name : '-') || '-'}
                   {isPickup ? (task.destination_point ? ` (${task.destination_point})` : '') : (task.delivery_target_point ? ` (${task.delivery_target_point})` : '')}
                 </Text>
@@ -568,8 +612,8 @@ function TaskDetailScreenContent() {
                   </Text>
                 )}
                 <Text style={[styles.timelineAddress, { color: textMuted }]}>
-                  {isPickup 
-                    ? task.pickup_destination || task.destination || '-' 
+                  {isPickup
+                    ? task.pickup_destination || task.destination || '-'
                     : task.sales_order && task.sales_order.source_data?.address ? task.sales_order.source_data.address : '-'}
                 </Text>
               </View>
@@ -642,7 +686,7 @@ function TaskDetailScreenContent() {
             )}
           </View>
           {Platform.OS === 'web' || !MapView ? (
-            <TouchableOpacity 
+            <TouchableOpacity
               activeOpacity={0.8}
               onPress={openMap}
               style={[styles.mapPlaceholder, { backgroundColor: '#F0F9FF', overflow: 'hidden', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: '#BAE6FD', borderStyle: 'dashed' }]}
@@ -694,12 +738,19 @@ function TaskDetailScreenContent() {
           <Text style={[styles.cardSectionTitle, { color: textColor, marginBottom: 16 }]}>Progress Tugas</Text>
           <View style={styles.progressRow}>
             {[
-              { id: 1, label: 'Prepare', active: status === 'assigned', done: status !== 'assigned', action: () => setModalKeberangkatanVisible(true) },
-              { id: 2, label: 'Pengeluaran', active: status === 'on_route' || status === 'arrived', done: false, action: () => setModalPengeluaranVisible(true) },
-              { id: 3, label: 'Tiba', active: status === 'on_route', done: status === 'arrived' || status === 'delivered', action: () => setModalTibaVisible(true) },
-              { id: 4, label: 'Selesai', active: status === 'arrived', done: status === 'delivered', action: () => setModalSerahTerimaVisible(true) },
+              { id: 1, label: 'Persiapan', active: status === 'assigned', done: status !== 'assigned', action: () => {} },
+              { id: 2, label: 'Perjalanan', active: status === 'on_route', done: status === 'arrived' || status === 'delivered' || status === 'pending', action: () => {} },
+              { id: 3, label: 'Tiba', active: status === 'arrived' || status === 'pending', done: status === 'delivered', action: () => {
+                if (status === 'on_route') {
+                  Alert.alert('Konfirmasi Tiba', 'Apakah Anda yakin sudah sampai di lokasi tujuan?', [
+                    { text: 'Batal', style: 'cancel' },
+                    { text: 'Ya, Sudah Sampai', onPress: () => handleAction('arrived', {}) }
+                  ]);
+                }
+              } },
+              { id: 4, label: 'Serah Terima', active: status === 'delivered', done: status === 'delivered', action: () => setModalSerahTerimaVisible(true) },
             ].map((step, idx, arr) => {
-              const isClickable = step.active || (step.id === 2 && (status === 'on_route' || status === 'arrived'));
+              const isClickable = step.active;
               return (
                 <TouchableOpacity
                   key={step.id}
@@ -711,7 +762,7 @@ function TaskDetailScreenContent() {
                     }
                   }}
                 >
-                  <View style={[styles.progressCircle, { 
+                  <View style={[styles.progressCircle, {
                     backgroundColor: step.done ? BRAND.successSoft : (step.active ? BRAND.primarySoft : BRAND.borderSoft),
                     borderColor: step.done ? BRAND.success : (step.active ? BRAND.primary : 'transparent'),
                     borderWidth: step.done || step.active ? 2 : 0
@@ -719,7 +770,7 @@ function TaskDetailScreenContent() {
                     {step.done ? (
                       <Ionicons name="checkmark" size={16} color={BRAND.success} />
                     ) : (
-                      <Text style={[styles.progressStepNum, { 
+                      <Text style={[styles.progressStepNum, {
                         color: step.active ? BRAND.primary : textMuted,
                         fontWeight: step.active ? 'bold' : 'normal'
                       }]}>{step.id}</Text>
@@ -759,16 +810,16 @@ function TaskDetailScreenContent() {
               </View>
             ))
           ) : (task.item_description || task.item_number) ? (
-              <View style={[styles.tableRow, { borderBottomColor: BRAND.border }]}>
-                <Text style={[styles.tableColNo, { color: textColor }]}>1</Text>
-                <View style={[styles.tableColDesc, { paddingRight: 8 }]}>
-                  <Text style={[styles.itemName, { color: textColor }]}>{task.item_description || '-'}</Text>
-                  <Text style={[styles.itemNumber, { color: textMuted }]}>{task.item_number || '-'}</Text>
-                </View>
-                <Text style={[styles.tableColQty, { color: textColor }]}>
-                  {task.quantity ? Number(task.quantity).toString().replace('.', ',') : '-'} {task.unit || ''}
-                </Text>
+            <View style={[styles.tableRow, { borderBottomColor: BRAND.border }]}>
+              <Text style={[styles.tableColNo, { color: textColor }]}>1</Text>
+              <View style={[styles.tableColDesc, { paddingRight: 8 }]}>
+                <Text style={[styles.itemName, { color: textColor }]}>{task.item_description || '-'}</Text>
+                <Text style={[styles.itemNumber, { color: textMuted }]}>{task.item_number || '-'}</Text>
               </View>
+              <Text style={[styles.tableColQty, { color: textColor }]}>
+                {task.quantity ? Number(task.quantity).toString().replace('.', ',') : '-'} {task.unit || ''}
+              </Text>
+            </View>
           ) : (
             <View style={{ paddingVertical: 16, alignItems: 'center' }}>
               <Text style={{ color: textMuted, fontStyle: 'italic' }}>Tidak ada data barang</Text>
@@ -793,7 +844,7 @@ function TaskDetailScreenContent() {
               <Text style={[styles.picName, { color: textColor }]}>{task.assigner?.full_name || task.assigner?.name || task.assigned_by?.full_name || '-'}</Text>
               <Text style={[styles.picRole, { color: textMuted }]}>Admin</Text>
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.callButton}
               onPress={() => {
                 const phone = task.assigner?.phone || task.assigned_by?.phone || '081234567890';
@@ -814,39 +865,46 @@ function TaskDetailScreenContent() {
             </Text>
           </View>
 
-          {/* Mapping attachments */}
-          {((task as any).attachments && (task as any).attachments.length > 0) ? (
-            (task as any).attachments.map((doc: any, index: number) => {
-              const rawPath = doc.file_path || '';
-              let fileUrl = '';
-              if (rawPath.startsWith('http')) {
-                if (rawPath.includes('bucket.gte.co.id') && !rawPath.includes('/driver-apps/')) {
-                  fileUrl = rawPath.replace('bucket.gte.co.id/', 'bucket.gte.co.id/driver-apps/');
+          {(() => {
+            const adminDocs = ((task as any).attachments || []).filter((doc: any) => 
+              !['bukti_keberangkatan', 'bukti_kedatangan', 'bukti_serah_terima', 'keberangkatan_depan', 'keberangkatan_muatan', 'keberangkatan_surat', 'tiba_lokasi', 'tiba_gudang', 'surat_jalan', 'bukti_timbang'].includes(doc.category)
+            );
+
+            if (adminDocs.length > 0) {
+              return adminDocs.map((doc: any, index: number) => {
+                const rawPath = doc.file_path || '';
+                let fileUrl = '';
+                if (rawPath.startsWith('http')) {
+                  if (rawPath.includes('bucket.gte.co.id') && !rawPath.includes('/driver-apps/')) {
+                    fileUrl = rawPath.replace('bucket.gte.co.id/', 'bucket.gte.co.id/driver-apps/');
+                  } else {
+                    fileUrl = rawPath;
+                  }
                 } else {
-                  fileUrl = rawPath;
+                  fileUrl = `https://bucket.gte.co.id/driver-apps/${rawPath}`;
                 }
-              } else {
-                fileUrl = `https://bucket.gte.co.id/driver-apps/${rawPath}`;
-              }              
-              return (
-                <View key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 8 }}>
-                  <Ionicons name="document-attach" size={24} color={BRAND.primary} style={{ marginRight: 12 }} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={{ color: textColor, fontSize: 14, fontWeight: '600', marginBottom: 4 }}>{doc.category || 'Dokumen'}</Text>
-                    <Text style={{ color: textMuted, fontSize: 12 }}>{doc.notes ? doc.notes : 'Ketuk ikon untuk melihat'}</Text>
+                return (
+                  <View key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#1e293b' : '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 8 }}>
+                    <Ionicons name="document-attach" size={24} color={BRAND.primary} style={{ marginRight: 12 }} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ color: textColor, fontSize: 14, fontWeight: '600', marginBottom: 4 }}>{doc.category || 'Dokumen'}</Text>
+                      <Text style={{ color: textMuted, fontSize: 12 }}>{doc.notes ? doc.notes : (doc.file_name || 'Ketuk ikon untuk melihat')}</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => Linking.openURL(fileUrl)}>
+                      <Ionicons name="download-outline" size={20} color={BRAND.primary} />
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity onPress={() => Linking.openURL(fileUrl)}>
-                    <Ionicons name="download-outline" size={20} color={BRAND.primary} />
-                  </TouchableOpacity>
+                );
+              });
+            } else {
+              return (
+                <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+                  <Ionicons name="folder-open-outline" size={48} color={textMuted} style={{ opacity: 0.5, marginBottom: 12 }} />
+                  <Text style={{ color: textMuted, fontSize: 13, textAlign: 'center' }}>Tidak ada dokumen tambahan dari admin</Text>
                 </View>
               );
-            })
-          ) : (
-            <View style={{ alignItems: 'center', paddingVertical: 20 }}>
-              <Ionicons name="folder-open-outline" size={48} color={textMuted} style={{ opacity: 0.5, marginBottom: 12 }} />
-              <Text style={{ color: textMuted, fontSize: 13, textAlign: 'center' }}>Tidak ada dokumen tambahan dari admin</Text>
-            </View>
-          )}
+            }
+          })()}
         </View>
       </ScrollView>
 
@@ -900,7 +958,8 @@ function TaskDetailScreenContent() {
         onClose={() => setModalSerahTerimaVisible(false)}
         onSubmit={(payload: any) => {
           setModalSerahTerimaVisible(false);
-          handleAction('delivered', payload);
+          const finalStatus = payload.has_issue ? 'failed' : 'delivered';
+          handleAction(finalStatus, payload);
         }}
         task={task}
       />

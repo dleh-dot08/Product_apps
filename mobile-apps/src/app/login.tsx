@@ -101,7 +101,7 @@ export default function LoginScreen() {
                   <View style={styles.brand}>
                     <View style={styles.logo}>
                       <Image 
-                        source={require('../../assets/images/aqpa-indonesia-logo.png')} 
+                        source={require('../../assets/images/aqpa-indonesia.png')} 
                         style={{ width: 28, height: 28, resizeMode: 'contain' }} 
                       />
                     </View>

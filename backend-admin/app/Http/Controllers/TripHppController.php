@@ -38,7 +38,7 @@ class TripHppController extends Controller
 
         // Process each shift and attach calculated properties to display in view easily
         foreach ($allShifts as $shift) {
-            $calc = $this->hppService->calculateProrata($shift);
+            $calc = $this->hppService->getSavedOrCalculateProrata($shift);
             $shift->calc_details = $calc;
             $shift->total_cost = $calc['costs']['total'];
 
@@ -82,7 +82,7 @@ class TripHppController extends Controller
     {
         $shift = Shift::with(['vehicle', 'driver', 'pickupTasks.items', 'deliveryAssignments.salesOrder.items', 'expenses'])->findOrFail($id);
         
-        $prorataDetails = $this->hppService->calculateProrata($shift);
+        $prorataDetails = $this->hppService->getSavedOrCalculateProrata($shift);
 
         return view('hpp.show', compact('shift', 'prorataDetails'));
     }
