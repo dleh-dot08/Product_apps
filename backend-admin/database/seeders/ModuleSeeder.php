@@ -59,7 +59,13 @@ class ModuleSeeder extends Seeder
                 'name' => 'Daftar Tugas', 
                 'icon' => 'fa-list-check', 
                 'color' => 'text-secondary',
-                'available_permissions' => ['View Daftar Tugas']
+                'available_permissions' => ['View Tugas', 'Create Tugas', 'Edit Tugas', 'Delete Tugas']
+            ],
+            [
+                'name' => 'Penugasan', 
+                'icon' => 'fa-clipboard-list', 
+                'color' => 'text-primary',
+                'available_permissions' => ['View Penugasan', 'Create Penugasan', 'Edit Penugasan', 'Delete Penugasan']
             ],
             [
                 'name' => 'HPP Ritase', 

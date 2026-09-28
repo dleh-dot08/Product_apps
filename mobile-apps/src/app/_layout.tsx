@@ -1,5 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Updates from 'expo-updates';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { CustomThemeProvider, useTheme } from '../context/ThemeContext';
 import {
@@ -73,8 +74,28 @@ function ThemeApplier() {
 
 export default function RootLayout() {
   const [downloadProgress, setDownloadProgress] = useState<number | null>(null);
+  const [isUpdatingOTA, setIsUpdatingOTA] = useState(false);
 
   useEffect(() => {
+    // Memeriksa update OTA (Expo Updates)
+    const checkOTAUpdate = async () => {
+      try {
+        if (!__DEV__) {
+          const update = await Updates.checkForUpdateAsync();
+          if (update.isAvailable) {
+            setIsUpdatingOTA(true);
+            await Updates.fetchUpdateAsync();
+            await Updates.reloadAsync();
+          }
+        }
+      } catch (error) {
+        console.log('Error checking OTA update:', error);
+        setIsUpdatingOTA(false);
+      }
+    };
+    
+    checkOTAUpdate();
+
     // Memeriksa update APK langsung ke backend Laravel
     checkAppUpdate((progress: number | null) => {
       setDownloadProgress(progress);
@@ -99,12 +120,24 @@ export default function RootLayout() {
     <CustomThemeProvider>
       <ThemeApplier />
 
+      {/* Modal Update APK */}
       <Modal visible={downloadProgress !== null} transparent animationType="fade">
         <View style={styles.modalBackdrop}>
           <View style={styles.modalCard}>
             <ActivityIndicator size="large" color="#208AEF" />
-            <Text style={styles.modalTitle}>Mengunduh Pembaruan...</Text>
+            <Text style={styles.modalTitle}>Mengunduh Pembaruan APK...</Text>
             <Text style={styles.modalSubtitle}>{downloadProgress}% selesai</Text>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal Update OTA (Sistem) */}
+      <Modal visible={isUpdatingOTA} transparent animationType="fade">
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <ActivityIndicator size="large" color="#208AEF" />
+            <Text style={styles.modalTitle}>Memperbarui Sistem...</Text>
+            <Text style={styles.modalSubtitle}>Mohon tunggu sebentar, aplikasi akan dimuat ulang otomatis.</Text>
           </View>
         </View>
       </Modal>

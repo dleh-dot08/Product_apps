@@ -1671,6 +1671,59 @@
             ================================================== --}}
             <div class="task-column">
 
+                {{-- BUKTI LAMPIRAN --}}
+                <section class="task-card section-card">
+                    <div class="section-heading" style="justify-content:space-between;">
+                        <div style="display:flex;align-items:center;gap:9px;">
+                            <i class="fa-solid fa-paperclip"></i>
+                            <span>Bukti Lampiran</span>
+                        </div>
+                        <button type="button" onclick="document.getElementById('uploadDocModal').style.display='flex'" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:7px;border:0;background:linear-gradient(135deg,#fb923c,var(--task-orange));color:#fff;cursor:pointer;display:flex;align-items:center;gap:5px;">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Dokumen
+                        </button>
+                    </div>
+
+                    @if(session('success'))
+                        <div style="padding:8px 12px;margin-bottom:10px;background:#ecfdf3;border:1px solid #86efac;border-radius:8px;color:#166534;font-size:13px;font-weight:600;">
+                            <i class="fa-solid fa-circle-check"></i> {{ session('success') }}
+                        </div>
+                    @endif
+                    @if(session('error'))
+                        <div style="padding:8px 12px;margin-bottom:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:13px;font-weight:600;">
+                            <i class="fa-solid fa-circle-xmark"></i> {{ session('error') }}
+                        </div>
+                    @endif
+
+                    @if($attachments->count() > 0)
+                        <div class="attachment-grid">
+                            @foreach($attachments->take(8) as $att)
+                                @php
+                                    $url = app(\App\Services\Storage\MinioService::class)->getFileUrl($att->file_path);
+                                    $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
+                                    $category = ucwords(str_replace('_',' ', $att->document_type ?? $att->category ?? 'Lampiran'));
+                                @endphp
+                                <div class="attachment-card">
+                                    <a href="{{ $url }}" target="_blank" class="attachment-preview">
+                                        @if($isPdf)
+                                            <i class="fa-solid fa-file-pdf"></i>
+                                        @else
+                                            <img src="{{ $url }}" alt="{{ $category }}">
+                                        @endif
+                                    </a>
+                                    <div class="attachment-meta">
+                                        <div class="attachment-name" title="{{ $category }}">{{ $category }}</div>
+                                        <div class="attachment-date">
+                                            {{ !empty($att->created_at) ? \Carbon\Carbon::parse($att->created_at)->format('d M Y') : '' }}
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="empty-table">Belum ada bukti lampiran pada tugas ini.</div>
+                    @endif
+                </section>
+
                 {{-- CHECKLIST --}}
                 <section class="task-card section-card">
                     <div class="section-heading">
@@ -1808,12 +1861,15 @@
 
                 {{-- HISTORY TUGAS --}}
                 <section class="task-card section-card">
-                    <div class="section-heading">
-                        <i class="fa-solid fa-clock-rotate-left"></i>
-                        <span>History Tugas</span>
+                    <div class="section-heading" style="justify-content: space-between; cursor: pointer;" onclick="const content = document.getElementById('history-content'); const icon = document.getElementById('history-icon'); if(content.style.display === 'none') { content.style.display = 'block'; icon.classList.remove('fa-chevron-down'); icon.classList.add('fa-chevron-up'); } else { content.style.display = 'none'; icon.classList.remove('fa-chevron-up'); icon.classList.add('fa-chevron-down'); }">
+                        <div style="display:flex;align-items:center;gap:9px;">
+                            <i class="fa-solid fa-clock-rotate-left"></i>
+                            <span>History Tugas</span>
+                        </div>
+                        <i id="history-icon" class="fa-solid fa-chevron-down"></i>
                     </div>
 
-                    <div style="padding-left: 10px; margin-top: 10px;">
+                    <div id="history-content" style="display: none; padding-left: 10px; margin-top: 10px;">
                         @if(isset($histories) && $histories->count() > 0)
                             <div style="border-left: 2px solid var(--task-border); padding-left: 15px; position: relative;">
                                 @foreach($histories as $history)
@@ -1849,58 +1905,7 @@
                     </div>
                 </section>
 
-                {{-- BUKTI LAMPIRAN --}}
-                <section class="task-card section-card">
-                    <div class="section-heading" style="justify-content:space-between;">
-                        <div style="display:flex;align-items:center;gap:9px;">
-                            <i class="fa-solid fa-paperclip"></i>
-                            <span>Bukti Lampiran</span>
-                        </div>
-                        <button type="button" onclick="document.getElementById('uploadDocModal').style.display='flex'" style="padding:6px 14px;font-size:12px;font-weight:700;border-radius:7px;border:0;background:linear-gradient(135deg,#fb923c,var(--task-orange));color:#fff;cursor:pointer;display:flex;align-items:center;gap:5px;">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload Dokumen
-                        </button>
-                    </div>
 
-                    @if(session('success'))
-                        <div style="padding:8px 12px;margin-bottom:10px;background:#ecfdf3;border:1px solid #86efac;border-radius:8px;color:#166534;font-size:13px;font-weight:600;">
-                            <i class="fa-solid fa-circle-check"></i> {{ session('success') }}
-                        </div>
-                    @endif
-                    @if(session('error'))
-                        <div style="padding:8px 12px;margin-bottom:10px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;color:#991b1b;font-size:13px;font-weight:600;">
-                            <i class="fa-solid fa-circle-xmark"></i> {{ session('error') }}
-                        </div>
-                    @endif
-
-                    @if($attachments->count() > 0)
-                        <div class="attachment-grid">
-                            @foreach($attachments->take(8) as $att)
-                                @php
-                                    $url = app(\App\Services\Storage\MinioService::class)->getFileUrl($att->file_path);
-                                    $isPdf = \Illuminate\Support\Str::endsWith(strtolower((string)$att->file_path), '.pdf');
-                                    $category = ucwords(str_replace('_',' ', $att->document_type ?? $att->category ?? 'Lampiran'));
-                                @endphp
-                                <div class="attachment-card">
-                                    <a href="{{ $url }}" target="_blank" class="attachment-preview">
-                                        @if($isPdf)
-                                            <i class="fa-solid fa-file-pdf"></i>
-                                        @else
-                                            <img src="{{ $url }}" alt="{{ $category }}">
-                                        @endif
-                                    </a>
-                                    <div class="attachment-meta">
-                                        <div class="attachment-name" title="{{ $category }}">{{ $category }}</div>
-                                        <div class="attachment-date">
-                                            {{ !empty($att->created_at) ? \Carbon\Carbon::parse($att->created_at)->format('d M Y') : '' }}
-                                        </div>
-                                    </div>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="empty-table">Belum ada bukti lampiran pada tugas ini.</div>
-                    @endif
-                </section>
 
                 {{-- UPLOAD DOKUMEN MODAL --}}
                 <div id="uploadDocModal" style="display:none;position:fixed;z-index:10000;inset:0;background:rgba(0,0,0,.45);align-items:center;justify-content:center;">
