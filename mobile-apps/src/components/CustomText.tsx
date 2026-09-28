@@ -46,7 +46,8 @@ export function Text(props: TextProps) {
       style={[
         restStyle, 
         { fontFamily }, 
-        normalizedFontSize ? { fontSize: normalizedFontSize } : {}
+        normalizedFontSize ? { fontSize: normalizedFontSize } : {},
+        Platform.OS === 'android' && { paddingRight: 2 } // Fix for Android custom font clipping
       ]} 
     />
   );

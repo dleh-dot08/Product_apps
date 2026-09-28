@@ -190,7 +190,7 @@ export default function LoginScreen() {
             <View style={styles.content}>
               <View style={styles.loginCard}>
                 <View style={styles.cardHeader}>
-                  <View>
+                  <View style={{ flex: 1, paddingRight: 10 }}>
                     <Text style={styles.welcomeText}>
                       Selamat datang
                     </Text>
