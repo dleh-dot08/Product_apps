@@ -1724,136 +1724,77 @@
                     @endif
                 </section>
 
-                {{-- CHECKLIST --}}
+                {{-- LAPORAN PERJALANAN --}}
                 <section class="task-card section-card">
                     <div class="section-heading">
-                        <i class="fa-solid fa-square-check"></i>
-                        <span>Checklist Tugas</span>
-                    </div>
-
-                    <div class="checklist-tabs">
-                        <button class="checklist-tab-btn active" onclick="switchChecklistTab('keberangkatan')">Keberangkatan</button>
-                        <button class="checklist-tab-btn" onclick="switchChecklistTab('kedatangan')">Kedatangan</button>
-                        <button class="checklist-tab-btn" onclick="switchChecklistTab('serah_terima')">Serah Terima</button>
-                    </div>
-
-                    @php
-                        $allChecklists = [
-                            'keberangkatan' => $departureChecklist,
-                            'kedatangan' => $arrivalChecklist,
-                            'serah_terima' => $handoverChecklist,
-                        ];
-                    @endphp
-
-                    @foreach($allChecklists as $tabId => $chkList)
-                        <div class="checklist-tab-content {{ $tabId === 'keberangkatan' ? 'active' : '' }}" id="checklist-tab-{{ $tabId }}">
-                            <div class="checklist-list">
-                                @foreach($chkList as $label => $state)
-                                    @php
-                                        $isOk = in_array($state, ['check', true, 1, '1', 'ok'], true);
-                                        $isWarning = $state === 'warning';
-                                        $isBad = in_array($state, ['cross','bad','not_ok'], true);
-                                    @endphp
-                                    <div class="checklist-row">
-                                        @if($isOk)
-                                            <i class="fa-solid fa-circle-check check-icon"></i>
-                                        @elseif($isWarning)
-                                            <i class="fa-solid fa-triangle-exclamation check-icon warning"></i>
-                                        @elseif($isBad)
-                                            <i class="fa-solid fa-circle-xmark check-icon danger"></i>
-                                        @else
-                                            <i class="fa-regular fa-circle check-icon pending"></i>
-                                        @endif
-
-                                        <div class="check-label">{{ ucwords(str_replace('_',' ', $label)) }}</div>
-
-                                        @if($isOk)
-                                            <span class="mini-state success">OK</span>
-                                        @elseif($isWarning)
-                                            <span class="mini-state pending" style="color:#b45309;border-color:#fde68a;background:#fffbeb;">Perhatian</span>
-                                        @elseif($isBad)
-                                            <span class="mini-state pending" style="color:#dc2626;border-color:#fecaca;background:#fef2f2;">Tidak OK</span>
-                                        @else
-                                            <span class="mini-state pending">Belum</span>
-                                        @endif
-                                    </div>
-                                @endforeach
-                            </div>
-                        </div>
-                    @endforeach
-                    
-                    <script>
-                        function switchChecklistTab(tabId) {
-                            // Reset buttons
-                            document.querySelectorAll('.checklist-tab-btn').forEach(btn => btn.classList.remove('active'));
-                            // Reset contents
-                            document.querySelectorAll('.checklist-tab-content').forEach(content => content.classList.remove('active'));
-                            
-                            // Activate selected
-                            event.currentTarget.classList.add('active');
-                            document.getElementById('checklist-tab-' + tabId).classList.add('active');
-                        }
-                    </script>
-                </section>
-
-                {{-- LAPORAN TUGAS --}}
-                <section class="task-card section-card">
-                    <div class="section-heading">
-                        <i class="fa-solid fa-file-invoice"></i>
-                        <span>Laporan Tugas</span>
+                        <i class="fa-solid fa-list-check"></i>
+                        <span>Laporan Perjalanan</span>
                     </div>
 
                     <div class="report-list">
                         {{-- KEBERANGKATAN --}}
-                        <div class="report-row">
-                            <div class="report-main">
+                        <div class="report-row" style="flex-wrap: wrap;">
+                            <div class="report-main" style="width: 100%; align-items: flex-start;">
                                 <div class="report-icon departure"><i class="fa-solid fa-play"></i></div>
-                                <div>
-                                    <div class="report-title">Laporan Keberangkatan</div>
-                                    <div class="report-desc">Catatan saat driver berangkat</div>
+                                <div style="flex: 1;">
+                                    <div class="report-title">Keberangkatan</div>
+                                    <div class="report-desc" style="margin-top: 5px; line-height: 1.5;">
+                                        <div><strong>Waktu:</strong> {{ $task->started_at ? \Carbon\Carbon::parse($task->started_at)->format('d M Y, H:i') : '-' }}</div>
+                                        <div><strong>Catatan:</strong> {{ $task->departure_notes ?: '-' }}</div>
+                                    </div>
                                 </div>
-                                <span class="mini-state {{ $departureDone ? 'success' : 'pending' }}">
-                                    {{ $departureDone ? 'Selesai' : 'Belum' }}
-                                </span>
-                                <button type="button" class="report-action" data-report="departure">
-                                    {{ $departureDone ? 'Lihat Laporan' : 'Isi Laporan' }}
-                                </button>
+                                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                                    <span class="mini-state {{ $departureDone ? 'success' : 'pending' }}">
+                                        {{ $departureDone ? 'Selesai' : 'Belum' }}
+                                    </span>
+                                    <button type="button" class="report-action" data-report="departure">
+                                        {{ $departureDone ? 'Lihat / Edit' : 'Isi Laporan' }}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-
-
                         {{-- SAMPAI --}}
-                        <div class="report-row">
-                            <div class="report-main">
+                        <div class="report-row" style="flex-wrap: wrap;">
+                            <div class="report-main" style="width: 100%; align-items: flex-start;">
                                 <div class="report-icon arrival"><i class="fa-solid fa-location-dot"></i></div>
-                                <div>
-                                    <div class="report-title">Laporan Sampai</div>
-                                    <div class="report-desc">Catatan saat tiba di lokasi</div>
+                                <div style="flex: 1;">
+                                    <div class="report-title">Kedatangan / Sampai</div>
+                                    <div class="report-desc" style="margin-top: 5px; line-height: 1.5;">
+                                        <div><strong>Waktu:</strong> {{ $task->arrived_at ? \Carbon\Carbon::parse($task->arrived_at)->format('d M Y, H:i') : '-' }}</div>
+                                        <div><strong>Catatan:</strong> {{ $task->arrival_notes ?: '-' }}</div>
+                                    </div>
                                 </div>
-                                <span class="mini-state {{ $arrivalDone ? 'success' : 'pending' }}">
-                                    {{ $arrivalDone ? 'Selesai' : 'Belum' }}
-                                </span>
-                                <button type="button" class="report-action" data-report="arrival">
-                                    {{ $arrivalDone ? 'Lihat Laporan' : 'Isi Laporan' }}
-                                </button>
+                                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                                    <span class="mini-state {{ $arrivalDone ? 'success' : 'pending' }}">
+                                        {{ $arrivalDone ? 'Selesai' : 'Belum' }}
+                                    </span>
+                                    <button type="button" class="report-action" data-report="arrival">
+                                        {{ $arrivalDone ? 'Lihat / Edit' : 'Isi Laporan' }}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
                         {{-- SERAH TERIMA --}}
-                        <div class="report-row">
-                            <div class="report-main">
+                        <div class="report-row" style="flex-wrap: wrap;">
+                            <div class="report-main" style="width: 100%; align-items: flex-start;">
                                 <div class="report-icon handover"><i class="fa-solid fa-file-lines"></i></div>
-                                <div>
-                                    <div class="report-title">Laporan Serah Terima</div>
-                                    <div class="report-desc">Konfirmasi penyerahan barang</div>
+                                <div style="flex: 1;">
+                                    <div class="report-title">Serah Terima</div>
+                                    <div class="report-desc" style="margin-top: 5px; line-height: 1.5;">
+                                        <div><strong>Waktu:</strong> {{ $task->completed_at ? \Carbon\Carbon::parse($task->completed_at)->format('d M Y, H:i') : '-' }}</div>
+                                        <div><strong>Catatan Kendala/Selesai:</strong> {{ $task->handover_notes ?: '-' }}</div>
+                                    </div>
                                 </div>
-                                <span class="mini-state {{ $handoverDone ? 'success' : 'pending' }}">
-                                    {{ $handoverDone ? 'Selesai' : 'Belum' }}
-                                </span>
-                                <button type="button" class="report-action" data-report="handover">
-                                    {{ $handoverDone ? 'Lihat Laporan' : 'Isi Laporan' }}
-                                </button>
+                                <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                                    <span class="mini-state {{ $handoverDone ? 'success' : 'pending' }}">
+                                        {{ $handoverDone ? 'Selesai' : 'Belum' }}
+                                    </span>
+                                    <button type="button" class="report-action" data-report="handover">
+                                        {{ $handoverDone ? 'Lihat / Edit' : 'Isi Laporan' }}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
