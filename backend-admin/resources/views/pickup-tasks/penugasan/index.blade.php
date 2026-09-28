@@ -48,7 +48,7 @@
                 <select name="driver_id" class="form-select rounded-3">
                     <option value="">Semua Driver</option>
                     @foreach($drivers as $driver)
-                        <option value="{{ $driver->id }}" {{ request('driver_id') == $driver->id ? 'selected' : '' }}>{{ $driver->name }}</option>
+                        <option value="{{ $driver->id }}" {{ request('driver_id') == $driver->id ? 'selected' : '' }}>{{ $driver->full_name }}</option>
                     @endforeach
                 </select>
             </div>
@@ -89,10 +89,10 @@
                                 <td>
                                     <div class="d-flex align-items-center">
                                         <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2 shadow-sm" style="width: 32px; height: 32px; font-size: 13px; font-weight: bold;">
-                                            {{ strtoupper(substr($assignment->driver->name ?? '?', 0, 1)) }}
+                                            {{ strtoupper(substr($assignment->driver->full_name ?? '?', 0, 1)) }}
                                         </div>
                                         <div>
-                                            <div class="fw-bold" style="font-size: 14px;">{{ $assignment->driver->name ?? '-' }}</div>
+                                            <div class="fw-bold" style="font-size: 14px;">{{ $assignment->driver->full_name ?? '-' }}</div>
                                             <div class="text-muted" style="font-size: 11px;">Utama</div>
                                         </div>
                                     </div>
@@ -101,10 +101,10 @@
                                     @if($assignment->coDriver)
                                         <div class="d-flex align-items-center">
                                             <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center me-2 shadow-sm" style="width: 32px; height: 32px; font-size: 13px; font-weight: bold;">
-                                                {{ strtoupper(substr($assignment->coDriver->name ?? '?', 0, 1)) }}
+                                                {{ strtoupper(substr($assignment->coDriver->full_name ?? '?', 0, 1)) }}
                                             </div>
                                             <div>
-                                                <div class="fw-bold" style="font-size: 14px;">{{ $assignment->coDriver->name ?? '-' }}</div>
+                                                <div class="fw-bold" style="font-size: 14px;">{{ $assignment->coDriver->full_name ?? '-' }}</div>
                                             </div>
                                         </div>
                                     @else

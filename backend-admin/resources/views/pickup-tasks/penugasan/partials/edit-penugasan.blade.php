@@ -28,7 +28,7 @@
                                     <select class="form-select border-light-subtle rounded-3" name="driver_id" id="edit_driver_id" required>
                                         <option value="">Pilih Driver</option>
                                         @foreach($drivers as $driver)
-                                            <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                                            <option value="{{ $driver->id }}">{{ $driver->full_name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -37,7 +37,7 @@
                                     <select class="form-select border-light-subtle rounded-3" name="co_driver_id" id="edit_co_driver_id">
                                         <option value="">Tidak Ada</option>
                                         @foreach($drivers as $driver)
-                                            <option value="{{ $driver->id }}">{{ $driver->name }}</option>
+                                            <option value="{{ $driver->id }}">{{ $driver->full_name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
