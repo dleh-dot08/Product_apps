@@ -54,7 +54,7 @@
                 </div>
 
                 <div class="card-body p-0">
-                    <div class="table-responsive">
+                    <div class="table-responsive" style="min-height: 350px; overflow: visible;">
                         <table class="table task-table align-middle mb-0">
                             <thead>
                                 <tr>
@@ -142,10 +142,10 @@
 
                                     <td class="text-end px-4">
                                         <div class="dropdown">
-                                            <button class="btn btn-sm btn-light border shadow-none bg-transparent" type="button" data-bs-toggle="dropdown" aria-expanded="false" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;">
+                                            <button class="btn btn-sm btn-light border shadow-none bg-transparent" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-boundary="window" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;">
                                                 <i class="fa-solid fa-ellipsis-vertical" style="color: var(--app-muted);"></i>
                                             </button>
-                                            <ul class="dropdown-menu dropdown-menu-end shadow border border-opacity-10" style="border-radius: 12px; min-width: 160px;">
+                                            <ul class="dropdown-menu dropdown-menu-end shadow border border-opacity-10" style="border-radius: 12px; min-width: 160px; position: absolute; z-index: 9999;">
                                                 <li>
                                                     <a class="dropdown-item py-2 d-flex align-items-center" href="{{ route('pickup-tasks.show', ['pickup_task' => $task->id, 'task_type' => $task->task_type]) }}">
                                                         <i class="fa-solid fa-eye text-info me-3" style="width: 16px;"></i> Lihat Detail
