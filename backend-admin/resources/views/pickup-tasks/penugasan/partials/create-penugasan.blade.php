@@ -19,7 +19,7 @@
                         <div class="card-body">
                             <div class="row g-3">
                                 <div class="col-md-3">
-                                    <label class="form-label fw-bold text-secondary small">No Delivery Order</label>
+                                    <label class="form-label fw-bold text-secondary small">No Penugasan</label>
                                     <input type="text" class="form-control bg-light" name="do_number" id="do_number" readonly placeholder="Auto Generate (DO-DDMMYY-XXX)">
                                     <small class="text-muted" style="font-size: 0.7rem;">Dibuat otomatis saat disimpan</small>
                                 </div>

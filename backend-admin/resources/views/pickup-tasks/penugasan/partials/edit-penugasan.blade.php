@@ -19,7 +19,7 @@
                             <div class="row align-items-center g-3">
                                 <div class="col-12 col-md-auto mb-2 mb-md-0">
                                     <div class="bg-primary bg-opacity-10 text-primary rounded-3 px-3 py-2 text-center border border-primary">
-                                        <div class="small fw-bold text-uppercase opacity-75 mb-1">NO DO</div>
+                                        <div class="small fw-bold text-uppercase opacity-75 mb-1">No Penugasan</div>
                                         <div class="fw-bold fs-5" id="editPenugasanDO">-</div>
                                     </div>
                                 </div>

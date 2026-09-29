@@ -61,6 +61,7 @@
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 px-4" style="width: 50px;">No</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tipe</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Nomor SO / PO</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">DO Easy</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Jumlah Barang</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Lokasi Awal</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Lokasi Tujuan</th>
@@ -84,6 +85,9 @@
                                     </td>
                                     <td>
                                         <span class="primary-line fw-bold">{{ $task->task_type === 'pickup' ? $task->reference_number : ($task->salesOrder->so_number ?? '-') }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="primary-line fw-bold">{{ $task->do_easy ?? '-' }}</span>
                                     </td>
                                     <td class="text-center">
                                         @php
@@ -152,7 +156,7 @@
                                                     </a>
                                                 </li>
                                                 @if(auth()->user()->hasPermission('Edit Tugas'))
-                                                @if($task->status === 'assigned')
+                                                @if(in_array($task->status, ['assigned', 'draft', 'pending']))
                                                 <li>
                                                     <button type="button" class="dropdown-item py-2 d-flex align-items-center text-warning"
                                                         onclick="openEditTaskModal(this)"
