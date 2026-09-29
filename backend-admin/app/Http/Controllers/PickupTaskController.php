@@ -327,6 +327,7 @@ class PickupTaskController extends Controller
             ]);
 
             $pickupTask = PickupTask::create([
+                'do_easy' => $request->do_easy,
                 'manifest_id' => $request->manifest_id,
                 'reference_number' => $referenceNumber,
                 'driver_id' => $driver_id,
@@ -434,6 +435,7 @@ class PickupTaskController extends Controller
 
             // Buat 1 Delivery Assignment
             $deliveryTask = DeliveryAssignment::create([
+                'do_easy' => $request->do_easy,
                 'manifest_id' => $request->manifest_id,
                 'sales_order_id' => $salesOrder->id,
                 'driver_id' => $driver_id,
@@ -513,7 +515,7 @@ class PickupTaskController extends Controller
             $task->task_type = 'delivery';
         }
 
-        if ($task->status !== 'assigned') {
+        if (!in_array($task->status, ['assigned', 'draft', 'pending'])) {
             return redirect()->route('pickup-tasks.index')->with('error', 'Tugas yang sudah berjalan tidak dapat diedit.');
         }
 
@@ -537,7 +539,7 @@ class PickupTaskController extends Controller
 
         if ($type === 'pickup') {
             $task = PickupTask::findOrFail($id);
-            if ($task->status !== 'assigned') {
+            if (!in_array($task->status, ['assigned', 'draft', 'pending'])) {
                 return redirect()->route('pickup-tasks.index')->with('error', 'Tidak dapat mengedit tugas yang sedang berjalan.');
             }
             
@@ -574,6 +576,7 @@ class PickupTaskController extends Controller
             ]);
 
             $task->fill([
+                'do_easy' => $request->has('do_easy') ? $request->do_easy : $task->do_easy,
                 'reference_number' => $request->pickup_reference ?: $task->reference_number,
                 'driver_id' => $request->has('driver_id') ? $request->driver_id : $task->driver_id,
                 'co_driver_id' => $request->has('co_driver_id') ? $request->co_driver_id : $task->co_driver_id,
@@ -631,7 +634,7 @@ class PickupTaskController extends Controller
 
         } else {
             $task = DeliveryAssignment::findOrFail($id);
-            if ($task->status !== 'assigned') {
+            if (!in_array($task->status, ['assigned', 'draft', 'pending'])) {
                 return redirect()->route('pickup-tasks.index')->with('error', 'Tidak dapat mengedit tugas yang sedang berjalan.');
             }
 
@@ -662,6 +665,7 @@ class PickupTaskController extends Controller
             }
 
             $task->fill([
+                'do_easy' => $request->has('do_easy') ? $request->do_easy : $task->do_easy,
                 'driver_id' => $request->has('driver_id') ? $request->driver_id : $task->driver_id,
                 'co_driver_id' => $request->has('co_driver_id') ? $request->co_driver_id : $task->co_driver_id,
                 'vehicle_id' => $request->has('vehicle_id') ? $request->vehicle_id : $task->vehicle_id,
