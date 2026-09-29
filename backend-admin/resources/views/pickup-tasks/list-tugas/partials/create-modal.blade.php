@@ -558,7 +558,7 @@
                                     Otomatis berubah ke Nomor SO saat memilih Delivery.
                                 </div>
                             </div>
-                            <div class="col-lg-12">
+                            <div class="col-lg-6">
                                 <label class="block-label">
                                     DO Easy
                                 </label>
@@ -568,6 +568,11 @@
                                     class="form-control"
                                     placeholder="Input DO Easy secara manual..."
                                 >
+                            </div>
+
+                            <div class="col-lg-6">
+                                <label class="block-label">Rencana Pengiriman</label>
+                                <input type="date" name="dispatch_date" class="form-control">
                             </div>
 
                         </div>
@@ -1408,7 +1413,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const now = new Date();
             now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
             if (form.querySelector('input[name="dispatch_date"]')) {
-                form.querySelector('input[name="dispatch_date"]').value = now.toISOString().slice(0, 16);
+                form.querySelector('input[name="dispatch_date"]').value = now.toISOString().slice(0, 10);
             }
 
 
@@ -1437,10 +1442,7 @@ document.addEventListener('DOMContentLoaded', function () {
             if (form.querySelector('select[name="priority"]')) form.querySelector('select[name="priority"]').value = task.priority || '';
 
             if (task.dispatch_date && form.querySelector('input[name="dispatch_date"]')) {
-                form.querySelector('input[name="dispatch_date"]').value = task.dispatch_date.substring(0, 16);
-            }
-            if (task.estimated_arrival && form.querySelector('input[name="estimated_arrival"]')) {
-                form.querySelector('input[name="estimated_arrival"]').value = task.estimated_arrival.substring(0, 16);
+                form.querySelector('input[name="dispatch_date"]').value = task.dispatch_date.split('T')[0];
             }
 
 
