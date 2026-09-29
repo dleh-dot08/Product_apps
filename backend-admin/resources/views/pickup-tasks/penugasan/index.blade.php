@@ -66,7 +66,7 @@
                     <thead class="table-light">
                         <tr>
                             <th class="text-secondary text-xs fw-bold px-4" style="width: 50px;">No</th>
-                            <th class="text-secondary text-xs fw-bold">No Delivery Order</th>
+                            <th class="text-secondary text-xs fw-bold">No Penugasan</th>
                             <th class="text-secondary text-xs fw-bold">Tanggal</th>
                             <th class="text-secondary text-xs fw-bold">Dibuat Oleh</th>
                             <th class="text-secondary text-xs fw-bold">Driver Utama</th>

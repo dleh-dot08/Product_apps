@@ -558,8 +558,17 @@
                                     Otomatis berubah ke Nomor SO saat memilih Delivery.
                                 </div>
                             </div>
-                            
-                            
+                            <div class="col-lg-12">
+                                <label class="block-label">
+                                    DO Easy
+                                </label>
+                                <input
+                                    type="text"
+                                    name="do_easy"
+                                    class="form-control"
+                                    placeholder="Input DO Easy secara manual..."
+                                >
+                            </div>
 
                         </div>
                     </section>
