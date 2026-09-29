@@ -34,7 +34,7 @@
                                     <input type="date" class="form-control" name="dispatch_date" id="dispatch_date" required value="{{ date('Y-m-d') }}">
                                 </div>
                                 <div class="col-md-3" id="eta_container_create" style="display: none;">
-                                    <label class="form-label fw-bold text-secondary small">Estimasi Sampai</label>
+                                    <label class="form-label fw-bold text-secondary small">Rencana Pengiriman</label>
                                     <input type="datetime-local" class="form-control" name="estimated_arrival" id="estimated_arrival_create">
                                 </div>
                                 <div class="col-md-3">
@@ -85,13 +85,14 @@
                                             <th>Tipe</th>
                                             <th>No Ref / SO</th>
                                             <th>Tujuan / Pickup</th>
+                                            <th>Rencana Pengiriman</th>
                                             <th>Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         <!-- Akan diisi melalui AJAX / looping data tugas yang belum di-assign -->
                                         <tr>
-                                            <td colspan="5" class="text-center py-4 text-muted" id="loadingTasksText">
+                                            <td colspan="7" class="text-center py-4 text-muted" id="loadingTasksText">
                                                 <div class="spinner-border spinner-border-sm me-2" role="status" style="color: #ea580c;"></div>
                                                 Memuat daftar tugas...
                                             </td>
@@ -192,7 +193,7 @@
                 if (tasks.length === 0) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-muted">Belum ada tugas yang belum di-assign.</td>
+                            <td colspan="7" class="text-center py-4 text-muted">Belum ada tugas yang belum di-assign.</td>
                         </tr>
                     `;
                     updateSelectedCount(0);
@@ -219,12 +220,24 @@
                     
                     let valId = task.task_type + '_' + task.id;
 
+                    let dispatchDate = '-';
+                    if (task.dispatch_date) {
+                        let datePart = task.dispatch_date.split('T')[0];
+                        let parts = datePart.split('-');
+                        if (parts.length === 3) {
+                            dispatchDate = parts[2] + '/' + parts[1] + '/' + parts[0];
+                        } else {
+                            dispatchDate = datePart;
+                        }
+                    }
+
                     html += `
                         <tr>
                             <td class="text-center"><input class="form-check-input task-checkbox" type="checkbox" name="selected_tasks[]" value="${valId}"></td>
                             <td>${typeBadge}</td>
                             <td><span class="fw-bold">${refNumber}</span></td>
                             <td>${targetName || '-'}</td>
+                            <td>${dispatchDate}</td>
                             <td><span class="badge bg-secondary">${task.status}</span></td>
                         </tr>
                     `;
@@ -238,7 +251,7 @@
                 console.error(err);
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="5" class="text-center py-4 text-danger">Gagal memuat tugas. Silakan coba lagi.</td>
+                        <td colspan="7" class="text-center py-4 text-danger">Gagal memuat tugas. Silakan coba lagi.</td>
                     </tr>
                 `;
             });

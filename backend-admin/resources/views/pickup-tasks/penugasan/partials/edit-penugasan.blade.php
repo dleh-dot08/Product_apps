@@ -61,7 +61,7 @@
                                         <div class="col-md-4" id="eta_container_edit" style="display: none;">
                                             <div class="input-group">
                                                 <span class="input-group-text bg-white text-muted border-light-subtle"><i class="fa-solid fa-clock"></i></span>
-                                                <input type="datetime-local" class="form-control border-light-subtle" name="estimated_arrival" id="estimated_arrival_edit" placeholder="Estimasi Sampai">
+                                                <input type="datetime-local" class="form-control border-light-subtle" name="estimated_arrival" id="estimated_arrival_edit" placeholder="Rencana Pengiriman">
                                             </div>
                                         </div>
                                     </div>
@@ -89,6 +89,7 @@
                                             <th class="border-bottom-0 py-3 text-secondary text-xs fw-bold">Tipe</th>
                                             <th class="border-bottom-0 py-3 text-secondary text-xs fw-bold">No Ref / SO</th>
                                             <th class="border-bottom-0 py-3 text-secondary text-xs fw-bold">Tujuan / Pickup</th>
+                                            <th class="border-bottom-0 py-3 text-secondary text-xs fw-bold">Rencana Pengiriman</th>
                                             <th class="border-bottom-0 py-3 text-secondary text-xs fw-bold">Status</th>
                                         </tr>
                                     </thead>
@@ -295,6 +296,16 @@
 
             let valId = task.task_type + '_' + task.id;
             let checked = task._checked ? 'checked' : '';
+            let dispatchDate = '-';
+            if (task.dispatch_date) {
+                let datePart = task.dispatch_date.split('T')[0];
+                let parts = datePart.split('-');
+                if (parts.length === 3) {
+                    dispatchDate = parts[2] + '/' + parts[1] + '/' + parts[0];
+                } else {
+                    dispatchDate = datePart;
+                }
+            }
 
             let statusBadge = task.status || 'draft';
 
@@ -317,6 +328,7 @@
                         <td class="align-middle">${typeBadge}</td>
                         <td class="align-middle"><span class="fw-bold">${refNumber}</span></td>
                         <td class="align-middle">${targetName}</td>
+                        <td class="align-middle">${dispatchDate}</td>
                         <td class="align-middle"><span class="badge bg-secondary">${statusBadge.toUpperCase().replace('_', ' ')}</span></td>
                     </tr>
                 `;
@@ -327,6 +339,7 @@
                         <td class="align-middle">${typeBadge}</td>
                         <td class="align-middle"><span class="fw-bold">${refNumber}</span></td>
                         <td class="align-middle">${targetName}</td>
+                        <td class="align-middle">${dispatchDate}</td>
                         <td class="align-middle"><span class="badge bg-secondary">${statusBadge.toUpperCase().replace('_', ' ')}</span></td>
                     </tr>
                 `;
