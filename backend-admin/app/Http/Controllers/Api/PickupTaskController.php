@@ -147,6 +147,11 @@ class PickupTaskController extends Controller
             }
         }
 
+        // Filter type (task_type)
+        if ($request->filled('type') && $request->type !== 'all') {
+            $query->where('task_type', $request->type);
+        }
+
         // Fitur Search
         if ($request->filled('search')) {
             $search = $request->search;
@@ -160,6 +165,14 @@ class PickupTaskController extends Controller
         // Filter date
         if ($request->filled('date')) {
             $query->whereDate('assigned_at', $request->date);
+        }
+        
+        if ($request->filled('start_date')) {
+            $query->whereDate('assigned_at', '>=', $request->start_date);
+        }
+        
+        if ($request->filled('end_date')) {
+            $query->whereDate('assigned_at', '<=', $request->end_date);
         }
 
         // Paginasi: 15 item per halaman

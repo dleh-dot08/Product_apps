@@ -218,7 +218,7 @@ export default function DriverDashboard() {
   }, [fetchDashboard]);
 
   const todayTasks = dashboardData?.today_tasks?.filter(
-    task => !['completed', 'delivered', 'failed', 'cancelled', 'selesai', 'pending', 'terkendala'].includes(task.status?.toLowerCase() ?? '')
+    task => !['failed', 'cancelled', 'terkendala'].includes(task.status?.toLowerCase() ?? '')
   ) ?? [];
   const activeTask = dashboardData?.active_task ?? null;
   const activeShift = dashboardData?.active_shift ?? null;
