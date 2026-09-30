@@ -1218,83 +1218,150 @@ class PackagingCalculatorService
             return ['qty' => 0, 'length' => 0];
         }
         $dimensiSusun = ($arah === 'Vertikal') ? $outerP : $outerL;
-        $qty = max(2, ceil($dimensiSusun / 800));
+        // Setiap 500mm tambah 1 kaki balok (dibulatkan ke atas)
+        $qty = max(2, (int) ceil($dimensiSusun / 500) + 1);
         $length = ($arah === 'Vertikal') ? $outerL : $outerP;
         return ['qty' => $qty, 'length' => $length];
     }
 
-    private function calculateBottomSupportLayout($outerP, $outerL, $arah, $lebarPenyangga, $celahPenyangga, $include) {
-        if ($include == 0 || $include === '0' || $include === 'Exclude' || strtolower($include) === 'exclude' || $lebarPenyangga <= 0) {
-            return ['qty' => 0, 'length' => 0, 'sisa_ujung' => 0];
+    /**
+     * Hitung layout Penyangga Bawah.
+     *
+     * Algoritma:
+     *  - Jika ada Penutup (lebarPapan > 0):
+     *    Setiap "slot" = t_penyangga + celah_penyangga + celah_papan
+     *    N_penyangga  = ceil(L / (t_penyangga + celah_penyangga + lebarPapan + celah_papan))
+     *    → papan mengisi sela-sela, penyangga di antara papan
+     *  - Jika tidak ada Penutup:
+     *    Gunakan formula lama: dari tepi, distribusi simetris per jarak.
+     *
+     * Return tambahan:
+     *  - 'celah_efektif'  : celah aktual antara papan (= t_penyangga + celah_penyangga + celah_papan)
+     *  - 'penyangga_muat' : bool, apakah t_penyangga ≤ celah_efektif
+     */
+    private function calculateBottomSupportLayout(
+        $outerP, $outerL, $arah, $lebarPenyangga,
+        $celahPenyangga, $include,
+        $lebarPapan = 0, $celahPapan = 0
+    ) {
+        if ($include == 0 || $include === '0' || $include === 'Exclude'
+            || strtolower($include) === 'exclude' || $lebarPenyangga <= 0) {
+            return ['qty' => 0, 'length' => 0, 'sisa_ujung' => 0,
+                    'celah_efektif' => 0, 'penyangga_muat' => false];
         }
+
         $dimensiSusun = ($arah === 'Vertikal') ? $outerP : $outerL;
-        $length = ($arah === 'Vertikal') ? $outerL : $outerP;
-        
-        $areaPerSisi = ($dimensiSusun - $lebarPenyangga) / 2;
+        $length       = ($arah === 'Vertikal') ? $outerL : $outerP;
+
+        if ($lebarPapan > 0) {
+            // --- Mode terintegrasi: Papan + Penyangga saling mengisi ---
+            // Ruang antar-papan (celah_efektif) = lebar_penyangga + celah_penyangga + celah_papan (kiri+kanan)
+            // Catatan: lebar_penyangga = material->width, BUKAN thickness
+            $celahEfektif = $lebarPenyangga + $celahPenyangga + $celahPapan;
+            $langkah      = $lebarPapan + $celahEfektif; // satu modul: lebar_papan + ruang_antar
+
+            // N papan: gunakan FLOOR agar tidak overflow (papan+penyangga <= dimensiSusun)
+            // floor((L + celahEfektif) / langkah) → papan muat, sisanya jadi margin ujung
+            $nPapan      = ($langkah > 0)
+                ? max(1, (int) floor(($dimensiSusun + $celahEfektif) / $langkah))
+                : 1;
+            $totalQty    = max(0, $nPapan - 1); // penyangga di antara papan
+
+            // Total panjang terpakai
+            $totalUsed   = ($nPapan * $lebarPapan) + ($totalQty * $lebarPenyangga)
+                         + ($totalQty * ($celahPenyangga + $celahPapan));
+            $sisaUjung   = max(0, ($dimensiSusun - $totalUsed) / 2);
+
+            // Validasi: apakah lebar penyangga muat dalam ruang celah yang tersedia?
+            // (lebar_penyangga = material->width, ini yang harus <= celah_efektif)
+            $penyanggaMuat = ($celahEfektif >= $lebarPenyangga);
+
+            return [
+                'qty'            => $totalQty,
+                'length'         => $length,
+                'sisa_ujung'     => $sisaUjung,
+                'celah_efektif'  => $celahEfektif,
+                'penyangga_muat' => $penyanggaMuat,
+            ];
+        }
+
+        // --- Mode lama (tanpa papan): distribusi simetris dari tepi ---
+        $areaPerSisi    = ($dimensiSusun - $lebarPenyangga) / 2;
         $langkahPenyangga = $celahPenyangga + $lebarPenyangga;
-        
-        $qtyPerSisi = ($langkahPenyangga > 0) ? floor($areaPerSisi / $langkahPenyangga) : 0;
-        
-        $totalQty = 1 + (2 * $qtyPerSisi);
-        $sisaUjungTotal = $dimensiSusun - ($totalQty * $lebarPenyangga) - (($totalQty - 1) * $celahPenyangga);
+        $qtyPerSisi     = ($langkahPenyangga > 0) ? floor($areaPerSisi / $langkahPenyangga) : 0;
+        $totalQty       = 1 + (2 * $qtyPerSisi);
+        $sisaUjungTotal = $dimensiSusun
+                        - ($totalQty * $lebarPenyangga)
+                        - (($totalQty - 1) * $celahPenyangga);
         $sisaUjung = max(0, $sisaUjungTotal / 2);
-        
-        return ['qty' => $totalQty, 'length' => $length, 'sisa_ujung' => $sisaUjung];
+
+        return [
+            'qty'            => $totalQty,
+            'length'         => $length,
+            'sisa_ujung'     => $sisaUjung,
+            'celah_efektif'  => $celahPenyangga,
+            'penyangga_muat' => true,
+        ];
     }
 
-    private function calculateBottomCoverLayout($qtyPenyangga, $arah, $outerP, $outerL, $celahPenyangga, $celahPenutup, $lebarPenutup, $include, $tipePenutup, $isTripleks, $lebarPenyangga = 0) {
-        if ($include == 0 || $include === '0' || $include === 'Exclude' || strtolower($include) === 'exclude' || empty($tipePenutup) || $tipePenutup === 'Tanpa Penutup' || $tipePenutup === 'Tidak makai penutup') {
-            return ['qty' => 0, 'length' => 0];
-        }
-        
-        $length = ($arah === 'Vertikal') ? $outerL : $outerP;
-        
-        if ($isTripleks || $lebarPenutup <= 0) {
-            return ['qty' => 1, 'length' => $length];
-        }
-        
-        $qtyTotal = 0;
-        if ($qtyPenyangga > 0) {
-            $langkahPenutup = $lebarPenutup + $celahPenutup;
-            if ($langkahPenutup <= 0) return ['qty' => 0, 'length' => $length];
-            
-            $qtyTotal = 2; // only left and right ends
-            
-            if ($qtyPenyangga > 1) {
-                $totalSpaces = $qtyPenyangga - 1;
-                $qtyCoverPerSpace = floor(($celahPenyangga + $celahPenutup) / $langkahPenutup);
-                $qtyTotal += ($totalSpaces * $qtyCoverPerSpace);
-            }
-            
-            if ($lebarPenyangga > 0) {
-                $crossSpan = ($arah === 'Horizontal') ? $outerP : $outerL;
-                $maxPenyCenter = ($crossSpan / 2) - $lebarPenutup - ($lebarPenyangga / 2);
-                if ($maxPenyCenter < 0) $maxPenyCenter = 0;
-                
-                $langkahPeny = $lebarPenyangga + $celahPenyangga;
-                $halfCount = floor($qtyPenyangga / 2);
-                
-                if ($halfCount > 0 && $halfCount * $langkahPeny > $maxPenyCenter) {
-                    $langkahPeny = $maxPenyCenter / $halfCount;
-                }
-                
-                $leftmostPenyCenter = 0;
-                if ($qtyPenyangga % 2 === 1) {
-                    $leftmostPenyCenter = -$halfCount * $langkahPeny;
-                } else {
-                    $leftmostPenyCenter = -($halfCount - 0.5) * $langkahPeny;
-                }
-                
-                $outerSpace = ($leftmostPenyCenter - ($lebarPenyangga / 2)) - ((-$crossSpan / 2) + $lebarPenutup);
-                
-                if ($outerSpace > 0) {
-                    $qtyCoverOuter = floor(($outerSpace + $celahPenutup) / $langkahPenutup);
-                    $qtyTotal += 2 * $qtyCoverOuter;
-                }
-            }
+    /**
+     * Hitung layout Penutup (Papan) Bawah.
+     *
+     * Algoritma:
+     *  - Jika ada Penyangga (qtyPenyangga > 0 dan lebarPenyangga > 0):
+     *    N_papan = N_penyangga + 1  (papan di tepi kiri, antar-penyangga, dan tepi kanan)
+     *    Validasi: celah antar-papan = t_penyangga + celah_penyangga + celah_papan >= t_penyangga
+     *    → info 'penyangga_muat' dikembalikan
+     *  - Jika tidak ada Penyangga:
+     *    N_papan dari formula: ceil((L + celah) / (lebar + celah))
+     *
+     * celahPenyangga = jarak_penyanggah_bawah (user-input)
+     * celahPenutup   = gap_bawah (user-input)
+     */
+    private function calculateBottomCoverLayout(
+        $qtyPenyangga, $arah, $outerP, $outerL,
+        $celahPenyangga, $celahPenutup, $lebarPenutup,
+        $include, $tipePenutup, $isTripleks, $lebarPenyangga = 0
+    ) {
+        if ($include == 0 || $include === '0' || $include === 'Exclude'
+            || strtolower($include) === 'exclude'
+            || empty($tipePenutup)
+            || $tipePenutup === 'Tanpa Penutup'
+            || $tipePenutup === 'Tidak makai penutup') {
+            return ['qty' => 0, 'length' => 0, 'penyangga_muat' => true];
         }
 
-        return ['qty' => $qtyTotal, 'length' => $length];
+        $crossSpan = ($arah === 'Horizontal') ? $outerL : $outerP;
+        $length    = ($arah === 'Horizontal') ? $outerP : $outerL;
+
+        if ($isTripleks || $lebarPenutup <= 0) {
+            return ['qty' => 1, 'length' => $length, 'penyangga_muat' => true];
+        }
+
+        // Celah efektif di antara dua papan = t_penyangga + celah_penyangga + celah_papan (kiri + kanan)
+        $celahEfektif  = ($lebarPenyangga > 0)
+            ? $lebarPenyangga + $celahPenyangga + $celahPenutup
+            : $celahPenutup;
+        $penyanggaMuat = ($lebarPenyangga <= 0) || ($celahEfektif >= $lebarPenyangga);
+
+        if ($qtyPenyangga > 0 && $lebarPenyangga > 0) {
+            // Papan = penyangga + 1 (satu di setiap ujung dan sela)
+            $qtyTotal = $qtyPenyangga + 1;
+        } else {
+            // Tidak ada penyangga: hitung dari dimensi dengan celah papan saja
+            $langkah  = $lebarPenutup + $celahPenutup;
+            $qtyTotal = ($langkah > 0)
+                ? (int) ceil(($crossSpan + $celahPenutup) / $langkah)
+                : 1;
+            $qtyTotal = max(1, $qtyTotal);
+        }
+
+        return [
+            'qty'            => $qtyTotal,
+            'length'         => $length,
+            'penyangga_muat' => $penyanggaMuat,
+            'celah_efektif'  => $celahEfektif,
+        ];
     }
 
     public function buildDetailsArray(array $params, string $arahGlobal = 'Horizontal', array $customDetails = [])
@@ -1316,8 +1383,8 @@ class PackagingCalculatorService
             300
         );
 
-        if ($jarakAtas <= 0) $jarakAtas = 300;
-        if ($jarakBawah <= 0) $jarakBawah = 300;
+        if ($jarakAtas < 0) $jarakAtas = 300;
+        if ($jarakBawah < 0) $jarakBawah = 300;
 
         $celahAtas = (float)($params['gap_atas'] ?? 0);
         $celahBawah = (float)($params['gap_bawah'] ?? 0);
@@ -1405,18 +1472,7 @@ class PackagingCalculatorService
             $details[] = $this->formatDetailRow('Bawah', 'Kaki Balok', $kbMat, $kbKode, $kbDirection, '', $tebalKakiBalok, $lebarKakiBalok, $kbLayout['length'], $kbLayout['qty'], 1);
         }
 
-        // Penyangga Bawah
-        $pbOverride = collect($customDetails)->where('section', 'Bawah')->where('part_name', 'Penyangga')->first();
-        $pbDirection = $pbOverride['direction'] ?? ($pbOverride['arah'] ?? $arahGlobal);
-        $pbIncludeVal = $pbOverride['include'] ?? $pbInclude;
-        $pbLayout = $this->calculateBottomSupportLayout($outerP, $outerL, $pbDirection, $lebarPenyanggaBawah, $jarakBawah, $pbIncludeVal);
-        
-        $qtyPenyanggaBawah = $pbLayout['qty'];
-        if ($pbLayout['qty'] > 0) {
-            $details[] = $this->formatDetailRow('Bawah', 'Penyangga', $pbMat, $pbKode, $pbDirection, '', $tebalPenyanggaBawah, $lebarPenyanggaBawah, $pbLayout['length'], $pbLayout['qty'], 1);
-        }
-
-        // Penutup Bawah
+        // Penutup Bawah — resolve material & celah lebih dulu (dibutuhkan oleh Penyangga)
         $bawahPenutupOverride = collect($customDetails)->where('section', 'Bawah')->where('part_name', 'Penutup')->first();
         if ($bawahPenutupOverride) {
             $ptbInclude = $bawahPenutupOverride['include'] ?? 1;
@@ -1427,20 +1483,45 @@ class PackagingCalculatorService
         } else {
             $ptbInclude = 1;
         }
-        
+
         $isTripleks = stripos($ptbTipe, 'Tripleks') !== false;
-        $lebarPB = $ptbMat ? (float)$ptbMat->width : 0;
-        
-        // Celah penutup mengikuti gap_bawah, atau jika 'Setengah' pakai $celahBawah
-        $celahPB = (stripos($ptbTipe, 'Setengah') !== false) ? $celahBawah : $celahBawah; // menggunakan gap_bawah yang dipassing
-        
+        $lebarPB    = $ptbMat ? (float)$ptbMat->width : 0;
+        $celahPB    = (float)($params['gap_bawah'] ?? 0); // celah sisi kiri+kanan papan bawah
+
+        // Penyangga Bawah — terintegrasi dengan papan jika ada Penutup
+        $pbOverride   = collect($customDetails)->where('section', 'Bawah')->where('part_name', 'Penyangga')->first();
+        $pbDirection  = $pbOverride['direction'] ?? ($pbOverride['arah'] ?? $arahGlobal);
+        $pbIncludeVal = $pbOverride['include'] ?? $pbInclude;
+
+        // Pass lebarPapan & celahPapan agar algoritma presisi bisa berjalan
+        $pbLayout = $this->calculateBottomSupportLayout(
+            $outerP, $outerL, $pbDirection,
+            $lebarPenyanggaBawah, $jarakBawah, $pbIncludeVal,
+            ($ptbInclude && !$isTripleks) ? $lebarPB : 0, // lebarPapan — 0 jika tidak ada papan
+            $celahPB                                       // celahPapan (gap_bawah)
+        );
+
+        $qtyPenyanggaBawah = $pbLayout['qty'];
+        if ($pbLayout['qty'] > 0) {
+            $details[] = $this->formatDetailRow('Bawah', 'Penyangga', $pbMat, $pbKode, $pbDirection, '', $tebalPenyanggaBawah, $lebarPenyanggaBawah, $pbLayout['length'], $pbLayout['qty'], 1);
+        }
+
+        // Penutup Bawah — N papan = N penyangga + 1
         $ptbDirection = $bawahPenutupOverride['direction'] ?? ($bawahPenutupOverride['arah'] ?? $arahGlobal);
-        $ptbLayout = $this->calculateBottomCoverLayout($qtyPenyanggaBawah, $ptbDirection, $outerP, $outerL, $jarakBawah, $celahPB, $lebarPB, $ptbInclude, $ptbTipe, $isTripleks, $lebarPenyanggaBawah);
-        
+        $ptbLayout = $this->calculateBottomCoverLayout(
+            $qtyPenyanggaBawah, $ptbDirection, $outerP, $outerL,
+            $jarakBawah, $celahPB, $lebarPB,
+            $ptbInclude, $ptbTipe, $isTripleks, $lebarPenyanggaBawah
+        );
+
         if ($ptbLayout['qty'] > 0) {
-            $partWidth = $isTripleks ? (($ptbDirection === 'Horizontal') ? $outerP : $outerL) : $lebarPB; // Jika tripleks, lebar disesuaikan dengan sisi menyilang
+            $partWidth = $isTripleks ? (($ptbDirection === 'Horizontal') ? $outerP : $outerL) : $lebarPB;
             $details[] = $this->formatDetailRow('Bawah', 'Penutup', $ptbMat, $ptbKode, $ptbDirection, $ptbTipe, $tebalPenutupBawah, $partWidth, $ptbLayout['length'], $ptbLayout['qty'], 1);
         }
+
+        // Catatan: jika penyangga tidak muat di celah, ini bisa jadi warning di UI
+        // $pbLayout['penyangga_muat'] dan $ptbLayout['penyangga_muat'] tersedia untuk validasi frontend
+
 
         // --- 3. HITUNG PENYANGGA VERTIKAL ---
         $atasPenyanggaInclude = collect($customDetails)->where('section', 'Penyangga')->where('part_name', 'Atas')->first()['include'] ?? ($params['atas_penyangga_include'] ?? 1);

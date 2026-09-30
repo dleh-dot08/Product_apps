@@ -3187,7 +3187,7 @@
                                     ? (data_get($detailBawahKaki, 'total_quantity')
                                         ?? data_get($detailBawahKaki, 'quantity')
                                         ?? 0)
-                                    : max(2, (int) floor(((float) $cPanjang) / 800) + 1);
+                                    : max(2, (int) ceil(((float) $cPanjang) / 500) + 1);
                     
                                 if (!$bawahKakiIncluded) {
                                     $jumlahKakiBalok = '-';
@@ -5565,23 +5565,23 @@
                                 });
                             }
                         } else if (face.id === 'bottom') {
-                            let t_penutup_bawah = 0;
-                            if (typeof hasBawahPenutup !== 'undefined' && hasBawahPenutup) {
-                                const pBawah = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penutup') : null;
-                                t_penutup_bawah = pBawah && pBawah.material_kode !== '-' ? parseFloat(pBawah.calculated_thickness) / 1000 : 0.02;
-                            }
-                            let maxBawahThk_c = 0;
                             let t_penutup_b_c = 0;
                             let t_penyangga_b_c = 0;
+                            let w_penutup_b_c = 0.15;
+                            let countPenutup = 0;
                             if (typeof hasBawahPenutup !== 'undefined' && hasBawahPenutup && typeof activeDetails !== 'undefined') {
                                 const pBawah = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penutup');
-                                if (pBawah && pBawah.material_kode !== '-') t_penutup_b_c = parseFloat(pBawah.calculated_thickness) / 1000;
+                                if (pBawah && pBawah.material_kode !== '-') {
+                                    t_penutup_b_c = parseFloat(pBawah.calculated_thickness) / 1000;
+                                    w_penutup_b_c = parseFloat(pBawah.calculated_width) / 1000;
+                                    countPenutup = parseInt(pBawah.quantity) || 0;
+                                }
                             }
                             if (typeof activeDetails !== 'undefined') {
                                 const pPeny = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga');
                                 if (pPeny && pPeny.material_kode !== '-') t_penyangga_b_c = parseFloat(pPeny.calculated_thickness) / 1000;
                             }
-                            maxBawahThk_c = Math.max(t_penutup_b_c, t_penyangga_b_c);
+                            let maxBawahThk_c = Math.max(t_penutup_b_c, t_penyangga_b_c);
                             const offsetBalokY_c = (typeof expPenutupBawah !== 'undefined' && expPenutupBawah) ? 0.2 : ((typeof expPenyanggaBawah !== 'undefined' && expPenyanggaBawah) ? 0.2 : ((typeof expKakiBalok !== 'undefined' && expKakiBalok) ? 0.2 : 0));
                             const floorY = -maxBawahThk_c - offsetBalokY_c;
                             
@@ -5596,40 +5596,39 @@
                             const outer_l = l_m + (typeof hasCover !== 'undefined' && hasCover ? t_penutup_samping_p * 2 : 0);
                             const outer_w = w_m + (typeof hasCover !== 'undefined' && hasCover ? t_penutup_samping_p * 2 : 0);
 
-                            let celahPeny = (maxSpacingBawah) / 1000;
-                            let langkahPeny = pDim.w + celahPeny;
-                            let spanBound = (face.orientation === 'H') ? outer_w / 2 - pDim.hw : outer_l / 2 - pDim.hw;
-                            
-                            // Reserve space for Penutup if present
-                            let w_penutup_reserved = 0;
-                            if (typeof hasBawahPenutup !== 'undefined' && hasBawahPenutup && typeof activeDetails !== 'undefined') {
-                                const pBawah = activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penutup');
-                                w_penutup_reserved = pBawah && pBawah.material_kode !== '-' ? parseFloat(pBawah.calculated_width) / 1000 : 0.1;
-                            }
-                            
-                            let halfCount = Math.floor(count / 2);
-                            
-                            // Prevent exceeding bounds AND leave room for Penutup at the edges
-                            let maxPenyCenter = spanBound - w_penutup_reserved;
-                            if (maxPenyCenter < 0) maxPenyCenter = 0; // fallback if box is too small
-                            
-                            if (halfCount > 0 && halfCount * langkahPeny > maxPenyCenter) {
-                                langkahPeny = maxPenyCenter / halfCount;
-                            }
-                            
+                            const faceArahPeny = pDim.arah || 'Horizontal';
+                            face.orientation = (faceArahPeny === 'Horizontal' || faceArahPeny === 'H') ? 'H' : 'V';
+                            let L_susun = (face.orientation === 'H') ? outer_w : outer_l;
+                            let celahPeny = (typeof maxSpacingBawah !== 'undefined' ? maxSpacingBawah : 0) / 1000;
+                            let celahPapan = (typeof celahBawah !== 'undefined' ? celahBawah : 0) / 1000;
+                            let lebarPeny = pDim.w;
+                            let lebarPapan = w_penutup_b_c;
+
                             positions = [];
-                            if (count % 2 === 1) {
-                                for(let i = -halfCount; i <= halfCount; i++) {
-                                    positions.push(i * langkahPeny);
+                            if (countPenutup > 0) {
+                                let nPapan = countPenutup;
+                                let nPeny = count;
+                                
+                                let totalSolid = (nPapan * lebarPapan) + (nPeny * lebarPeny);
+                                let sisaRuang = Math.max(0, L_susun - totalSolid);
+                                let jumlahGap = 2 * nPeny;
+                                let gapActual = (jumlahGap > 0) ? sisaRuang / jumlahGap : 0;
+                                let startPos = -L_susun / 2;
+
+                                for (let i = 0; i < nPeny; i++) {
+                                    let center = startPos + lebarPapan + gapActual + (lebarPeny / 2) + (i * (lebarPeny + lebarPapan + 2 * gapActual));
+                                    positions.push(center);
                                 }
                             } else {
-                                let halfCountEven = count / 2;
-                                for(let i = -halfCountEven; i <= halfCountEven; i++) {
-                                    if (i === 0) continue;
-                                    let pos = i > 0 ? (i - 0.5) * langkahPeny : (i + 0.5) * langkahPeny;
-                                    if (pos > spanBound) pos = spanBound;
-                                    if (pos < -spanBound) pos = -spanBound;
-                                    positions.push(pos);
+                                let nPeny = count;
+                                let startPos = -L_susun / 2 + (lebarPeny / 2);
+                                let endPos = L_susun / 2 - (lebarPeny / 2);
+                                if (nPeny === 1) {
+                                    positions.push(0);
+                                } else if (nPeny > 1) {
+                                    for(let i=0; i<nPeny; i++) {
+                                        positions.push(startPos + (endPos - startPos) * (i / (nPeny - 1)));
+                                    }
                                 }
                             }
 
@@ -5841,122 +5840,73 @@
                             let crossSpan;
                             let longSpan;
                             if (face.id === 'front' || face.id === 'back') {
-                                crossSpan = (faceArah === 'H') ? h_m - topKakiBalokY_c : l_m;
-                                longSpan = (faceArah === 'H') ? l_m : h_m - topKakiBalokY_c;
+                                crossSpan = (faceArah === 'H' || faceArah === 'Horizontal') ? h_m - topKakiBalokY_c : l_m;
+                                longSpan = (faceArah === 'H' || faceArah === 'Horizontal') ? l_m : h_m - topKakiBalokY_c;
                             } else if (face.id === 'right' || face.id === 'left') {
-                                crossSpan = (faceArah === 'H') ? h_m - topKakiBalokY_c : w_m + extraSpanPanjangKK;
-                                longSpan = (faceArah === 'H') ? w_m + extraSpanPanjangKK : h_m - topKakiBalokY_c;
+                                crossSpan = (faceArah === 'H' || faceArah === 'Horizontal') ? h_m - topKakiBalokY_c : w_m + extraSpanPanjangKK;
+                                longSpan = (faceArah === 'H' || faceArah === 'Horizontal') ? w_m + extraSpanPanjangKK : h_m - topKakiBalokY_c;
                             } else {
                                 const w_m_top = face.id === 'top' ? w_m + (typeof extraSpanPanjang !== 'undefined' ? extraSpanPanjang : 0) : w_m_bottom;
                                 const l_m_top = face.id === 'top' ? l_m + (typeof extraSpanLebar !== 'undefined' ? extraSpanLebar : 0) : l_m_bottom;
-                                crossSpan = (faceArah === 'H') ? w_m_top : l_m_top;
-                                longSpan = (faceArah === 'H') ? l_m_top : w_m_top;
+                                crossSpan = (faceArah === 'H' || faceArah === 'Horizontal') ? w_m_top : l_m_top;
+                                longSpan = (faceArah === 'H' || faceArah === 'Horizontal') ? l_m_top : w_m_top;
                             }
 
                             const forcedCount = penutupDetail && penutupDetail.quantity ? parseInt(penutupDetail.quantity) : null;
                             let layout = makeBoardLayout(crossSpan, w_penutup, gapM, isFull, forcedCount);
 
-                            if (face.id === 'bottom' && forcedCount !== null && forcedCount > 0 && !isFull) {
-                                let t_py_w = 0.08;
-                                let pPeny = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga') : null;
-                                if (pPeny && pPeny.material_kode !== '-') t_py_w = parseFloat(pPeny.calculated_width) / 1000;
-                                let celahPeny = maxSpacingBawah / 1000;
-                                let langkahPeny = t_py_w + celahPeny;
-                                let countPeny = pPeny && pPeny.quantity ? parseInt(pPeny.quantity) : 0;
-                                
+                            if ((face.id === 'bottom' || face.id === 'top') && forcedCount !== null && forcedCount > 0 && !isFull) {
                                 let customPositions = [];
                                 let customSizes = [];
-                                // 2 Edge pieces at the absolute outer bounds
-                                customPositions.push(-crossSpan / 2 + w_penutup / 2);
-                                customSizes.push(w_penutup);
                                 
-                                if (forcedCount > 1) {
-                                    customPositions.push(crossSpan / 2 - w_penutup / 2);
-                                    customSizes.push(w_penutup);
+                                let t_py_w = 0.08;
+                                let countPeny = 0;
+                                let pPeny = null;
+                                if (face.id === 'bottom') {
+                                    pPeny = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Bawah' && d.part_name === 'Penyangga') : null;
+                                } else {
+                                    pPeny = typeof activeDetails !== 'undefined' ? activeDetails.find(d => d.section === 'Penyangga' && d.part_name === 'Atas') : null;
                                 }
                                 
-                                // Pieces between Penyangga
-                                if (countPeny > 1 && forcedCount > 2) {
-                                    let maxPenyCenter = crossSpan / 2 - w_penutup - (t_py_w / 2);
-                                    if (maxPenyCenter < 0) maxPenyCenter = 0;
+                                if (pPeny && pPeny.material_kode !== '-') {
+                                    t_py_w = parseFloat(pPeny.calculated_width) / 1000;
+                                    countPeny = parseInt(pPeny.quantity) || 0;
+                                }
+                                
+                                let celahPeny = (typeof maxSpacingBawah !== 'undefined' ? maxSpacingBawah : 0) / 1000;
+                                let celahPapan = (typeof celahBawah !== 'undefined' ? celahBawah : 0) / 1000;
+                                let lebarPeny = t_py_w;
+                                let lebarPapan = w_penutup;
+                                
+                                let L_susun = crossSpan; 
+                                
+                                if (countPeny > 0) {
+                                    let nPapan = forcedCount || 1;
+                                    let nPeny = countPeny;
                                     
-                                    let halfPeny = Math.floor(countPeny / 2);
-                                    if (halfPeny > 0 && halfPeny * langkahPeny > maxPenyCenter) {
-                                        langkahPeny = maxPenyCenter / halfPeny;
-                                        celahPeny = langkahPeny - t_py_w;
+                                    let totalSolid = (nPapan * lebarPapan) + (nPeny * lebarPeny);
+                                    let sisaRuang = Math.max(0, L_susun - totalSolid);
+                                    let jumlahGap = 2 * nPeny;
+                                    let gapActual = (jumlahGap > 0) ? sisaRuang / jumlahGap : 0;
+                                    let startPos = -L_susun / 2;
+                                    
+                                    for (let i = 0; i < nPapan; i++) {
+                                        let center = startPos + (lebarPapan / 2) + (i * (lebarPapan + lebarPeny + 2 * gapActual));
+                                        customPositions.push(center);
+                                        customSizes.push(lebarPapan);
                                     }
-                                    
-                                    let penyPositions = [];
-                                    if (countPeny % 2 === 1) {
-                                        for(let i = -halfPeny; i <= halfPeny; i++) {
-                                            penyPositions.push(i * langkahPeny);
-                                        }
+                                } else {
+                                    // Fallback to evenly spaced if no penyangga
+                                    let nPapan = forcedCount;
+                                    let startPos = -L_susun / 2 + (lebarPapan / 2);
+                                    let endPos = L_susun / 2 - (lebarPapan / 2);
+                                    if (nPapan === 1) {
+                                        customPositions.push(0);
+                                        customSizes.push(lebarPapan);
                                     } else {
-                                        let halfCountEven = countPeny / 2;
-                                        for(let i = -halfCountEven; i <= halfCountEven; i++) {
-                                            if (i === 0) continue;
-                                            let pos = i > 0 ? (i - 0.5) * langkahPeny : (i + 0.5) * langkahPeny;
-                                            penyPositions.push(pos);
-                                        }
-                                    }
-                                    
-                                    let spaces = countPeny - 1;
-                                    let langkahPenutup = w_penutup + gapM;
-                                    let coversPerSpace = (langkahPenutup > 0) ? Math.floor((celahPeny + gapM) / langkahPenutup) : 0;
-                                    
-                                    for(let i = 0; i < spaces; i++) {
-                                        let leftPenyCenter = penyPositions[i];
-                                        let rightPenyCenter = penyPositions[i+1];
-                                        
-                                        let spaceWidth = rightPenyCenter - leftPenyCenter - t_py_w; // actual space between inner edges
-                                        
-                                        // Use the user's inputted gap instead of stretching evenly
-                                        let totalCoversWidth = (coversPerSpace * w_penutup) + ((coversPerSpace - 1) * gapM);
-                                        let sideMargin = (spaceWidth - totalCoversWidth) / 2;
-                                        
-                                        let currentPos = leftPenyCenter + (t_py_w / 2) + sideMargin + (w_penutup / 2);
-                                        for(let j=0; j<coversPerSpace; j++) {
-                                            customPositions.push(currentPos);
-                                            customSizes.push(w_penutup);
-                                            currentPos += w_penutup + gapM;
-                                        }
-                                    }
-                                    
-                                    // Also fill the outer spaces (left and right) if they are large enough!
-                                    if (penyPositions.length > 0) {
-                                        let leftmostPenyCenter = penyPositions[0];
-                                        let rightmostPenyCenter = penyPositions[penyPositions.length - 1];
-                                        
-                                        // Left outer space (between left edge board inner face and leftmost penyangga inner face)
-                                        let leftOuterSpace = (leftmostPenyCenter - t_py_w/2) - (-crossSpan/2 + w_penutup);
-                                        if (leftOuterSpace > 0) {
-                                            let coversOuter = Math.floor((leftOuterSpace + gapM) / (w_penutup + gapM));
-                                            if (coversOuter > 0) {
-                                                let totalOuterCoversWidth = (coversOuter * w_penutup) + ((coversOuter - 1) * gapM);
-                                                let sideMarginOuter = (leftOuterSpace - totalOuterCoversWidth) / 2;
-                                                let currentPosOuter = (-crossSpan/2 + w_penutup) + sideMarginOuter + (w_penutup / 2);
-                                                for(let j=0; j<coversOuter; j++) {
-                                                    customPositions.push(currentPosOuter);
-                                                    customSizes.push(w_penutup);
-                                                    currentPosOuter += w_penutup + gapM;
-                                                }
-                                            }
-                                        }
-                                        
-                                        // Right outer space (between rightmost penyangga inner face and right edge board inner face)
-                                        let rightOuterSpace = (crossSpan/2 - w_penutup) - (rightmostPenyCenter + t_py_w/2);
-                                        if (rightOuterSpace > 0) {
-                                            let coversOuter = Math.floor((rightOuterSpace + gapM) / (w_penutup + gapM));
-                                            if (coversOuter > 0) {
-                                                let totalOuterCoversWidth = (coversOuter * w_penutup) + ((coversOuter - 1) * gapM);
-                                                let sideMarginOuter = (rightOuterSpace - totalOuterCoversWidth) / 2;
-                                                let currentPosOuter = (rightmostPenyCenter + t_py_w/2) + sideMarginOuter + (w_penutup / 2);
-                                                for(let j=0; j<coversOuter; j++) {
-                                                    customPositions.push(currentPosOuter);
-                                                    customSizes.push(w_penutup);
-                                                    currentPosOuter += w_penutup + gapM;
-                                                }
-                                            }
+                                        for(let i=0; i<nPapan; i++) {
+                                            customPositions.push(startPos + (endPos - startPos) * (i / (nPapan - 1)));
+                                            customSizes.push(lebarPapan);
                                         }
                                     }
                                 }
@@ -5967,7 +5917,7 @@
                                 const pSize = layout.sizes ? layout.sizes[index] : layout.pieceCross;
                                 if (face.id === 'front' || face.id === 'back') {
                                     const z = face.id === 'front' ? w_m / 2 + t_penutup / 2 + offC : -w_m / 2 - t_penutup / 2 - offC;
-                                    if (faceArah === 'H') {
+                                    if (faceArah === 'H' || faceArah === 'Horizontal') {
                                         const frontLength = l_m;
                                         let bMesh = addBeam(new THREE.Vector3(frontLength, pSize, t_penutup), new THREE.Vector3(0, topKakiBalokY_c + (h_m - topKakiBalokY_c) / 2 + pos, z), material, face.name + ' papan horizontal');
                                         addNailsForBoard(bMesh, face.id);
@@ -5978,7 +5928,7 @@
                                     }
                                 } else if (face.id === 'right' || face.id === 'left') {
                                     const x = face.id === 'right' ? l_m / 2 + t_penutup / 2 + offC : -l_m / 2 - t_penutup / 2 - offC;
-                                    if (faceArah === 'H') {
+                                    if (faceArah === 'H' || faceArah === 'Horizontal') {
                                         let bMesh = addBeam(new THREE.Vector3(t_penutup, pSize, w_m + extraSpanPanjangKK), new THREE.Vector3(x, topKakiBalokY_c + (h_m - topKakiBalokY_c) / 2 + pos, 0), material, face.name + ' papan horizontal');
                                         addNailsForBoard(bMesh, face.id);
                                     } else {
@@ -6007,7 +5957,7 @@
                                     const y = face.id === 'top' ? h_m + t_penyangga_atas_c + t_penutup / 2 + offC : floorY_c + (t_penutup / 2) - offC;
                                     const w_m_top = face.id === 'top' ? w_m + (typeof extraSpanPanjang !== 'undefined' ? extraSpanPanjang : 0) : w_m_bottom;
                                     const l_m_top = face.id === 'top' ? l_m + (typeof extraSpanLebar !== 'undefined' ? extraSpanLebar : 0) : l_m_bottom;
-                                    if (faceArah === 'H') {
+                                    if (faceArah === 'H' || faceArah === 'Horizontal') {
                                         let bMesh = addBeam(new THREE.Vector3(l_m_top, t_penutup, pSize), new THREE.Vector3(0, y, pos), material, face.name + ' papan arah panjang');
                                         addNailsForBoard(bMesh, face.id);
                                     } else {

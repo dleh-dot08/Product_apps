@@ -65,6 +65,7 @@
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-center">Jumlah Barang</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Lokasi Awal</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Lokasi Tujuan</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Driver</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
 
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-end px-4">Aksi</th>
@@ -124,6 +125,13 @@
                                             <div class="primary-line fw-bold">{{ $task->destination_name ?? '-' }}</div>
                                         @else
                                             <div class="primary-line fw-bold">{{ $task->salesOrder->customer_name ?? '-' }}</div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($task->driver)
+                                            <div class="primary-line fw-bold"><i class="fa-solid fa-user-tie me-1 text-muted"></i> {{ $task->driver->full_name ?? $task->driver->name ?? '-' }}</div>
+                                        @else
+                                            <span class="text-muted fst-italic text-xs">Belum diassign</span>
                                         @endif
                                     </td>
                                     <td>
