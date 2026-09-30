@@ -1073,8 +1073,8 @@ document.addEventListener('DOMContentLoaded', function () {
         let apiUrl;
         const upperRef = refNumber.toUpperCase();
         apiUrl = isDelivery 
-            ? `${baseUrl}/detail-so/${encodeURIComponent(refNumber)}`
-            : `${baseUrl}/detail-po/${encodeURIComponent(refNumber)}`;
+            ? `${baseUrl}/detail-so/${encodeURIComponent(upperRef)}`
+            : `${baseUrl}/detail-po/${encodeURIComponent(upperRef)}`;
 
         syncReferenceValue();
 

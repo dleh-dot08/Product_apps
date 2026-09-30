@@ -139,6 +139,7 @@ type TaskDetail = {
   failure_reason?: string | null;
   completed_odometer?: number | null;
   notes?: string | null;
+  do_easy?: string | null;
 
   priority?: string | null;
   pickup_pic_name?: string | null;
@@ -640,6 +641,17 @@ function TaskDetailScreenContent() {
               <View style={{ flex: 1 }}>
                 <Text style={[styles.gridLabel, { color: textMuted }]}>Muatan</Text>
                 <Text style={[styles.gridValue, { color: textColor }]} numberOfLines={1}>{task.quantity ? Number(task.quantity).toString().replace('.', ',') : '-'} {task.unit || ''}</Text>
+              </View>
+            </View>
+            <View style={[styles.gridItem, { backgroundColor: pageBackground, borderColor }]}>
+              <View style={[styles.gridIconWrapper, { backgroundColor: BRAND.tealSoft }]}>
+                <Ionicons name="document-outline" size={16} color={BRAND.teal} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.gridLabel, { color: textMuted }]}>No DO Easy</Text>
+                <Text style={[styles.gridValue, { color: textColor }]} numberOfLines={1}>
+                  {task.do_easy || '-'}
+                </Text>
               </View>
             </View>
             <View style={[styles.gridItem, { backgroundColor: pageBackground, borderColor }]}>
