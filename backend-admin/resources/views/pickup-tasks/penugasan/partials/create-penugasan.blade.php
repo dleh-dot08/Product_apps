@@ -84,7 +84,7 @@
                                             </th>
                                             <th>Tipe</th>
                                             <th>No Ref / SO</th>
-                                            <th>Tujuan / Pickup</th>
+                                            <th>Tujuan / Pickup <br> <span class="text-muted fw-normal" style="font-size: 0.75rem;">Pengantara / Tujuan Akhir</span></th>
                                             <th>Rencana Pengiriman</th>
                                             <th>Status</th>
                                         </tr>
@@ -210,12 +210,17 @@
                         ? (task.reference_number || 'N/A')
                         : (task.sales_order ? task.sales_order.so_number : 'N/A');
                         
-                    let targetName = task.task_type === 'pickup'
-                        ? task.pickup_name
-                        : task.customer_name; // From delivery target
-                        
-                    if (task.task_type === 'delivery' && !targetName && task.sales_order) {
-                        targetName = task.sales_order.customer_name;
+                    let targetName = '';
+                    if (task.task_type === 'pickup') {
+                        let pickupName = task.pickup_name || '-';
+                        let destinationName = task.destination_name || '-';
+                        targetName = `${pickupName} <br> <small class="text-muted"><i class="fa-solid fa-arrow-right me-1"></i> ${destinationName}</small>`;
+                    } else {
+                        let customerName = task.customer_name;
+                        if (!customerName && task.sales_order) {
+                            customerName = task.sales_order.customer_name;
+                        }
+                        targetName = customerName || '-';
                     }
                     
                     let valId = task.task_type + '_' + task.id;
