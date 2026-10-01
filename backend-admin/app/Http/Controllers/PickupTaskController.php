@@ -430,31 +430,35 @@ class PickupTaskController extends Controller
                 $salesOrder->items()->create($item);
             }
 
-            // Hapus assignment lama (jika ada)
-            DeliveryAssignment::where('sales_order_id', $salesOrder->id)->delete();
+            // Hapus assignment lama (jika ada) - Dihapus agar bisa multple DO
+            // DeliveryAssignment::where('sales_order_id', $salesOrder->id)->delete();
 
-            // Buat 1 Delivery Assignment
-            $deliveryTask = DeliveryAssignment::create([
-                'do_easy' => $request->do_easy,
-                'manifest_id' => $request->manifest_id,
-                'sales_order_id' => $salesOrder->id,
-                'driver_id' => $driver_id,
-                'co_driver_id' => $co_driver_id,
-                'vehicle_id' => $vehicle_id,
-                'assigned_by' => Auth::id(),
-                'status' => $assigned_status,
-                'priority' => $request->priority,
-                'pickup_name' => $request->delivery_pickup_name,
-                'delivery_sender_pic' => $request->delivery_sender_pic,
-                'pickup_location' => $request->delivery_pickup_location,
-                'delivery_origin_point' => $request->delivery_origin_point,
-                'delivery_receiver_pic' => $request->delivery_receiver_pic,
-                'delivery_target_point' => $request->delivery_target_point,
-                'assigned_at' => ($request->driver_id && $request->vehicle_id) ? now() : null,
-                'dispatch_date' => $request->dispatch_date,
-                'estimated_arrival' => $request->estimated_arrival,
-                'is_out_of_city' => $request->boolean('is_out_of_city'),
-            ]);
+            // Buat atau Update Delivery Assignment untuk driver ini
+            $deliveryTask = DeliveryAssignment::updateOrCreate(
+                [
+                    'sales_order_id' => $salesOrder->id,
+                    'driver_id' => $driver_id
+                ],
+                [
+                    'do_easy' => $request->do_easy,
+                    'manifest_id' => $request->manifest_id,
+                    'co_driver_id' => $co_driver_id,
+                    'vehicle_id' => $vehicle_id,
+                    'assigned_by' => Auth::id(),
+                    'status' => $assigned_status,
+                    'priority' => $request->priority,
+                    'pickup_name' => $request->delivery_pickup_name,
+                    'delivery_sender_pic' => $request->delivery_sender_pic,
+                    'pickup_location' => $request->delivery_pickup_location,
+                    'delivery_origin_point' => $request->delivery_origin_point,
+                    'delivery_receiver_pic' => $request->delivery_receiver_pic,
+                    'delivery_target_point' => $request->delivery_target_point,
+                    'assigned_at' => ($request->driver_id && $request->vehicle_id) ? now() : null,
+                    'dispatch_date' => $request->dispatch_date,
+                    'estimated_arrival' => $request->estimated_arrival,
+                    'is_out_of_city' => $request->boolean('is_out_of_city'),
+                ]
+            );
 
             $this->logHistory($deliveryTask, 'delivery', 'Tugas delivery dibuat');
 
