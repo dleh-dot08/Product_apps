@@ -88,6 +88,7 @@ Route::middleware('auth')->group(function () {
     Route::put('/hpp-ritase/validasi/manpower/{id}', [\App\Http\Controllers\HppValidasiController::class, 'updateManpower'])->name('hpp.validasi.update.manpower')->middleware('permission:Validasi HPP');
     Route::put('/hpp-ritase/validasi/bbm/{id}', [\App\Http\Controllers\HppValidasiController::class, 'updateBbm'])->name('hpp.validasi.update.bbm')->middleware('permission:Validasi HPP');
     Route::get('/hpp-ritase/{id}', [\App\Http\Controllers\TripHppController::class, 'show'])->name('hpp.show')->middleware('permission:View HPP Ritase');
+    Route::delete('/hpp-ritase/{id}', [\App\Http\Controllers\TripHppController::class, 'destroy'])->name('hpp.destroy');
 
     // Route Pengeluaran (Expenses)
     Route::get('expenses', [\App\Http\Controllers\ExpenseController::class, 'index'])->name('expenses.index')->middleware('permission:View Pengeluaran');

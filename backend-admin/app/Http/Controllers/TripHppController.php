@@ -91,4 +91,17 @@ class TripHppController extends Controller
     {
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\HppRitaseExport, 'Laporan_HPP_Ritase_' . date('Ymd_His') . '.xlsx');
     }
+
+    public function destroy($id)
+    {
+        // Hanya Super Admin yang boleh delete
+        if (!auth()->check() || !auth()->user()->roleRelation || strtoupper(auth()->user()->roleRelation->name) !== 'SUPER ADMIN') {
+            return redirect()->back()->with('error', 'Anda tidak memiliki hak akses untuk menghapus data ini.');
+        }
+
+        $shift = Shift::findOrFail($id);
+        $shift->delete();
+
+        return redirect()->route('hpp.index')->with('success', 'Data HPP / Trip berhasil dihapus.');
+    }
 }
