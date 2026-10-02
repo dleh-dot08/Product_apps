@@ -63,6 +63,13 @@ class PickupTaskController extends Controller
         $pickupQuery = PickupTask::with(['driver', 'vehicle', 'assignedBy', 'items'])->latest();
         $deliveryQuery = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'salesOrder.items'])->latest('assigned_at');
         
+        // Super admin melihat semua data termasuk yang dihapus
+        $isSuperAdmin = ($user->roleRelation && strtoupper($user->roleRelation->name) === 'SUPER ADMIN') || strtoupper($user->role) === 'SUPER ADMIN';
+        if ($isSuperAdmin) {
+            $pickupQuery->withTrashed();
+            $deliveryQuery->withTrashed();
+        }
+        
         if (strtolower($user->role) === 'driver') {
             $pickupQuery->where('driver_id', $user->id);
             $deliveryQuery->where('driver_id', $user->id);
@@ -151,6 +158,11 @@ class PickupTaskController extends Controller
         
         $query = \App\Models\TaskManifest::with(['driver', 'coDriver', 'vehicle', 'historicalPickupTasks', 'historicalDeliveryAssignments.salesOrder'])->latest('dispatch_date');
         
+        $isSuperAdmin = ($user->roleRelation && strtoupper($user->roleRelation->name) === 'SUPER ADMIN') || strtoupper($user->role) === 'SUPER ADMIN';
+        if ($isSuperAdmin) {
+            $query->withTrashed();
+        }
+
         if ($user && strtolower($user->role) === 'driver') {
             $query->where('driver_id', $user->id);
         }
@@ -195,6 +207,7 @@ class PickupTaskController extends Controller
                 'is_out_of_city' => $manifest->is_out_of_city,
                 'estimated_arrival' => $manifest->estimated_arrival,
                 'assigned_by_name' => $manifest->assignedBy ? $manifest->assignedBy->name : 'Sistem/Admin',
+                'deleted_at' => $manifest->deleted_at,
                 'manifest' => $manifest
             ];
         });
@@ -1079,8 +1092,22 @@ class PickupTaskController extends Controller
     {
         $manifest = \App\Models\TaskManifest::findOrFail($manifestId);
         
-        // Remove tasks from this manifest
         $pickups = \App\Models\PickupTask::where('manifest_id', $manifestId)->get();
+        $deliveries = \App\Models\DeliveryAssignment::where('manifest_id', $manifestId)->get();
+
+        // GUARD: Jangan izinkan hapus jika ada tugas yang sudah berjalan
+        foreach ($pickups as $t) {
+            if (!in_array($t->status, ['assigned', 'draft', 'pending'])) {
+                return redirect()->back()->with('error', 'Penugasan tidak dapat dihapus karena ada tugas Pickup yang sudah berjalan.');
+            }
+        }
+        foreach ($deliveries as $t) {
+            if (!in_array($t->status, ['assigned', 'draft', 'pending'])) {
+                return redirect()->back()->with('error', 'Penugasan tidak dapat dihapus karena ada tugas Delivery yang sudah berjalan.');
+            }
+        }
+
+        // Remove tasks from this manifest but KEEP tasks_manifest_history for audit trail
         foreach ($pickups as $t) {
             $t->update([
                 'manifest_id' => null, 
@@ -1090,11 +1117,10 @@ class PickupTaskController extends Controller
                 'vehicle_id' => null,
                 'assigned_at' => null,
             ]);
-            \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $t->id)->delete();
+            // History tidak dihapus agar data audit tetap ada
             $this->logHistory($t, 'pickup', 'Dihapus dari Delivery Order ' . $manifest->manifest_number . ' (Penugasan dihapus)');
         }
 
-        $deliveries = \App\Models\DeliveryAssignment::where('manifest_id', $manifestId)->get();
         foreach ($deliveries as $t) {
             $t->update([
                 'manifest_id' => null, 
@@ -1104,13 +1130,13 @@ class PickupTaskController extends Controller
                 'vehicle_id' => null,
                 'assigned_at' => null,
             ]);
-            \DB::table('tasks_manifest_history')->where('manifest_id', $manifestId)->where('task_id', $t->id)->delete();
+            // History tidak dihapus agar data audit tetap ada
             $this->logHistory($t, 'delivery', 'Dihapus dari Delivery Order ' . $manifest->manifest_number . ' (Penugasan dihapus)');
         }
 
         $manifest->delete();
 
-        return redirect()->route('pickup-tasks.list-penugasan')->with('success', 'Penugasan berhasil dihapus dan tugas dikembalikan ke daftar tunggu.');
+        return redirect()->route('pickup-tasks.list-penugasan')->with('success', 'Penugasan berhasil dihapus (soft delete) dan tugas dikembalikan ke daftar tunggu.');
     }
 
     public function removeTaskFromManifest($manifestId, $taskType, $taskId)
