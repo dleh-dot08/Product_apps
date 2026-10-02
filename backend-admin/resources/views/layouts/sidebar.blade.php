@@ -383,7 +383,7 @@
                     @endif
 
                     <!-- 7. HPP Ritase -->
-                    @if(auth()->user()->hasPermission('View HPP Ritase'))
+                    @if(auth()->check() && auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')
                     <li class="nav-item">
                         <a href="{{ route('hpp.index') }}" class="nav-link {{ request()->routeIs('hpp.*') ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-dollar-sign"></i>

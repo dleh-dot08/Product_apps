@@ -83,6 +83,9 @@
                                         @else
                                             <span class="task-kind delivery m-0"><i class="fa-solid fa-truck-fast"></i> DELIVERY</span>
                                         @endif
+                                        @if($task->deleted_at)
+                                            <span class="badge bg-danger ms-1" style="font-size: 0.65rem;">TERHAPUS</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <span class="primary-line fw-bold">{{ $task->task_type === 'pickup' ? $task->reference_number : ($task->salesOrder->so_number ?? '-') }}</span>

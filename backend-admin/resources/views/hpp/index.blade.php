@@ -1,4 +1,5 @@
 <x-app-layout>
+@if(auth()->check() && auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')
 
 <style>
     #hppDashboardPage {
@@ -1717,5 +1718,17 @@
         });
     });
 </script>
-
+@else
+    <div class="py-12">
+        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                <div class="p-6 text-gray-900 text-center">
+                    <i class="fas fa-lock fa-3x mb-3 text-red-500"></i>
+                    <h3 class="text-xl font-bold text-red-600">Akses Ditolak</h3>
+                    <p>Maaf, hanya Super Admin yang diizinkan mengakses halaman HPP Ritase.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 </x-app-layout>

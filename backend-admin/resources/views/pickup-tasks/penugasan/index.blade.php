@@ -83,7 +83,12 @@
                                     <i class="fa-solid fa-chevron-down me-2 text-muted collapse-indicator" style="font-size: 10px;"></i>
                                     <span class="text-muted small">{{ ($assignments->currentPage() - 1) * $assignments->perPage() + $loop->iteration }}</span>
                                 </td>
-                                <td><span class="fw-bold text-dark">{{ $assignment->no_do }}</span></td>
+                                <td>
+                                    <span class="fw-bold text-dark">{{ $assignment->no_do }}</span>
+                                    @if($assignment->deleted_at)
+                                        <span class="badge bg-danger ms-1" style="font-size: 0.65rem;">TERHAPUS</span>
+                                    @endif
+                                </td>
                                 <td><span class="text-muted small">{{ \Carbon\Carbon::parse($assignment->date)->translatedFormat('d M Y') }}</span></td>
                                 <td><span class="badge bg-light text-dark border"><i class="fa-solid fa-user-gear me-1"></i> {{ $assignment->assigned_by_name ?? 'Sistem/Admin' }}</span></td>
                                 <td>
@@ -140,6 +145,18 @@
                                                     <i class="fa-solid fa-print me-2 text-info"></i> Cetak DO
                                                 </button>
                                             </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            @if(auth()->user()->hasPermission('Delete Penugasan'))
+                                            <li>
+                                                <form action="{{ route('pickup-tasks.penugasan.destroy', $assignment->id) }}" method="POST" onsubmit="event.stopPropagation(); return confirm('Apakah Anda yakin ingin menghapus penugasan ini? Tugas di dalamnya akan dikembalikan ke daftar tunggu.');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="dropdown-item py-2 text-danger">
+                                                        <i class="fa-solid fa-trash me-2"></i> Hapus Penugasan
+                                                    </button>
+                                                </form>
+                                            </li>
+                                            @endif
                                         </ul>
                                     </div>
                                 </td>
@@ -200,13 +217,15 @@
                                                             </td>
                                                             <td class="text-end pe-4">
                                                                 @if(!in_array($task->status, ['completed', 'delivered']))
-                                                                <form action="{{ route('pickup-tasks.penugasan.remove-task', ['delivery_order' => $assignment->id, 'type' => $task->type, 'taskId' => $task->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin mencabut tugas ini dari penugasan?');">
-                                                                    @csrf
-                                                                    @method('DELETE')
-                                                                    <button type="submit" onclick="event.stopPropagation();" class="btn btn-sm btn-link text-danger p-0 me-3" title="Cabut Tugas">
-                                                                        <i class="fa-solid fa-xmark" style="font-size: 14px;"></i>
-                                                                    </button>
-                                                                </form>
+                                                                    @if((Auth::user()->roleRelation && strtoupper(Auth::user()->roleRelation->name) === 'SUPER ADMIN') || strtoupper(Auth::user()->role) === 'SUPER ADMIN')
+                                                                    <form action="{{ route('pickup-tasks.penugasan.remove-task', ['delivery_order' => $assignment->id, 'type' => $task->type, 'taskId' => $task->id]) }}" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin mencabut tugas ini dari penugasan?');">
+                                                                        @csrf
+                                                                        @method('DELETE')
+                                                                        <button type="submit" onclick="event.stopPropagation();" class="btn btn-sm btn-link text-danger p-0 me-3" title="Cabut Tugas">
+                                                                            <i class="fa-solid fa-xmark" style="font-size: 14px;"></i>
+                                                                        </button>
+                                                                    </form>
+                                                                    @endif
                                                                 @endif
                                                                 <i class="fa-solid fa-chevron-down text-muted" style="font-size: 12px;"></i>
                                                             </td>
