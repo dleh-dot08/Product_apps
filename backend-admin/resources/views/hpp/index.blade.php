@@ -1370,10 +1370,19 @@
                                 </td>
 
                                 <td>
-                                    <div class="action-cell">
+                                    <div class="action-cell" style="display: flex; gap: 8px; justify-content: center;">
                                         <button type="button" class="btn-row-more toggle-btn" data-toggle="collapse" data-target="#detail-{{ $shift->id }}" title="Buka rincian">
                                             <i class="fas fa-chevron-down transition-icon"></i>
                                         </button>
+                                        @if(auth()->check() && auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')
+                                            <form action="{{ route('hpp.destroy', $shift->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus data HPP ini?');" style="margin: 0;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn-row-more" style="background: #ef4444; color: white;" title="Hapus HPP">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
