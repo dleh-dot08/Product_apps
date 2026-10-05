@@ -1,6 +1,6 @@
 <div class="modal fade" id="createAssignmentModal" tabindex="-1" aria-labelledby="createAssignmentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg rounded-4">
+        <form action="{{ route('pickup-tasks.penugasan.store') }}" method="POST" id="formCreateAssignment" class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header text-white border-bottom-0 py-3 rounded-top-4" style="background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);">
                 <h5 class="modal-title fw-bold" id="createAssignmentModalLabel">
                     <i class="fa-solid fa-clipboard-check me-2"></i>Tambah Penugasan Baru
@@ -8,8 +8,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             
-            <form action="{{ route('pickup-tasks.penugasan.store') }}" method="POST" id="formCreateAssignment">
-                @csrf
+            @csrf
                 <div class="modal-body p-4 bg-light">
                     <!-- Section: Informasi Penugasan -->
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -110,8 +109,7 @@
                         <i class="fa-solid fa-save me-2"></i>Simpan Penugasan
                     </button>
                 </div>
-            </form>
-        </div>
+        </form>
     </div>
 </div>
 

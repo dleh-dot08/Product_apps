@@ -1,7 +1,7 @@
 {{-- Modal Edit Penugasan: Kelola daftar tugas di dalam penugasan --}}
 <div class="modal fade" id="editPenugasanModal" tabindex="-1" aria-labelledby="editPenugasanModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-scrollable">
-        <div class="modal-content border-0 shadow-lg rounded-4">
+        <form id="formEditPenugasan" method="POST" class="modal-content border-0 shadow-lg rounded-4">
             <div class="modal-header text-white border-bottom-0 py-3 rounded-top-4" style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);">
                 <h5 class="modal-title fw-bold" id="editPenugasanModalLabel">
                     <i class="fa-solid fa-list-check me-2"></i>Kelola Daftar Tugas
@@ -9,9 +9,8 @@
                 <button type="button" class="btn-close btn-close-white opacity-75" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             
-            <form id="formEditPenugasan" method="POST">
-                @csrf
-                @method('PUT')
+            @csrf
+            @method('PUT')
                 <div class="modal-body p-4 bg-light">
                     {{-- Info Penugasan --}}
                     <div class="card border-0 shadow-sm rounded-4 mb-4">
@@ -113,8 +112,7 @@
                         <i class="fa-solid fa-save me-2"></i>Simpan Perubahan
                     </button>
                 </div>
-            </form>
-        </div>
+        </form>
     </div>
 </div>
 
