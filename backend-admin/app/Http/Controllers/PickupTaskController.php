@@ -61,7 +61,7 @@ class PickupTaskController extends Controller
         $user = Auth::user();
         
         $pickupQuery = PickupTask::with(['driver', 'vehicle', 'assignedBy', 'items'])->latest();
-        $deliveryQuery = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'salesOrder.items'])->latest();
+        $deliveryQuery = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'salesOrder.items'])->latest('assigned_at');
         
         // Super admin melihat semua data termasuk yang dihapus
         $isSuperAdmin = ($user->roleRelation && strtoupper($user->roleRelation->name) === 'SUPER ADMIN') || strtoupper($user->role) === 'SUPER ADMIN';
@@ -121,7 +121,7 @@ class PickupTaskController extends Controller
         if (!$filterType || $filterType === 'delivery') {
             $deliveries = $deliveryQuery->get()->map(function($task) {
                 $task->task_type = 'delivery';
-                $task->sort_date = $task->assigned_at ?? $task->created_at;
+                $task->sort_date = $task->assigned_at ?? $task->dispatch_date;
                 return $task;
             });
         }
