@@ -388,7 +388,7 @@ class PickupTaskController extends Controller
                 'delivery_pickup_location' => 'required|string',
             ]);
 
-            $soNumber = $request->delivery_so_number;
+            $soNumber = $request->delivery_so_number ?: 'SO-MNL-' . strtoupper(substr(uniqid(), -6));
 
             $totalQty = 0;
             $itemDescriptions = [];
