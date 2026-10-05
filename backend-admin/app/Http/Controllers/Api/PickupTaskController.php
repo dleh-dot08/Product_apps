@@ -33,6 +33,7 @@ class PickupTaskController extends Controller
             : 'delivery_assignments.status';
 
         $pickups = DB::table('pickup_tasks')
+            ->whereNull('pickup_tasks.deleted_at')
             ->leftJoin('vehicles', 'pickup_tasks.vehicle_id', '=', 'vehicles.id')
             ->leftJoin('users as driver', 'pickup_tasks.driver_id', '=', 'driver.id')
             ->leftJoin('users as co_driver', 'pickup_tasks.co_driver_id', '=', 'co_driver.id')
@@ -66,6 +67,7 @@ class PickupTaskController extends Controller
             );
             
         $deliveries = DB::table('delivery_assignments')
+            ->whereNull('delivery_assignments.deleted_at')
             ->join('sales_orders', 'delivery_assignments.sales_order_id', '=', 'sales_orders.id')
             ->leftJoin('vehicles', 'delivery_assignments.vehicle_id', '=', 'vehicles.id')
             ->leftJoin('users as driver', 'delivery_assignments.driver_id', '=', 'driver.id')
