@@ -388,7 +388,7 @@ class PickupTaskController extends Controller
                 'delivery_pickup_location' => 'required|string',
             ]);
 
-            $soNumber = $request->delivery_so_number ?: 'SO-MNL-' . strtoupper(substr(uniqid(), -6));
+            $soNumber = $request->delivery_so_number ?: '-';
 
             $totalQty = 0;
             $itemDescriptions = [];
@@ -409,7 +409,9 @@ class PickupTaskController extends Controller
                 ];
             }
 
-            $externalKey = hash('sha256', implode('|', ['manual-delivery', $soNumber]));
+            // Jika SO number manual adalah '-', kita gunakan uniqid agar external_key tidak bentrok dengan data manual lain
+            $uniqueKey = $soNumber === '-' ? uniqid('mnl_', true) : $soNumber;
+            $externalKey = hash('sha256', implode('|', ['manual-delivery', $uniqueKey]));
             
             $sourceData = [
                 'transaction_source' => 'manual',
