@@ -30,6 +30,8 @@
                         <div class="col-md-2">
                             <select name="status" class="form-select form-select-sm filter-control px-3">
                                 <option value="">Semua Status</option>
+                                <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Draft</option>
+                                <option value="pending" {{ request('status') == 'pending' ? 'selected' : '' }}>Pending</option>
                                 <option value="assigned" {{ request('status') == 'assigned' ? 'selected' : '' }}>Assigned</option>
                                 <option value="on_route" {{ request('status') == 'on_route' ? 'selected' : '' }}>On Route</option>
                                 <option value="arrived" {{ request('status') == 'arrived' ? 'selected' : '' }}>Arrived</option>
