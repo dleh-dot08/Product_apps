@@ -21,6 +21,7 @@ class DriverDashboardController extends Controller
         $endOfDay = now()->endOfDay();
 
         $pickups = DB::table('pickup_tasks')
+            ->whereNull('pickup_tasks.deleted_at')
             ->leftJoin('task_manifests', 'pickup_tasks.manifest_id', '=', 'task_manifests.id')
             ->leftJoin('vehicles', function ($join) {
                 $join->on('vehicles.id', '=', DB::raw('COALESCE(task_manifests.vehicle_id, pickup_tasks.vehicle_id)'));
@@ -72,6 +73,7 @@ class DriverDashboardController extends Controller
             });
 
         $deliveries = DB::table('delivery_assignments')
+            ->whereNull('delivery_assignments.deleted_at')
             ->join('sales_orders', 'delivery_assignments.sales_order_id', '=', 'sales_orders.id')
             ->leftJoin('task_manifests', 'delivery_assignments.manifest_id', '=', 'task_manifests.id')
             ->leftJoin('vehicles', function ($join) {
