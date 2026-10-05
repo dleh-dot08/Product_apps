@@ -121,7 +121,7 @@ class PickupTaskController extends Controller
         if (!$filterType || $filterType === 'delivery') {
             $deliveries = $deliveryQuery->get()->map(function($task) {
                 $task->task_type = 'delivery';
-                $task->sort_date = $task->assigned_at ?? $task->dispatch_date;
+                $task->sort_date = $task->assigned_at ?? $task->dispatch_date ?? optional($task->salesOrder)->created_at;
                 return $task;
             });
         }
