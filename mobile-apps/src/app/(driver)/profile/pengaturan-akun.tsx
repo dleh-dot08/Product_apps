@@ -6,10 +6,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../../../context/ThemeContext';
 import { Colors } from '../../../constants/theme';
+import { useFontZoom } from '../../../context/FontZoomContext';
 
 export default function PengaturanAkunScreen() {
   const router = useRouter();
   const { theme, mode, setMode } = useTheme();
+  const { fontZoom, setFontZoom } = useFontZoom();
   const colors = Colors[theme];
 
   const toggleDarkMode = () => {
@@ -40,6 +42,33 @@ export default function PengaturanAkunScreen() {
             trackColor={{ false: '#D1D5DB', true: '#0756C6' }}
             thumbColor={'#FFFFFF'}
           />
+        </View>
+
+        <View style={[styles.settingRow, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected, marginTop: 16 }]}>
+          <View style={styles.settingInfo}>
+            <Ionicons name="text-outline" size={24} color={colors.textSecondary} />
+            <Text style={[styles.settingText, { color: colors.text }]}>Ukuran Teks</Text>
+          </View>
+          
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <TouchableOpacity 
+              onPress={() => setFontZoom(Math.max(0.5, fontZoom - 0.1))}
+              style={{ padding: 8, backgroundColor: colors.backgroundSelected, borderRadius: 8 }}
+            >
+              <Ionicons name="remove" size={16} color={colors.text} />
+            </TouchableOpacity>
+            
+            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.text, width: 36, textAlign: 'center' }}>
+              {Math.round(fontZoom * 100)}%
+            </Text>
+
+            <TouchableOpacity 
+              onPress={() => setFontZoom(Math.min(1.5, fontZoom + 0.1))}
+              style={{ padding: 8, backgroundColor: colors.backgroundSelected, borderRadius: 8 }}
+            >
+              <Ionicons name="add" size={16} color={colors.text} />
+            </TouchableOpacity>
+          </View>
         </View>
 
       </View>

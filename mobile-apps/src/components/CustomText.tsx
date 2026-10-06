@@ -1,5 +1,7 @@
+
 import React from 'react';
 import { Text as RNText, TextProps, StyleSheet, Dimensions, PixelRatio, Platform } from 'react-native';
+import { useFontZoom } from '../context/FontZoomContext';
 
 const { width } = Dimensions.get('window');
 // Batasi lebar maksimal untuk perhitungan scale (misal tablet/web agar font tidak raksasa)
@@ -19,6 +21,8 @@ export function normalize(size: number) {
 }
 
 export function Text(props: TextProps) {
+  const { fontZoom } = useFontZoom();
+
   // 1. Flatten styles to read properties easily
   const flatStyle = StyleSheet.flatten(props.style || {}) || {};
   
@@ -37,7 +41,8 @@ export function Text(props: TextProps) {
   // 4. Remove fontWeight & extract fontSize to scale it
   const { fontWeight, fontSize, ...restStyle } = flatStyle as any;
 
-  const normalizedFontSize = fontSize ? normalize(fontSize) : undefined;
+  // Apply both device scale and user's fontZoom setting
+  const normalizedFontSize = fontSize ? normalize(fontSize * fontZoom) : undefined;
 
   return (
     <RNText 

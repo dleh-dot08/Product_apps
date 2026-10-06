@@ -68,6 +68,7 @@
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Lokasi Awal</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Lokasi Tujuan</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Driver</th>
+                                    <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Tanggal Penugasan</th>
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7">Status</th>
 
                                     <th class="text-uppercase text-secondary text-xxs font-weight-bolder opacity-7 text-end px-4">Aksi</th>
@@ -138,6 +139,15 @@
                                         @else
                                             <span class="text-muted fst-italic text-xs">Belum diassign</span>
                                         @endif
+                                    </td>
+                                    <td>
+                                        <span class="primary-line fw-bold">
+                                            @if($task->assigned_at)
+                                                <i class="fa-regular fa-calendar me-1 text-muted"></i> {{ \Carbon\Carbon::parse($task->assigned_at)->format('d M Y, H:i') }}
+                                            @else
+                                                -
+                                            @endif
+                                        </span>
                                     </td>
                                     <td>
                                         @php
