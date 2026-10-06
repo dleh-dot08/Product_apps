@@ -3,6 +3,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import * as Updates from 'expo-updates';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { CustomThemeProvider, useTheme } from '../context/ThemeContext';
+import { FontZoomProvider } from '../context/FontZoomContext';
 import {
   useFonts,
   Inter_400Regular,
@@ -65,9 +66,11 @@ function ThemeApplier() {
   const { theme } = useTheme();
   return (
     <ThemeProvider value={theme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AuthProvider>
-        <RootLayoutNav />
-      </AuthProvider>
+      <FontZoomProvider>
+        <AuthProvider>
+          <RootLayoutNav />
+        </AuthProvider>
+      </FontZoomProvider>
     </ThemeProvider>
   );
 }

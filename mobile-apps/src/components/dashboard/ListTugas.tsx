@@ -268,7 +268,6 @@ export default function ListTugas() {
                     key={tab.id}
                     style={[
                       styles.tabButton,
-                      { flex: 0, paddingHorizontal: 16 },
                       isActive && styles.tabButtonActive
                     ]}
                     onPress={() => setStatus(tab.id)}
@@ -603,9 +602,10 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   tabButton: {
-    flex: 1,
     paddingVertical: 10,
+    paddingHorizontal: 16,
     alignItems: 'center',
+    justifyContent: 'center',
     borderRadius: 8,
   },
   tabButtonActive: {

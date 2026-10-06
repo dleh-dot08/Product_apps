@@ -166,6 +166,9 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
+        
+
+
         {/* Menu Akun */}
         <View style={[styles.sectionContainer, { backgroundColor: colors.backgroundElement, borderColor: colors.backgroundSelected }]}>
           <Text style={[styles.sectionTitle, { color: colors.text }]}>Menu Akun</Text>
