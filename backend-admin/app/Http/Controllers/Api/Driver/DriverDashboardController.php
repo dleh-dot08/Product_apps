@@ -235,9 +235,13 @@ class DriverDashboardController extends Controller
             }
             
             if ($trip->status === 'Tidak Terkirim' || $trip->status === 'failed') {
-                $failedCount++;
-                $kendalaCount++; // Anggap juga sebagai bagian kendala secara akumulatif
-                continue; // Kendala/Gagal kirim bukan salah driver, kecualikan dari total performa
+                if ($trip->has_issue) {
+                    $kendalaCount++;
+                    continue; // Kendala, kecualikan dari performa
+                } else {
+                    $failedCount++;
+                    // Jangan continue, biarkan lanjut agar masuk ke $totalValid (menurunkan performa)
+                }
             }
             
             $totalValid++;

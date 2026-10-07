@@ -970,7 +970,7 @@ function TaskDetailScreenContent() {
         onClose={() => setModalSerahTerimaVisible(false)}
         onSubmit={(payload: any) => {
           setModalSerahTerimaVisible(false);
-          const finalStatus = payload.has_issue ? 'failed' : 'delivered';
+          const finalStatus = payload.has_issue ? 'pending' : 'delivered';
           handleAction(finalStatus, payload);
         }}
         task={task}
