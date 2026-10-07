@@ -678,6 +678,7 @@ export const ModalSerahTerima = ({ visible, onClose, onSubmit, task }: any) => {
       attachments: allAttachments,
       attachment_category: hasKendala ? 'bukti_kendala' : 'bukti_serah_terima',
       arrival_notes: hasKendala ? notes : '',
+      failure_reason: hasKendala ? notes : '',
       has_issue: hasKendala,
     });
   };

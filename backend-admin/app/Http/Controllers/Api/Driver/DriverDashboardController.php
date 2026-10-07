@@ -231,7 +231,13 @@ class DriverDashboardController extends Controller
         foreach($allPeriodTrips as $trip) {
             if ($trip->status === 'pending') {
                 $kendalaCount++;
-                continue; // Kendala tidak masuk valid total
+                continue; // Kendala (arrived but issue) tidak masuk valid total
+            }
+            
+            if ($trip->status === 'Tidak Terkirim' || $trip->status === 'failed') {
+                $failedCount++;
+                $kendalaCount++; // Anggap juga sebagai bagian kendala secara akumulatif
+                continue; // Kendala/Gagal kirim bukan salah driver, kecualikan dari total performa
             }
             
             $totalValid++;
@@ -247,8 +253,6 @@ class DriverDashboardController extends Controller
                 }
                 
                 $totalFuelAll += (float)$trip->start_fuel;
-            } elseif ($trip->status === 'Tidak Terkirim' || $trip->status === 'failed') {
-                $failedCount++;
             }
         }
         

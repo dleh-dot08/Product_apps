@@ -204,7 +204,7 @@
                                                             <td>
                                                                 @php
                                                                     $displayStatus = $task->status;
-                                                                    if (!in_array($task->status, ['completed', 'delivered']) && \Carbon\Carbon::parse($assignment->date)->startOfDay()->lt(\Carbon\Carbon::today())) {
+                                                                    if (!$assignment->is_out_of_city && !in_array($task->status, ['completed', 'delivered']) && \Carbon\Carbon::parse($assignment->date)->startOfDay()->lt(\Carbon\Carbon::today())) {
                                                                         $displayStatus = 'tidak_terkirim';
                                                                     }
                                                                     if ($displayStatus === 'pending') {
