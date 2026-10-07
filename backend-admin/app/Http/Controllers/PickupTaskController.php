@@ -10,6 +10,10 @@ use App\Models\Vehicle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ListTugasExport;
+use App\Exports\MonitoringExport;
+use App\Exports\PenugasanExport;
 
 class PickupTaskController extends Controller
 {
@@ -277,8 +281,146 @@ class PickupTaskController extends Controller
         ]));
     }
 
+    public function exportTugas(Request $request)
+    {
+        $user = Auth::user();
+        
+        $pickupQuery = PickupTask::with(['driver', 'vehicle', 'assignedBy', 'items'])->latest();
+        $deliveryQuery = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'salesOrder.items'])->latest('assigned_at');
+        
+        $isSuperAdmin = ($user->roleRelation && strtoupper($user->roleRelation->name) === 'SUPER ADMIN') || strtoupper($user->role) === 'SUPER ADMIN';
+        if ($isSuperAdmin) {
+            $pickupQuery->withTrashed();
+            $deliveryQuery->withTrashed();
+        }
+        
+        if (strtolower($user->role) === 'driver') {
+            $pickupQuery->where('driver_id', $user->id);
+            $deliveryQuery->where('driver_id', $user->id);
+        }
 
+        $search = $request->get('search');
+        $filterStatus = $request->get('status');
+        $filterDriver = $request->get('driver_id');
+        $filterType = $request->get('task_type');
 
+        if ($search) {
+            $pickupQuery->where(function($q) use ($search) {
+                $q->where('reference_number', 'ILIKE', "%{$search}%")
+                  ->orWhere('pickup_name', 'ILIKE', "%{$search}%")
+                  ->orWhere('item_description', 'ILIKE', "%{$search}%");
+            });
+
+            $deliveryQuery->whereHas('salesOrder', function($q) use ($search) {
+                $q->where('so_number', 'ILIKE', "%{$search}%")
+                  ->orWhere('customer_name', 'ILIKE', "%{$search}%")
+                  ->orWhere('item_description', 'ILIKE', "%{$search}%");
+            });
+        }
+
+        if ($filterStatus) {
+            $pickupQuery->where('status', $filterStatus);
+            $deliveryQuery->where('status', $filterStatus);
+        }
+
+        if ($filterDriver) {
+            $pickupQuery->where('driver_id', $filterDriver);
+            $deliveryQuery->where('driver_id', $filterDriver);
+        }
+
+        $pickups = collect();
+        if (!$filterType || $filterType === 'pickup') {
+            $pickups = $pickupQuery->get()->map(function($task) {
+                $task->task_type = 'pickup';
+                $task->sort_date = $task->created_at;
+                return $task;
+            });
+        }
+
+        $deliveries = collect();
+        if (!$filterType || $filterType === 'delivery') {
+            $deliveries = $deliveryQuery->get()->map(function($task) {
+                $task->task_type = 'delivery';
+                $task->sort_date = $task->assigned_at ?? $task->dispatch_date ?? optional($task->salesOrder)->created_at;
+                return $task;
+            });
+        }
+
+        $allTasks = $pickups->concat($deliveries)->sortByDesc('sort_date')->values();
+
+        return Excel::download(new ListTugasExport($allTasks), 'List_Tugas_' . now()->format('Ymd_His') . '.xlsx');
+    }
+
+    public function exportPenugasan(Request $request)
+    {
+        $user = auth()->user();
+        
+        $query = \App\Models\TaskManifest::with(['driver', 'coDriver', 'vehicle', 'historicalPickupTasks', 'historicalDeliveryAssignments.salesOrder'])->latest('dispatch_date');
+        
+        $isSuperAdmin = ($user->roleRelation && strtoupper($user->roleRelation->name) === 'SUPER ADMIN') || strtoupper($user->role) === 'SUPER ADMIN';
+        if ($isSuperAdmin) {
+            $query->withTrashed();
+        }
+
+        if ($user && strtolower($user->role) === 'driver') {
+            $query->where('driver_id', $user->id);
+        }
+        
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('manifest_number', 'like', "%{$search}%")
+                  ->orWhereHas('driver', function($q) use ($search) {
+                      $q->where('name', 'like', "%{$search}%");
+                  });
+            });
+        }
+
+        if ($request->filled('date')) {
+            $query->whereDate('dispatch_date', $request->date);
+        }
+
+        if ($request->filled('driver_id')) {
+            $query->where(function($q) use ($request) {
+                $q->where('driver_id', $request->driver_id)
+                  ->orWhere('co_driver_id', $request->driver_id);
+            });
+        }
+        
+        $assignments = $query->get();
+        return Excel::download(new PenugasanExport($assignments), 'List_Penugasan_' . now()->format('Ymd_His') . '.xlsx');
+    }
+
+    public function exportMonitoring(Request $request)
+    {
+        $query = \App\Models\Shift::with(['driver', 'vehicle', 'expenses']);
+
+        $date = $request->input('date', now()->toDateString());
+        if ($date) {
+            $query->whereDate('work_date', $date);
+        }
+
+        if ($request->has('driver_id') && $request->driver_id != '') {
+            $query->where('driver_id', $request->driver_id);
+        }
+
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->whereHas('driver', function($q2) use ($search) {
+                    $q2->where('name', 'like', "%{$search}%")
+                       ->orWhere('full_name', 'like', "%{$search}%");
+                })->orWhereHas('vehicle', function($q2) use ($search) {
+                    $q2->where('plate_number', 'like', "%{$search}%")
+                       ->orWhere('name', 'like', "%{$search}%");
+                });
+            });
+        }
+
+        $activeShifts = $query->orderBy('check_in_at', 'desc')->get();
+            
+        return Excel::download(new MonitoringExport($activeShifts), 'Monitoring_Driver_' . now()->format('Ymd_His') . '.xlsx');
+    }
     public function store(Request $request)
     {
         $request->validate([
