@@ -41,18 +41,18 @@ class DriverManifestController extends Controller
             'vehicle',
             'driver',
             'coDriver',
-            'historicalPickupTasks' => function ($q) {
+            'pickupTasks' => function ($q) {
                 $q->select(
-                    'pickup_tasks.id', 'pickup_tasks.manifest_id', 'reference_number', 'pickup_name', 'pickup_location', 
-                    'destination', 'assigned_at', 'pickup_tasks.status', 'quantity', 'unit', 
+                    'id', 'manifest_id', 'reference_number', 'pickup_name', 'pickup_location', 
+                    'destination', 'assigned_at', 'status', 'quantity', 'unit', 
                     'estimated_arrival', 'completed_odometer', 'start_odometer', 'start_fuel',
                     'receiver_name', 'receiver_role', 'item_condition'
                 )->with('attachments');
             },
-            'historicalDeliveryAssignments.salesOrder' => function ($q) {
+            'deliveryAssignments.salesOrder' => function ($q) {
                 $q->select('id', 'so_number', 'customer_name', 'ordered_quantity', 'unit', 'item_description');
             },
-            'historicalDeliveryAssignments.attachments'
+            'deliveryAssignments.attachments'
         ])
         ->where(function ($q) use ($user) {
             $q->where('driver_id', $user->id)
@@ -60,19 +60,15 @@ class DriverManifestController extends Controller
         })
         ->findOrFail($id);
 
-        // Format delivery assignments to match pickup structure for consistency if needed,
-        // or let the frontend handle the mapping.
-        $manifest->historicalDeliveryAssignments->transform(function ($delivery) {
-            // Overwrite status with pivot status to reflect the status AT THE TIME OF THIS MANIFEST if necessary
-            // Or if it was expired, pivot status is 'pending', let's format it.
-            $status = $delivery->pivot->status;
+        $manifest->deliveryAssignments->transform(function ($delivery) {
+            $status = $delivery->status;
             if (in_array($status, ['Tidak Terkirim'])) {
                 $status = 'Tidak Terkirim';
             }
 
             return [
                 'id' => $delivery->id,
-                'manifest_id' => $delivery->pivot->manifest_id,
+                'manifest_id' => $delivery->manifest_id,
                 'reference_number' => $delivery->salesOrder ? $delivery->salesOrder->so_number : null,
                 'pickup_name' => $delivery->pickup_name ?? 'Gudang AQPA',
                 'pickup_location' => $delivery->pickup_location ?? '-',
@@ -97,10 +93,10 @@ class DriverManifestController extends Controller
         });
 
         // Add task type to pickups
-        $manifest->historicalPickupTasks->transform(function ($pickup) {
+        $manifest->pickupTasks->transform(function ($pickup) {
             $pickupArray = $pickup->toArray();
             
-            $status = $pickup->pivot->status;
+            $status = $pickup->status;
             if (in_array($status, ['Tidak Terkirim'])) {
                 $status = 'Tidak Terkirim';
             }
@@ -108,12 +104,6 @@ class DriverManifestController extends Controller
             $pickupArray['task_type'] = 'pickup';
             return $pickupArray;
         });
-
-        // Re-assign back so the frontend sees them as pickupTasks and deliveryAssignments
-        $manifest->setRelation('pickupTasks', $manifest->historicalPickupTasks);
-        $manifest->setRelation('deliveryAssignments', $manifest->historicalDeliveryAssignments);
-        $manifest->unsetRelation('historicalPickupTasks');
-        $manifest->unsetRelation('historicalDeliveryAssignments');
 
         // Find the corresponding shift for this driver on the dispatch date
         $shift = \App\Models\Shift::with('expenses')
