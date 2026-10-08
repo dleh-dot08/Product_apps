@@ -197,6 +197,11 @@ class PackagingController extends Controller
         ));
     }
 
+    public function export()
+    {
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\PackagingExport, 'packaging_jobs.xlsx');
+    }
+
     public function destroy(PackagingJob $packagingJob)
     {
         $packagingJob->delete();
