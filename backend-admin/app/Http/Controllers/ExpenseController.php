@@ -22,6 +22,42 @@ class ExpenseController extends Controller
         }
 
         $expenses = $query->get();
+
+        if ($request->export == 'excel') {
+            $filename = "pengeluaran_" . date('Ymd_His') . ".csv";
+            
+            return response()->streamDownload(function () use ($expenses) {
+                $file = fopen('php://output', 'w');
+                fputcsv($file, ['Tanggal', 'Jam', 'Driver', 'Shift', 'Kode Delivery', 'Kategori', 'Deskripsi', 'Nominal']);
+
+                foreach ($expenses as $expense) {
+                    $driverName = $expense->driver->full_name ?? $expense->driver->name ?? 'Belum ditentukan';
+                    $shiftDate = $expense->shift->work_date ?? '-';
+                    $description = $expense->description ?? '-';
+                    
+                    $deliveryCode = '-';
+                    if ($expense->shift_id) {
+                        $taskData = \App\Models\PickupTask::where('shift_id', $expense->shift_id)->first();
+                        if ($taskData && $taskData->reference_number) {
+                            $deliveryCode = $taskData->reference_number;
+                        }
+                    }
+
+                    fputcsv($file, [
+                        $expense->occurred_at ? $expense->occurred_at->format('d M Y') : '-',
+                        $expense->occurred_at ? $expense->occurred_at->format('H:i') : '-',
+                        $driverName,
+                        $shiftDate,
+                        $deliveryCode,
+                        $expense->category ?? '-',
+                        $description,
+                        $expense->amount
+                    ]);
+                }
+                fclose($file);
+            }, $filename);
+        }
+
         $drivers = User::where('role', 'driver')->get();
         // Hanya ambil shift yang belum selesai (atau beberapa hari terakhir) untuk kemudahan entry
         $activeShifts = Shift::with(['driver', 'vehicle'])->latest()->limit(50)->get();
