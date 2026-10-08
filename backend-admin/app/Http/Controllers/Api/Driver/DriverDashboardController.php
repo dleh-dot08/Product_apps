@@ -59,17 +59,8 @@ class DriverDashboardController extends Controller
             ->where(function ($q) use ($user) {
                 $q->where('pickup_tasks.driver_id', $user->id)
                   ->orWhere('pickup_tasks.co_driver_id', $user->id)
-                  ->orWhereExists(function ($query) use ($user) {
-                      $query->select(DB::raw(1))
-                            ->from('tasks_manifest_history')
-                            ->join('task_manifests', 'tasks_manifest_history.manifest_id', '=', 'task_manifests.id')
-                            ->whereColumn('tasks_manifest_history.task_id', 'pickup_tasks.id')
-                            ->where('tasks_manifest_history.task_type', 'pickup')
-                            ->where(function ($sub) use ($user) {
-                                $sub->where('task_manifests.driver_id', $user->id)
-                                    ->orWhere('task_manifests.co_driver_id', $user->id);
-                            });
-                  });
+                  ->orWhere('task_manifests.driver_id', $user->id)
+                  ->orWhere('task_manifests.co_driver_id', $user->id);
             });
 
         $deliveries = DB::table('delivery_assignments')
@@ -112,17 +103,8 @@ class DriverDashboardController extends Controller
             ->where(function ($q) use ($user) {
                 $q->where('delivery_assignments.driver_id', $user->id)
                   ->orWhere('delivery_assignments.co_driver_id', $user->id)
-                  ->orWhereExists(function ($query) use ($user) {
-                      $query->select(DB::raw(1))
-                            ->from('tasks_manifest_history')
-                            ->join('task_manifests', 'tasks_manifest_history.manifest_id', '=', 'task_manifests.id')
-                            ->whereColumn('tasks_manifest_history.task_id', 'delivery_assignments.id')
-                            ->where('tasks_manifest_history.task_type', 'delivery')
-                            ->where(function ($sub) use ($user) {
-                                $sub->where('task_manifests.driver_id', $user->id)
-                                    ->orWhere('task_manifests.co_driver_id', $user->id);
-                            });
-                  });
+                  ->orWhere('task_manifests.driver_id', $user->id)
+                  ->orWhere('task_manifests.co_driver_id', $user->id);
             });
 
         $unionQuery = $pickups->unionAll($deliveries);
