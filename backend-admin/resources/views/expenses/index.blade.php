@@ -272,7 +272,7 @@
     /* ========================= FILTER ========================= */
     .expense-filter-form {
         display: grid;
-        grid-template-columns: minmax(220px, 1fr) 170px 180px 40px;
+        grid-template-columns: minmax(220px, 1fr) 170px 180px 40px 40px;
         gap: 8px;
         margin-top: 14px;
     }
@@ -329,6 +329,25 @@
         color: var(--exp-orange);
         border-color: #fdba74;
         background: var(--exp-orange-soft);
+    }
+
+    .btn-export-expense {
+        width: 40px;
+        height: 39px;
+        display: grid;
+        place-items: center;
+        border: 1px solid #dbe3ec;
+        border-radius: 9px;
+        background: #fff;
+        color: #10b981;
+        text-decoration: none;
+        transition: .15s ease;
+    }
+
+    .btn-export-expense:hover {
+        color: #059669;
+        border-color: #6ee7b7;
+        background: #ecfdf5;
     }
 
     /* ========================= TABLE ========================= */
@@ -648,6 +667,7 @@
 
     html[data-bs-theme="dark"] .expense-filter-control,
     html[data-bs-theme="dark"] .btn-reset-expense,
+    html[data-bs-theme="dark"] .btn-export-expense,
     html[data-bs-theme="dark"] .expense-table tbody td,
     html[data-bs-theme="dark"] .expense-icon-btn {
         background: #111827;
@@ -680,7 +700,7 @@
         }
 
         .expense-filter-form {
-            grid-template-columns: minmax(220px, 1fr) 160px 170px 40px;
+            grid-template-columns: minmax(220px, 1fr) 160px 170px 40px 40px;
         }
     }
 
@@ -895,6 +915,16 @@
                             </option>
                         @endforeach
                     </select>
+
+                    <button
+                        type="submit"
+                        name="export"
+                        value="excel"
+                        class="btn-export-expense"
+                        title="Export Excel"
+                    >
+                        <i class="fa-solid fa-file-excel"></i>
+                    </button>
 
                     <a
                         href="{{ route('expenses.index') }}"
