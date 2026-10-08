@@ -1025,28 +1025,20 @@ class PickupTaskController extends Controller
         $manifest = \App\Models\TaskManifest::findOrFail($manifestId);
 
         // Tasks currently assigned to this manifest
-        $assignedPickups = PickupTask::join('tasks_manifest_history', 'pickup_tasks.id', '=', 'tasks_manifest_history.task_id')
-            ->where('tasks_manifest_history.manifest_id', $manifestId)
-            ->where('tasks_manifest_history.task_type', 'pickup')
-            ->select('pickup_tasks.*', 'tasks_manifest_history.status as manifest_task_status')
+        $assignedPickups = PickupTask::where('manifest_id', $manifestId)
             ->get()
             ->map(function($task) {
                 $task->task_type = 'pickup';
                 $task->is_assigned = true;
-                $task->status = $task->manifest_task_status;
                 return $task;
             });
 
         $assignedDeliveries = DeliveryAssignment::with('salesOrder')
-            ->join('tasks_manifest_history', 'delivery_assignments.id', '=', 'tasks_manifest_history.task_id')
-            ->where('tasks_manifest_history.manifest_id', $manifestId)
-            ->where('tasks_manifest_history.task_type', 'delivery')
-            ->select('delivery_assignments.*', 'tasks_manifest_history.status as manifest_task_status')
+            ->where('manifest_id', $manifestId)
             ->get()
             ->map(function($task) {
                 $task->task_type = 'delivery';
                 $task->is_assigned = true;
-                $task->status = $task->manifest_task_status;
                 return $task;
             });
 
