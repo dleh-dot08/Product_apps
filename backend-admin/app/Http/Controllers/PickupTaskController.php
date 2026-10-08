@@ -1159,7 +1159,9 @@ class PickupTaskController extends Controller
         // Add newly selected tasks
         $newPickups = PickupTask::whereIn('id', $keepPickupIds)
             ->where(function($q) use ($manifestId) {
-                $q->whereNull('manifest_id')->orWhere('manifest_id', $manifestId);
+                $q->whereNull('manifest_id')
+                  ->orWhere('manifest_id', $manifestId)
+                  ->orWhere('status', 'pending');
             })
             ->get();
         foreach ($newPickups as $t) {
@@ -1195,7 +1197,9 @@ class PickupTaskController extends Controller
 
         $newDeliveries = DeliveryAssignment::whereIn('id', $keepDeliveryIds)
             ->where(function($q) use ($manifestId) {
-                $q->whereNull('manifest_id')->orWhere('manifest_id', $manifestId);
+                $q->whereNull('manifest_id')
+                  ->orWhere('manifest_id', $manifestId)
+                  ->orWhere('status', 'pending');
             })
             ->get();
         foreach ($newDeliveries as $t) {
