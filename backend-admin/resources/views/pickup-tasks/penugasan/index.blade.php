@@ -53,8 +53,9 @@
                 </select>
             </div>
             <div class="col-md-2 d-flex gap-2">
-                <button type="submit" class="btn btn-primary w-100 fw-bold rounded-3"><i class="fa-solid fa-filter me-1"></i> Filter</button>
+                <button type="submit" class="btn btn-primary w-100 fw-bold rounded-3" title="Filter"><i class="fa-solid fa-filter"></i></button>
                 <a href="{{ route('pickup-tasks.list-penugasan') }}" class="btn btn-light border rounded-3 px-3" title="Reset"><i class="fa-solid fa-rotate-right"></i></a>
+                <button type="submit" formaction="{{ route('pickup-tasks.list-penugasan.export') }}" class="btn btn-success w-100 fw-bold rounded-3" title="Export Excel"><i class="fa-solid fa-file-excel"></i></button>
             </div>
         </form>
     </div>

@@ -34,8 +34,9 @@
                 </select>
             </div>
             <div class="col-md-2 d-flex gap-2 filter-actions">
-                <button type="submit" class="btn btn-sm btn-orange w-100 fw-bold rounded-3"><i class="fa-solid fa-filter me-1"></i> Filter</button>
-                <a href="{{ route('pickup-tasks.monitoring') }}" class="btn btn-sm btn-light border w-100 rounded-3" title="Reset"><i class="fa-solid fa-rotate-right me-1"></i> Reset</a>
+                <button type="submit" class="btn btn-sm btn-orange w-100 fw-bold rounded-3"><i class="fa-solid fa-filter"></i></button>
+                <a href="{{ route('pickup-tasks.monitoring') }}" class="btn btn-sm btn-light border w-100 rounded-3" title="Reset"><i class="fa-solid fa-rotate-right"></i></a>
+                <button type="submit" formaction="{{ route('pickup-tasks.monitoring.export') }}" class="btn btn-sm btn-success w-100 fw-bold rounded-3" title="Export Excel"><i class="fa-solid fa-file-excel"></i></button>
             </div>
         </form>
     </div>

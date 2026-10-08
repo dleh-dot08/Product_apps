@@ -64,8 +64,11 @@ Route::middleware('auth')->group(function () {
 
     // Route Tugas Driver
     Route::get('pickup-tasks', [\App\Http\Controllers\PickupTaskController::class, 'index'])->name('pickup-tasks.index')->middleware('permission:View Tugas');
+    Route::get('pickup-tasks/export', [\App\Http\Controllers\PickupTaskController::class, 'exportTugas'])->name('pickup-tasks.export')->middleware('permission:View Tugas');
     Route::get('pickup-tasks/list-penugasan', [\App\Http\Controllers\PickupTaskController::class, 'listPenugasan'])->name('pickup-tasks.list-penugasan')->middleware('permission:View Tugas');
+    Route::get('pickup-tasks/list-penugasan/export', [\App\Http\Controllers\PickupTaskController::class, 'exportPenugasan'])->name('pickup-tasks.list-penugasan.export')->middleware('permission:View Tugas');
     Route::get('pickup-tasks/monitoring', [\App\Http\Controllers\PickupTaskController::class, 'monitoring'])->name('pickup-tasks.monitoring')->middleware('permission:View Tugas');
+    Route::get('pickup-tasks/monitoring/export', [\App\Http\Controllers\PickupTaskController::class, 'exportMonitoring'])->name('pickup-tasks.monitoring.export')->middleware('permission:View Tugas');
     Route::post('pickup-tasks/penugasan', [\App\Http\Controllers\PickupTaskController::class, 'storePenugasan'])->name('pickup-tasks.penugasan.store')->middleware('permission:Create Penugasan');
     Route::put('pickup-tasks/penugasan/{delivery_order}', [\App\Http\Controllers\PickupTaskController::class, 'updatePenugasan'])->name('pickup-tasks.penugasan.update')->middleware('permission:Edit Tugas');
     Route::delete('pickup-tasks/penugasan/{delivery_order}', [\App\Http\Controllers\PickupTaskController::class, 'destroyPenugasan'])->name('pickup-tasks.penugasan.destroy')->middleware('permission:Delete Tugas');
