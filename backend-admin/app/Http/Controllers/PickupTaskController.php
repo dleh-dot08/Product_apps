@@ -1046,9 +1046,14 @@ class PickupTaskController extends Controller
 
         // Tasks unassigned (available to add)
         $unassignedPickups = PickupTask::where(function($q) {
-                $q->whereNull('manifest_id')->orWhere('status', 'pending');
+                $q->whereNull('manifest_id')
+                  ->orWhere('status', 'pending')
+                  ->orWhere(function($subQ) {
+                      $subQ->whereDate('dispatch_date', '<', now()->toDateString())
+                           ->whereNotIn('status', ['completed', 'delivered']);
+                  });
             })
-            ->whereIn('status', ['draft', 'pending', 'assigned'])
+            ->whereIn('status', ['draft', 'pending', 'assigned', 'on_progress', 'arrived'])
             ->get()
             ->map(function($task) {
                 $task->task_type = 'pickup';
@@ -1058,9 +1063,14 @@ class PickupTaskController extends Controller
 
         $unassignedDeliveries = DeliveryAssignment::with('salesOrder')
             ->where(function($q) {
-                $q->whereNull('manifest_id')->orWhere('status', 'pending');
+                $q->whereNull('manifest_id')
+                  ->orWhere('status', 'pending')
+                  ->orWhere(function($subQ) {
+                      $subQ->whereDate('dispatch_date', '<', now()->toDateString())
+                           ->whereNotIn('status', ['completed', 'delivered']);
+                  });
             })
-            ->whereIn('status', ['draft', 'pending', 'assigned'])
+            ->whereIn('status', ['draft', 'pending', 'assigned', 'on_progress', 'arrived'])
             ->get()
             ->map(function($task) {
                 $task->task_type = 'delivery';
@@ -1153,7 +1163,11 @@ class PickupTaskController extends Controller
             ->where(function($q) use ($manifestId) {
                 $q->whereNull('manifest_id')
                   ->orWhere('manifest_id', $manifestId)
-                  ->orWhere('status', 'pending');
+                  ->orWhere('status', 'pending')
+                  ->orWhere(function($subQ) {
+                      $subQ->whereDate('dispatch_date', '<', now()->toDateString())
+                           ->whereNotIn('status', ['completed', 'delivered']);
+                  });
             })
             ->get();
         foreach ($newPickups as $t) {
@@ -1191,7 +1205,11 @@ class PickupTaskController extends Controller
             ->where(function($q) use ($manifestId) {
                 $q->whereNull('manifest_id')
                   ->orWhere('manifest_id', $manifestId)
-                  ->orWhere('status', 'pending');
+                  ->orWhere('status', 'pending')
+                  ->orWhere(function($subQ) {
+                      $subQ->whereDate('dispatch_date', '<', now()->toDateString())
+                           ->whereNotIn('status', ['completed', 'delivered']);
+                  });
             })
             ->get();
         foreach ($newDeliveries as $t) {
