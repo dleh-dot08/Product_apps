@@ -1208,8 +1208,8 @@ class PackagingCalculatorService
 
     private function calculateOuterDimensions($P, $L, $tebalPenutupAtas) {
         return [
-            'outerP' => $P + (2 * $tebalPenutupAtas),
-            'outerL' => $L + (2 * $tebalPenutupAtas)
+            'outerP' => $P,
+            'outerL' => $L
         ];
     }
 

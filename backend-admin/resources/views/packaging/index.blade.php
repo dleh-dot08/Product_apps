@@ -757,6 +757,9 @@
                         <option>20 / halaman</option>
                         <option>50 / halaman</option>
                     </select>
+                    <a href="{{ route('packaging.export') }}" class="btn btn-outline-success pkg-filter-control d-inline-flex align-items-center justify-content-center gap-2 px-3">
+                        <i class="fa-solid fa-file-excel"></i> Export Excel
+                    </a>
                     <button type="button" class="btn btn-outline-danger pkg-filter-control d-inline-flex align-items-center justify-content-center gap-2 px-3">
                         <i class="fa-solid fa-rotate-right"></i> Reset
                     </button>
