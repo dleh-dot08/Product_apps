@@ -34,7 +34,7 @@ class DriverDashboardController extends Controller
                 'pickup_tasks.destination', 
                 'pickup_tasks.assigned_at', 
                 DB::raw("CASE 
-                    WHEN (COALESCE(task_manifests.driver_id, pickup_tasks.driver_id) IS NULL OR (COALESCE(task_manifests.driver_id, pickup_tasks.driver_id) != '" . $user->id . "' AND COALESCE(task_manifests.co_driver_id, pickup_tasks.co_driver_id) != '" . $user->id . "') OR (pickup_tasks.dispatch_date < CURRENT_DATE AND pickup_tasks.status NOT IN ('completed', 'delivered') AND COALESCE(pickup_tasks.is_out_of_city, false) = false)) THEN 'Tidak Terkirim'
+                    WHEN (COALESCE(task_manifests.driver_id, pickup_tasks.driver_id) IS NULL OR (COALESCE(task_manifests.driver_id, pickup_tasks.driver_id) != '" . $user->id . "' AND COALESCE(task_manifests.co_driver_id, pickup_tasks.co_driver_id) != '" . $user->id . "') OR (DATE(pickup_tasks.assigned_at) < CURRENT_DATE AND pickup_tasks.status NOT IN ('completed', 'delivered') AND COALESCE(pickup_tasks.is_out_of_city, false) = false)) THEN 'Tidak Terkirim'
                     ELSE pickup_tasks.status 
                 END as status"), 
                 DB::raw("'pickup' as task_type"),
@@ -79,7 +79,7 @@ class DriverDashboardController extends Controller
                 'sales_orders.customer_name as destination', 
                 'delivery_assignments.assigned_at', 
                 DB::raw("CASE 
-                    WHEN (COALESCE(task_manifests.driver_id, delivery_assignments.driver_id) IS NULL OR (COALESCE(task_manifests.driver_id, delivery_assignments.driver_id) != '" . $user->id . "' AND COALESCE(task_manifests.co_driver_id, delivery_assignments.co_driver_id) != '" . $user->id . "') OR (delivery_assignments.dispatch_date < CURRENT_DATE AND delivery_assignments.status NOT IN ('completed', 'delivered') AND COALESCE(delivery_assignments.is_out_of_city, false) = false)) THEN 'Tidak Terkirim'
+                    WHEN (COALESCE(task_manifests.driver_id, delivery_assignments.driver_id) IS NULL OR (COALESCE(task_manifests.driver_id, delivery_assignments.driver_id) != '" . $user->id . "' AND COALESCE(task_manifests.co_driver_id, delivery_assignments.co_driver_id) != '" . $user->id . "') OR (DATE(delivery_assignments.assigned_at) < CURRENT_DATE AND delivery_assignments.status NOT IN ('completed', 'delivered') AND COALESCE(delivery_assignments.is_out_of_city, false) = false)) THEN 'Tidak Terkirim'
                     ELSE delivery_assignments.status 
                 END as status"), 
                 DB::raw("'delivery' as task_type"),

@@ -25,11 +25,11 @@ class PickupTaskController extends Controller
         $roleName = strtolower($user->roleRelation->name ?? $user->role->name ?? '');
         
         $statusPickupSelect = $roleName === 'driver' 
-            ? DB::raw("CASE WHEN (pickup_tasks.driver_id IS NULL OR (pickup_tasks.driver_id != '" . $user->id . "' AND pickup_tasks.co_driver_id != '" . $user->id . "') OR (pickup_tasks.dispatch_date < CURRENT_DATE AND pickup_tasks.status NOT IN ('completed', 'delivered') AND COALESCE(pickup_tasks.is_out_of_city, false) = false)) THEN 'Tidak Terkirim' ELSE pickup_tasks.status END as status")
+            ? DB::raw("CASE WHEN (pickup_tasks.driver_id IS NULL OR (pickup_tasks.driver_id != '" . $user->id . "' AND pickup_tasks.co_driver_id != '" . $user->id . "') OR (DATE(pickup_tasks.assigned_at) < CURRENT_DATE AND pickup_tasks.status NOT IN ('completed', 'delivered') AND COALESCE(pickup_tasks.is_out_of_city, false) = false)) THEN 'Tidak Terkirim' ELSE pickup_tasks.status END as status")
             : 'pickup_tasks.status';
 
         $statusDeliverySelect = $roleName === 'driver'
-            ? DB::raw("CASE WHEN (delivery_assignments.driver_id IS NULL OR (delivery_assignments.driver_id != '" . $user->id . "' AND delivery_assignments.co_driver_id != '" . $user->id . "') OR (delivery_assignments.dispatch_date < CURRENT_DATE AND delivery_assignments.status NOT IN ('completed', 'delivered') AND COALESCE(delivery_assignments.is_out_of_city, false) = false)) THEN 'Tidak Terkirim' ELSE delivery_assignments.status END as status")
+            ? DB::raw("CASE WHEN (delivery_assignments.driver_id IS NULL OR (delivery_assignments.driver_id != '" . $user->id . "' AND delivery_assignments.co_driver_id != '" . $user->id . "') OR (DATE(delivery_assignments.assigned_at) < CURRENT_DATE AND delivery_assignments.status NOT IN ('completed', 'delivered') AND COALESCE(delivery_assignments.is_out_of_city, false) = false)) THEN 'Tidak Terkirim' ELSE delivery_assignments.status END as status")
             : 'delivery_assignments.status';
 
         $pickups = DB::table('pickup_tasks')
@@ -211,7 +211,7 @@ class PickupTaskController extends Controller
         if ($task) {
             $task->task_type = 'pickup';
             if ($roleName === 'driver') {
-                $isExpired = $task->dispatch_date && \Carbon\Carbon::parse($task->dispatch_date)->startOfDay()->lt(now()->startOfDay());
+                $isExpired = $task->assigned_at && \Carbon\Carbon::parse($task->assigned_at)->startOfDay()->lt(now()->startOfDay());
                 if ($task->driver_id === null || ($task->driver_id != $user->id && $task->co_driver_id != $user->id) || ($isExpired && !in_array($task->status, ['completed', 'delivered']) && !$task->is_out_of_city)) {
                     $task->status = 'Tidak Terkirim';
                 }
@@ -228,7 +228,7 @@ class PickupTaskController extends Controller
             $delivery->task_type = 'delivery';
             
             if ($roleName === 'driver') {
-                $isExpired = $delivery->dispatch_date && \Carbon\Carbon::parse($delivery->dispatch_date)->startOfDay()->lt(now()->startOfDay());
+                $isExpired = $delivery->assigned_at && \Carbon\Carbon::parse($delivery->assigned_at)->startOfDay()->lt(now()->startOfDay());
                 if ($delivery->driver_id === null || ($delivery->driver_id != $user->id && $delivery->co_driver_id != $user->id) || ($isExpired && !in_array($delivery->status, ['completed', 'delivered']) && !$delivery->is_out_of_city)) {
                     $delivery->status = 'Tidak Terkirim';
                 }
