@@ -210,8 +210,11 @@ class PickupTaskController extends Controller
 
         if ($task) {
             $task->task_type = 'pickup';
-            if ($roleName === 'driver' && ($task->driver_id === null || ($task->driver_id != $user->id && $task->co_driver_id != $user->id))) {
-                $task->status = 'Tidak Terkirim';
+            if ($roleName === 'driver') {
+                $isExpired = $task->dispatch_date && \Carbon\Carbon::parse($task->dispatch_date)->startOfDay()->lt(now()->startOfDay());
+                if ($task->driver_id === null || ($task->driver_id != $user->id && $task->co_driver_id != $user->id) || ($isExpired && !in_array($task->status, ['completed', 'delivered']) && !$task->is_out_of_city)) {
+                    $task->status = 'Tidak Terkirim';
+                }
             }
             return response()->json([
                 'status' => 'success',
@@ -224,8 +227,11 @@ class PickupTaskController extends Controller
         if ($delivery) {
             $delivery->task_type = 'delivery';
             
-            if ($roleName === 'driver' && ($delivery->driver_id === null || ($delivery->driver_id != $user->id && $delivery->co_driver_id != $user->id))) {
-                $delivery->status = 'Tidak Terkirim';
+            if ($roleName === 'driver') {
+                $isExpired = $delivery->dispatch_date && \Carbon\Carbon::parse($delivery->dispatch_date)->startOfDay()->lt(now()->startOfDay());
+                if ($delivery->driver_id === null || ($delivery->driver_id != $user->id && $delivery->co_driver_id != $user->id) || ($isExpired && !in_array($delivery->status, ['completed', 'delivered']) && !$delivery->is_out_of_city)) {
+                    $delivery->status = 'Tidak Terkirim';
+                }
             }
             
             // Mapping for frontend
