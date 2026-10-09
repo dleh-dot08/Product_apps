@@ -54,7 +54,8 @@ class DriverDashboardController extends Controller
                 'pickup_tasks.receiver_name',
                 'pickup_tasks.receiver_role',
                 'pickup_tasks.item_condition',
-                'pickup_tasks.completed_at'
+                'pickup_tasks.completed_at',
+                'pickup_tasks.has_issue'
             )
             ->where(function ($q) use ($user) {
                 $q->where('pickup_tasks.driver_id', $user->id)
@@ -98,7 +99,8 @@ class DriverDashboardController extends Controller
                 'delivery_assignments.receiver_name',
                 'delivery_assignments.receiver_role',
                 'delivery_assignments.item_condition',
-                'delivery_assignments.completed_at'
+                'delivery_assignments.completed_at',
+                'delivery_assignments.has_issue'
             )
             ->where(function ($q) use ($user) {
                 $q->where('delivery_assignments.driver_id', $user->id)
