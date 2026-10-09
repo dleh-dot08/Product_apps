@@ -63,7 +63,8 @@ class PickupTaskController extends Controller
                 'pickup_tasks.departure_notes',
                 'pickup_tasks.receiver_name',
                 'pickup_tasks.receiver_role',
-                'pickup_tasks.item_condition'
+                'pickup_tasks.item_condition',
+                'pickup_tasks.has_issue'
             );
             
         $deliveries = DB::table('delivery_assignments')
@@ -98,7 +99,8 @@ class PickupTaskController extends Controller
                 'delivery_assignments.departure_notes',
                 'delivery_assignments.receiver_name',
                 'delivery_assignments.receiver_role',
-                'delivery_assignments.item_condition'
+                'delivery_assignments.item_condition',
+                'delivery_assignments.has_issue'
             );
 
         if ($roleName === 'driver') {
