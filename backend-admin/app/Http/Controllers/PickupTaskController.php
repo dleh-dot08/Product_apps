@@ -504,7 +504,7 @@ class PickupTaskController extends Controller
                 'quantity' => $totalQty > 0 ? $totalQty : null,
                 'transaction_source' => 'manual',
                 'line_total' => $totalLine > 0 ? $totalLine : null,
-                'dispatch_date' => $request->dispatch_date,
+                'dispatch_date' => $request->dispatch_date ?: now()->toDateString(),
                 'estimated_arrival' => $request->estimated_arrival,
                 'is_out_of_city' => $request->boolean('is_out_of_city'),
             ]);
@@ -611,7 +611,7 @@ class PickupTaskController extends Controller
                     'delivery_receiver_pic' => $request->delivery_receiver_pic,
                     'delivery_target_point' => $request->delivery_target_point,
                     'assigned_at' => ($request->driver_id && $request->vehicle_id) ? now() : null,
-                    'dispatch_date' => $request->dispatch_date,
+                    'dispatch_date' => $request->dispatch_date ?: now()->toDateString(),
                     'estimated_arrival' => $request->estimated_arrival,
                     'is_out_of_city' => $request->boolean('is_out_of_city'),
                 ]
@@ -754,7 +754,7 @@ class PickupTaskController extends Controller
                 'item_description' => $jsonData,
                 'quantity' => $totalQty > 0 ? $totalQty : null,
                 'line_total' => $totalLine > 0 ? $totalLine : null,
-                'dispatch_date' => $request->dispatch_date,
+                'dispatch_date' => $request->dispatch_date ?: now()->toDateString(),
                 'estimated_arrival' => $request->estimated_arrival,
                 'is_out_of_city' => $request->boolean('is_out_of_city'),
             ]);
@@ -837,7 +837,7 @@ class PickupTaskController extends Controller
                 'delivery_origin_point' => $request->delivery_origin_point,
                 'delivery_receiver_pic' => $request->delivery_receiver_pic,
                 'delivery_target_point' => $request->delivery_target_point,
-                'dispatch_date' => $request->dispatch_date,
+                'dispatch_date' => $request->dispatch_date ?: now()->toDateString(),
                 'estimated_arrival' => $request->estimated_arrival,
                 'is_out_of_city' => $request->boolean('is_out_of_city'),
             ]);
