@@ -43,7 +43,8 @@ class PickupTaskController extends Controller
                 
             $lastNumber = $lastOrder ? $lastOrder->so_number : null;
         } else {
-            $lastTask = \App\Models\PickupTask::where('reference_number', 'like', $pattern)
+            $lastTask = \App\Models\PickupTask::withTrashed()
+                ->where('reference_number', 'like', $pattern)
                 ->orderBy('reference_number', 'desc')
                 ->first();
                 
@@ -1356,7 +1357,8 @@ class PickupTaskController extends Controller
         $dateStr = date('dmy', strtotime($request->dispatch_date));
         $prefix = 'DO-' . $dateStr . '-';
         
-        $lastManifest = \App\Models\TaskManifest::where('manifest_number', 'like', $prefix . '%')
+        $lastManifest = \App\Models\TaskManifest::withTrashed()
+            ->where('manifest_number', 'like', $prefix . '%')
             ->orderBy('manifest_number', 'desc')
             ->first();
             
