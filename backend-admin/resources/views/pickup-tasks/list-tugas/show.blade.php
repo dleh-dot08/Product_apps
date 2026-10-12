@@ -2115,7 +2115,8 @@ document.addEventListener('DOMContentLoaded', function () {
 function openEditTaskModal() {
     if (typeof window.openTaskModal === 'function') {
         const taskData = @json($task);
-        taskData.update_url = "{{ route('pickup-tasks.update', $task->id) }}";
+        taskData.task_type = @json($task->task_type);
+        taskData.update_url = "{{ route('pickup-tasks.update-detail', ['pickup_task' => $task->id, 'task_type' => $task->task_type]) }}";
         const itemsList = @json($itemsList);
         window.openTaskModal('edit', taskData, itemsList);
     } else {

@@ -136,7 +136,7 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 rounded-3">
                                             <li>
-                                                <button onclick="event.stopPropagation(); window.openEditPenugasanModal('{{ $assignment->id }}', '{{ $assignment->no_do }}', '{{ $assignment->driver_id }}', '{{ $assignment->co_driver_id }}', '{{ $assignment->vehicle_id }}', '{{ $assignment->is_out_of_city }}', '{{ $assignment->estimated_arrival }}')" class="dropdown-item py-2">
+                                                <button onclick="event.stopPropagation(); window.openEditPenugasanModal('{{ $assignment->id }}', '{{ $assignment->no_do }}', '{{ $assignment->driver_id }}', '{{ $assignment->co_driver_id }}', '{{ $assignment->vehicle_id }}', '{{ $assignment->is_out_of_city }}', '{{ $assignment->estimated_arrival }}', '{{ $assignment->date }}')" class="dropdown-item py-2">
                                                     <i class="fa-solid fa-list-check me-2 text-primary"></i> Kelola Tugas
                                                 </button>
                                             </li>
