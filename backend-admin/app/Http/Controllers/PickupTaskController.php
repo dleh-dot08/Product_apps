@@ -1094,6 +1094,7 @@ class PickupTaskController extends Controller
         $manifest = \App\Models\TaskManifest::findOrFail($manifestId);
 
         $request->validate([
+            'dispatch_date' => 'nullable|date',
             'driver_id' => 'required|uuid|exists:users,id',
             'co_driver_id' => 'nullable|uuid|exists:users,id',
             'vehicle_id' => 'required|uuid|exists:vehicles,id',
@@ -1103,13 +1104,19 @@ class PickupTaskController extends Controller
         ]);
 
         $isOutOfCity = $request->boolean('is_out_of_city');
-        $manifest->update([
+        $manifestUpdateData = [
             'driver_id' => $request->driver_id,
             'co_driver_id' => $request->co_driver_id,
             'vehicle_id' => $request->vehicle_id,
             'is_out_of_city' => $isOutOfCity,
             'estimated_arrival' => $isOutOfCity ? $request->estimated_arrival : null,
-        ]);
+        ];
+
+        if ($request->filled('dispatch_date')) {
+            $manifestUpdateData['dispatch_date'] = $request->dispatch_date;
+        }
+
+        $manifest->update($manifestUpdateData);
 
         $selectedTasks = $request->selected_tasks ?? [];
 

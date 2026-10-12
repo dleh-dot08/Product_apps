@@ -22,6 +22,10 @@
                                         <div class="fw-bold fs-5" id="editPenugasanDO">-</div>
                                     </div>
                                 </div>
+                                <div class="col-md-2">
+                                    <label class="form-label fw-bold text-secondary small mb-1">Tgl Penugasan <span class="text-danger">*</span></label>
+                                    <input type="date" class="form-control border-light-subtle rounded-3" name="dispatch_date" id="edit_dispatch_date" required>
+                                </div>
                                 <div class="col-md-3">
                                     <label class="form-label fw-bold text-secondary small mb-1">Driver Utama</label>
                                     <select class="form-select border-light-subtle rounded-3" name="driver_id" id="edit_driver_id" required>
@@ -31,7 +35,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="form-label fw-bold text-secondary small mb-1">Co Driver</label>
                                     <select class="form-select border-light-subtle rounded-3" name="co_driver_id" id="edit_co_driver_id">
                                         <option value="">Tidak Ada</option>
@@ -168,8 +172,9 @@
          * @param {string} vehicleId
          * @param {string} isOutOfCity
          * @param {string} estimatedArrival
+         * @param {string} dispatchDate
          */
-        window.openEditPenugasanModal = function(deliveryOrderId, noDo, driverId, coDriverId, vehicleId, isOutOfCity = false, estimatedArrival = '') {
+        window.openEditPenugasanModal = function(deliveryOrderId, noDo, driverId, coDriverId, vehicleId, isOutOfCity = false, estimatedArrival = '', dispatchDate = '') {
             // Set form action
             editForm.action = '/pickup-tasks/penugasan/' + deliveryOrderId;
 
@@ -182,6 +187,9 @@
             if (document.getElementById('edit_vehicle_id')) document.getElementById('edit_vehicle_id').value = vehicleId || '';
             
             // Set fields
+            if (document.getElementById('edit_dispatch_date')) {
+                document.getElementById('edit_dispatch_date').value = dispatchDate ? dispatchDate.substring(0, 10) : '';
+            }
             document.getElementById('is_out_of_city_edit').checked = (isOutOfCity == true || isOutOfCity == '1');
             toggleEtaFieldEdit();
             if (estimatedArrival) {
