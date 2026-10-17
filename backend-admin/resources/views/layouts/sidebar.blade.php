@@ -382,7 +382,7 @@
                     </li>
                     @endif
 
-                    <!-- 7. HPP Ritase -->
+                    <!-- 7. HPP Ritase (Menu Mandiri) -->
                     @if(auth()->check() && auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')
                     <li class="nav-item">
                         <a href="{{ route('hpp.index') }}" class="nav-link {{ request()->routeIs('hpp.*') ? 'active' : '' }}">
@@ -392,13 +392,30 @@
                     </li>
                     @endif
 
-                    <!-- 7.5 Pengeluaran -->
-                    @if(auth()->user()->hasPermission('View Pengeluaran'))
-                    <li class="nav-item">
-                        <a href="{{ route('expenses.index') }}" class="nav-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}">
-                            <i class="nav-icon fa-solid fa-money-bill-wave"></i>
-                            <p class="ms-2 mb-0">Pengeluaran</p>
+                    <!-- 7.5 Laporan (Laporan Driver & Laporan Keuangan/Pengeluaran) -->
+                    @if(auth()->user()->hasPermission('View Laporan') || auth()->user()->hasPermission('View Pengeluaran') || auth()->user()->hasPermission('Export Data') || (auth()->user()->roleRelation && in_array(strtoupper(auth()->user()->roleRelation->name), ['SUPER ADMIN', 'MANAGER', 'SUPERVISOR (SPV)', 'ADMIN STAFF'])))
+                    <li class="nav-item {{ (request()->routeIs('reports.*') || request()->routeIs('expenses.*')) ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ (request()->routeIs('reports.*') || request()->routeIs('expenses.*')) ? 'active' : '' }}">
+                            <i class="nav-icon fa-solid fa-file-invoice"></i>
+                            <p class="ms-2 mb-0 w-100 d-flex justify-content-between align-items-center">
+                                Laporan
+                                <i class="fa-solid fa-angle-down" style="font-size: 0.8rem; transition: transform 0.3s;"></i>
+                            </p>
                         </a>
+                        <ul class="nav nav-treeview ms-3">
+                            <li class="nav-item">
+                                <a href="{{ route('reports.driver') }}" class="nav-link {{ request()->routeIs('reports.driver') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-id-card" style="font-size: 0.9rem;"></i>
+                                    <p class="ms-2 mb-0" style="font-size: 0.9rem;">Laporan Driver</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="{{ route('expenses.index') }}" class="nav-link {{ request()->routeIs('expenses.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-money-bill-wave" style="font-size: 0.9rem;"></i>
+                                    <p class="ms-2 mb-0" style="font-size: 0.9rem;">Laporan Keuangan</p>
+                                </a>
+                            </li>
+                        </ul>
                     </li>
                     @endif
 

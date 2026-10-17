@@ -79,6 +79,12 @@ class ModuleSeeder extends Seeder
                 'color' => 'text-danger',
                 'available_permissions' => ['View Pengeluaran', 'Create Pengeluaran', 'Edit Pengeluaran', 'Delete Pengeluaran']
             ],
+            [
+                'name' => 'Laporan & Rekapitulasi', 
+                'icon' => 'fa-file-invoice', 
+                'color' => 'text-warning',
+                'available_permissions' => ['View Laporan', 'Export Laporan']
+            ],
         ];
 
         // Hapus semua data modul lama yang tidak ada di list di atas (opsional, untuk memastikan sinkron)

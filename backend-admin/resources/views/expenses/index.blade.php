@@ -753,10 +753,46 @@
             flex-direction: column;
         }
     }
+
+    .report-nav-tab {
+        font-weight: 600;
+        font-size: 0.9rem;
+        padding: 0.55rem 1.15rem;
+        border-radius: 0.75rem;
+        color: #64748b;
+        text-decoration: none;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .report-nav-tab.active {
+        color: #ffffff !important;
+        background: linear-gradient(135deg, #ea580c 0%, #f97316 100%);
+        box-shadow: 0 4px 12px rgba(234, 88, 12, 0.3);
+    }
+
+    .report-nav-tab:not(.active):hover {
+        background: rgba(234, 88, 12, 0.08);
+        color: #ea580c;
+    }
 </style>
 
 <div class="expense-page">
     <div class="expense-container">
+
+        <!-- SUB NAV / SWITCHER: LAPORAN DRIVER vs LAPORAN KEUANGAN -->
+        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+            <div class="d-flex align-items-center gap-2 p-1 bg-body-tertiary border rounded-4 shadow-xs" style="background: rgba(255, 255, 255, 0.8);">
+                <a href="{{ route('reports.driver') }}" class="report-nav-tab">
+                    <i class="fa-solid fa-id-card"></i> Laporan Driver & Kendaraan
+                </a>
+                <a href="{{ route('expenses.index') }}" class="report-nav-tab active">
+                    <i class="fa-solid fa-money-bill-wave"></i> Laporan Keuangan (Pengeluaran)
+                </a>
+            </div>
+        </div>
 
         {{-- HEADER --}}
         <div class="expense-page-header">

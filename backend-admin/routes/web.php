@@ -98,6 +98,16 @@ Route::middleware('auth')->group(function () {
     Route::post('expenses', [\App\Http\Controllers\ExpenseController::class, 'store'])->name('expenses.store')->middleware('permission:Create Pengeluaran');
     Route::delete('expenses/{expense}', [\App\Http\Controllers\ExpenseController::class, 'destroy'])->name('expenses.destroy')->middleware('permission:Delete Pengeluaran');
 
+    // ============================================================
+    // LAPORAN
+    // ============================================================
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ReportController::class, 'driverReport'])->name('index');
+        Route::get('/driver', [\App\Http\Controllers\ReportController::class, 'driverReport'])->name('driver');
+        Route::match(['get', 'post'], '/driver/export', [\App\Http\Controllers\ReportController::class, 'exportDriverReport'])->name('driver.export');
+        Route::get('/finance', [\App\Http\Controllers\ExpenseController::class, 'index'])->name('finance')->middleware('permission:View Pengeluaran');
+    });
+
     // Route Delivery Orders
     // (Delivery Order routes have been merged into pickup-tasks / Tugas Driver)
     

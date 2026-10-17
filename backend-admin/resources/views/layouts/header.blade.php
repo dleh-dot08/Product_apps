@@ -90,10 +90,15 @@
                 </li>
                 @endif
 
-                @if(auth()->user()->hasPermission('View Pengeluaran'))
+                @if(auth()->user()->hasPermission('View Laporan') || auth()->user()->hasPermission('View Pengeluaran') || auth()->user()->hasPermission('Export Data') || (auth()->user()->roleRelation && in_array(strtoupper(auth()->user()->roleRelation->name), ['SUPER ADMIN', 'MANAGER', 'SUPERVISOR (SPV)', 'ADMIN STAFF'])))
+                <li class="nav-item">
+                    <a href="{{ route('reports.driver') }}" class="nav-link {{ request()->routeIs('reports.*') ? 'active fw-bold text-primary' : '' }}">
+                        <i class="fa-solid fa-id-card fa-fw me-2"></i> Laporan Driver
+                    </a>
+                </li>
                 <li class="nav-item">
                     <a href="{{ route('expenses.index') }}" class="nav-link {{ request()->routeIs('expenses.*') ? 'active fw-bold text-primary' : '' }}">
-                        <i class="fa-solid fa-money-bill-wave fa-fw me-2"></i> Pengeluaran
+                        <i class="fa-solid fa-money-bill-wave fa-fw me-2"></i> Laporan Keuangan
                     </a>
                 </li>
                 @endif
