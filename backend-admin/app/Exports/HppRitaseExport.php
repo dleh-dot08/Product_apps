@@ -10,9 +10,16 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 
 class HppRitaseExport implements FromCollection, WithHeadings
 {
+    protected $shifts;
+
+    public function __construct($shifts = null)
+    {
+        $this->shifts = $shifts;
+    }
+
     public function collection()
     {
-        $shifts = Shift::with(['vehicle', 'driver', 'pickupTasks', 'expenses'])
+        $shifts = $this->shifts ?? Shift::with(['vehicle', 'driver', 'pickupTasks', 'expenses'])
             ->orderBy('work_date', 'desc')
             ->get();
             
