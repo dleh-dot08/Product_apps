@@ -199,7 +199,17 @@ class PackagingController extends Controller
 
     public function export()
     {
-        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\PackagingExport, 'packaging_jobs.xlsx');
+        $export = new \App\Exports\PackingListAllExport();
+        $spreadsheet = $export->export();
+
+        $fileName = 'Packing_List_All_' . date('Ymd_His') . '.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
     }
 
     public function exportJob(PackagingJob $packagingJob)
