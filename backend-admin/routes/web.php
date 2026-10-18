@@ -86,6 +86,7 @@ Route::middleware('auth')->group(function () {
     
     // Route HPP Ritase
     Route::get('/hpp-ritase', [\App\Http\Controllers\TripHppController::class, 'index'])->name('hpp.index')->middleware('permission:View HPP Ritase');
+    Route::post('/hpp-ritase/recalculate', [\App\Http\Controllers\TripHppController::class, 'recalculateAll'])->name('hpp.recalculate');
     Route::get('/hpp-ritase/export', [\App\Http\Controllers\TripHppController::class, 'export'])->name('hpp.export')->middleware('permission:Export Data');
     Route::get('/hpp-ritase/validasi', [\App\Http\Controllers\HppValidasiController::class, 'index'])->name('hpp.validasi')->middleware('permission:Validasi HPP');
     Route::put('/hpp-ritase/validasi/manpower/{id}', [\App\Http\Controllers\HppValidasiController::class, 'updateManpower'])->name('hpp.validasi.update.manpower')->middleware('permission:Validasi HPP');

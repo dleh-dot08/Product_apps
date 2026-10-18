@@ -16,6 +16,7 @@ class Vehicle extends Model
         'active' => 'boolean',
         'fuel_price_per_liter' => 'decimal:2',
         'km_per_liter' => 'decimal:2',
+        'daily_rate' => 'decimal:2',
     ];
 
     public function trips()

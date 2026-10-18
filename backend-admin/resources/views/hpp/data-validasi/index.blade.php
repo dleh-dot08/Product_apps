@@ -1,5 +1,5 @@
 <x-app-layout>
-@if(auth()->check() && auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')
+@if(auth()->check() && (auth()->user()->hasPermission('Validasi HPP') || (auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')))
 <style>
     .validasi-page {
         --val-primary: #3b82f6;
@@ -210,12 +210,13 @@
                             <thead>
                                 <tr>
                                     <th class="text-center" width="5%">No</th>
-                                    <th width="15%">Plat Nomor</th>
-                                    <th width="20%">Mobil</th>
-                                    <th width="20%">Harga BBM (Rp/Lt)</th>
+                                    <th width="12%">Plat Nomor</th>
+                                    <th width="18%">Mobil</th>
+                                    <th width="16%">Harga BBM (Rp/Lt)</th>
                                     <th width="15%">Konsumsi (KM/Lt)</th>
-                                    <th width="10%">Status</th>
-                                    <th width="15%" class="text-center">Aksi</th>
+                                    <th width="18%">Rate Mobil (Rp/Hari)</th>
+                                    <th width="8%">Status</th>
+                                    <th width="8%" class="text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -234,33 +235,41 @@
                                             
                                             <!-- Editable Harga BBM -->
                                             <td>
-                                                <div class="input-group input-group-sm" style="width: 150px;">
+                                                <div class="input-group input-group-sm" style="width: 130px;">
                                                     <span class="input-group-text input-group-text-custom">Rp</span>
-                                                    <input type="number" class="form-control input-edit" style="border-radius: 0 6px 6px 0; width:100px;" value="{{ $vehicle->fuel_price_per_liter }}" step="1" name="fuel_price_per_liter" required>
+                                                    <input type="number" class="form-control input-edit" style="border-radius: 0 6px 6px 0; width:80px;" value="{{ (int)$vehicle->fuel_price_per_liter }}" step="1" name="fuel_price_per_liter" required>
                                                 </div>
                                             </td>
 
                                             <!-- Editable KM per Liter -->
                                             <td>
-                                                <div class="input-group input-group-sm" style="width: 120px;">
-                                                    <input type="number" class="form-control input-edit" style="border-radius: 6px 0 0 6px; width:70px;" value="{{ $vehicle->km_per_liter }}" step="0.1" name="km_per_liter" required>
+                                                <div class="input-group input-group-sm" style="width: 110px;">
+                                                    <input type="number" class="form-control input-edit" style="border-radius: 6px 0 0 6px; width:65px;" value="{{ $vehicle->km_per_liter }}" step="0.1" name="km_per_liter" required>
                                                     <span class="input-group-text" style="background:#f1f5f9; border-color:#cbd5e1; border-left:none; border-radius:0 6px 6px 0; font-size:11px; font-weight:700;">KM</span>
+                                                </div>
+                                            </td>
+
+                                            <!-- Editable Rate Kendaraan per Hari -->
+                                            <td>
+                                                <div class="input-group input-group-sm" style="width: 140px;">
+                                                    <span class="input-group-text input-group-text-custom">Rp</span>
+                                                    <input type="number" class="form-control input-edit" style="border-radius: 0 6px 6px 0; width:90px;" value="{{ (int)($vehicle->daily_rate ?? 0) }}" step="1" name="daily_rate" placeholder="0">
                                                 </div>
                                             </td>
                                             
                                             <td>
-                                                <span class="badge-valid"><i class="fas fa-check-circle mr-1"></i> Valid Sesuai</span>
+                                                <span class="badge-valid"><i class="fas fa-check-circle mr-1"></i> Valid</span>
                                             </td>
                                             <td class="text-center">
-                                                <button type="submit" class="btn btn-save" title="Simpan Perubahan BBM">
-                                                    <i class="fas fa-save mr-1"></i> Update
+                                                <button type="submit" class="btn btn-save" title="Simpan Perubahan Biaya Kendaraan">
+                                                    <i class="fas fa-save mr-1"></i> Simpan
                                                 </button>
                                             </td>
                                         </form>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted py-5">
+                                        <td colspan="8" class="text-center text-muted py-5">
                                             <i class="fas fa-inbox fa-3x mb-3 text-slate-300"></i>
                                             <p class="mb-0">Belum ada data kendaraan.</p>
                                         </td>
@@ -369,7 +378,7 @@
                 <div class="p-6 text-gray-900 text-center">
                     <i class="fas fa-lock fa-3x mb-3 text-red-500"></i>
                     <h3 class="text-xl font-bold text-red-600">Akses Ditolak</h3>
-                    <p>Maaf, hanya Super Admin yang diizinkan mengakses halaman HPP Ritase.</p>
+                    <p>Maaf, Anda tidak memiliki izin akses untuk membuka halaman Validasi HPP.</p>
                 </div>
             </div>
         </div>

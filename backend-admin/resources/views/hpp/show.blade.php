@@ -1,5 +1,5 @@
 <x-app-layout>
-@if(auth()->check() && auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')
+@if(auth()->check() && (auth()->user()->hasPermission('View HPP Ritase') || (auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')))
     <x-slot name="header">
         Detail HPP Ritase
     </x-slot>
@@ -75,6 +75,10 @@
                                     <td>Biaya Lainnya</td>
                                     <td class="text-right">Rp {{ number_format($prorataDetails['costs']['other'], 2, ',', '.') }}</td>
                                 </tr>
+                                <tr>
+                                    <td>Depresiasi Kendaraan</td>
+                                    <td class="text-right">Rp {{ number_format($prorataDetails['costs']['depreciation'] ?? 0, 2, ',', '.') }}</td>
+                                </tr>
                                 <tr class="bg-light">
                                     <th>Total Biaya</th>
                                     <th class="text-right">Rp {{ number_format($prorataDetails['costs']['total'], 2, ',', '.') }}</th>
@@ -149,7 +153,7 @@
                 <div class="p-6 text-gray-900 text-center">
                     <i class="fas fa-lock fa-3x mb-3 text-red-500"></i>
                     <h3 class="text-xl font-bold text-red-600">Akses Ditolak</h3>
-                    <p>Maaf, hanya Super Admin yang diizinkan mengakses halaman HPP Ritase.</p>
+                    <p>Maaf, Anda tidak memiliki izin akses untuk membuka halaman HPP Ritase.</p>
                 </div>
             </div>
         </div>

@@ -1,5 +1,5 @@
 <x-app-layout>
-@if(auth()->check() && auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')
+@if(auth()->check() && (auth()->user()->hasPermission('View HPP Ritase') || (auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')))
 
 <style>
     #hppDashboardPage {
@@ -996,6 +996,11 @@
             'color' => '#06b6d4',
             'value' => (float) ($costComposition['Lainnya'] ?? 0),
         ],
+        'Depresiasi' => [
+            'label' => 'Depresiasi Kendaraan',
+            'color' => '#e11d48',
+            'value' => (float) ($costComposition['Depresiasi'] ?? 0),
+        ],
     ];
 
     $compositionTotal = collect($componentConfig)->sum('value');
@@ -1060,6 +1065,16 @@
                     <i class="fas fa-check-double"></i>
                     Data Validasi
                 </a>
+                @endif
+
+                @if(auth()->check() && (auth()->user()->hasPermission('Validasi HPP') || (auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')))
+                <form action="{{ route('hpp.recalculate') }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menyinkronkan dan menghitung ulang seluruh data HPP dengan rumus terbaru?');" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn-hpp-export" style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); border-color: #4f46e5; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2); color: white;">
+                        <i class="fas fa-rotate"></i>
+                        Sync Ulang HPP
+                    </button>
+                </form>
                 @endif
             </div>
         </div>
@@ -1734,7 +1749,7 @@
                 <div class="p-6 text-gray-900 text-center">
                     <i class="fas fa-lock fa-3x mb-3 text-red-500"></i>
                     <h3 class="text-xl font-bold text-red-600">Akses Ditolak</h3>
-                    <p>Maaf, hanya Super Admin yang diizinkan mengakses halaman HPP Ritase.</p>
+                    <p>Maaf, Anda tidak memiliki izin akses untuk membuka halaman HPP Ritase.</p>
                 </div>
             </div>
         </div>

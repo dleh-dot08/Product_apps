@@ -34,6 +34,7 @@ class TripHppController extends Controller
             'Tol' => 0,
             'Parkir' => 0,
             'Lainnya' => 0,
+            'Depresiasi' => 0,
         ];
 
         // Process each shift and attach calculated properties to display in view easily
@@ -58,6 +59,7 @@ class TripHppController extends Controller
             $costComposition['Tol'] += $calc['costs']['toll'];
             $costComposition['Parkir'] += $calc['costs']['parking'];
             $costComposition['Lainnya'] += $calc['costs']['other'];
+            $costComposition['Depresiasi'] += $calc['costs']['depreciation'] ?? 0;
         }
 
         // Hitung rata-rata HPP per barang
@@ -103,5 +105,11 @@ class TripHppController extends Controller
         $shift->delete();
 
         return redirect()->route('hpp.index')->with('success', 'Data HPP / Trip berhasil dihapus.');
+    }
+
+    public function recalculateAll()
+    {
+        $count = $this->hppService->recalculateAll();
+        return redirect()->route('hpp.index')->with('success', "Berhasil menyinkronkan dan menghitung ulang HPP untuk {$count} data ritase!");
     }
 }
