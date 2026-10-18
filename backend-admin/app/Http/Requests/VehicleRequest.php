@@ -36,6 +36,7 @@ class VehicleRequest extends FormRequest
         $vehicleId = $this->route('vehicle') ? $this->route('vehicle')->id : null;
 
         return [
+            'asset_number' => 'nullable|string|max:50',
             'plate_number' => [
                 'required', 'string', 'min:3', 'max:20',
                 \Illuminate\Validation\Rule::unique('vehicles', 'plate_number')->ignore($vehicleId)
@@ -43,8 +44,9 @@ class VehicleRequest extends FormRequest
             'name' => 'required|string|min:2|max:100',
             'location' => 'nullable|string|max:255',
             'operational' => 'nullable|string|max:255',
-            'fuel_price_per_liter' => 'required|numeric|min:1',
+            'fuel_price_per_liter' => 'required|numeric|min:0',
             'km_per_liter' => 'required|numeric|min:0.1',
+            'daily_rate' => 'nullable|numeric|min:0',
         ];
     }
 }

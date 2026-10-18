@@ -26,6 +26,7 @@ class VehicleController extends Controller
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                   ->orWhere('plate_number', 'like', "%{$search}%")
+                  ->orWhere('asset_number', 'like', "%{$search}%")
                   ->orWhere('location', 'like', "%{$search}%")
                   ->orWhere('operational', 'like', "%{$search}%");
             });

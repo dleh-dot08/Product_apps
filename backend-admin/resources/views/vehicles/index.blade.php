@@ -283,27 +283,29 @@
                         <table class="table table-hover table-premium mb-0">
                             <thead>
                                 <tr>
-                                    <th width="5%">No</th>
-                                    <th width="15%">Plat Nomor</th>
-                                    <th width="20%">Nama Kendaraan</th>
+                                    <th width="4%">No</th>
+                                    <th width="12%">No Aset</th>
+                                    <th width="13%">Plat Nomor</th>
+                                    <th width="16%">Nama Kendaraan</th>
                                     <th width="10%">Lokasi</th>
                                     <th width="10%">Operasional</th>
-                                    <th width="15%">Harga BBM/L</th>
-                                    <th width="15%">Konsumsi BBM</th>
-                                    <th width="10%">Status</th>
-                                    <th width="15%" class="text-end">Aksi</th>
+                                    <th width="11%">Konsumsi BBM</th>
+                                    <th width="14%">Rate Kendaraan</th>
+                                    <th width="8%">Status</th>
+                                    <th width="10%" class="text-end">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($vehicles as $index => $v)
                                 <tr>
                                     <td>{{ $index + 1 }}</td>
+                                    <td><span class="badge bg-secondary bg-opacity-10 text-secondary border font-monospace">{{ $v->asset_number ?? '-' }}</span></td>
                                     <td><span class="badge bg-light text-dark border fw-bold fs-6">{{ $v->plate_number }}</span></td>
                                     <td class="fw-semibold">{{ $v->name }}</td>
                                     <td>{{ $v->location ?? '-' }}</td>
                                     <td>{{ $v->operational ?? '-' }}</td>
-                                    <td><span class="text-muted small">Rp</span> {{ number_format($v->fuel_price_per_liter, 0, ',', '.') }}</td>
                                     <td>{{ number_format($v->km_per_liter, 1, ',', '.') }} <span class="text-muted small">KM/L</span></td>
+                                    <td><span class="text-muted small">Rp</span> {{ number_format($v->daily_rate ?? 0, 0, ',', '.') }}<span class="text-muted small">/hari</span></td>
                                     <td>
                                         @if($v->active)
                                             <span class="badge rounded-pill bg-success bg-opacity-10 text-success px-3 border border-success border-opacity-25"><i class="fa-solid fa-check me-1"></i> Aktif</span>
@@ -374,9 +376,15 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4 bg-white">
-                        <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Plat Nomor</label>
-                            <input type="text" name="plate_number" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" placeholder="Contoh: B 1234 ABC" required style="text-transform: uppercase;">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">No Aset</label>
+                                <input type="text" name="asset_number" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" placeholder="Contoh: A/1/0001">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Plat Nomor</label>
+                                <input type="text" name="plate_number" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" placeholder="Contoh: B 1234 ABC" required style="text-transform: uppercase;">
+                            </div>
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Nama / Tipe Kendaraan</label>
@@ -392,20 +400,27 @@
                                 <input type="text" name="operational" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" placeholder="Contoh: Distribusi Lokal">
                             </div>
                         </div>
-                        <div class="row g-3">
+                        <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Harga BBM (Rp)</label>
                                 <div class="input-group input-group-lg shadow-sm border-light-subtle">
                                     <span class="input-group-text bg-light text-muted border-light-subtle">Rp</span>
-                                    <input type="number" step="1" min="1" name="fuel_price_per_liter" class="form-control border-light-subtle bg-body-tertiary" placeholder="10000" required>
+                                    <input type="number" step="1" min="0" name="fuel_price_per_liter" class="form-control border-light-subtle bg-body-tertiary" placeholder="10000" value="0">
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Konsumsi (KM/L)</label>
                                 <div class="input-group input-group-lg shadow-sm border-light-subtle">
-                                    <input type="number" step="0.1" min="0.1" name="km_per_liter" class="form-control border-light-subtle bg-body-tertiary" placeholder="8.5" required>
+                                    <input type="number" step="0.1" min="0.1" name="km_per_liter" class="form-control border-light-subtle bg-body-tertiary" placeholder="8.5" value="10" required>
                                     <span class="input-group-text bg-light text-muted border-light-subtle">KM</span>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Rate Kendaraan (Rp / Hari)</label>
+                            <div class="input-group input-group-lg shadow-sm border-light-subtle">
+                                <span class="input-group-text bg-light text-muted border-light-subtle">Rp</span>
+                                <input type="number" step="1" min="0" name="daily_rate" class="form-control border-light-subtle bg-body-tertiary" placeholder="300000" value="0">
                             </div>
                         </div>
                     </div>
@@ -437,9 +452,15 @@
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                     <div class="modal-body p-4 bg-white text-start">
-                        <div class="mb-4">
-                            <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Plat Nomor</label>
-                            <input type="text" name="plate_number" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ $v->plate_number }}" required style="text-transform: uppercase;">
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">No Aset</label>
+                                <input type="text" name="asset_number" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ $v->asset_number }}" placeholder="Contoh: A/1/0001">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Plat Nomor</label>
+                                <input type="text" name="plate_number" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ $v->plate_number }}" required style="text-transform: uppercase;">
+                            </div>
                         </div>
                         <div class="mb-4">
                             <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Nama / Tipe Kendaraan</label>
@@ -455,12 +476,12 @@
                                 <input type="text" name="operational" class="form-control form-control-lg border-light-subtle shadow-sm bg-body-tertiary" value="{{ $v->operational }}">
                             </div>
                         </div>
-                        <div class="row g-3">
+                        <div class="row g-3 mb-4">
                             <div class="col-md-6">
                                 <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Harga BBM (Rp)</label>
                                 <div class="input-group input-group-lg shadow-sm border-light-subtle">
                                     <span class="input-group-text bg-light text-muted border-light-subtle">Rp</span>
-                                    <input type="number" step="1" min="1" name="fuel_price_per_liter" class="form-control border-light-subtle bg-body-tertiary" value="{{ (int)$v->fuel_price_per_liter }}" required>
+                                    <input type="number" step="1" min="0" name="fuel_price_per_liter" class="form-control border-light-subtle bg-body-tertiary" value="{{ (int)$v->fuel_price_per_liter }}">
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -469,6 +490,13 @@
                                     <input type="number" step="0.1" min="0.1" name="km_per_liter" class="form-control border-light-subtle bg-body-tertiary" value="{{ $v->km_per_liter }}" required>
                                     <span class="input-group-text bg-light text-muted border-light-subtle">KM</span>
                                 </div>
+                            </div>
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label fw-bold small text-muted text-uppercase mb-2" style="letter-spacing: 0.5px;">Rate Kendaraan (Rp / Hari)</label>
+                            <div class="input-group input-group-lg shadow-sm border-light-subtle">
+                                <span class="input-group-text bg-light text-muted border-light-subtle">Rp</span>
+                                <input type="number" step="1" min="0" name="daily_rate" class="form-control border-light-subtle bg-body-tertiary" value="{{ (int)($v->daily_rate ?? 0) }}" placeholder="300000">
                             </div>
                         </div>
                     </div>

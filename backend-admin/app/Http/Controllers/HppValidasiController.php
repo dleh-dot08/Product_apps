@@ -26,15 +26,17 @@ class HppValidasiController extends Controller
         $request->validate([
             'km_per_liter' => 'required|numeric|min:0',
             'fuel_price_per_liter' => 'required|numeric|min:0',
+            'daily_rate' => 'nullable|numeric|min:0',
         ]);
 
         $vehicle = Vehicle::findOrFail($id);
         $vehicle->update([
             'km_per_liter' => $request->km_per_liter,
             'fuel_price_per_liter' => $request->fuel_price_per_liter,
+            'daily_rate' => $request->daily_rate ?? $vehicle->daily_rate ?? 0,
         ]);
 
-        return redirect()->route('hpp.validasi')->with('success', 'Data BBM Kendaraan berhasil diperbarui!');
+        return redirect()->route('hpp.validasi')->with('success', 'Data Biaya Kendaraan berhasil diperbarui!');
     }
 
     public function updateManpower(Request $request, $id)

@@ -38,6 +38,7 @@ class HppCalculationService
                     'toll' => $hppRitase->toll_cost,
                     'parking' => $hppRitase->parking_cost,
                     'other' => $hppRitase->other_cost,
+                    'depreciation' => $hppRitase->depreciation_cost ?? 0,
                     'total' => $hppRitase->total_cost
                 ],
                 'base_value' => $hppRitase->base_value,
@@ -108,8 +109,20 @@ class HppCalculationService
         $parkingCost = $expenses->where('category', 'parking')->sum('amount');
         $otherCost = $expenses->whereNotIn('category', ['toll', 'parking', 'fuel'])->sum('amount');
 
+        // 4. Depresiasi Kendaraan (Berdasarkan daily_rate kendaraan & durasi trip)
+        $depreciationCost = 0;
+        $dailyRate = $shift->vehicle ? (float) ($shift->vehicle->daily_rate ?? 0) : 0;
+        if ($dailyRate > 0) {
+            $tripDays = 1;
+            if ($shift->check_in_at && $shift->check_out_at) {
+                $diffInHours = $shift->check_in_at->diffInHours($shift->check_out_at);
+                $tripDays = max(1, (int) ceil($diffInHours / 24));
+            }
+            $depreciationCost = $dailyRate * $tripDays;
+        }
+
         // Total Biaya Ritase
-        $totalCost = $fuelCost + $manpowerCost + $tollCost + $parkingCost + $otherCost;
+        $totalCost = $fuelCost + $manpowerCost + $tollCost + $parkingCost + $otherCost + $depreciationCost;
         
         $allItems = collect();
 
@@ -195,6 +208,7 @@ class HppCalculationService
                 'toll_cost' => $tollCost,
                 'parking_cost' => $parkingCost,
                 'other_cost' => $otherCost,
+                'depreciation_cost' => $depreciationCost,
                 'total_cost' => $totalCost,
                 'base_value' => $totalNilai,
                 'is_prorata' => true,
@@ -215,11 +229,26 @@ class HppCalculationService
                 'toll' => $tollCost,
                 'parking' => $parkingCost,
                 'other' => $otherCost,
+                'depreciation' => $depreciationCost,
                 'total' => $totalCost
             ],
             'base_value' => $totalNilai,
             'is_prorata' => true,
             'allocations' => $result
         ];
+    }
+
+    /**
+     * Hitung ulang seluruh HPP untuk semua shift yang ada di sistem
+     */
+    public function recalculateAll()
+    {
+        $shifts = Shift::with(['vehicle', 'driver', 'pickupTasks.items', 'deliveryAssignments.salesOrder.items', 'expenses'])->get();
+        $count = 0;
+        foreach ($shifts as $shift) {
+            $this->calculateProrata($shift);
+            $count++;
+        }
+        return $count;
     }
 }
