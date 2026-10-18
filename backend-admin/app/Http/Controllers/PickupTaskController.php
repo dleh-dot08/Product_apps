@@ -66,7 +66,7 @@ class PickupTaskController extends Controller
         $user = Auth::user();
         
         $pickupQuery = PickupTask::with(['driver', 'vehicle', 'assignedBy', 'items'])->latest();
-        $deliveryQuery = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'salesOrder.items'])->latest('assigned_at');
+        $deliveryQuery = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'salesOrder.items'])->latest();
         
         // Super admin melihat semua data termasuk yang dihapus
         $isSuperAdmin = ($user->roleRelation && strtoupper($user->roleRelation->name) === 'SUPER ADMIN') || strtoupper($user->role) === 'SUPER ADMIN';
@@ -117,7 +117,7 @@ class PickupTaskController extends Controller
         if (!$filterType || $filterType === 'pickup') {
             $pickups = $pickupQuery->get()->map(function($task) {
                 $task->task_type = 'pickup';
-                $task->sort_date = $task->created_at;
+                $task->sort_date = $task->created_at ?? now();
                 return $task;
             });
         }
@@ -126,7 +126,7 @@ class PickupTaskController extends Controller
         if (!$filterType || $filterType === 'delivery') {
             $deliveries = $deliveryQuery->get()->map(function($task) {
                 $task->task_type = 'delivery';
-                $task->sort_date = $task->assigned_at ?? $task->dispatch_date ?? optional($task->salesOrder)->created_at;
+                $task->sort_date = $task->created_at ?? $task->assigned_at ?? $task->dispatch_date ?? now();
                 return $task;
             });
         }
@@ -287,7 +287,7 @@ class PickupTaskController extends Controller
         $user = Auth::user();
         
         $pickupQuery = PickupTask::with(['driver', 'vehicle', 'assignedBy', 'items'])->latest();
-        $deliveryQuery = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'salesOrder.items'])->latest('assigned_at');
+        $deliveryQuery = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'salesOrder.items'])->latest();
         
         $isSuperAdmin = ($user->roleRelation && strtoupper($user->roleRelation->name) === 'SUPER ADMIN') || strtoupper($user->role) === 'SUPER ADMIN';
         if ($isSuperAdmin) {
@@ -333,7 +333,7 @@ class PickupTaskController extends Controller
         if (!$filterType || $filterType === 'pickup') {
             $pickups = $pickupQuery->get()->map(function($task) {
                 $task->task_type = 'pickup';
-                $task->sort_date = $task->created_at;
+                $task->sort_date = $task->created_at ?? now();
                 return $task;
             });
         }
@@ -342,7 +342,7 @@ class PickupTaskController extends Controller
         if (!$filterType || $filterType === 'delivery') {
             $deliveries = $deliveryQuery->get()->map(function($task) {
                 $task->task_type = 'delivery';
-                $task->sort_date = $task->assigned_at ?? $task->dispatch_date ?? optional($task->salesOrder)->created_at;
+                $task->sort_date = $task->created_at ?? $task->assigned_at ?? $task->dispatch_date ?? now();
                 return $task;
             });
         }
@@ -591,32 +591,42 @@ class PickupTaskController extends Controller
             // Hapus assignment lama (jika ada) - Dihapus agar bisa multple DO
             // DeliveryAssignment::where('sales_order_id', $salesOrder->id)->delete();
 
-            // Buat atau Update Delivery Assignment untuk driver ini
-            $deliveryTask = DeliveryAssignment::updateOrCreate(
-                [
+            $deliveryData = [
+                'do_easy' => $request->do_easy,
+                'manifest_id' => $request->manifest_id,
+                'co_driver_id' => $co_driver_id,
+                'vehicle_id' => $vehicle_id,
+                'assigned_by' => Auth::id(),
+                'status' => $assigned_status,
+                'priority' => $request->priority,
+                'pickup_name' => $request->delivery_pickup_name,
+                'delivery_sender_pic' => $request->delivery_sender_pic,
+                'pickup_location' => $request->delivery_pickup_location,
+                'delivery_origin_point' => $request->delivery_origin_point,
+                'delivery_receiver_pic' => $request->delivery_receiver_pic,
+                'delivery_target_point' => $request->delivery_target_point,
+                'assigned_at' => ($request->driver_id && $request->vehicle_id) ? now() : null,
+                'dispatch_date' => $request->dispatch_date ?: now()->toDateString(),
+                'estimated_arrival' => $request->estimated_arrival,
+                'is_out_of_city' => $request->boolean('is_out_of_city'),
+            ];
+
+            // Buat atau Update Delivery Assignment
+            if ($driver_id) {
+                $deliveryTask = DeliveryAssignment::updateOrCreate(
+                    [
+                        'sales_order_id' => $salesOrder->id,
+                        'driver_id' => $driver_id
+                    ],
+                    $deliveryData
+                );
+            } else {
+                // Untuk draft tanpa driver, buat baris baru agar tidak menimpa draft lain yang sudah ada
+                $deliveryTask = DeliveryAssignment::create(array_merge($deliveryData, [
                     'sales_order_id' => $salesOrder->id,
-                    'driver_id' => $driver_id
-                ],
-                [
-                    'do_easy' => $request->do_easy,
-                    'manifest_id' => $request->manifest_id,
-                    'co_driver_id' => $co_driver_id,
-                    'vehicle_id' => $vehicle_id,
-                    'assigned_by' => Auth::id(),
-                    'status' => $assigned_status,
-                    'priority' => $request->priority,
-                    'pickup_name' => $request->delivery_pickup_name,
-                    'delivery_sender_pic' => $request->delivery_sender_pic,
-                    'pickup_location' => $request->delivery_pickup_location,
-                    'delivery_origin_point' => $request->delivery_origin_point,
-                    'delivery_receiver_pic' => $request->delivery_receiver_pic,
-                    'delivery_target_point' => $request->delivery_target_point,
-                    'assigned_at' => ($request->driver_id && $request->vehicle_id) ? now() : null,
-                    'dispatch_date' => $request->dispatch_date ?: now()->toDateString(),
-                    'estimated_arrival' => $request->estimated_arrival,
-                    'is_out_of_city' => $request->boolean('is_out_of_city'),
-                ]
-            );
+                    'driver_id' => null,
+                ]));
+            }
 
             $this->logHistory($deliveryTask, 'delivery', 'Tugas delivery dibuat');
 

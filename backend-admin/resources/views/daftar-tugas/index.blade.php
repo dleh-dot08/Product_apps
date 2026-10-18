@@ -48,7 +48,7 @@
             ];
         })->toArray();
 
-        $dbDeliveries = \App\Models\DeliveryAssignment::with(['driver', 'salesOrder'])->latest('assigned_at')->get();
+        $dbDeliveries = \App\Models\DeliveryAssignment::with(['driver', 'salesOrder'])->latest()->get();
         $deliveryTasks = $dbDeliveries->map(function($pt) {
             $mappedStatus = 'pending';
             $progress = 0;
