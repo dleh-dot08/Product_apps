@@ -48,7 +48,7 @@
             ];
         })->toArray();
 
-        $dbDeliveries = \App\Models\DeliveryAssignment::with(['driver', 'salesOrder'])->latest()->get();
+        $dbDeliveries = \App\Models\DeliveryAssignment::with(['driver', 'salesOrder'])->orderByRaw('COALESCE(assigned_at, dispatch_date) DESC')->get();
         $deliveryTasks = $dbDeliveries->map(function($pt) {
             $mappedStatus = 'pending';
             $progress = 0;
@@ -72,7 +72,7 @@
                 'description' => $so ? $so->address : '-',
                 'assignee' => $pt->driver ? $pt->driver->full_name : 'Driver',
                 'initial' => $pt->driver ? strtoupper(substr($pt->driver->full_name, 0, 2)) : 'DR',
-                'due_date' => $pt->created_at ? \Carbon\Carbon::parse($pt->created_at)->format('d M Y') : '-',
+                'due_date' => ($pt->assigned_at ?? $pt->dispatch_date) ? \Carbon\Carbon::parse($pt->assigned_at ?? $pt->dispatch_date)->format('d M Y') : '-',
                 'priority' => 'normal',
                 'status' => $mappedStatus,
                 'progress' => $progress,
