@@ -202,6 +202,22 @@ class PackagingController extends Controller
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\PackagingExport, 'packaging_jobs.xlsx');
     }
 
+    public function exportJob(PackagingJob $packagingJob)
+    {
+        $export = new \App\Exports\PackingListExport($packagingJob);
+        $spreadsheet = $export->export();
+
+        $cleanNumber = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) ($packagingJob->packaging_number ?: ('JOB-' . $packagingJob->id)));
+        $fileName = "Packing_List_{$cleanNumber}.xlsx";
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
     public function destroy(PackagingJob $packagingJob)
     {
         $packagingJob->delete();
