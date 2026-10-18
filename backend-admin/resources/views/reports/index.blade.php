@@ -1,3 +1,4 @@
+@if(auth()->check() && (auth()->user()->hasPermission('View Laporan') || (auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')))
 <x-app-layout>
     <style>
         :root {
@@ -837,3 +838,12 @@
         }
     </script>
 </x-app-layout>
+@else
+<x-app-layout>
+    <div class="container py-5 text-center">
+        <div class="alert alert-danger d-inline-block shadow-sm rounded-4 px-4 py-3">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> Anda tidak memiliki hak akses untuk melihat halaman Laporan ini.
+        </div>
+    </div>
+</x-app-layout>
+@endif

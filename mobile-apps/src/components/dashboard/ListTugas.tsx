@@ -1,5 +1,5 @@
 import { Text } from '@/components/CustomText';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useFocusEffect } from 'expo-router';
 import {
   ActivityIndicator,
@@ -75,6 +75,15 @@ type PaginationMeta = {
   total?: number;
 };
 
+type TaskSummary = {
+  total: number;
+  running: number;
+  waiting: number;
+  completed: number;
+  pending: number;
+  not_delivered: number;
+};
+
 export default function ListTugas() {
   const router = useRouter();
   const { theme } = useTheme();
@@ -84,6 +93,7 @@ export default function ListTugas() {
 
   const [tasks, setTasks] = useState<DriverTask[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>({});
+  const [summary, setSummary] = useState<TaskSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -135,6 +145,10 @@ export default function ListTugas() {
           );
           setMeta(responseMeta);
 
+          if (response.data.summary) {
+            setSummary(response.data.summary);
+          }
+
           const currentPage = responseMeta.current_page ?? pageNumber;
           const lastPage = responseMeta.last_page ?? currentPage;
 
@@ -149,7 +163,7 @@ export default function ListTugas() {
         setLoadingMore(false);
       }
     },
-    [search, status],
+    [search, status, filterType, filterStartDate, filterEndDate],
   );
 
   useEffect(() => {
@@ -158,7 +172,7 @@ export default function ListTugas() {
     }, search ? 350 : 0);
 
     return () => clearTimeout(timeout);
-  }, [fetchTasks, search, status]);
+  }, [fetchTasks, search, status, filterType, filterStartDate, filterEndDate]);
 
   useFocusEffect(
     useCallback(() => {
@@ -177,31 +191,25 @@ export default function ListTugas() {
     fetchTasks(1, true);
   };
 
-  const totalTasks = meta.total ?? tasks.length;
+  const totalTasks = summary ? summary.total : (meta.total ?? tasks.length);
 
-  const runningCount = useMemo(
-    () =>
-      tasks.filter(
+  const runningCount = summary
+    ? summary.running
+    : tasks.filter(
         (task) => task.status === 'on_route' || task.status === 'arrived',
-      ).length,
-    [tasks],
-  );
+      ).length;
 
-  const waitingCount = useMemo(
-    () =>
-      tasks.filter(
+  const waitingCount = summary
+    ? summary.waiting
+    : tasks.filter(
         (task) => task.status === 'assigned',
-      ).length,
-    [tasks],
-  );
+      ).length;
 
-  const completedCount = useMemo(
-    () =>
-      tasks.filter(
-        (task) => task.status === 'delivered',
-      ).length,
-    [tasks],
-  );
+  const completedCount = summary
+    ? summary.completed
+    : tasks.filter(
+        (task) => task.status === 'delivered' || task.status === 'completed',
+      ).length;
 
   const renderItem = ({ item }: { item: DriverTask }) => (
     <TaskCard

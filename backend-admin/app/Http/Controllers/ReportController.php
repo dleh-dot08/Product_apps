@@ -77,6 +77,10 @@ class ReportController extends Controller
      */
     public function driverReport(Request $request)
     {
+        if (auth()->check() && !auth()->user()->hasPermission('View Laporan')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk melihat Laporan.');
+        }
+
         [$startDate, $endDate, $preset] = $this->getDateRange($request);
         $driverId = $request->input('driver_id');
         $vehicleId = $request->input('vehicle_id');
@@ -303,6 +307,10 @@ class ReportController extends Controller
      */
     public function exportDriverReport(Request $request)
     {
+        if (auth()->check() && !auth()->user()->hasPermission('Export Laporan')) {
+            abort(403, 'Anda tidak memiliki hak akses untuk mengekspor Laporan.');
+        }
+
         [$startDate, $endDate, $preset] = $this->getDateRange($request);
         $driverId = $request->input('driver_id');
         $vehicleId = $request->input('vehicle_id');

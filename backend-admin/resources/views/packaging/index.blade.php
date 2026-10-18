@@ -757,8 +757,8 @@
                         <option>20 / halaman</option>
                         <option>50 / halaman</option>
                     </select>
-                    <a href="{{ route('packaging.export') }}" class="btn btn-outline-success pkg-filter-control d-inline-flex align-items-center justify-content-center gap-2 px-3">
-                        <i class="fa-solid fa-file-excel"></i> Export Excel
+                    <a href="{{ route('packaging.export') }}" class="btn btn-outline-success pkg-filter-control d-inline-flex align-items-center justify-content-center gap-2 px-3" title="Export Semua Data Packaging">
+                        <i class="fa-solid fa-file-excel"></i> Export Excel (All)
                     </a>
                     <button type="button" class="btn btn-outline-danger pkg-filter-control d-inline-flex align-items-center justify-content-center gap-2 px-3">
                         <i class="fa-solid fa-rotate-right"></i> Reset
@@ -832,6 +832,11 @@
                                             <li>
                                                 <a class="dropdown-item d-flex align-items-center gap-2" href="{{ route('packaging.calculations.print', $job->id) }}" target="_blank">
                                                     <i class="fa-solid fa-print text-muted"></i> Print
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item d-flex align-items-center gap-2" href="{{ route('packaging.export-job', $job->id) }}">
+                                                    <i class="fa-solid fa-file-excel text-success"></i> Export Excel
                                                 </a>
                                             </li>
                                             @if(auth()->user()->hasPermission('Edit Packing'))

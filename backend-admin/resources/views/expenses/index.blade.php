@@ -785,12 +785,16 @@
         <!-- SUB NAV / SWITCHER: LAPORAN DRIVER vs LAPORAN KEUANGAN -->
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
             <div class="d-flex align-items-center gap-2 p-1 bg-body-tertiary border rounded-4 shadow-xs" style="background: rgba(255, 255, 255, 0.8);">
+                @if(auth()->user()->hasPermission('View Laporan'))
                 <a href="{{ route('reports.driver') }}" class="report-nav-tab">
                     <i class="fa-solid fa-id-card"></i> Laporan Driver & Kendaraan
                 </a>
+                @endif
+                @if(auth()->user()->hasPermission('View Pengeluaran'))
                 <a href="{{ route('expenses.index') }}" class="report-nav-tab active">
                     <i class="fa-solid fa-money-bill-wave"></i> Laporan Keuangan (Pengeluaran)
                 </a>
+                @endif
             </div>
         </div>
 
