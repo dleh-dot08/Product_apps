@@ -1,3 +1,4 @@
+@if(auth()->check() && (auth()->user()->hasPermission('View Laporan') || (auth()->user()->roleRelation && strtoupper(auth()->user()->roleRelation->name) === 'SUPER ADMIN')))
 <x-app-layout>
     <style>
         :root {
@@ -103,18 +104,24 @@
         <!-- SUB NAV / SWITCHER: LAPORAN DRIVER vs LAPORAN KEUANGAN -->
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
             <div class="d-flex align-items-center gap-2 p-1 bg-body-tertiary border rounded-4 shadow-xs">
+                @if(auth()->user()->hasPermission('View Laporan'))
                 <a href="{{ route('reports.driver') }}" class="report-nav-tab active">
                     <i class="fa-solid fa-id-card"></i> Laporan Driver & Kendaraan
                 </a>
+                @endif
+                @if(auth()->user()->hasPermission('View Pengeluaran'))
                 <a href="{{ route('expenses.index') }}" class="report-nav-tab">
                     <i class="fa-solid fa-money-bill-wave"></i> Laporan Keuangan (Pengeluaran)
                 </a>
+                @endif
             </div>
+            @if(auth()->user()->hasPermission('Export Laporan'))
             <div class="d-flex align-items-center gap-2">
                 <button type="button" onclick="exportDriverReportWithCharts()" class="btn btn-sm btn-success fw-bold rounded-3 px-3 shadow-xs">
                     <i class="fa-solid fa-file-excel me-1"></i> Ekspor Laporan Driver + Grafik (.xlsx)
                 </button>
             </div>
+            @endif
         </div>
 
         <!-- HEADER BANNER -->
@@ -768,3 +775,12 @@
         });
     </script>
 </x-app-layout>
+@else
+<x-app-layout>
+    <div class="container py-5 text-center">
+        <div class="alert alert-danger d-inline-block shadow-sm rounded-4 px-4 py-3">
+            <i class="fa-solid fa-triangle-exclamation me-2"></i> Anda tidak memiliki hak akses untuk melihat halaman Laporan ini.
+        </div>
+    </div>
+</x-app-layout>
+@endif

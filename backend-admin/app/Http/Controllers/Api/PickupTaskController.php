@@ -138,28 +138,17 @@ class PickupTaskController extends Controller
 
         $unionQuery = $pickups->unionAll($deliveries);
         
-        $query = DB::query()->fromSub($unionQuery, 'tasks');
-
-        // Filter status
-        if ($request->filled('status') && $request->status !== 'all') {
-            if ($request->status === 'berlangsung') {
-                $query->whereIn('status', ['on_route', 'arrived']);
-            } elseif ($request->status === 'menunggu') {
-                $query->where('status', 'assigned');
-            } else {
-                $query->where('status', $request->status);
-            }
-        }
+        $baseQuery = DB::query()->fromSub($unionQuery, 'tasks');
 
         // Filter type (task_type)
         if ($request->filled('type') && $request->type !== 'all') {
-            $query->where('task_type', $request->type);
+            $baseQuery->where('task_type', $request->type);
         }
 
         // Fitur Search
         if ($request->filled('search')) {
             $search = $request->search;
-            $query->where(function($q) use ($search) {
+            $baseQuery->where(function($q) use ($search) {
                 $q->where('reference_number', 'like', "%{$search}%")
                   ->orWhere('pickup_name', 'like', "%{$search}%")
                   ->orWhere('destination', 'like', "%{$search}%");
@@ -168,15 +157,50 @@ class PickupTaskController extends Controller
 
         // Filter date
         if ($request->filled('date')) {
-            $query->whereDate('assigned_at', $request->date);
+            $baseQuery->whereDate('assigned_at', $request->date);
         }
         
         if ($request->filled('start_date')) {
-            $query->whereDate('assigned_at', '>=', $request->start_date);
+            try {
+                $startDate = \Carbon\Carbon::parse(str_replace('/', '-', $request->start_date))->format('Y-m-d');
+                $baseQuery->whereDate('assigned_at', '>=', $startDate);
+            } catch (\Exception $e) {
+                $baseQuery->whereDate('assigned_at', '>=', $request->start_date);
+            }
         }
         
         if ($request->filled('end_date')) {
-            $query->whereDate('assigned_at', '<=', $request->end_date);
+            try {
+                $endDate = \Carbon\Carbon::parse(str_replace('/', '-', $request->end_date))->format('Y-m-d');
+                $baseQuery->whereDate('assigned_at', '<=', $endDate);
+            } catch (\Exception $e) {
+                $baseQuery->whereDate('assigned_at', '<=', $request->end_date);
+            }
+        }
+
+        // Hitung Summary Status (Global dari baseQuery sebelum difilter tab status aktif)
+        $summary = (clone $baseQuery)->selectRaw("
+            COUNT(*) as total,
+            SUM(CASE WHEN status IN ('on_route', 'arrived') THEN 1 ELSE 0 END) as running,
+            SUM(CASE WHEN status = 'assigned' THEN 1 ELSE 0 END) as waiting,
+            SUM(CASE WHEN status IN ('delivered', 'completed') THEN 1 ELSE 0 END) as completed,
+            SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+            SUM(CASE WHEN status = 'Tidak Terkirim' THEN 1 ELSE 0 END) as not_delivered
+        ")->first();
+
+        $query = clone $baseQuery;
+
+        // Filter status tab
+        if ($request->filled('status') && $request->status !== 'all') {
+            if ($request->status === 'berlangsung' || $request->status === 'on_route') {
+                $query->whereIn('status', ['on_route', 'arrived']);
+            } elseif ($request->status === 'menunggu' || $request->status === 'assigned') {
+                $query->where('status', 'assigned');
+            } elseif ($request->status === 'selesai' || $request->status === 'delivered') {
+                $query->whereIn('status', ['delivered', 'completed']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         // Paginasi: 15 item per halaman
@@ -189,6 +213,14 @@ class PickupTaskController extends Controller
                 'current_page' => $tasks->currentPage(),
                 'last_page' => $tasks->lastPage(),
                 'total' => $tasks->total(),
+            ],
+            'summary' => [
+                'total' => (int) ($summary->total ?? 0),
+                'running' => (int) ($summary->running ?? 0),
+                'waiting' => (int) ($summary->waiting ?? 0),
+                'completed' => (int) ($summary->completed ?? 0),
+                'pending' => (int) ($summary->pending ?? 0),
+                'not_delivered' => (int) ($summary->not_delivered ?? 0),
             ]
         ]);
     }
