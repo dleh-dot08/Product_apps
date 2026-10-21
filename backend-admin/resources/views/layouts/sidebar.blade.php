@@ -357,6 +357,37 @@
                         </a>
                     </li>
                     @endif
+
+                    <!-- 5.1 Ekspedisi & Vendor (3PL / Cargo) -->
+                    @if(auth()->user()->hasPermission('View Ekspedisi') || auth()->user()->hasPermission('View Vendor Ekspedisi'))
+                    <li class="nav-item {{ request()->routeIs('ekspedisi.*') ? 'menu-open' : '' }}">
+                        <a href="#" class="nav-link {{ request()->routeIs('ekspedisi.*') ? 'active' : '' }}">
+                            <i class="nav-icon fa-solid fa-plane-departure"></i>
+                            <p class="ms-2 mb-0 w-100 d-flex justify-content-between align-items-center">
+                                Ekspedisi
+                                <i class="fa-solid fa-angle-down" style="font-size: 0.8rem; transition: transform 0.3s;"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview ms-3">
+                            @if(auth()->user()->hasPermission('View Ekspedisi'))
+                            <li class="nav-item">
+                                <a href="{{ route('ekspedisi.index') }}" class="nav-link {{ request()->routeIs('ekspedisi.index') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-dolly" style="font-size: 0.9rem;"></i>
+                                    <p class="ms-2 mb-0" style="font-size: 0.9rem;">Pengiriman</p>
+                                </a>
+                            </li>
+                            @endif
+                            @if(auth()->user()->hasPermission('View Vendor Ekspedisi'))
+                            <li class="nav-item">
+                                <a href="{{ route('ekspedisi.vendors.index') }}" class="nav-link {{ request()->routeIs('ekspedisi.vendors.*') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-handshake" style="font-size: 0.9rem;"></i>
+                                    <p class="ms-2 mb-0" style="font-size: 0.9rem;">Master Vendor</p>
+                                </a>
+                            </li>
+                            @endif
+                        </ul>
+                    </li>
+                    @endif
                     
                     <!-- 5.5 Find Driver -->
                     @if(auth()->user()->hasPermission('View Find Driver'))

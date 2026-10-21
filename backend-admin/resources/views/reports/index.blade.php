@@ -112,6 +112,122 @@
             background: rgba(234, 88, 12, 0.12);
             color: var(--report-orange);
         }
+
+        /* Select2 Bootstrap-5 Custom Modern Styling */
+        .select2-container--bootstrap-5 .select2-selection {
+            border-radius: 0.65rem;
+            border-color: #e2e8f0;
+            font-size: 0.85rem;
+            min-height: 38px;
+            transition: all 0.2s ease-in-out;
+            background-color: #f8fafc;
+        }
+
+        .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+        .select2-container--bootstrap-5.select2-container--open .select2-selection {
+            border-color: var(--report-orange) !important;
+            box-shadow: 0 0 0 0.2rem rgba(234, 88, 12, 0.15) !important;
+            background-color: #ffffff;
+        }
+
+        .select2-container--bootstrap-5 .select2-dropdown {
+            border-radius: 0.75rem;
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.12);
+            font-size: 0.85rem;
+            z-index: 1055;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--report-orange);
+            color: #ffffff;
+        }
+
+        /* Compact & Sleek Multi-select Container with neat scroll */
+        .select2-container--bootstrap-5 .select2-selection--multiple {
+            max-height: 78px;
+            overflow-y: auto;
+            padding: 3px 6px !important;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple::-webkit-scrollbar {
+            width: 4px;
+        }
+        .select2-container--bootstrap-5 .select2-selection--multiple::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered {
+            padding: 0;
+            gap: 4px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice {
+            background: #fff7ed;
+            border: 1px solid #ffedd5;
+            color: #c2410c;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 0.4rem;
+            padding: 1px 7px;
+            margin: 2px 3px 2px 0;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            line-height: 1.5;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice__remove {
+            color: #ea580c;
+            margin-right: 5px;
+            border-right: 1px solid #fed7aa;
+            padding-right: 4px;
+            font-size: 0.85rem;
+            transition: color 0.15s;
+        }
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice__remove:hover {
+            color: #9a3412;
+        }
+
+        .select2-container--bootstrap-5 .select2-search__field {
+            font-size: 0.82rem;
+            margin-top: 2px;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice__remove {
+            color: #ea580c;
+            margin-right: 6px;
+            border-right: 1px solid #fed7aa;
+            padding-right: 4px;
+        }
+
+        html[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
+            background-color: #111418;
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+        }
+
+        html[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
+            background-color: #1e293b;
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+        }
+
+        html[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
+            color: #cbd5e1;
+        }
+
+        html[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice {
+            background-color: rgba(234, 88, 12, 0.2);
+            border-color: rgba(234, 88, 12, 0.4);
+            color: #fdba74;
+        }
     </style>
 
     <div class="container-fluid py-3">
@@ -176,21 +292,29 @@
                             </div>
                         </div>
 
-                        <div class="col-md-3">
-                            <label class="form-label text-muted small fw-bold mb-1">Filter Driver</label>
-                            <select name="driver_id" class="form-select form-select-sm">
-                                <option value="">Semua Driver</option>
+                        <div class="col-md-4">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label text-muted small fw-bold mb-0">Filter Driver (Bisa Pilih Banyak)</label>
+                                <div class="small">
+                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none me-2" onclick="selectAll('driver_id')">Pilih Semua</button>
+                                    <span class="text-muted">|</span>
+                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none text-danger ms-2" onclick="clearAll('driver_id')">Kosongkan</button>
+                                </div>
+                            </div>
+                            <select name="driver_id[]" id="driver_id" class="form-select select2-filter" multiple="multiple" data-placeholder="Ketik untuk mencari & memilih driver...">
                                 @foreach($drivers as $d)
-                                    <option value="{{ $d->id }}" {{ $driverId == $d->id ? 'selected' : '' }}>{{ $d->full_name ?? $d->name }}</option>
+                                    <option value="{{ $d->id }}" {{ in_array($d->id, (array)($driverIds ?? ($driverId ? [$driverId] : []))) ? 'selected' : '' }}>
+                                        {{ $d->full_name ?? $d->name }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
 
-                        <div class="col-md-3 d-flex gap-2 align-items-end mt-4">
-                            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold rounded-3 shadow-xs" style="background: var(--report-orange-gradient); border: none;">
+                        <div class="col-md-2 d-flex gap-2 align-items-end">
+                            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold rounded-3 shadow-xs" style="background: var(--report-orange-gradient); border: none; height: 38px;">
                                 <i class="fa-solid fa-filter me-1"></i> Terapkan
                             </button>
-                            <a href="{{ route('reports.index') }}" class="btn btn-sm btn-light border rounded-3 px-3" title="Reset Filter">
+                            <a href="{{ route('reports.index') }}" class="btn btn-sm btn-light border rounded-3 px-3 d-flex align-items-center justify-content-center" title="Reset Filter" style="height: 38px;">
                                 <i class="fa-solid fa-rotate-right"></i>
                             </a>
                         </div>
@@ -836,6 +960,27 @@
                 event.target.classList.add('active');
             }
         }
+
+        // Helper buttons for Select2 Multi-Select
+        function selectAll(id) {
+            $('#' + id + ' > option').prop('selected', true);
+            $('#' + id).trigger('change');
+        }
+
+        function clearAll(id) {
+            $('#' + id).val(null).trigger('change');
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('.select2-filter').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    closeOnSelect: false,
+                    allowClear: true
+                });
+            }
+        });
     </script>
 </x-app-layout>
 @else

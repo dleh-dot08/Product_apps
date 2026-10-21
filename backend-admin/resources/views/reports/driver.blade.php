@@ -97,6 +97,120 @@
             background: rgba(234, 88, 12, 0.08);
             color: var(--report-orange);
         }
+
+        /* Select2 Bootstrap-5 Custom Modern Styling */
+        .select2-container--bootstrap-5 .select2-selection {
+            border-radius: 0.65rem;
+            border-color: #e2e8f0;
+            font-size: 0.85rem;
+            min-height: 38px;
+            transition: all 0.2s ease-in-out;
+            background-color: #f8fafc;
+        }
+
+        .select2-container--bootstrap-5.select2-container--focus .select2-selection,
+        .select2-container--bootstrap-5.select2-container--open .select2-selection {
+            border-color: var(--report-orange) !important;
+            box-shadow: 0 0 0 0.2rem rgba(234, 88, 12, 0.15) !important;
+            background-color: #ffffff;
+        }
+
+        .select2-container--bootstrap-5 .select2-dropdown {
+            border-radius: 0.75rem;
+            border-color: rgba(0, 0, 0, 0.08);
+            box-shadow: 0 14px 30px -4px rgba(0, 0, 0, 0.12);
+            font-size: 0.85rem;
+            z-index: 1055;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+
+        .select2-container--bootstrap-5 .select2-results__option--highlighted[aria-selected] {
+            background-color: var(--report-orange);
+            color: #ffffff;
+        }
+
+        /* Compact & Sleek Multi-select Container with neat scroll */
+        .select2-container--bootstrap-5 .select2-selection--multiple {
+            max-height: 78px;
+            overflow-y: auto;
+            padding: 3px 6px !important;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple::-webkit-scrollbar {
+            width: 4px;
+        }
+        .select2-container--bootstrap-5 .select2-selection--multiple::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered {
+            padding: 0;
+            gap: 4px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice {
+            background: #fff7ed;
+            border: 1px solid #ffedd5;
+            color: #c2410c;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border-radius: 0.4rem;
+            padding: 1px 7px;
+            margin: 2px 3px 2px 0;
+            display: inline-flex;
+            align-items: center;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            line-height: 1.5;
+        }
+
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice__remove {
+            color: #ea580c;
+            margin-right: 5px;
+            border-right: 1px solid #fed7aa;
+            padding-right: 4px;
+            font-size: 0.85rem;
+            transition: color 0.15s;
+        }
+        .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice__remove:hover {
+            color: #9a3412;
+        }
+
+        .select2-container--bootstrap-5 .select2-search__field {
+            font-size: 0.82rem;
+            margin-top: 2px;
+        }
+
+        html[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection {
+            background-color: #111418;
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+        }
+
+        html[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-dropdown {
+            background-color: #1e293b;
+            border-color: rgba(255, 255, 255, 0.12);
+            color: #e2e8f0;
+        }
+
+        html[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-results__option {
+            color: #cbd5e1;
+        }
+
+        html[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice {
+            background-color: rgba(234, 88, 12, 0.2);
+            border-color: rgba(234, 88, 12, 0.4);
+            color: #fdba74;
+        }
+
+        html[data-bs-theme="dark"] .select2-container--bootstrap-5 .select2-selection--multiple .select2-selection__rendered .select2-selection__choice__remove {
+            color: #fdba74;
+            border-right-color: rgba(234, 88, 12, 0.4);
+        }
     </style>
 
     <div class="container-fluid py-3">
@@ -150,64 +264,121 @@
         </div>
 
         <!-- FILTER TOOLBAR -->
-        <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
             <div class="card-body p-3 p-lg-4">
                 <form action="{{ route('reports.driver') }}" method="GET" id="driverReportFilterForm">
                     <input type="hidden" name="preset" id="presetInput" value="{{ $preset }}">
 
-                    <div class="row g-3 align-items-center">
-                        <!-- Presets -->
-                        <div class="col-12 d-flex flex-wrap align-items-center gap-2 pb-2 border-bottom border-light-subtle">
-                            <span class="text-muted small fw-semibold me-2"><i class="fa-solid fa-sliders me-1"></i> Rentang Periode:</span>
+                    <!-- Presets Header -->
+                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pb-3 mb-3 border-bottom">
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+                            <span class="text-secondary small fw-bold me-1">
+                                <i class="fa-solid fa-calendar-week text-orange me-1"></i> Periode Cepat:
+                            </span>
                             <a href="javascript:void(0)" onclick="setPreset('today')" class="preset-pill {{ $preset == 'today' ? 'active' : '' }}">Hari Ini</a>
                             <a href="javascript:void(0)" onclick="setPreset('this_week')" class="preset-pill {{ $preset == 'this_week' ? 'active' : '' }}">Minggu Ini</a>
                             <a href="javascript:void(0)" onclick="setPreset('this_month')" class="preset-pill {{ $preset == 'this_month' ? 'active' : '' }}">Bulan Ini</a>
                             <a href="javascript:void(0)" onclick="setPreset('last_month')" class="preset-pill {{ $preset == 'last_month' ? 'active' : '' }}">Bulan Lalu</a>
                             <a href="javascript:void(0)" onclick="setPreset('all')" class="preset-pill {{ $preset == 'all' ? 'active' : '' }}">Semua Riwayat</a>
-                            <a href="javascript:void(0)" onclick="setPreset('custom')" class="preset-pill {{ $preset == 'custom' ? 'active' : '' }}">Custom</a>
+                            <a href="javascript:void(0)" onclick="setPreset('custom')" class="preset-pill {{ $preset == 'custom' ? 'active' : '' }}">Kustom</a>
                         </div>
+                        <div class="d-none d-md-flex align-items-center text-muted small">
+                            <i class="fa-solid fa-circle-info text-info me-1"></i> Pilih filter & klik terapkan
+                        </div>
+                    </div>
 
+                    <div class="row g-3">
                         <!-- Date Filters -->
-                        <div class="col-md-3">
-                            <label class="form-label text-muted small fw-bold mb-1">Tanggal Mulai</label>
-                            <input type="date" name="start_date" id="start_date" class="form-control form-control-sm" value="{{ $startDate->toDateString() }}">
+                        <div class="col-sm-6 col-lg-3">
+                            <label class="form-label text-secondary small fw-bold mb-1">
+                                <i class="fa-regular fa-calendar text-primary me-1"></i> Tanggal Mulai
+                            </label>
+                            <input type="date" name="start_date" id="start_date" class="form-control form-control-sm rounded-3 py-2" value="{{ $startDate->toDateString() }}">
                         </div>
 
-                        <div class="col-md-3">
-                            <label class="form-label text-muted small fw-bold mb-1">Tanggal Akhir</label>
-                            <input type="date" name="end_date" id="end_date" class="form-control form-control-sm" value="{{ $endDate->toDateString() }}">
+                        <div class="col-sm-6 col-lg-3">
+                            <label class="form-label text-secondary small fw-bold mb-1">
+                                <i class="fa-regular fa-calendar-check text-success me-1"></i> Tanggal Akhir
+                            </label>
+                            <input type="date" name="end_date" id="end_date" class="form-control form-control-sm rounded-3 py-2" value="{{ $endDate->toDateString() }}">
                         </div>
 
-                        <!-- Driver Filter -->
-                        <div class="col-md-2">
-                            <label class="form-label text-muted small fw-bold mb-1">Pilih Driver</label>
-                            <select name="driver_id" class="form-select form-select-sm">
-                                <option value="">Semua Driver</option>
-                                @foreach($drivers as $d)
-                                    <option value="{{ $d->id }}" {{ $driverId == $d->id ? 'selected' : '' }}>{{ $d->full_name ?? $d->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <!-- Vehicle Filter -->
-                        <div class="col-md-2">
-                            <label class="form-label text-muted small fw-bold mb-1">Pilih Kendaraan</label>
-                            <select name="vehicle_id" class="form-select form-select-sm">
-                                <option value="">Semua Mobil</option>
-                                @foreach($allVehicles as $v)
-                                    <option value="{{ $v->id }}" {{ $vehicleId == $v->id ? 'selected' : '' }}>{{ $v->plate_number }} ({{ $v->name }})</option>
-                                @endforeach
+                        <!-- Status Filter -->
+                        <div class="col-sm-6 col-lg-3">
+                            <label class="form-label text-secondary small fw-bold mb-1">
+                                <i class="fa-solid fa-circle-check text-info me-1"></i> Status Perjalanan
+                            </label>
+                            <select name="status" id="status" class="form-select form-select-sm rounded-3 py-2">
+                                <option value="">Semua Status (Selesai & Aktif)</option>
+                                <option value="completed" {{ ($status ?? '') === 'completed' ? 'selected' : '' }}>Selesai Saja (Check Out)</option>
+                                <option value="active" {{ ($status ?? '') === 'active' ? 'selected' : '' }}>Aktif Saja (Dalam Perjalanan)</option>
                             </select>
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="col-md-2 d-flex gap-2 align-items-end mt-4">
-                            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold rounded-3 shadow-xs" style="background: var(--report-orange-gradient); border: none;">
-                                <i class="fa-solid fa-filter me-1"></i> Terapkan
+                        <div class="col-sm-6 col-lg-3 d-flex gap-2 align-items-end">
+                            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold rounded-3 shadow-xs d-flex align-items-center justify-content-center gap-2" style="background: var(--report-orange-gradient); border: none; height: 38px;">
+                                <i class="fa-solid fa-filter"></i> Terapkan Filter
                             </button>
-                            <a href="{{ route('reports.driver') }}" class="btn btn-sm btn-light border rounded-3 px-3" title="Reset Filter">
-                                <i class="fa-solid fa-rotate-right"></i>
+                            <a href="{{ route('reports.driver') }}" class="btn btn-sm btn-light border rounded-3 px-3 d-flex align-items-center justify-content-center" title="Reset Filter" style="height: 38px;">
+                                <i class="fa-solid fa-rotate-right text-secondary"></i>
                             </a>
+                        </div>
+
+                        <!-- Multi-Select Driver Filter -->
+                        <div class="col-lg-6">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label text-secondary small fw-bold mb-0 d-flex align-items-center gap-1">
+                                    <i class="fa-solid fa-user-tie text-primary"></i> Filter Driver
+                                    <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary fw-semibold px-2" id="driver_count_badge" style="font-size: 0.7rem;">
+                                        {{ count((array)($driverIds ?? [])) > 0 ? count((array)$driverIds) . ' Dipilih' : 'Semua Driver' }}
+                                    </span>
+                                </label>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-primary me-2" onclick="selectAll('driver_id')" style="font-size: 0.75rem;">
+                                        <i class="fa-solid fa-check-double me-1"></i>Pilih Semua
+                                    </button>
+                                    <span class="text-muted small">|</span>
+                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-danger ms-2" onclick="clearAll('driver_id')" style="font-size: 0.75rem;">
+                                        <i class="fa-solid fa-xmark me-1"></i>Kosongkan
+                                    </button>
+                                </div>
+                            </div>
+                            <select name="driver_id[]" id="driver_id" class="form-select select2-filter" multiple="multiple" data-placeholder="Cari driver (kosongkan = semua driver)...">
+                                @foreach($drivers as $d)
+                                    <option value="{{ $d->id }}" {{ in_array($d->id, (array)($driverIds ?? [])) ? 'selected' : '' }}>
+                                        {{ $d->full_name ?? $d->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Multi-Select Vehicle Filter -->
+                        <div class="col-lg-6">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label text-secondary small fw-bold mb-0 d-flex align-items-center gap-1">
+                                    <i class="fa-solid fa-truck text-warning"></i> Filter Kendaraan / Armada
+                                    <span class="badge rounded-pill bg-warning bg-opacity-15 text-warning-emphasis fw-semibold px-2" id="vehicle_count_badge" style="font-size: 0.7rem;">
+                                        {{ count((array)($vehicleIds ?? [])) > 0 ? count((array)$vehicleIds) . ' Dipilih' : 'Semua Armada' }}
+                                    </span>
+                                </label>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-primary me-2" onclick="selectAll('vehicle_id')" style="font-size: 0.75rem;">
+                                        <i class="fa-solid fa-check-double me-1"></i>Pilih Semua
+                                    </button>
+                                    <span class="text-muted small">|</span>
+                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-danger ms-2" onclick="clearAll('vehicle_id')" style="font-size: 0.75rem;">
+                                        <i class="fa-solid fa-xmark me-1"></i>Kosongkan
+                                    </button>
+                                </div>
+                            </div>
+                            <select name="vehicle_id[]" id="vehicle_id" class="form-select select2-filter" multiple="multiple" data-placeholder="Cari plat nomor / tipe armada (kosongkan = semua)...">
+                                @foreach($allVehicles as $v)
+                                    <option value="{{ $v->id }}" {{ in_array($v->id, (array)($vehicleIds ?? [])) ? 'selected' : '' }}>
+                                        {{ $v->plate_number }} ({{ $v->name }})
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
                     </div>
                 </form>
@@ -411,6 +582,7 @@
                                 <th class="py-3 text-center">Total Durasi</th>
                                 <th class="py-3">Tugas Terkait</th>
                                 <th class="py-3 text-center px-4">Status</th>
+                                <th class="py-3 text-center px-3" style="width: 110px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -467,7 +639,7 @@
                                     @if(count($row['tasks']) > 0)
                                         <div class="d-flex flex-wrap gap-1">
                                             @foreach($row['tasks'] as $t)
-                                                <span class="badge bg-light text-dark border small" style="font-size: 0.72rem;">
+                                                 <span class="badge bg-light text-dark border small" style="font-size: 0.72rem;">
                                                     <strong class="{{ $t['type'] == 'Pickup' ? 'text-primary' : 'text-success' }}">{{ $t['type'] }}:</strong> {{ $t['ref'] }}
                                                 </span>
                                             @endforeach
@@ -487,10 +659,23 @@
                                         </span>
                                     @endif
                                 </td>
+                                <td class="py-3 text-center px-3">
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 text-nowrap shadow-xs" 
+                                            onclick='openUploadModal(@json($row))'
+                                            title="Lihat Data Upload & File">
+                                        <i class="fa-solid fa-paperclip me-1"></i> File 
+                                        @if(($row['files_count'] ?? 0) > 0)
+                                            <span class="badge bg-primary text-white rounded-pill ms-1">{{ $row['files_count'] }}</span>
+                                        @else
+                                            <span class="badge bg-secondary bg-opacity-25 text-secondary rounded-pill ms-1">0</span>
+                                        @endif
+                                    </button>
+                                </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="11" class="text-center py-5 text-muted">
+                                <td colspan="12" class="text-center py-5 text-muted">
                                     <i class="fa-solid fa-inbox fs-2 mb-2 d-block opacity-50"></i>
                                     Tidak ada data riwayat perjalanan driver pada periode ini.
                                 </td>
@@ -502,14 +687,85 @@
             </div>
         </div>
 
+        <!-- MODAL DETAIL DATA UPLOAD / LAMPIRAN FILE -->
+        <div class="modal fade" id="modalUploadFiles" tabindex="-1" aria-labelledby="modalUploadFilesLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content rounded-4 border-0 shadow">
+                    <div class="modal-header border-bottom py-3 px-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="rounded-3 p-2 bg-primary bg-opacity-10 text-primary">
+                                <i class="fa-solid fa-folder-open fs-5"></i>
+                            </div>
+                            <div>
+                                <h5 class="modal-title fw-bold mb-0" id="modalUploadFilesLabel">Data Upload & Lampiran File</h5>
+                                <div class="text-muted small" id="modalUploadSubtitle">Detail riwayat file upload driver</div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+
+                    <div class="modal-body p-4 bg-body-tertiary">
+                        <!-- Ringkasan Driver & Armada Info Box -->
+                        <div class="card border rounded-3 p-3 mb-3 bg-body shadow-xs">
+                            <div class="row g-2 small">
+                                <div class="col-sm-6 col-md-3">
+                                    <div class="text-muted">Driver:</div>
+                                    <strong id="modalDriverName" class="text-dark">-</strong>
+                                </div>
+                                <div class="col-sm-6 col-md-3">
+                                    <div class="text-muted">Kendaraan:</div>
+                                    <strong id="modalVehicle" class="text-dark">-</strong>
+                                </div>
+                                <div class="col-sm-6 col-md-3">
+                                    <div class="text-muted">Tanggal / Jam:</div>
+                                    <strong id="modalDatetime" class="text-dark">-</strong>
+                                </div>
+                                <div class="col-sm-6 col-md-3">
+                                    <div class="text-muted">Odometer:</div>
+                                    <strong id="modalOdo" class="text-primary">-</strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Filter Tab / Pills dalam Modal -->
+                        <div class="d-flex align-items-center justify-content-between mb-3">
+                            <h6 class="fw-bold mb-0">
+                                <i class="fa-solid fa-images text-orange me-1"></i> Daftar Lampiran (<span id="modalFileTotal">0</span>)
+                            </h6>
+                            <span class="badge bg-light text-muted border px-2 py-1 small" id="modalSourceBadge">Semua Modul</span>
+                        </div>
+
+                        <!-- Container Kartu Lampiran -->
+                        <div id="modalFilesContainer" class="row g-3">
+                            <!-- Items dynamically injected here -->
+                        </div>
+
+                        <!-- Empty State -->
+                        <div id="modalFilesEmpty" class="text-center py-5 d-none">
+                            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 64px; height: 64px;">
+                                <i class="fa-solid fa-file-circle-xmark text-muted fs-3"></i>
+                            </div>
+                            <h6 class="fw-bold text-muted mb-1">Belum Ada File Terunggah</h6>
+                            <p class="text-muted small mb-0">Driver belum mengunggah foto armada, bukti tugas, atau struk pengeluaran pada perjalanan ini.</p>
+                        </div>
+                    </div>
+
+                    <div class="modal-footer border-top py-2 px-4 bg-body">
+                        <button type="button" class="btn btn-secondary rounded-3 px-4 fw-semibold" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Hidden Form for Export with Base64 Charts -->
         <form id="exportWithChartsForm" method="POST" action="{{ route('reports.driver.export') }}" style="display: none;">
             @csrf
             <input type="hidden" name="preset" value="{{ $preset }}">
             <input type="hidden" name="start_date" value="{{ $startDate->toDateString() }}">
             <input type="hidden" name="end_date" value="{{ $endDate->toDateString() }}">
-            <input type="hidden" name="driver_id" value="{{ $driverId }}">
-            <input type="hidden" name="vehicle_id" value="{{ $vehicleId }}">
+            <input type="hidden" name="status" value="{{ $status ?? '' }}">
+            <div id="exportDriverInputs"></div>
+            <div id="exportVehicleInputs"></div>
             <input type="hidden" name="chart_vehicle_pct" id="input_chart_vehicle_pct">
             <input type="hidden" name="chart_usage" id="input_chart_usage">
             <input type="hidden" name="chart_km_vehicle" id="input_chart_km_vehicle">
@@ -522,6 +778,84 @@
     <!-- SCRIPT CHART.JS & FILTER LOGIC -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // Modal Upload Function
+        function openUploadModal(row) {
+            document.getElementById('modalDriverName').innerText = row.driver_name || '-';
+            document.getElementById('modalVehicle').innerText = (row.vehicle_plate || '-') + ' (' + (row.vehicle_name || '-') + ')';
+            document.getElementById('modalDatetime').innerText = (row.start_date || '-') + ' ' + (row.start_time || '');
+            document.getElementById('modalOdo').innerText = (row.odo_start ? Number(row.odo_start).toLocaleString('id-ID') : 0) + ' -> ' + 
+                                                           (row.odo_end ? Number(row.odo_end).toLocaleString('id-ID') : 0) + ' (' + (row.total_odo || 0) + ' KM)';
+            
+            const files = row.files || [];
+            document.getElementById('modalFileTotal').innerText = files.length;
+
+            const container = document.getElementById('modalFilesContainer');
+            const emptyEl = document.getElementById('modalFilesEmpty');
+            container.innerHTML = '';
+
+            if (files.length === 0) {
+                container.classList.add('d-none');
+                emptyEl.classList.remove('d-none');
+            } else {
+                container.classList.remove('d-none');
+                emptyEl.classList.add('d-none');
+
+                files.forEach((file, idx) => {
+                    const isPdf = (file.url || '').toLowerCase().endsWith('.pdf');
+                    const col = document.createElement('div');
+                    col.className = 'col-sm-6 col-md-4';
+                    
+                    let previewHtml = '';
+                    if (isPdf) {
+                        previewHtml = `
+                            <div class="d-flex flex-column align-items-center justify-content-center bg-danger bg-opacity-10 text-danger rounded-3" style="height: 140px; cursor: pointer;">
+                                <i class="fa-solid fa-file-pdf fs-1 mb-2"></i>
+                                <span class="badge bg-danger">Dokumen PDF</span>
+                            </div>
+                        `;
+                    } else {
+                        previewHtml = `
+                            <div class="position-relative overflow-hidden rounded-3 bg-black bg-opacity-10 d-flex align-items-center justify-content-center" style="height: 140px;">
+                                <img src="${file.url}" alt="${file.title}" class="w-100 h-100 object-fit-cover transition" onerror="this.onerror=null;this.parentElement.innerHTML='<div class=\\'text-center text-muted p-3\\'><i class=\\'fa-regular fa-image fs-1 mb-1 d-block\\'></i><small>Gagal memuat gambar</small></div>';">
+                                <span class="position-absolute bottom-0 start-0 m-2 badge bg-dark bg-opacity-75 text-white" style="font-size: 0.7rem;">
+                                    <i class="fa-solid fa-expand me-1"></i> Preview
+                                </span>
+                            </div>
+                        `;
+                    }
+
+                    col.innerHTML = `
+                        <div class="card h-100 border shadow-xs rounded-3 overflow-hidden">
+                            <a href="${file.url}" target="_blank" rel="noopener noreferrer" class="text-decoration-none">
+                                ${previewHtml}
+                            </a>
+                            <div class="p-3 d-flex flex-column justify-content-between flex-grow-1 bg-body">
+                                <div>
+                                    <div class="d-flex align-items-center justify-content-between mb-1">
+                                        <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25" style="font-size: 0.7rem;">
+                                            ${file.source || 'Lampiran'}
+                                        </span>
+                                        <small class="text-muted" style="font-size: 0.7rem;">${file.created_at || '-'}</small>
+                                    </div>
+                                    <h6 class="fw-bold mb-1 text-truncate text-dark" title="${file.title || file.category}">${file.title || file.category}</h6>
+                                    ${file.notes ? `<p class="text-muted small mb-2 text-truncate" title="${file.notes}" style="font-size: 0.78rem;">${file.notes}</p>` : ''}
+                                </div>
+                                <div class="pt-2 border-top mt-2">
+                                    <a href="${file.url}" target="_blank" rel="noopener noreferrer" class="btn btn-sm btn-light border w-100 rounded-2 fw-semibold" style="font-size: 0.75rem;">
+                                        <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Buka File
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    container.appendChild(col);
+                });
+            }
+
+            const modal = new bootstrap.Modal(document.getElementById('modalUploadFiles'));
+            modal.show();
+        }
+
         function setPreset(val) {
             document.getElementById('presetInput').value = val;
             const today = new Date();
@@ -568,6 +902,16 @@
             }
         }
 
+        // Helper buttons for Select2 Multi-Select
+        function selectAll(id) {
+            $('#' + id + ' > option').prop('selected', true);
+            $('#' + id).trigger('change');
+        }
+
+        function clearAll(id) {
+            $('#' + id).val(null).trigger('change');
+        }
+
         // Export Excel with all 5 canvas charts embedded
         function exportDriverReportWithCharts() {
             const c1 = document.getElementById('chartVehiclePercentage');
@@ -582,11 +926,66 @@
             if (c4) document.getElementById('input_chart_km_driver').value = c4.toDataURL('image/png');
             if (c5) document.getElementById('input_chart_tasks_driver').value = c5.toDataURL('image/png');
 
+            // Populate multi-select driver inputs
+            const driverContainer = document.getElementById('exportDriverInputs');
+            if (driverContainer) {
+                driverContainer.innerHTML = '';
+                const selectedDrivers = $('#driver_id').val() || [];
+                selectedDrivers.forEach(val => {
+                    const inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = 'driver_id[]';
+                    inp.value = val;
+                    driverContainer.appendChild(inp);
+                });
+            }
+
+            // Populate multi-select vehicle inputs
+            const vehicleContainer = document.getElementById('exportVehicleInputs');
+            if (vehicleContainer) {
+                vehicleContainer.innerHTML = '';
+                const selectedVehicles = $('#vehicle_id').val() || [];
+                selectedVehicles.forEach(val => {
+                    const inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = 'vehicle_id[]';
+                    inp.value = val;
+                    vehicleContainer.appendChild(inp);
+                });
+            }
+
             document.getElementById('exportWithChartsForm').submit();
         }
 
-        // INITIALIZE ALL 5 CHARTS
+        // INITIALIZE ALL 5 CHARTS & SELECT2
         document.addEventListener('DOMContentLoaded', function () {
+            // Initialize Select2 with Search & Multi-Select
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('.select2-filter').select2({
+                    theme: 'bootstrap-5',
+                    width: '100%',
+                    closeOnSelect: false,
+                    allowClear: true
+                });
+
+                // Update badge counts dynamically on change
+                function updateSelectBadges() {
+                    const selectedDrivers = $('#driver_id').val() || [];
+                    const dBadge = document.getElementById('driver_count_badge');
+                    if (dBadge) {
+                        dBadge.innerText = selectedDrivers.length > 0 ? `${selectedDrivers.length} Dipilih` : 'Semua Driver';
+                    }
+
+                    const selectedVehicles = $('#vehicle_id').val() || [];
+                    const vBadge = document.getElementById('vehicle_count_badge');
+                    if (vBadge) {
+                        vBadge.innerText = selectedVehicles.length > 0 ? `${selectedVehicles.length} Dipilih` : 'Semua Armada';
+                    }
+                }
+
+                $('#driver_id, #vehicle_id').on('change', updateSelectBadges);
+            }
+
             const isDark = document.documentElement.getAttribute('data-bs-theme') === 'dark';
             const textColor = isDark ? '#94a3b8' : '#64748b';
             const gridColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.05)';
