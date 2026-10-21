@@ -166,8 +166,13 @@ class HppCalculationService
             }
         }
         
-        // 1. Hitung Total Nilai Barang dalam 1 Ritase
+        // Bobot Komposisi Pembebanan
+        $bobotJarak = 0.20; // 20% Beban Jarak
+        $bobotNilai = 0.80; // 80% Beban Nilai / Jumlah Barang
+        
+        // 1. Hitung Total Nilai Barang & Total Baris Tugas dalam 1 Ritase
         $totalNilai = $allItems->sum('line_total');
+        $totalItemsCount = $allItems->count();
         
         $result = [];
         
@@ -178,13 +183,19 @@ class HppCalculationService
             $description = $item->item_description ?? 'Paket/Barang';
             $unit = $item->unit ?? 'pcs';
             
-            // 2. Hitung Rasio Nilai
-            $rasioNilai = $totalNilai > 0 ? ($nilaiBaris / $totalNilai) : ($allItems->count() > 0 ? 1 / $allItems->count() : 0);
+            // a. Rasio Jarak (20%): Dibagi rata proporsional per titik/baris barang yang diantar
+            $rasioJarak = $totalItemsCount > 0 ? (1 / $totalItemsCount) : 0;
+
+            // b. Rasio Nilai Barang (80%): Berdasarkan proporsi nilai rupiah barang
+            $rasioNilai = $totalNilai > 0 ? ($nilaiBaris / $totalNilai) : ($totalItemsCount > 0 ? (1 / $totalItemsCount) : 0);
             
-            // 3. Hitung HPP per Baris
-            $hppPerBaris = $totalCost * $rasioNilai;
+            // c. Kombinasi Bobot Gabungan (20% Jarak + 80% Nilai Barang)
+            $rasioGabungan = ($bobotJarak * $rasioJarak) + ($bobotNilai * $rasioNilai);
             
-            // 4. Hitung HPP per QTY
+            // 2. Hitung HPP per Baris
+            $hppPerBaris = $totalCost * $rasioGabungan;
+            
+            // 3. Hitung HPP per QTY
             $hppPerQty = $qtyBaris > 0 ? ($hppPerBaris / $qtyBaris) : 0;
             
             $result[] = [
@@ -196,7 +207,7 @@ class HppCalculationService
                 'line_total' => $nilaiBaris,
                 'hpp_per_baris' => $hppPerBaris,
                 'hpp_per_qty' => $hppPerQty,
-                'percentage' => $rasioNilai * 100
+                'percentage' => $rasioGabungan * 100
             ];
         }
         

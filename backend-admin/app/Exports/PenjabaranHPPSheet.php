@@ -13,10 +13,10 @@ class PenjabaranHPPSheet implements FromCollection, WithHeadings, WithTitle
     {
         $data = [
             ['Biaya BBM', '(Jarak Tempuh / Konsumsi BBM per Liter) * Harga BBM per Liter'],
-            ['Biaya Manpower', 'Upah Supir per Ritase (dari Profil Driver)'],
-            ['Total Biaya Ritase', 'Biaya BBM + Biaya Manpower + Tol + Parkir + Biaya Lainnya'],
-            ['HPP per Baris (Jika Nilai Barang > 0)', 'Total Biaya Ritase * (Nilai Barang / Total Nilai Dasar Semua Barang di Trip)'],
-            ['HPP per Baris (Jika Nilai Barang = 0)', 'Total Biaya Ritase / Jumlah Baris Barang di Trip'],
+            ['Biaya Manpower', 'Upah Supir per Jam/Menit/Detik * Durasi Shift * Jumlah Supir'],
+            ['Total Biaya Ritase', 'Biaya BBM + Manpower + Tol + Parkir + Lainnya + Depresiasi'],
+            ['Bobot Pembebanan', '20% Beban Jarak (Rasio Baris/Tujuan) + 80% Beban Nilai Barang'],
+            ['HPP per Baris', 'Total Biaya Ritase * ((20% * Rasio Jarak) + (80% * Rasio Nilai Barang))'],
             ['HPP / Qty', 'HPP per Baris / Qty Barang'],
         ];
 

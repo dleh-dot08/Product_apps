@@ -95,8 +95,8 @@
                     <div class="card-header bg-primary" style="display: flex; justify-content: space-between; align-items: center;">
                         <h3 class="card-title" style="margin: 0;">Alokasi HPP per Barang</h3>
                         <div class="card-tools" style="float: right;">
-                            <span class="badge" style="background-color: rgba(255,255,255,0.2); color: white;">
-                                Skenario: {{ $prorataDetails['is_prorata'] ? 'Prorata Nilai' : 'Bagi Rata (Flat)' }}
+                            <span class="badge" style="background-color: rgba(255,255,255,0.25); color: white;">
+                                Skenario: Bobot Jarak 20% & Bobot Nilai 80%
                             </span>
                         </div>
                     </div>
