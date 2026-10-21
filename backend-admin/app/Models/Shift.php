@@ -47,4 +47,9 @@ class Shift extends Model
     {
         return $this->hasMany(DeliveryAssignment::class, 'shift_id');
     }
+
+    public function attachments()
+    {
+        return $this->hasMany(TaskAttachment::class, 'shift_id');
+    }
 }

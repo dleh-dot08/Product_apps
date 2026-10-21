@@ -186,6 +186,24 @@ Route::middleware('auth')->group(function () {
         })->name('validasi_data.settings.update');
     });
 
+    // ============================================================
+    // EKSPEDISI & VENDOR PENGIRIMAN (3PL / CARGO)
+    // ============================================================
+    Route::prefix('ekspedisi')->name('ekspedisi.')->group(function () {
+        // Vendors Master Data
+        Route::get('/vendors', [\App\Http\Controllers\ExpeditionVendorController::class, 'index'])->name('vendors.index')->middleware('permission:View Vendor Ekspedisi');
+        Route::post('/vendors', [\App\Http\Controllers\ExpeditionVendorController::class, 'store'])->name('vendors.store')->middleware('permission:Manage Vendor Ekspedisi');
+        Route::put('/vendors/{vendor}', [\App\Http\Controllers\ExpeditionVendorController::class, 'update'])->name('vendors.update')->middleware('permission:Manage Vendor Ekspedisi');
+        Route::delete('/vendors/{vendor}', [\App\Http\Controllers\ExpeditionVendorController::class, 'destroy'])->name('vendors.destroy')->middleware('permission:Manage Vendor Ekspedisi');
+
+        // Expeditions Tracking & Management
+        Route::get('/', [\App\Http\Controllers\ExpeditionController::class, 'index'])->name('index')->middleware('permission:View Ekspedisi');
+        Route::post('/', [\App\Http\Controllers\ExpeditionController::class, 'store'])->name('store')->middleware('permission:Create Ekspedisi');
+        Route::put('/{ekspedisi}', [\App\Http\Controllers\ExpeditionController::class, 'update'])->name('update')->middleware('permission:Edit Ekspedisi');
+        Route::patch('/{ekspedisi}/delivered', [\App\Http\Controllers\ExpeditionController::class, 'markDelivered'])->name('mark-delivered')->middleware('permission:Edit Ekspedisi');
+        Route::delete('/{ekspedisi}', [\App\Http\Controllers\ExpeditionController::class, 'destroy'])->name('destroy')->middleware('permission:Delete Ekspedisi');
+    });
+
 });
 
 // Jangan di ganggu ini OTA Android 

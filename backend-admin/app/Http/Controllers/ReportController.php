@@ -82,18 +82,43 @@ class ReportController extends Controller
         }
 
         [$startDate, $endDate, $preset] = $this->getDateRange($request);
-        $driverId = $request->input('driver_id');
-        $vehicleId = $request->input('vehicle_id');
+        
+        $driverIds = $request->input('driver_id', []);
+        if (!is_array($driverIds)) {
+            $driverIds = $driverIds ? [$driverIds] : [];
+        }
+        $driverIds = array_values(array_filter($driverIds));
+
+        $vehicleIds = $request->input('vehicle_id', []);
+        if (!is_array($vehicleIds)) {
+            $vehicleIds = $vehicleIds ? [$vehicleIds] : [];
+        }
+        $vehicleIds = array_values(array_filter($vehicleIds));
+
+        $status = $request->input('status');
 
         // 1. QUERY SHIFTS / PERJALANAN
-        $query = Shift::with(['driver', 'vehicle', 'pickupTasks', 'deliveryAssignments.salesOrder'])
+        $query = Shift::with([
+            'driver',
+            'vehicle',
+            'attachments',
+            'expenses',
+            'pickupTasks.attachments',
+            'deliveryAssignments.salesOrder',
+            'deliveryAssignments.attachments'
+        ])
             ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()]);
 
-        if ($driverId) {
-            $query->where('driver_id', $driverId);
+        if (!empty($driverIds)) {
+            $query->whereIn('driver_id', $driverIds);
         }
-        if ($vehicleId) {
-            $query->where('vehicle_id', $vehicleId);
+        if (!empty($vehicleIds)) {
+            $query->whereIn('vehicle_id', $vehicleIds);
+        }
+        if ($status === 'completed') {
+            $query->whereNotNull('check_out_at');
+        } elseif ($status === 'active') {
+            $query->whereNull('check_out_at');
         }
 
         $shifts = $query->orderBy('work_date', 'desc')->orderBy('check_in_at', 'desc')->get();
@@ -199,6 +224,74 @@ class ReportController extends Controller
                 $tasksPerDriverMap[$driverName] = $taskCount;
             }
 
+            // Kumpulkan file upload (Shift vehicle check-in/out, Tugas attachments, Bon pengeluaran)
+            $uploadedFiles = [];
+
+            // 1. Lampiran Foto Shift (Check-in/Check-out armada & odometer)
+            foreach ($shift->attachments as $att) {
+                if ($att->file_path) {
+                    $uploadedFiles[] = [
+                        'source' => 'Shift Kendaraan',
+                        'category' => $att->category ?? $att->document_type ?? 'Kondisi Armada',
+                        'title' => $att->category ?? 'Kondisi Kendaraan',
+                        'file_name' => $att->file_name ?? basename($att->file_path),
+                        'url' => $att->file_path,
+                        'notes' => $att->notes ?? null,
+                        'created_at' => $att->created_at ? $att->created_at->format('d M Y, H:i') : '-',
+                    ];
+                }
+            }
+
+            // 2. Lampiran Foto Tugas Pickup
+            foreach ($shift->pickupTasks as $p) {
+                foreach ($p->attachments as $pAtt) {
+                    if ($pAtt->file_path) {
+                        $uploadedFiles[] = [
+                            'source' => 'Pickup Task (' . ($p->reference_number ?? '-') . ')',
+                            'category' => $pAtt->category ?? $pAtt->document_type ?? 'Bukti Pickup',
+                            'title' => 'Pickup: ' . ($p->reference_number ?? '-'),
+                            'file_name' => $pAtt->file_name ?? basename($pAtt->file_path),
+                            'url' => $pAtt->file_path,
+                            'notes' => $pAtt->notes ?? null,
+                            'created_at' => $pAtt->created_at ? $pAtt->created_at->format('d M Y, H:i') : '-',
+                        ];
+                    }
+                }
+            }
+
+            // 3. Lampiran Foto Tugas Delivery
+            foreach ($shift->deliveryAssignments as $d) {
+                $soNumber = $d->salesOrder->so_number ?? '-';
+                foreach ($d->attachments as $dAtt) {
+                    if ($dAtt->file_path) {
+                        $uploadedFiles[] = [
+                            'source' => 'Delivery SO (' . $soNumber . ')',
+                            'category' => $dAtt->category ?? $dAtt->document_type ?? 'Bukti Delivery / BAST',
+                            'title' => 'Delivery SO: ' . $soNumber,
+                            'file_name' => $dAtt->file_name ?? basename($dAtt->file_path),
+                            'url' => $dAtt->file_path,
+                            'notes' => $dAtt->notes ?? null,
+                            'created_at' => $dAtt->created_at ? $dAtt->created_at->format('d M Y, H:i') : '-',
+                        ];
+                    }
+                }
+            }
+
+            // 4. Lampiran Struk Bon Pengeluaran (BBM, Tol, Parkir, dll)
+            foreach ($shift->expenses as $exp) {
+                if ($exp->receipt_url) {
+                    $uploadedFiles[] = [
+                        'source' => 'Pengeluaran (' . ucfirst($exp->category ?? 'Bon') . ')',
+                        'category' => 'Struk Bon ' . ucfirst($exp->category ?? 'Operasional'),
+                        'title' => 'Bon Rp ' . number_format($exp->amount ?? 0, 0, ',', '.') . ' - ' . ($exp->description ?? ucfirst($exp->category ?? '')),
+                        'file_name' => basename($exp->receipt_url),
+                        'url' => $exp->receipt_url,
+                        'notes' => $exp->description ?? ('Nominal: Rp ' . number_format($exp->amount ?? 0, 0, ',', '.')),
+                        'created_at' => $exp->occurred_at ? $exp->occurred_at->format('d M Y, H:i') : ($exp->created_at ? $exp->created_at->format('d M Y, H:i') : '-'),
+                    ];
+                }
+            }
+
             $tableData[] = [
                 'id' => $shift->id,
                 'driver_name' => $driverName,
@@ -215,6 +308,8 @@ class ReportController extends Controller
                 'tasks' => $taskList,
                 'task_count' => $taskCount,
                 'status' => $shift->check_out_at ? 'Selesai' : 'Aktif',
+                'files' => $uploadedFiles,
+                'files_count' => count($uploadedFiles),
             ];
         }
 
@@ -276,12 +371,18 @@ class ReportController extends Controller
             'data' => array_values($tasksPerDriverMap),
         ];
 
+        $driverId = count($driverIds) === 1 ? $driverIds[0] : null;
+        $vehicleId = count($vehicleIds) === 1 ? $vehicleIds[0] : null;
+
         return view('reports.driver', compact(
             'startDate',
             'endDate',
             'preset',
             'driverId',
             'vehicleId',
+            'driverIds',
+            'vehicleIds',
+            'status',
             'drivers',
             'allVehicles',
             'tableData',
@@ -312,17 +413,34 @@ class ReportController extends Controller
         }
 
         [$startDate, $endDate, $preset] = $this->getDateRange($request);
-        $driverId = $request->input('driver_id');
-        $vehicleId = $request->input('vehicle_id');
+        
+        $driverIds = $request->input('driver_id', []);
+        if (!is_array($driverIds)) {
+            $driverIds = $driverIds ? [$driverIds] : [];
+        }
+        $driverIds = array_values(array_filter($driverIds));
+
+        $vehicleIds = $request->input('vehicle_id', []);
+        if (!is_array($vehicleIds)) {
+            $vehicleIds = $vehicleIds ? [$vehicleIds] : [];
+        }
+        $vehicleIds = array_values(array_filter($vehicleIds));
+
+        $status = $request->input('status');
 
         $query = Shift::with(['driver', 'vehicle', 'pickupTasks', 'deliveryAssignments.salesOrder'])
             ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()]);
 
-        if ($driverId) {
-            $query->where('driver_id', $driverId);
+        if (!empty($driverIds)) {
+            $query->whereIn('driver_id', $driverIds);
         }
-        if ($vehicleId) {
-            $query->where('vehicle_id', $vehicleId);
+        if (!empty($vehicleIds)) {
+            $query->whereIn('vehicle_id', $vehicleIds);
+        }
+        if ($status === 'completed') {
+            $query->whereNotNull('check_out_at');
+        } elseif ($status === 'active') {
+            $query->whereNull('check_out_at');
         }
 
         $shifts = $query->orderBy('work_date', 'desc')->orderBy('check_in_at', 'desc')->get();

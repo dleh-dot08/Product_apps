@@ -85,6 +85,19 @@ class ModuleSeeder extends Seeder
                 'color' => 'text-warning',
                 'available_permissions' => ['View Laporan', 'Export Laporan']
             ],
+            [
+                'name' => 'Ekspedisi & Vendor', 
+                'icon' => 'fa-plane-departure', 
+                'color' => 'text-primary',
+                'available_permissions' => [
+                    'View Ekspedisi',
+                    'Create Ekspedisi',
+                    'Edit Ekspedisi',
+                    'Delete Ekspedisi',
+                    'View Vendor Ekspedisi',
+                    'Manage Vendor Ekspedisi'
+                ]
+            ],
         ];
 
         // Hapus semua data modul lama yang tidak ada di list di atas (opsional, untuk memastikan sinkron)
