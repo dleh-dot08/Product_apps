@@ -53,6 +53,15 @@ class Expedition extends Model
         'actual_arrival_date' => 'datetime',
     ];
 
+    /**
+     * Prepare a date for array / JSON serialization.
+     * Prevents UTC timezone shift on date fields.
+     */
+    protected function serializeDate(\DateTimeInterface $date)
+    {
+        return $date->format('Y-m-d H:i:s');
+    }
+
     public function vendor()
     {
         return $this->belongsTo(ExpeditionVendor::class, 'vendor_id');

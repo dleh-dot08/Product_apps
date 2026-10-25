@@ -98,7 +98,7 @@
                                     </thead>
                                     <tbody>
                                         <tr>
-                                            <td colspan="5" class="text-center py-5 text-muted" id="editLoadingTasksText">
+                                            <td colspan="6" class="text-center py-5 text-muted" id="editLoadingTasksText">
                                                 <div class="spinner-border spinner-border-sm me-2 text-primary" role="status"></div>
                                                 Memuat daftar tugas...
                                             </td>
@@ -209,7 +209,7 @@
             let tbody = editTable.querySelector('tbody');
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="5" class="text-center py-4 text-muted">
+                    <td colspan="6" class="text-center py-4 text-muted">
                         <div class="spinner-border spinner-border-sm me-2" role="status" style="color: #1e40af;"></div>
                         Memuat daftar tugas...
                     </td>
@@ -240,7 +240,7 @@
                     if (allTasks.length === 0) {
                         tbody.innerHTML = `
                             <tr>
-                                <td colspan="5" class="text-center py-4 text-muted">Tidak ada tugas tersedia.</td>
+                                <td colspan="6" class="text-center py-4 text-muted">Tidak ada tugas tersedia.</td>
                             </tr>
                         `;
                         editUpdateSelectedCount();
@@ -254,7 +254,7 @@
                     let unassignedCount = allTasks.filter(t => t._group === 'unassigned').length;
 
                     if (assignedCount > 0) {
-                        html += `<tr class="table-primary"><td colspan="5" class="fw-bold small py-2 ps-3" style="color: #1e40af;"><i class="fa-solid fa-check-circle me-2"></i>Tugas Saat Ini di Penugasan (${assignedCount})</td></tr>`;
+                        html += `<tr class="table-primary"><td colspan="6" class="fw-bold small py-2 ps-3" style="color: #1e40af;"><i class="fa-solid fa-check-circle me-2"></i>Tugas Saat Ini di Penugasan (${assignedCount})</td></tr>`;
                     }
 
                     allTasks.filter(t => t._group === 'assigned').forEach(task => {
@@ -262,7 +262,7 @@
                     });
 
                     if (unassignedCount > 0) {
-                        html += `<tr class="table-warning"><td colspan="5" class="fw-bold small py-2 ps-3" style="color: #92400e;"><i class="fa-solid fa-plus-circle me-2"></i>Tugas Tersedia (Belum Di-assign) (${unassignedCount})</td></tr>`;
+                        html += `<tr class="table-warning"><td colspan="6" class="fw-bold small py-2 ps-3" style="color: #92400e;"><i class="fa-solid fa-plus-circle me-2"></i>Tugas Tersedia (Belum Di-assign) (${unassignedCount})</td></tr>`;
                     }
 
                     allTasks.filter(t => t._group === 'unassigned').forEach(task => {
@@ -281,7 +281,7 @@
                     console.error(err);
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="5" class="text-center py-4 text-danger">Gagal memuat tugas. Silakan coba lagi.</td>
+                            <td colspan="6" class="text-center py-4 text-danger">Gagal memuat tugas. Silakan coba lagi.</td>
                         </tr>
                     `;
                 });
@@ -322,6 +322,15 @@
                 }
             }
 
+            let createdBy = task.created_by_name || (task.assigned_by ? (task.assigned_by.full_name || task.assigned_by.name) : null) || '-';
+
+            let dispatchDateCol = `
+                <div>${dispatchDate}</div>
+                <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                    <i class="fa-solid fa-user-pen me-1 text-secondary"></i>Create By : <span class="fw-semibold text-dark">${createdBy}</span>
+                </small>
+            `;
+
             let statusBadge = task.status || 'draft';
 
             if (task._group === 'assigned') {
@@ -343,7 +352,7 @@
                         <td class="align-middle">${typeBadge}</td>
                         <td class="align-middle"><span class="fw-bold">${refNumber}</span></td>
                         <td class="align-middle">${targetName}</td>
-                        <td class="align-middle">${dispatchDate}</td>
+                        <td class="align-middle">${dispatchDateCol}</td>
                         <td class="align-middle"><span class="badge bg-secondary">${statusBadge.toUpperCase().replace('_', ' ')}</span></td>
                     </tr>
                 `;
@@ -354,7 +363,7 @@
                         <td class="align-middle">${typeBadge}</td>
                         <td class="align-middle"><span class="fw-bold">${refNumber}</span></td>
                         <td class="align-middle">${targetName}</td>
-                        <td class="align-middle">${dispatchDate}</td>
+                        <td class="align-middle">${dispatchDateCol}</td>
                         <td class="align-middle"><span class="badge bg-secondary">${statusBadge.toUpperCase().replace('_', ' ')}</span></td>
                     </tr>
                 `;

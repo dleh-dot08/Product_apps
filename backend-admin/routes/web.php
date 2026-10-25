@@ -116,6 +116,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('packaging')->name('packaging.')->group(function () {
         Route::get('/', [\App\Http\Controllers\PackagingController::class, 'index'])->name('index')->middleware('permission:View Packing');
         Route::get('/export', [\App\Http\Controllers\PackagingController::class, 'export'])->name('export')->middleware('permission:View Packing');
+        Route::get('/export-list', [\App\Http\Controllers\PackagingController::class, 'exportList'])->name('export-list')->middleware('permission:View Packing');
+        Route::match(['get', 'post'], '/export-format', [\App\Http\Controllers\PackagingController::class, 'exportFormat'])->name('export-format')->middleware('permission:View Packing');
         Route::get('/{packagingJob}/export-excel', [\App\Http\Controllers\PackagingController::class, 'exportJob'])->name('export-job')->middleware('permission:View Packing');
         Route::get('/create', function() { 
             $materials = \Illuminate\Support\Facades\DB::table('packing_material_prices')->get()->map(function($item) {

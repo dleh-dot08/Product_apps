@@ -66,23 +66,37 @@ class PackingListAllExport
         $sheet->setCellValue('E4', $customerHeader);
         $sheet->setCellValue('E5', '-'); // PIC
         $sheet->setCellValue('E6', $soHeader); // PURCHASE ORDER NO.
-        $sheet->setCellValue('E7', 'ALL PACKAGING'); // PROJECT
+        $sheet->setCellValue('E7', ''); // PROJECT (dikosongkan)
 
         $sheet->setCellValue('N4', 'PT AQPA INDONESIA'); // VENDOR
-        $sheet->setCellValue('N5', date('d/m/Y')); // DATE
-        $sheet->setCellValue('N6', 'ALL'); // DO NO.
+        $sheet->setCellValue('N5', ''); // DATE (dikosongkan)
+        $sheet->setCellValue('N6', ''); // DO NO. (dikosongkan)
         $sheet->setCellValue('N7', '-'); // DRIVER NAME
 
         // 2. Data Items (Template mulai dari baris 12, tiap baris data memakai merge 2 baris)
         $startRow = 12;
         $rowCounter = 0;
 
+        $totalAllItems = 0;
+        foreach ($packagingJobs as $j) {
+            $totalAllItems += ($j->items && $j->items->count() > 0) ? $j->items->count() : 1;
+        }
+
         foreach ($packagingJobs as $job) {
-            $panjangM = $job->panjang ? round(((float) $job->panjang) / 1000, 3) : 0;
-            $lebarM   = $job->lebar   ? round(((float) $job->lebar) / 1000, 3) : 0;
-            $tinggiM  = $job->tinggi  ? round(((float) $job->tinggi) / 1000, 3) : 0;
+            $panjangMm = $job->panjang ? (float) $job->panjang : 0;
+            $lebarMm   = $job->lebar   ? (float) $job->lebar : 0;
+            $tinggiMm  = $job->tinggi  ? (float) $job->tinggi : 0;
+
+            $panjangM = $panjangMm > 0 ? round($panjangMm / 1000, 3) : 0;
+            $lebarM   = $lebarMm > 0   ? round($lebarMm / 1000, 3) : 0;
+            $tinggiM  = $tinggiMm > 0  ? round($tinggiMm / 1000, 3) : 0;
             $volumeM3 = ($panjangM > 0 && $lebarM > 0 && $tinggiM > 0)
                 ? round($panjangM * $lebarM * $tinggiM, 3)
+                : 0;
+
+            // Weight (KG) = panjang (mm) * lebar (mm) * tinggi (mm) / 1.000.000 (1JT)
+            $weightKg = ($panjangMm > 0 && $lebarMm > 0 && $tinggiMm > 0)
+                ? round(($panjangMm * $lebarMm * $tinggiMm) / 1000000, 2)
                 : 0;
 
             $items = ($job->items && $job->items->count() > 0) ? $job->items : [null];
@@ -115,18 +129,12 @@ class PackingListAllExport
                     }
                 }
 
+                $packingNo = ($rowCounter + 1) . '/' . ($totalAllItems > 0 ? $totalAllItems : 1);
                 $sheet->setCellValue("A{$r}", $rowCounter + 1);
-                $sheet->setCellValue("B{$r}", $job->packaging_number ?? '-');
+                $sheet->setCellValueExplicit("B{$r}", $packingNo, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
 
                 if ($item) {
-                    $descParts = [];
-                    if (!empty($item->no_product)) {
-                        $descParts[] = $item->no_product;
-                    }
-                    if (!empty($item->desc_product)) {
-                        $descParts[] = $item->desc_product;
-                    }
-                    $goodsDesc = count($descParts) > 0 ? implode(' - ', $descParts) : ($job->type_packaging ?? '-');
+                    $goodsDesc = !empty($item->desc_product) ? $item->desc_product : ($job->type_packaging ?? '-');
                     $qty = $item->qty ?? 1;
                     $remarks = !empty($item->customer) ? $item->customer : ($job->type_packaging ?? '-');
                 } else {
@@ -138,7 +146,7 @@ class PackingListAllExport
                 $sheet->setCellValue("D{$r}", $goodsDesc);
                 $sheet->setCellValue("J{$r}", $qty);
                 $sheet->setCellValue("K{$r}", 'PCS');
-                $sheet->setCellValue("L{$r}", '-'); // Gross Weight
+                $sheet->setCellValue("L{$r}", $weightKg > 0 ? $weightKg : '-'); // Gross Weight (KG) = P x L x T / 1JT
 
                 $sheet->setCellValue("M{$r}", $panjangM);
                 $sheet->setCellValue("N{$r}", '*');
@@ -158,7 +166,7 @@ class PackingListAllExport
         for ($r = 28; $r <= $highestRow; $r++) {
             $val = (string) $sheet->getCell("R{$r}")->getValue();
             if (str_contains($val, 'Bekasi')) {
-                $sheet->setCellValue("R{$r}", "Bekasi, {$dateFormatted}");
+                $sheet->setCellValue("R{$r}", "Bekasi, ");
                 break;
             }
         }

@@ -190,19 +190,65 @@ class PackagingController extends Controller
             'avg_lead_time' => $avgLeadTime ? round($avgLeadTime, 1) : 0
         ];
 
+        $availableSos = \App\Models\PackagingJobItem::whereNotNull('no_so')
+            ->where('no_so', '!=', '')
+            ->select('no_so', DB::raw('MAX(customer) as customer'), DB::raw('count(*) as total_items'))
+            ->groupBy('no_so')
+            ->orderBy('no_so', 'asc')
+            ->get();
+
         return view('packaging.index', compact(
             'packagingJobs', 'materials', 'nails', 'trendData', 
             'compositionData', 'totalTypes', 'kpiPermintaanBaru', 
-            'kpiDalamProses', 'kpiSiapKirim', 'summaryData'
+            'kpiDalamProses', 'kpiSiapKirim', 'summaryData', 'availableSos'
         ));
     }
 
-    public function export()
+    public function export(Request $request)
     {
-        $export = new \App\Exports\PackingListAllExport();
+        return $this->exportList($request);
+    }
+
+    public function exportList(Request $request)
+    {
+        $export = new \App\Exports\PackagingJobsListExport();
         $spreadsheet = $export->export();
 
-        $fileName = 'Packing_List_All_' . date('Ymd_His') . '.xlsx';
+        $fileName = 'Data_Packaging_List_' . date('Ymd_His') . '.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function exportFormat(Request $request)
+    {
+        $selectedSo = $request->input('no_so');
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        if (empty($selectedSo) && empty($startDate) && empty($endDate)) {
+            return redirect()->back()->with('error', 'Silakan tentukan No. SO atau rentang tanggal terlebih dahulu.');
+        }
+
+        $export = new \App\Exports\PackingListFormatGroupedExport($selectedSo, $startDate, $endDate);
+        $spreadsheet = $export->export();
+
+        $cleanSoName = is_array($selectedSo) ? implode('_', $selectedSo) : $selectedSo;
+        $cleanSoName = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) $cleanSoName);
+        if ($cleanSoName === 'all' || empty($cleanSoName)) {
+            $cleanSoName = 'Semua_SO';
+        }
+
+        $dateSuffix = '';
+        if (!empty($startDate) || !empty($endDate)) {
+            $dateSuffix = '_' . ($startDate ?: 'awal') . '_sd_' . ($endDate ?: 'akhir');
+        }
+
+        $fileName = 'Packing_List_Format_' . $cleanSoName . $dateSuffix . '_' . date('Ymd_His') . '.xlsx';
 
         return response()->streamDownload(function () use ($spreadsheet) {
             $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);

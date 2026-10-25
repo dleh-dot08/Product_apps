@@ -91,7 +91,7 @@
                                     <tbody>
                                         <!-- Akan diisi melalui AJAX / looping data tugas yang belum di-assign -->
                                         <tr>
-                                            <td colspan="7" class="text-center py-4 text-muted" id="loadingTasksText">
+                                            <td colspan="6" class="text-center py-4 text-muted" id="loadingTasksText">
                                                 <div class="spinner-border spinner-border-sm me-2" role="status" style="color: #ea580c;"></div>
                                                 Memuat daftar tugas...
                                             </td>
@@ -178,7 +178,7 @@
         let tbody = document.querySelector('#tableSelectTasks tbody');
         tbody.innerHTML = `
             <tr>
-                <td colspan="5" class="text-center py-4 text-muted" id="loadingTasksText">
+                <td colspan="6" class="text-center py-4 text-muted" id="loadingTasksText">
                     <div class="spinner-border spinner-border-sm me-2" role="status"></div>
                     Memuat daftar tugas...
                 </td>
@@ -191,7 +191,7 @@
                 if (tasks.length === 0) {
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="7" class="text-center py-4 text-muted">Belum ada tugas yang belum di-assign.</td>
+                            <td colspan="6" class="text-center py-4 text-muted">Belum ada tugas yang belum di-assign.</td>
                         </tr>
                     `;
                     updateSelectedCount(0);
@@ -234,13 +234,20 @@
                         }
                     }
 
+                    let createdBy = task.created_by_name || (task.assigned_by ? (task.assigned_by.full_name || task.assigned_by.name) : null) || '-';
+
                     html += `
                         <tr>
                             <td class="text-center"><input class="form-check-input task-checkbox" type="checkbox" name="selected_tasks[]" value="${valId}"></td>
                             <td>${typeBadge}</td>
                             <td><span class="fw-bold">${refNumber}</span></td>
                             <td>${targetName || '-'}</td>
-                            <td>${dispatchDate}</td>
+                            <td>
+                                <div>${dispatchDate}</div>
+                                <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                                    <i class="fa-solid fa-user-pen me-1 text-secondary"></i>Create By : <span class="fw-semibold text-dark">${createdBy}</span>
+                                </small>
+                            </td>
                             <td><span class="badge bg-secondary">${task.status}</span></td>
                         </tr>
                     `;
@@ -254,7 +261,7 @@
                 console.error(err);
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" class="text-center py-4 text-danger">Gagal memuat tugas. Silakan coba lagi.</td>
+                        <td colspan="6" class="text-center py-4 text-danger">Gagal memuat tugas. Silakan coba lagi.</td>
                     </tr>
                 `;
             });

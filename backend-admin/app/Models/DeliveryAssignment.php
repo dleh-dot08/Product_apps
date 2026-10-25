@@ -103,6 +103,11 @@ class DeliveryAssignment extends Model
         return $this->belongsTo(User::class, 'assigned_by');
     }
 
+    public function assignedBy()
+    {
+        return $this->belongsTo(User::class, 'assigned_by');
+    }
+
     public function history()
     {
         return $this->hasMany(TaskHistory::class, 'task_id');

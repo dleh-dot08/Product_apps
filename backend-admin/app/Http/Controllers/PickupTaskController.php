@@ -1001,24 +1001,39 @@ class PickupTaskController extends Controller
     }
     public function getUnassignedTasks(Request $request)
     {
-        $pickups = PickupTask::where(function($q) {
-                $q->whereNull('manifest_id')->orWhere('status', 'pending');
-            })
-            ->whereIn('status', ['draft', 'pending'])
-            ->get()
-            ->map(function($task) {
-                $task->task_type = 'pickup';
-                return $task;
-            });
+        $getCreatorName = function($task) {
+            $name = $task->assignedBy?->full_name ?? $task->assignedBy?->name ?? ($task->assigner?->full_name ?? $task->assigner?->name);
+            if (!$name) {
+                $firstHistory = \App\Models\TaskHistory::where('task_id', $task->id)
+                    ->where('task_type', $task->task_type)
+                    ->with('recorder')
+                    ->first();
+                $name = $firstHistory?->recorder?->full_name ?? $firstHistory?->recorder?->name;
+            }
+            return $name ?: '-';
+        };
 
-        $deliveries = DeliveryAssignment::with('salesOrder')
+        $pickups = PickupTask::with('assignedBy')
             ->where(function($q) {
                 $q->whereNull('manifest_id')->orWhere('status', 'pending');
             })
             ->whereIn('status', ['draft', 'pending'])
             ->get()
-            ->map(function($task) {
+            ->map(function($task) use ($getCreatorName) {
+                $task->task_type = 'pickup';
+                $task->created_by_name = $getCreatorName($task);
+                return $task;
+            });
+
+        $deliveries = DeliveryAssignment::with(['salesOrder', 'assignedBy', 'assigner'])
+            ->where(function($q) {
+                $q->whereNull('manifest_id')->orWhere('status', 'pending');
+            })
+            ->whereIn('status', ['draft', 'pending'])
+            ->get()
+            ->map(function($task) use ($getCreatorName) {
                 $task->task_type = 'delivery';
+                $task->created_by_name = $getCreatorName($task);
                 return $task;
             });
 
@@ -1035,28 +1050,42 @@ class PickupTaskController extends Controller
     {
         $manifest = \App\Models\TaskManifest::findOrFail($manifestId);
 
+        $getCreatorName = function($task) {
+            $name = $task->assignedBy?->full_name ?? $task->assignedBy?->name ?? ($task->assigner?->full_name ?? $task->assigner?->name);
+            if (!$name) {
+                $firstHistory = \App\Models\TaskHistory::where('task_id', $task->id)
+                    ->where('task_type', $task->task_type)
+                    ->with('recorder')
+                    ->first();
+                $name = $firstHistory?->recorder?->full_name ?? $firstHistory?->recorder?->name;
+            }
+            return $name ?: '-';
+        };
+
         // Tasks currently assigned to this manifest
-        $assignedPickups = PickupTask::where('manifest_id', $manifestId)
+        $assignedPickups = PickupTask::with('assignedBy')->where('manifest_id', $manifestId)
             ->get()
-            ->map(function($task) {
+            ->map(function($task) use ($getCreatorName) {
                 $task->task_type = 'pickup';
                 $task->is_assigned = true;
+                $task->created_by_name = $getCreatorName($task);
                 return $task;
             });
 
-        $assignedDeliveries = DeliveryAssignment::with('salesOrder')
+        $assignedDeliveries = DeliveryAssignment::with(['salesOrder', 'assignedBy', 'assigner'])
             ->where('manifest_id', $manifestId)
             ->get()
-            ->map(function($task) {
+            ->map(function($task) use ($getCreatorName) {
                 $task->task_type = 'delivery';
                 $task->is_assigned = true;
+                $task->created_by_name = $getCreatorName($task);
                 return $task;
             });
 
         $assigned = $assignedPickups->concat($assignedDeliveries)->values();
 
         // Tasks unassigned (available to add)
-        $unassignedPickups = PickupTask::where(function($q) {
+        $unassignedPickups = PickupTask::with('assignedBy')->where(function($q) {
                 $q->whereNull('manifest_id')
                   ->orWhere('status', 'pending')
                   ->orWhere(function($subQ) {
@@ -1066,13 +1095,14 @@ class PickupTaskController extends Controller
             })
             ->whereIn('status', ['draft', 'pending', 'assigned', 'on_progress', 'arrived'])
             ->get()
-            ->map(function($task) {
+            ->map(function($task) use ($getCreatorName) {
                 $task->task_type = 'pickup';
                 $task->is_assigned = false;
+                $task->created_by_name = $getCreatorName($task);
                 return $task;
             });
 
-        $unassignedDeliveries = DeliveryAssignment::with('salesOrder')
+        $unassignedDeliveries = DeliveryAssignment::with(['salesOrder', 'assignedBy', 'assigner'])
             ->where(function($q) {
                 $q->whereNull('manifest_id')
                   ->orWhere('status', 'pending')
@@ -1083,9 +1113,10 @@ class PickupTaskController extends Controller
             })
             ->whereIn('status', ['draft', 'pending', 'assigned', 'on_progress', 'arrived'])
             ->get()
-            ->map(function($task) {
+            ->map(function($task) use ($getCreatorName) {
                 $task->task_type = 'delivery';
                 $task->is_assigned = false;
+                $task->created_by_name = $getCreatorName($task);
                 return $task;
             });
 

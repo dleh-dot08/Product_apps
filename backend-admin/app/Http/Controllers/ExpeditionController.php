@@ -265,10 +265,36 @@ class ExpeditionController extends Controller
      */
     public function markDelivered(Request $request, Expedition $ekspedisi)
     {
-        $ekspedisi->update([
-            'status' => 'delivered',
-            'actual_arrival_date' => now(),
+        $request->validate([
+            'arrival_type' => 'nullable|in:today,backdate',
+            'actual_arrival_date' => 'nullable|date',
+            'receiver_pic_name' => 'nullable|string|max:150',
+            'delivery_notes' => 'nullable|string',
         ]);
+
+        $arrivalDate = now();
+        if ($request->arrival_type === 'backdate' && $request->filled('actual_arrival_date')) {
+            $arrivalDate = \Carbon\Carbon::parse($request->actual_arrival_date);
+        } elseif ($request->filled('actual_arrival_date') && $request->arrival_type !== 'today') {
+            $arrivalDate = \Carbon\Carbon::parse($request->actual_arrival_date);
+        }
+
+        $updateData = [
+            'status' => 'delivered',
+            'actual_arrival_date' => $arrivalDate,
+        ];
+
+        if ($request->filled('receiver_pic_name')) {
+            $updateData['receiver_pic_name'] = $request->receiver_pic_name;
+        }
+
+        if ($request->filled('delivery_notes')) {
+            $updateData['notes'] = $ekspedisi->notes 
+                ? $ekspedisi->notes . ' | Sampai: ' . $request->delivery_notes 
+                : 'Sampai: ' . $request->delivery_notes;
+        }
+
+        $ekspedisi->update($updateData);
 
         return redirect()->route('ekspedisi.index')->with('success', "Status pengiriman {$ekspedisi->expedition_number} diubah menjadi Telah Terkirim / Sampai.");
     }

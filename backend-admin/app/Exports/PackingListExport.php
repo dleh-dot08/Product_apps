@@ -46,19 +46,28 @@ class PackingListExport
         $sheet->setCellValue('E4', $customer);
         $sheet->setCellValue('E5', '-'); // PIC
         $sheet->setCellValue('E6', $soNumber); // PURCHASE ORDER NO.
-        $sheet->setCellValue('E7', $projectName); // PROJECT
+        $sheet->setCellValue('E7', ''); // PROJECT (dikosongkan)
 
         $sheet->setCellValue('N4', 'PT AQPA INDONESIA'); // VENDOR
-        $sheet->setCellValue('N5', $deliveryDate); // DATE
-        $sheet->setCellValue('N6', $job->packaging_number ?? '-'); // DO NO.
+        $sheet->setCellValue('N5', ''); // DATE (dikosongkan)
+        $sheet->setCellValue('N6', ''); // DO NO. (dikosongkan)
         $sheet->setCellValue('N7', '-'); // DRIVER NAME
 
-        // 2. Dimensi dalam Meter & Volume
-        $panjangM = $job->panjang ? round(((float) $job->panjang) / 1000, 3) : 0;
-        $lebarM   = $job->lebar   ? round(((float) $job->lebar) / 1000, 3) : 0;
-        $tinggiM  = $job->tinggi  ? round(((float) $job->tinggi) / 1000, 3) : 0;
+        // 2. Dimensi dalam Meter, Volume & Weight
+        $panjangMm = $job->panjang ? (float) $job->panjang : 0;
+        $lebarMm   = $job->lebar   ? (float) $job->lebar : 0;
+        $tinggiMm  = $job->tinggi  ? (float) $job->tinggi : 0;
+
+        $panjangM = $panjangMm > 0 ? round($panjangMm / 1000, 3) : 0;
+        $lebarM   = $lebarMm > 0   ? round($lebarMm / 1000, 3) : 0;
+        $tinggiM  = $tinggiMm > 0  ? round($tinggiMm / 1000, 3) : 0;
         $volumeM3 = ($panjangM > 0 && $lebarM > 0 && $tinggiM > 0)
             ? round($panjangM * $lebarM * $tinggiM, 3)
+            : 0;
+
+        // Weight (KG) = panjang (mm) * lebar (mm) * tinggi (mm) / 1.000.000 (1JT)
+        $weightKg = ($panjangMm > 0 && $lebarMm > 0 && $tinggiMm > 0)
+            ? round(($panjangMm * $lebarMm * $tinggiMm) / 1000000, 2)
             : 0;
 
         // 3. Data Items (Template mulai dari baris 12, tiap baris data memakai merge 2 baris)
@@ -88,22 +97,18 @@ class PackingListExport
                     $sheet->mergeCells("S{$r}:U{$rNext}");
                 }
 
-                $sheet->setCellValue("A{$r}", $idx + 1);
-                $sheet->setCellValue("B{$r}", $job->packaging_number ?? '-');
+                $totalItems = $items->count();
+                $packingNo = ($idx + 1) . '/' . ($totalItems > 0 ? $totalItems : 1);
 
-                $descParts = [];
-                if (!empty($item->no_product)) {
-                    $descParts[] = $item->no_product;
-                }
-                if (!empty($item->desc_product)) {
-                    $descParts[] = $item->desc_product;
-                }
-                $goodsDesc = count($descParts) > 0 ? implode(' - ', $descParts) : ($job->type_packaging ?? '-');
+                $sheet->setCellValue("A{$r}", $idx + 1);
+                $sheet->setCellValueExplicit("B{$r}", $packingNo, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+
+                $goodsDesc = !empty($item->desc_product) ? $item->desc_product : ($job->type_packaging ?? '-');
                 $sheet->setCellValue("D{$r}", $goodsDesc);
 
                 $sheet->setCellValue("J{$r}", $item->qty ?? 1);
                 $sheet->setCellValue("K{$r}", 'PCS');
-                $sheet->setCellValue("L{$r}", '-'); // Gross Weight
+                $sheet->setCellValue("L{$r}", $weightKg > 0 ? $weightKg : '-'); // Gross Weight (KG) = P x L x T / 1JT
 
                 $sheet->setCellValue("M{$r}", $panjangM);
                 $sheet->setCellValue("N{$r}", '*');
@@ -116,11 +121,11 @@ class PackingListExport
         } else {
             // Jika packaging job belum memiliki items terdaftar
             $sheet->setCellValue("A12", 1);
-            $sheet->setCellValue("B12", $job->packaging_number ?? '-');
+            $sheet->setCellValueExplicit("B12", "1/1", \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
             $sheet->setCellValue("D12", $job->type_packaging ?? 'Packaging');
             $sheet->setCellValue("J12", $job->qty_packaging ?? 1);
             $sheet->setCellValue("K12", 'UNIT');
-            $sheet->setCellValue("L12", '-');
+            $sheet->setCellValue("L12", $weightKg > 0 ? $weightKg : '-');
             $sheet->setCellValue("M12", $panjangM);
             $sheet->setCellValue("N12", '*');
             $sheet->setCellValue("O12", $lebarM);
@@ -136,7 +141,7 @@ class PackingListExport
         for ($r = 28; $r <= $highestRow; $r++) {
             $val = (string) $sheet->getCell("R{$r}")->getValue();
             if (str_contains($val, 'Bekasi')) {
-                $sheet->setCellValue("R{$r}", "Bekasi, {$dateId}");
+                $sheet->setCellValue("R{$r}", "Bekasi, ");
                 break;
             }
         }
