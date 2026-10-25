@@ -541,13 +541,13 @@
                                         Rp {{ number_format($item->cost_amount, 0, ',', '.') }}
                                     </td>
                                     <td class="text-center small">
-                                        <div><span class="text-muted">Kirim:</span> {{ $item->shipping_date ? $item->shipping_date->format('d/m/Y') : '-' }}</div>
-                                        <div><span class="text-muted">ETA:</span> {{ $item->estimated_arrival_date ? $item->estimated_arrival_date->format('d/m/Y') : '-' }}</div>
+                                        <div><span class="text-muted">Kirim:</span> <span class="fw-semibold">{{ $item->shipping_date ? $item->shipping_date->translatedFormat('d M Y') : '-' }}</span></div>
+                                        <div><span class="text-muted">ETA:</span> <span class="fw-bold text-primary">{{ $item->estimated_arrival_date ? $item->estimated_arrival_date->translatedFormat('d M Y') : '-' }}</span></div>
                                     </td>
                                     <td class="text-center small">
                                         @if($item->actual_arrival_date)
                                             <span class="badge bg-success-subtle text-success border border-success font-monospace">
-                                                {{ $item->actual_arrival_date->format('d/m/y H:i') }}
+                                                {{ $item->actual_arrival_date->translatedFormat('d M Y H:i') }}
                                             </span>
                                         @else
                                             <span class="text-muted fst-italic">Belum Tiba</span>
@@ -569,13 +569,17 @@
                                     <td class="text-center pe-3">
                                         <div class="d-flex justify-content-center gap-1">
                                             @if($item->status !== 'delivered' && auth()->user()->hasPermission('Edit Ekspedisi'))
-                                                <form method="POST" action="{{ route('ekspedisi.mark-delivered', $item->id) }}" class="d-inline" onsubmit="return confirm('Tandai pengiriman ini sebagai telah sampai tujuan?')">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit" class="btn btn-sm btn-outline-success px-2 py-1" title="Tandai Sampai">
-                                                        <i class="fa-solid fa-check-double"></i>
-                                                    </button>
-                                                </form>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-success px-2 py-1 btn-mark-delivered" 
+                                                        data-id="{{ $item->id }}"
+                                                        data-number="{{ $item->expedition_number }}"
+                                                        data-vendor="{{ $item->vendor_name }}"
+                                                        data-destination="{{ $item->destination_name ?: $item->destination_address }}"
+                                                        data-receiver="{{ $item->receiver_pic_name }}"
+                                                        data-action="{{ route('ekspedisi.mark-delivered', $item->id) }}"
+                                                        title="Tandai Sampai">
+                                                    <i class="fa-solid fa-check-double"></i>
+                                                </button>
                                             @endif
 
                                             @if(auth()->user()->hasPermission('Edit Ekspedisi'))
@@ -1054,6 +1058,10 @@
                                         <option value="cancelled">Dibatalkan</option>
                                     </select>
                                 </div>
+                                <div class="col-12 col-md-4" id="container_edit_actual_arrival" style="display: none;">
+                                    <label class="exp-form-label">Tgl & Jam Sampai (Aktual)</label>
+                                    <input type="datetime-local" name="actual_arrival_date" id="edit_actual_arrival_date" class="form-control exp-form-control">
+                                </div>
                                 <div class="col-12">
                                     <label class="exp-form-label">Catatan</label>
                                     <input type="text" name="notes" id="edit_notes" class="form-control exp-form-control">
@@ -1068,6 +1076,108 @@
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <!-- MODAL TANDAI SAMPAI (HARI INI / BACKDATE) -->
+    <div class="modal fade" id="markDeliveredModal" tabindex="-1" aria-labelledby="markDeliveredModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <form method="POST" id="formMarkDelivered" class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                @csrf
+                @method('PATCH')
+                <div class="modal-header text-white border-bottom-0 py-3 px-4" style="background: linear-gradient(135deg, #059669 0%, #10b981 100%);">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                            <i class="fa-solid fa-check-double fs-6 text-white"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-white mb-0" id="markDeliveredModalLabel">Konfirmasi Pengiriman Sampai</h5>
+                            <small class="text-white text-opacity-75" style="font-size: 0.75rem;">Atur tanggal dan konfirmasi barang telah diterima</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-4 bg-light">
+                    <!-- Info Pengiriman Card -->
+                    <div class="card border-0 shadow-sm rounded-3 mb-3 bg-white">
+                        <div class="card-body p-3">
+                            <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                                <span class="text-muted small">No. Pengiriman</span>
+                                <span class="fw-bold font-monospace text-primary" id="deliv_modal_number">-</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="text-muted small">Vendor</span>
+                                <span class="fw-semibold text-dark small" id="deliv_modal_vendor">-</span>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-start">
+                                <span class="text-muted small me-2">Tujuan</span>
+                                <span class="text-dark small text-end fw-medium text-truncate" style="max-width: 240px;" id="deliv_modal_destination">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Pilihan Tanggal Sampai: Hari Ini vs Backdate -->
+                    <div class="card border-0 shadow-sm rounded-3 bg-white p-3 mb-3">
+                        <label class="form-label fw-bold text-secondary small mb-2">
+                            <i class="fa-solid fa-clock me-1 text-success"></i>Waktu Sampai Tujuan
+                        </label>
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="arrival_type" id="arrival_type_today" value="today" checked onchange="toggleArrivalDateType()">
+                                <label class="btn btn-outline-success w-100 py-2.5 rounded-3 d-flex flex-column align-items-center justify-content-center h-100" for="arrival_type_today" style="border-width: 2px;">
+                                    <i class="fa-solid fa-calendar-day fs-5 mb-1"></i>
+                                    <span class="fw-bold" style="font-size: 0.85rem;">Hari Ini (Sekarang)</span>
+                                    <small class="text-muted" style="font-size: 0.7rem;">{{ now()->translatedFormat('d M Y H:i') }}</small>
+                                </label>
+                            </div>
+                            <div class="col-6">
+                                <input type="radio" class="btn-check" name="arrival_type" id="arrival_type_backdate" value="backdate" onchange="toggleArrivalDateType()">
+                                <label class="btn btn-outline-warning w-100 py-2.5 rounded-3 d-flex flex-column align-items-center justify-content-center h-100" for="arrival_type_backdate" style="border-width: 2px;">
+                                    <i class="fa-solid fa-calendar-alt fs-5 mb-1"></i>
+                                    <span class="fw-bold text-dark" style="font-size: 0.85rem;">Backdate</span>
+                                    <small class="text-muted" style="font-size: 0.7rem;">Tanggal/Waktu Lampau</small>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Input Tanggal & Waktu (Muncul saat Backdate dipilih) -->
+                        <div id="container_custom_arrival_date" style="display: none;">
+                            <label class="form-label fw-semibold text-dark small mb-1">
+                                Masukkan Tanggal & Waktu Sampai: <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border"><i class="fa-solid fa-calendar-check"></i></span>
+                                <input type="datetime-local" 
+                                       name="actual_arrival_date" 
+                                       id="deliv_custom_date" 
+                                       class="form-control" 
+                                       value="{{ now()->format('Y-m-d\TH:i') }}">
+                            </div>
+                            <small class="text-muted mt-1 d-block" style="font-size: 0.72rem;">Pilih tanggal dan jam saat paket benar-benar telah sampai di tujuan.</small>
+                        </div>
+                    </div>
+
+                    <!-- Penerima / Catatan Opsional -->
+                    <div class="card border-0 shadow-sm rounded-3 bg-white p-3">
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold text-secondary small mb-1">Nama Penerima (Opsional)</label>
+                            <input type="text" name="receiver_pic_name" id="deliv_modal_receiver" class="form-control form-control-sm" placeholder="Contoh: Bpk. Bambang (Security)">
+                        </div>
+                        <div>
+                            <label class="form-label fw-semibold text-secondary small mb-1">Catatan Tambahan (Opsional)</label>
+                            <input type="text" name="delivery_notes" class="form-control form-control-sm" placeholder="Contoh: Paket diterima kondisi baik, ditaruh pos">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-white border-top-0 py-3 px-4 d-flex justify-content-between align-items-center rounded-bottom-4">
+                    <button type="button" class="btn btn-light border px-4 py-2 rounded-3 fw-semibold text-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success px-4 py-2 rounded-3 fw-bold text-white shadow-sm">
+                        <i class="fa-solid fa-check me-1.5"></i>Tandai Sampai
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -1298,11 +1408,42 @@
                 }
             });
 
+            function parseDateForInput(val) {
+                if (!val) return '';
+                if (typeof val === 'string') {
+                    if (val.includes('T') && val.endsWith('Z')) {
+                        const d = new Date(val);
+                        const year = d.getFullYear();
+                        const month = String(d.getMonth() + 1).padStart(2, '0');
+                        const day = String(d.getDate()).padStart(2, '0');
+                        return `${year}-${month}-${day}`;
+                    }
+                    return val.split('T')[0].split(' ')[0];
+                }
+                return '';
+            }
+
             // Edit button handler
             const editButtons = document.querySelectorAll('.btn-edit-expedition');
             const editModalEl = document.getElementById('editExpeditionModal');
             const editModal = editModalEl ? new bootstrap.Modal(editModalEl) : null;
             const editForm = document.getElementById('editExpeditionForm');
+            const editStatusSelect = document.getElementById('edit_status');
+
+            if (editStatusSelect) {
+                editStatusSelect.addEventListener('change', function () {
+                    const actualArrivalContainer = document.getElementById('container_edit_actual_arrival');
+                    if (actualArrivalContainer) {
+                        actualArrivalContainer.style.display = (this.value === 'delivered') ? 'block' : 'none';
+                        if (this.value === 'delivered' && !document.getElementById('edit_actual_arrival_date').value) {
+                            const now = new Date();
+                            const offset = now.getTimezoneOffset() * 60000;
+                            const localISOTime = (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
+                            document.getElementById('edit_actual_arrival_date').value = localISOTime;
+                        }
+                    }
+                });
+            }
 
             editButtons.forEach(btn => {
                 btn.addEventListener('click', function () {
@@ -1328,14 +1469,73 @@
                     document.getElementById('edit_total_colli').value = data.total_colli || 1;
                     document.getElementById('edit_weight_kg').value = data.weight_kg || '';
                     document.getElementById('edit_cost_amount').value = data.cost_amount || 0;
-                    document.getElementById('edit_shipping_date').value = data.shipping_date ? data.shipping_date.split('T')[0] : '';
-                    document.getElementById('edit_estimated_arrival_date').value = data.estimated_arrival_date ? data.estimated_arrival_date.split('T')[0] : '';
+                    document.getElementById('edit_shipping_date').value = parseDateForInput(data.shipping_date);
+                    document.getElementById('edit_estimated_arrival_date').value = parseDateForInput(data.estimated_arrival_date);
                     document.getElementById('edit_status').value = data.status || 'on_delivery';
                     document.getElementById('edit_notes').value = data.notes || '';
+
+                    const actualArrivalContainer = document.getElementById('container_edit_actual_arrival');
+                    if (actualArrivalContainer) {
+                        actualArrivalContainer.style.display = (data.status === 'delivered') ? 'block' : 'none';
+                        if (data.actual_arrival_date) {
+                            document.getElementById('edit_actual_arrival_date').value = data.actual_arrival_date.substring(0, 16);
+                        } else {
+                            document.getElementById('edit_actual_arrival_date').value = '';
+                        }
+                    }
 
                     editModal.show();
                 });
             });
+
+            // Mark Delivered Modal Handler
+            window.toggleArrivalDateType = function() {
+                const isBackdate = document.getElementById('arrival_type_backdate').checked;
+                const container = document.getElementById('container_custom_arrival_date');
+                const input = document.getElementById('deliv_custom_date');
+                if (container) {
+                    container.style.display = isBackdate ? 'block' : 'none';
+                    if (isBackdate && input) {
+                        input.focus();
+                    }
+                }
+            };
+
+            const markDeliveredButtons = document.querySelectorAll('.btn-mark-delivered');
+            const markDeliveredModalEl = document.getElementById('markDeliveredModal');
+            const markDeliveredModal = markDeliveredModalEl ? new bootstrap.Modal(markDeliveredModalEl) : null;
+            const formMarkDelivered = document.getElementById('formMarkDelivered');
+
+            if (markDeliveredButtons.length > 0 && markDeliveredModal && formMarkDelivered) {
+                markDeliveredButtons.forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const actionUrl = this.getAttribute('data-action');
+                        const number = this.getAttribute('data-number');
+                        const vendor = this.getAttribute('data-vendor');
+                        const destination = this.getAttribute('data-destination');
+                        const receiver = this.getAttribute('data-receiver');
+
+                        formMarkDelivered.action = actionUrl;
+                        document.getElementById('deliv_modal_number').textContent = number || '-';
+                        document.getElementById('deliv_modal_vendor').textContent = vendor || '-';
+                        document.getElementById('deliv_modal_destination').textContent = destination || '-';
+                        document.getElementById('deliv_modal_receiver').value = receiver || '';
+
+                        // Reset radio to today
+                        document.getElementById('arrival_type_today').checked = true;
+                        toggleArrivalDateType();
+
+                        // Set default datetime-local to current local time
+                        const now = new Date();
+                        const offset = now.getTimezoneOffset() * 60000;
+                        const localISOTime = (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
+                        document.getElementById('deliv_custom_date').value = localISOTime;
+
+                        markDeliveredModal.show();
+                    });
+                });
+            }
         });
     </script>
     @endpush

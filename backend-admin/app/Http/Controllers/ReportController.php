@@ -132,6 +132,14 @@ class ReportController extends Controller
             ->orderBy('name')
             ->get();
 
+        $targetVehicles = !empty($vehicleIds)
+            ? $allVehicles->whereIn('id', $vehicleIds)
+            : $allVehicles;
+
+        $targetDrivers = !empty($driverIds)
+            ? $drivers->whereIn('id', $driverIds)
+            : $drivers;
+
         // 3. KALKULASI STATISTIK, TABEL DATA & METRIK GRAFIK
         $tableData = [];
         $totalKmAll = 0;
@@ -144,8 +152,8 @@ class ReportController extends Controller
         $tasksPerDriverMap = [];
         $usedVehicleIds = [];
 
-        // Inisialisasi Kendaraan
-        foreach ($allVehicles as $v) {
+        // Inisialisasi Kendaraan (sesuai filter)
+        foreach ($targetVehicles as $v) {
             $vLabel = $v->plate_number ? $v->plate_number : $v->name;
             $kmPerVehicleMap[$vLabel] = 0;
             $opsPerVehicleMap[$vLabel] = [
@@ -154,8 +162,8 @@ class ReportController extends Controller
             ];
         }
 
-        // Inisialisasi Driver
-        foreach ($drivers as $d) {
+        // Inisialisasi Driver (sesuai filter)
+        foreach ($targetDrivers as $d) {
             $dName = $d->full_name ?? $d->name ?? ('Driver #' . substr($d->id, 0, 4));
             $kmPerDriverMap[$dName] = 0;
             $tasksPerDriverMap[$dName] = 0;
@@ -206,20 +214,20 @@ class ReportController extends Controller
                 $usedVehicleIds[$shift->vehicle_id] = true;
             }
 
-            // Akumulasi metric per kendaraan
+            // Akumulasi metric per kendaraan (hanya jika sesuai filter)
             if (isset($kmPerVehicleMap[$vehicleLabel])) {
                 $kmPerVehicleMap[$vehicleLabel] += $tripKm;
                 $opsPerVehicleMap[$vehicleLabel]['operasional'] += 1;
-            } else {
+            } elseif (empty($vehicleIds)) {
                 $kmPerVehicleMap[$vehicleLabel] = $tripKm;
                 $opsPerVehicleMap[$vehicleLabel] = ['operasional' => 1, 'standby' => 0];
             }
 
-            // Akumulasi metric per driver
+            // Akumulasi metric per driver (hanya jika sesuai filter)
             if (isset($kmPerDriverMap[$driverName])) {
                 $kmPerDriverMap[$driverName] += $tripKm;
                 $tasksPerDriverMap[$driverName] += $taskCount;
-            } else {
+            } elseif (empty($driverIds)) {
                 $kmPerDriverMap[$driverName] = $tripKm;
                 $tasksPerDriverMap[$driverName] = $taskCount;
             }
@@ -321,8 +329,9 @@ class ReportController extends Controller
         unset($ops);
 
         // GRAFIK 1: Persentase Pemakaian Kendaraan (Standby vs Operasional)
-        $totalVehiclesCount = $allVehicles->count();
-        $operasionalVehiclesCount = count($usedVehicleIds);
+        $totalVehiclesCount = $targetVehicles->count();
+        $targetVehicleIds = $targetVehicles->pluck('id')->all();
+        $operasionalVehiclesCount = count(array_intersect(array_keys($usedVehicleIds), $targetVehicleIds));
         $standbyVehiclesCount = max(0, $totalVehiclesCount - $operasionalVehiclesCount);
         $pctOperasional = $totalVehiclesCount > 0 ? round(($operasionalVehiclesCount / $totalVehiclesCount) * 100, 1) : 0;
         $pctStandby = $totalVehiclesCount > 0 ? round(($standbyVehiclesCount / $totalVehiclesCount) * 100, 1) : 0;
@@ -333,10 +342,10 @@ class ReportController extends Controller
             'percentages' => [$pctOperasional, $pctStandby],
         ];
 
-        // Filter kendaraan untuk chart pemakaian (ambil kendaraan yang memiliki aktivitas atau batasi jika banyak)
+        // Filter kendaraan untuk chart pemakaian
         $filteredVehiclesForChart = [];
         foreach ($opsPerVehicleMap as $plate => $val) {
-            if ($val['operasional'] > 0 || count($filteredVehiclesForChart) < 10) {
+            if (!empty($vehicleIds) || $val['operasional'] > 0 || count($filteredVehiclesForChart) < 8) {
                 $filteredVehiclesForChart[$plate] = $val;
             }
         }
@@ -351,7 +360,12 @@ class ReportController extends Controller
         // GRAFIK 3: Jarak Tempuh per Kendaraan (KM)
         // Sort descending
         arsort($kmPerVehicleMap);
-        $topKmPerVehicle = array_slice($kmPerVehicleMap, 0, 12, true);
+        if (empty($vehicleIds)) {
+            $kmWithVal = array_filter($kmPerVehicleMap, fn($v) => $v > 0);
+            $topKmPerVehicle = !empty($kmWithVal) ? array_slice($kmWithVal, 0, 12, true) : array_slice($kmPerVehicleMap, 0, 8, true);
+        } else {
+            $topKmPerVehicle = $kmPerVehicleMap;
+        }
         $chartKmPerVehicle = [
             'labels' => array_keys($topKmPerVehicle),
             'data' => array_values($topKmPerVehicle),
@@ -359,20 +373,34 @@ class ReportController extends Controller
 
         // GRAFIK 4: Jarak Tempuh per Driver (KM)
         arsort($kmPerDriverMap);
+        if (empty($driverIds)) {
+            $driverKmWithVal = array_filter($kmPerDriverMap, fn($v) => $v > 0);
+            $finalKmDriver = !empty($driverKmWithVal) ? array_slice($driverKmWithVal, 0, 12, true) : array_slice($kmPerDriverMap, 0, 8, true);
+        } else {
+            $finalKmDriver = $kmPerDriverMap;
+        }
         $chartKmPerDriver = [
-            'labels' => array_keys($kmPerDriverMap),
-            'data' => array_values($kmPerDriverMap),
+            'labels' => array_keys($finalKmDriver),
+            'data' => array_values($finalKmDriver),
         ];
 
         // GRAFIK 5: Tugas yang Didapat per Driver
         arsort($tasksPerDriverMap);
+        if (empty($driverIds)) {
+            $driverTasksWithVal = array_filter($tasksPerDriverMap, fn($v) => $v > 0);
+            $finalTasksDriver = !empty($driverTasksWithVal) ? array_slice($driverTasksWithVal, 0, 12, true) : array_slice($tasksPerDriverMap, 0, 8, true);
+        } else {
+            $finalTasksDriver = $tasksPerDriverMap;
+        }
         $chartTasksPerDriver = [
-            'labels' => array_keys($tasksPerDriverMap),
-            'data' => array_values($tasksPerDriverMap),
+            'labels' => array_keys($finalTasksDriver),
+            'data' => array_values($finalTasksDriver),
         ];
 
         $driverId = count($driverIds) === 1 ? $driverIds[0] : null;
         $vehicleId = count($vehicleIds) === 1 ? $vehicleIds[0] : null;
+        $hasDriverFilter = !empty($driverIds);
+        $hasVehicleFilter = !empty($vehicleIds);
 
         return view('reports.driver', compact(
             'startDate',
@@ -399,7 +427,9 @@ class ReportController extends Controller
             'chartUsagePerVehicle',
             'chartKmPerVehicle',
             'chartKmPerDriver',
-            'chartTasksPerDriver'
+            'chartTasksPerDriver',
+            'hasDriverFilter',
+            'hasVehicleFilter'
         ));
     }
 
@@ -447,8 +477,10 @@ class ReportController extends Controller
 
         // Summary metrics
         $allVehicles = Vehicle::where('active', true)->get();
-        $totalVehicles = $allVehicles->count();
-        $usedVehicles = $shifts->pluck('vehicle_id')->filter()->unique()->count();
+        $targetVehicles = !empty($vehicleIds) ? $allVehicles->whereIn('id', $vehicleIds) : $allVehicles;
+        $totalVehicles = $targetVehicles->count();
+        $targetVehicleIds = $targetVehicles->pluck('id')->all();
+        $usedVehicles = $shifts->pluck('vehicle_id')->filter()->unique()->intersect($targetVehicleIds)->count();
         $standbyVehicles = max(0, $totalVehicles - $usedVehicles);
         $totalKm = $shifts->sum(function($s) {
             return ($s->end_odometer && $s->start_odometer) ? max(0, $s->end_odometer - $s->start_odometer) : 0;

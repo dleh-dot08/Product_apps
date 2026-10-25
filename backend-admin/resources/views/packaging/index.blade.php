@@ -757,9 +757,12 @@
                         <option>20 / halaman</option>
                         <option>50 / halaman</option>
                     </select>
-                    <a href="{{ route('packaging.export') }}" class="btn btn-outline-success pkg-filter-control d-inline-flex align-items-center justify-content-center gap-2 px-3" title="Export Semua Data Packaging">
-                        <i class="fa-solid fa-file-excel"></i> Export Excel (All)
+                    <a href="{{ route('packaging.export-list') }}" class="btn btn-outline-success pkg-filter-control d-inline-flex align-items-center justify-content-center gap-2 px-3" title="Export List Semua Data & Detail Ukuran">
+                        <i class="fa-solid fa-table-list"></i> Export List
                     </a>
+                    <button type="button" class="btn btn-outline-primary pkg-filter-control d-inline-flex align-items-center justify-content-center gap-2 px-3" data-bs-toggle="modal" data-bs-target="#exportFormatModal" title="Export Format Packing List (Filter by No. SO)">
+                        <i class="fa-solid fa-file-excel"></i> Export Format
+                    </button>
                     <button type="button" class="btn btn-outline-danger pkg-filter-control d-inline-flex align-items-center justify-content-center gap-2 px-3">
                         <i class="fa-solid fa-rotate-right"></i> Reset
                     </button>
@@ -939,4 +942,96 @@
             </div>
         </div>
     </div>
+    <!-- Modal Export Format (Filter by No. SO & Rentang Tanggal) -->
+    <div class="modal fade" id="exportFormatModal" tabindex="-1" aria-labelledby="exportFormatModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 border-0 shadow">
+                <form action="{{ route('packaging.export-format') }}" method="GET">
+                    <div class="modal-header border-bottom-0 pb-0 pt-4 px-4">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary-subtle text-primary" style="width: 44px; height: 44px; font-size: 1.25rem;">
+                                <i class="fa-solid fa-file-excel"></i>
+                            </span>
+                            <div>
+                                <h5 class="modal-title fw-bold text-dark mb-0" id="exportFormatModalLabel">Export Format Packing List</h5>
+                                <p class="text-muted small mb-0">Format resmi LOG_A03_F05-Rev.0 (1 Sheet per SO)</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body px-4 py-3">
+                        <div class="alert alert-light border small text-muted d-flex align-items-start gap-2 mb-3">
+                            <i class="fa-solid fa-circle-info text-primary mt-1"></i>
+                            <div>
+                                Data diexport menggunakan format resmi per No. SO. Informasi <strong>No DO</strong>, <strong>Date</strong>, dan <strong>Project</strong> dikosongkan.
+                            </div>
+                        </div>
+
+                        <!-- Filter No. SO -->
+                        <div class="mb-3">
+                            <label for="export_no_so" class="form-label fw-semibold text-dark small">Pilih No. SO</label>
+                            <select name="no_so" id="export_no_so" class="form-select">
+                                <option value="all" selected class="fw-bold text-primary">★ Semua No. SO (Dikelompokkan per Sheet)</option>
+                                @if(!empty($availableSos) && count($availableSos) > 0)
+                                    <optgroup label="Daftar No. SO Tersedia">
+                                        @foreach($availableSos as $so)
+                                            <option value="{{ $so->no_so }}">
+                                                {{ $so->no_so }} &mdash; {{ $so->customer ?: 'Tanpa Customer' }} ({{ $so->total_items }} item)
+                                            </option>
+                                        @endforeach
+                                    </optgroup>
+                                @endif
+                            </select>
+                            <div class="form-text small">Pilih No. SO tertentu atau biarkan "Semua No. SO".</div>
+                        </div>
+
+                        <!-- Filter Rentang Tanggal: Dari ... Sampai ... -->
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-dark small d-flex align-items-center gap-1">
+                                <i class="fa-regular fa-calendar-days text-primary"></i> Rentang Tanggal
+                            </label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted small px-2">Dari</span>
+                                        <input type="date" name="start_date" id="export_start_date" class="form-control" title="Dari Tanggal">
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text bg-light text-muted small px-2">Sampai</span>
+                                        <input type="date" name="end_date" id="export_end_date" class="form-control" title="Sampai Tanggal">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-text small">Opsional. Kosongkan jika ingin mengekspor seluruh periode data.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top-0 pt-0 pb-4 px-4 d-flex justify-content-end gap-2">
+                        <button type="button" class="btn btn-light border px-3" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary d-inline-flex align-items-center gap-2 px-3">
+                            <i class="fa-solid fa-download"></i> Unduh Format Excel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof $ !== 'undefined' && $.fn.select2) {
+                $('#exportFormatModal').on('shown.bs.modal', function () {
+                    $('#export_no_so').select2({
+                        theme: 'bootstrap-5',
+                        dropdownParent: $('#exportFormatModal'),
+                        width: '100%',
+                        placeholder: 'Ketik untuk cari No. SO atau Customer...'
+                    });
+                });
+            }
+        });
+    </script>
+    @endpush
 </x-app-layout>

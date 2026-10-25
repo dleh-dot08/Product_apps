@@ -385,9 +385,17 @@
             </div>
         </div>
 
+        @php
+            $hasDriverFilter = !empty($driverIds);
+            $hasVehicleFilter = !empty($vehicleIds);
+            $showVehicleCards = !$hasDriverFilter || $hasVehicleFilter;
+            $showVehicleCharts = !$hasDriverFilter || $hasVehicleFilter;
+            $showDriverCharts = !$hasVehicleFilter || $hasDriverFilter;
+        @endphp
+
         <!-- TOP KPI STATS CARDS -->
         <div class="row g-3 mb-4">
-            <div class="col-6 col-lg-3">
+            <div class="{{ $showVehicleCards ? 'col-6 col-lg-3' : 'col-12 col-md-4' }}">
                 <div class="card report-card shadow-sm h-100">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -402,7 +410,7 @@
                 </div>
             </div>
 
-            <div class="col-6 col-lg-3">
+            <div class="{{ $showVehicleCards ? 'col-6 col-lg-3' : 'col-12 col-md-4' }}">
                 <div class="card report-card shadow-sm h-100">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -417,6 +425,7 @@
                 </div>
             </div>
 
+            @if($showVehicleCards)
             <div class="col-6 col-lg-3">
                 <div class="card report-card shadow-sm h-100">
                     <div class="card-body p-3">
@@ -434,8 +443,9 @@
                     </div>
                 </div>
             </div>
+            @endif
 
-            <div class="col-6 col-lg-3">
+            <div class="{{ $showVehicleCards ? 'col-6 col-lg-3' : 'col-12 col-md-4' }}">
                 <div class="card report-card shadow-sm h-100">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -451,11 +461,13 @@
             </div>
         </div>
 
-        <!-- 5 GRAFIK ANALITIK DRIVER & KENDARAAN -->
+        @if($showVehicleCharts || $showDriverCharts)
+        <!-- GRAFIK ANALITIK DRIVER & KENDARAAN (SESUAI FILTER) -->
         <div class="row g-4 mb-4">
 
+            @if($showVehicleCharts)
             <!-- GRAFIK 1: Persentase Pemakaian Kendaraan (Standby vs Operasional) -->
-            <div class="col-lg-5">
+            <div class="{{ $showDriverCharts ? 'col-lg-5' : 'col-lg-5' }}">
                 <div class="card report-card shadow-sm h-100">
                     <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
                         <div class="d-flex align-items-center justify-content-between">
@@ -485,7 +497,7 @@
             </div>
 
             <!-- GRAFIK 2: Pemakaian per Kendaraan (Standby & Operasional) -->
-            <div class="col-lg-7">
+            <div class="{{ $showDriverCharts ? 'col-lg-7' : 'col-lg-7' }}">
                 <div class="card report-card shadow-sm h-100">
                     <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
                         <div class="d-flex align-items-center justify-content-between">
@@ -505,7 +517,7 @@
             </div>
 
             <!-- GRAFIK 3: Jarak Tempuh per Kendaraan (KM) -->
-            <div class="col-lg-4">
+            <div class="{{ $showDriverCharts ? 'col-lg-4' : 'col-12' }}">
                 <div class="card report-card shadow-sm h-100">
                     <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
                         <h6 class="fw-bold mb-1"><i class="fa-solid fa-gauge-high text-success me-2"></i>Jarak Tempuh per Kendaraan</h6>
@@ -518,9 +530,11 @@
                     </div>
                 </div>
             </div>
+            @endif
 
+            @if($showDriverCharts)
             <!-- GRAFIK 4: Jarak Tempuh per Driver (KM) -->
-            <div class="col-lg-4">
+            <div class="{{ $showVehicleCharts ? 'col-lg-4' : 'col-lg-6' }}">
                 <div class="card report-card shadow-sm h-100">
                     <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
                         <h6 class="fw-bold mb-1"><i class="fa-solid fa-road text-warning me-2"></i>Jarak Tempuh per Driver</h6>
@@ -535,7 +549,7 @@
             </div>
 
             <!-- GRAFIK 5: Jumlah Tugas yang Didapat per Driver -->
-            <div class="col-lg-4">
+            <div class="{{ $showVehicleCharts ? 'col-lg-4' : 'col-lg-6' }}">
                 <div class="card report-card shadow-sm h-100">
                     <div class="card-header bg-transparent border-0 pt-4 px-4 pb-2">
                         <h6 class="fw-bold mb-1"><i class="fa-solid fa-tasks text-info me-2"></i>Jumlah Tugas per Driver</h6>
@@ -548,8 +562,10 @@
                     </div>
                 </div>
             </div>
+            @endif
 
         </div>
+        @endif
 
         <!-- TABEL LIST SELURUH TUGAS & PERJALANAN DRIVER -->
         <div class="card border-0 shadow-sm rounded-4 mb-4">

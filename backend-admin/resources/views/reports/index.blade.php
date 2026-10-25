@@ -323,10 +323,14 @@
             </div>
         </div>
 
+        @php
+            $hasDriverFilter = !empty($driverIds) || !empty($driverId);
+        @endphp
+
         <!-- STATISTIK RINGKASAN CARDS -->
         <div class="row g-3 mb-4">
             <!-- 1. Total Tugas -->
-            <div class="col-sm-6 col-xl-3">
+            <div class="{{ $hasDriverFilter ? 'col-sm-6 col-xl-6' : 'col-sm-6 col-xl-3' }}">
                 <div class="card report-stat-card shadow-sm h-100">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -345,7 +349,7 @@
             </div>
 
             <!-- 2. Total Estimasi HPP Biaya -->
-            <div class="col-sm-6 col-xl-3">
+            <div class="{{ $hasDriverFilter ? 'col-sm-6 col-xl-6' : 'col-sm-6 col-xl-3' }}">
                 <div class="card report-stat-card shadow-sm h-100">
                     <div class="card-body p-3">
                         <div class="d-flex align-items-center justify-content-between mb-2">
@@ -363,6 +367,7 @@
                 </div>
             </div>
 
+            @if(!$hasDriverFilter)
             <!-- 3. Total Pengeluaran Operasional -->
             <div class="col-sm-6 col-xl-3">
                 <div class="card report-stat-card shadow-sm h-100">
@@ -400,6 +405,7 @@
                     </div>
                 </div>
             </div>
+            @endif
         </div>
 
         <!-- NAVIGATION TABS -->
@@ -419,6 +425,7 @@
                     <i class="fa-solid fa-dollar-sign me-2"></i> Rekap HPP Ritase ({{ $shifts->count() }})
                 </button>
             </li>
+            @if(!$hasDriverFilter)
             <li class="nav-item">
                 <button class="nav-link {{ $activeTab == 'pengeluaran' ? 'active' : '' }}" onclick="switchTab('pengeluaran')">
                     <i class="fa-solid fa-receipt me-2"></i> Rekap Pengeluaran ({{ $expenses->count() }})
@@ -429,6 +436,7 @@
                     <i class="fa-solid fa-chart-line me-2"></i> Rekap Penjualan SO ({{ $salesOrders->count() }})
                 </button>
             </li>
+            @endif
         </ul>
 
         <!-- TAB CONTENT -->
@@ -439,7 +447,7 @@
                 <div class="row g-4 mb-4">
 
                     <!-- Kartu 1: Laporan Tugas Driver -->
-                    <div class="col-md-6 col-xl-3">
+                    <div class="{{ $hasDriverFilter ? 'col-md-6 col-xl-6' : 'col-md-6 col-xl-3' }}">
                         <div class="card export-card h-100 shadow-sm p-4 d-flex flex-column justify-content-between">
                             <div>
                                 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -472,7 +480,7 @@
                     </div>
 
                     <!-- Kartu 2: Laporan HPP Ritase -->
-                    <div class="col-md-6 col-xl-3">
+                    <div class="{{ $hasDriverFilter ? 'col-md-6 col-xl-6' : 'col-md-6 col-xl-3' }}">
                         <div class="card export-card h-100 shadow-sm p-4 d-flex flex-column justify-content-between">
                             <div>
                                 <div class="d-flex align-items-center justify-content-between mb-3">
@@ -504,6 +512,7 @@
                         </div>
                     </div>
 
+                    @if(!$hasDriverFilter)
                     <!-- Kartu 3: Laporan Pengeluaran -->
                     <div class="col-md-6 col-xl-3">
                         <div class="card export-card h-100 shadow-sm p-4 d-flex flex-column justify-content-between">
@@ -569,6 +578,7 @@
                             </div>
                         </div>
                     </div>
+                    @endif
 
                 </div>
 
