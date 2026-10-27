@@ -133,6 +133,10 @@ class ExpeditionTrackingService
                         $parsedReceiver = trim($recMatch[1]);
                         if ($parsedReceiver && $parsedReceiver !== '-') {
                             $receiverName = $parsedReceiver;
+                            $isDelivered = true;
+                            if (!$actualArrivalDate) {
+                                $actualArrivalDate = now();
+                            }
                         }
                     }
 
@@ -232,14 +236,16 @@ class ExpeditionTrackingService
             'last_tracked_at' => now(),
         ];
 
-        if ($receiverName && !$ekspedisi->receiver_pic_name) {
+        if ($receiverName) {
             $updateData['receiver_pic_name'] = $receiverName;
         }
 
         // OTOMATIS UBAH STATUS KE DELIVERED JIKA VENDOR MENYATAKAN DITERIMA
-        if ($isDelivered && $ekspedisi->status !== 'delivered') {
+        if ($isDelivered) {
             $updateData['status'] = 'delivered';
-            $updateData['actual_arrival_date'] = $actualArrivalDate ?: now();
+            if (!$ekspedisi->actual_arrival_date || $actualArrivalDate) {
+                $updateData['actual_arrival_date'] = $actualArrivalDate ?: now();
+            }
         }
 
         $ekspedisi->update($updateData);

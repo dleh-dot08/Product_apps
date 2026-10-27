@@ -17,7 +17,7 @@ class TripHppController extends Controller
 
     public function index(Request $request)
     {
-        // Load Shift
+        // 1. Load Shifts (Armada Internal)
         $allShifts = Shift::with(['vehicle', 'driver', 'pickupTasks.items', 'deliveryAssignments.salesOrder.items', 'expenses'])
             ->orderBy('work_date', 'desc')
             ->get();
@@ -35,13 +35,16 @@ class TripHppController extends Controller
             'Parkir' => 0,
             'Lainnya' => 0,
             'Depresiasi' => 0,
+            'Ekspedisi' => 0,
         ];
 
-        // Process each shift and attach calculated properties to display in view easily
+        // Process each shift and attach calculated properties
         foreach ($allShifts as $shift) {
+            $shift->is_expedition = false;
             $calc = $this->hppService->getSavedOrCalculateProrata($shift);
             $shift->calc_details = $calc;
             $shift->total_cost = $calc['costs']['total'];
+            $shift->sort_date = $shift->work_date ? $shift->work_date->timestamp : 0;
 
             $totalCost += $calc['costs']['total'];
             $totalItems += $shift->pickupTasks->sum('quantity') + 
@@ -62,22 +65,65 @@ class TripHppController extends Controller
             $costComposition['Depresiasi'] += $calc['costs']['depreciation'] ?? 0;
         }
 
-        // Hitung rata-rata HPP per barang
-        $avgHppPerItem = $totalItems > 0 ? $totalCost / $totalItems : 0;
+        // 2. Load Expeditions (Vendor 3PL / Kargo)
+        $allExpeditions = \App\Models\Expedition::with(['items', 'vendor'])
+            ->orderBy('shipping_date', 'desc')
+            ->get();
 
-        // Paginate the collection manually for the table
+        $totalExpeditions = $allExpeditions->count();
+        $totalExpeditionCost = 0;
+        $totalExpeditionItems = 0;
+
+        foreach ($allExpeditions as $expedition) {
+            $expedition->is_expedition = true;
+            $calc = $this->hppService->calculateExpeditionProrata($expedition);
+            $expedition->calc_details = $calc;
+            $expCost = (float) ($expedition->cost_amount ?? 0);
+            $expedition->total_cost = $expCost;
+            $expedition->sort_date = $expedition->shipping_date 
+                ? $expedition->shipping_date->timestamp 
+                : ($expedition->created_at ? $expedition->created_at->timestamp : 0);
+
+            $totalExpeditionCost += $expCost;
+            $itemQtySum = $expedition->items->sum('quantity');
+            $totalExpeditionItems += ($itemQtySum > 0 ? $itemQtySum : ($expedition->total_colli ?: 1));
+        }
+
+        $costComposition['Ekspedisi'] = $totalExpeditionCost;
+
+        // Akumulasi Keseluruhan HPP Logistik
+        $grandTotalCost = $totalCost + $totalExpeditionCost;
+        $grandTotalItems = $totalItems + $totalExpeditionItems;
+        $avgHppPerItem = $grandTotalItems > 0 ? $grandTotalCost / $grandTotalItems : 0;
+
+        // Gabungkan seluruh logistik (Armada Internal + Vendor Ekspedisi) diurutkan berdasarkan tanggal terbaru
+        $combinedLogistics = $allShifts->concat($allExpeditions)->sortByDesc('sort_date')->values();
+
+        // Paginate the combined collection manually for the table
         $perPage = $request->get('per_page', 10);
         $page = \Illuminate\Pagination\Paginator::resolveCurrentPage() ?: 1;
         
         $shifts = new \Illuminate\Pagination\LengthAwarePaginator(
-            $allShifts->forPage($page, $perPage),
-            $allShifts->count(),
+            $combinedLogistics->forPage($page, $perPage),
+            $combinedLogistics->count(),
             $perPage,
             $page,
             ['path' => \Illuminate\Pagination\Paginator::resolveCurrentPath(), 'query' => $request->query()]
         );
 
-        return view('hpp.index', compact('shifts', 'totalTrips', 'totalCost', 'avgHppPerItem', 'costComposition', 'totalJarak', 'totalDurasi'));
+        return view('hpp.index', compact(
+            'shifts',
+            'totalTrips',
+            'totalCost',
+            'totalExpeditions',
+            'totalExpeditionCost',
+            'grandTotalCost',
+            'grandTotalItems',
+            'avgHppPerItem',
+            'costComposition',
+            'totalJarak',
+            'totalDurasi'
+        ));
     }
 
     public function show($id)

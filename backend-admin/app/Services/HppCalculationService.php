@@ -250,6 +250,84 @@ class HppCalculationService
     }
 
     /**
+     * Menghitung alokasi HPP untuk Ekspedisi (Vendor 3PL).
+     * 100% biaya dibebankan dari cost_amount ekspedisi dan dialokasikan proporsional ke barang kiriman.
+     */
+    public function calculateExpeditionProrata(\App\Models\Expedition $expedition)
+    {
+        $expedition->loadMissing(['items', 'vendor']);
+        $cost = (float) ($expedition->cost_amount ?? 0);
+        $items = $expedition->items;
+        $totalValue = (float) $items->sum('total_price');
+        $totalQty = (float) $items->sum('quantity');
+        $count = $items->count();
+
+        $allocations = [];
+
+        if ($count > 0) {
+            foreach ($items as $item) {
+                $qty = (float) ($item->quantity ?? 1);
+                $lineTotal = (float) ($item->total_price ?? 0);
+
+                // Prorata berdasarkan total_price jika ada, atau quantity jika nilai harga kosong
+                if ($totalValue > 0) {
+                    $ratio = $lineTotal / $totalValue;
+                } elseif ($totalQty > 0) {
+                    $ratio = $qty / $totalQty;
+                } else {
+                    $ratio = 1 / $count;
+                }
+
+                $hppPerBaris = $cost * $ratio;
+                $hppPerQty = $qty > 0 ? $hppPerBaris / $qty : $hppPerBaris;
+
+                $allocations[] = [
+                    'task_id' => $expedition->id,
+                    'reference_number' => $item->ref_no ?: ($expedition->reference_number ?: $expedition->expedition_number),
+                    'item_description' => $item->item_description ?: 'Barang Kiriman',
+                    'quantity' => $qty,
+                    'unit' => $item->unit ?: 'pcs',
+                    'unit_price' => (float) ($item->unit_price ?? ($qty > 0 ? $lineTotal / $qty : 0)),
+                    'line_total' => $lineTotal,
+                    'hpp_per_baris' => $hppPerBaris,
+                    'hpp_per_qty' => $hppPerQty,
+                    'percentage' => $ratio * 100,
+                ];
+            }
+        } else {
+            $qty = (float) ($expedition->total_colli ?: 1);
+            $allocations[] = [
+                'task_id' => $expedition->id,
+                'reference_number' => $expedition->reference_number ?: ($expedition->tracking_number ?: $expedition->expedition_number),
+                'item_description' => $expedition->item_description ?: 'Paket / Kargo Kiriman',
+                'quantity' => $qty,
+                'unit' => 'koli',
+                'unit_price' => 0,
+                'line_total' => 0,
+                'hpp_per_baris' => $cost,
+                'hpp_per_qty' => $qty > 0 ? $cost / $qty : $cost,
+                'percentage' => 100,
+            ];
+        }
+
+        return [
+            'costs' => [
+                'fuel' => 0,
+                'manpower' => 0,
+                'toll' => 0,
+                'parking' => 0,
+                'other' => 0,
+                'depreciation' => 0,
+                'expedition' => $cost,
+                'total' => $cost,
+            ],
+            'base_value' => $totalValue,
+            'is_prorata' => true,
+            'allocations' => $allocations,
+        ];
+    }
+
+    /**
      * Hitung ulang seluruh HPP untuk semua shift yang ada di sistem
      */
     public function recalculateAll()
@@ -263,3 +341,4 @@ class HppCalculationService
         return $count;
     }
 }
+

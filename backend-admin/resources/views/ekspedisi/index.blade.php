@@ -1199,6 +1199,17 @@
                             </div>
 
                             <div class="p-4 flex-grow-1 overflow-y-auto">
+                                <!-- Banner Notifikasi Otomatis Terkirim -->
+                                <div id="containerAutoDeliveredNotice" class="alert alert-success border-success-subtle py-2.5 px-3 mb-3 rounded-3 shadow-xs" style="display: none; background: #ecfdf5;">
+                                    <div class="d-flex align-items-center gap-2 mb-1">
+                                        <i class="fa-solid fa-circle-check text-success fs-5"></i>
+                                        <strong class="text-success small">Tersinkronisasi Otomatis: Status DELIVERED!</strong>
+                                    </div>
+                                    <div class="small text-secondary" style="font-size: 0.73rem;">
+                                        Server vendor mengonfirmasi paket telah sampai tujuan. Status pengiriman di database telah <strong>otomatis tersimpan sebagai Terkirim</strong>.
+                                    </div>
+                                </div>
+
                                 <form id="formUpdateTracking" method="POST" action="">
                                     @csrf
 
@@ -1863,6 +1874,13 @@
                             badgeStatus.className = 'badge bg-primary-subtle text-primary border border-primary font-monospace';
                         }
 
+                        // Banner info auto-delivered
+                        const noticeDeliv = document.getElementById('containerAutoDeliveredNotice');
+                        if (noticeDeliv) {
+                            noticeDeliv.style.display = (status === 'delivered') ? 'block' : 'none';
+                        }
+                        window.hasDeliveryStatusChanged = false;
+
                         // Set Action URL Form
                         if (formUpdateTracking) {
                             formUpdateTracking.action = actionUrl;
@@ -1930,20 +1948,72 @@
                         // Update status badge modal
                         const badgeStatus = document.getElementById('track_current_status_badge');
                         badgeStatus.textContent = (updated.status || 'ON DELIVERY').toUpperCase();
-                        if (updated.status === 'delivered') {
-                            badgeStatus.className = 'badge bg-success font-monospace';
+                        
+                        const isNowDelivered = (updated.status === 'delivered' || res.is_delivered === true);
+                        if (isNowDelivered) {
+                            badgeStatus.className = 'badge bg-success font-monospace px-2.5 py-1';
                             document.getElementById('log_is_delivered').checked = true;
                             toggleDeliveredDetails(true);
+
+                            // Munculkan banner hijau bahwa status sudah otomatis tersimpan ke DB
+                            const noticeDeliv = document.getElementById('containerAutoDeliveredNotice');
+                            if (noticeDeliv) {
+                                noticeDeliv.style.display = 'block';
+                            }
+                            window.hasDeliveryStatusChanged = true;
                         }
 
-                        // Update atribut pada tombol Lacak di tabel agar sinkron
-                        if (callerBtn) {
-                            callerBtn.setAttribute('data-history', JSON.stringify(updated.tracking_history || []));
-                            callerBtn.setAttribute('data-last-status', updated.last_tracking_status || '');
-                            callerBtn.setAttribute('data-status', updated.status || '');
+                        // Update atribut pada tombol Lacak dan baris tabel agar sinkron di DOM
+                        let targetBtn = callerBtn;
+                        if (!targetBtn) {
+                            const curNo = document.getElementById('track_modal_number').textContent;
+                            const curResi = document.getElementById('track_modal_resi').textContent;
+                            targetBtn = document.querySelector(`.btn-track-live[data-number="${curNo}"]`) ||
+                                        document.querySelector(`.btn-track-live[data-resi="${curResi}"]`);
                         }
 
-                        if (textSync) textSync.textContent = `Tersinkron (${res.synced_count || 0})`;
+                        if (targetBtn) {
+                            targetBtn.setAttribute('data-history', JSON.stringify(updated.tracking_history || []));
+                            targetBtn.setAttribute('data-last-status', updated.last_tracking_status || '');
+                            targetBtn.setAttribute('data-status', updated.status || '');
+                            if (updated.receiver_pic_name) {
+                                targetBtn.setAttribute('data-receiver', updated.receiver_pic_name);
+                            }
+
+                            // Update langsung baris tabel di DOM tanpa menunggu refresh
+                            const tr = targetBtn.closest('tr');
+                            if (tr && isNowDelivered) {
+                                // Kolom 8: Aktual Sampai
+                                const tdArrival = tr.querySelector('td:nth-child(8)');
+                                if (tdArrival) {
+                                    let formattedArrival = 'Tiba (Baru Saja)';
+                                    if (updated.actual_arrival_date) {
+                                        try {
+                                            const d = new Date(updated.actual_arrival_date);
+                                            formattedArrival = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + 
+                                                              d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }).replace('.', ':');
+                                        } catch (e) {}
+                                    }
+                                    tdArrival.innerHTML = `<span class="badge bg-success-subtle text-success border border-success font-monospace">${formattedArrival}</span>`;
+                                }
+
+                                // Kolom 9: Status
+                                const tdStatus = tr.querySelector('td:nth-child(9)');
+                                if (tdStatus) {
+                                    tdStatus.innerHTML = `<span class="badge bg-success px-2 py-1"><i class="fa-solid fa-check me-1"></i> Terkirim</span>`;
+                                }
+
+                                // Kolom 10: Sembunyikan/Hapus tombol "Tandai Sampai"
+                                const btnMarkDeliv = tr.querySelector('.btn-mark-delivered');
+                                if (btnMarkDeliv) {
+                                    btnMarkDeliv.remove();
+                                }
+                            }
+                        }
+
+                        if (textSync) {
+                            textSync.textContent = isNowDelivered ? 'Tersinkron (DELIVERED)' : `Tersinkron (${res.synced_count || 0})`;
+                        }
                     } else {
                         if (textSync) textSync.textContent = 'Sync Otomatis';
                     }
@@ -1955,7 +2025,7 @@
                     if (btnSync) btnSync.disabled = false;
                     setTimeout(() => {
                         if (textSync) textSync.textContent = 'Sync Otomatis';
-                    }, 3500);
+                    }, 4000);
                 }
             }
 
@@ -1963,10 +2033,23 @@
             const btnTriggerAutoSync = document.getElementById('btnTriggerAutoSync');
             if (btnTriggerAutoSync) {
                 btnTriggerAutoSync.addEventListener('click', function() {
-                    const activeBtn = document.querySelector(`.btn-track-live[data-resi="${document.getElementById('track_modal_resi').textContent}"]`);
+                    const curNo = document.getElementById('track_modal_number').textContent;
+                    const curResi = document.getElementById('track_modal_resi').textContent;
+                    const activeBtn = document.querySelector(`.btn-track-live[data-number="${curNo}"]`) ||
+                                      document.querySelector(`.btn-track-live[data-resi="${curResi}"]`);
                     const syncUrl = activeBtn ? activeBtn.getAttribute('data-sync-url') : null;
                     if (syncUrl) {
                         triggerAutoSync(syncUrl, activeBtn);
+                    }
+                });
+            }
+
+            // Reload otomatis saat modal tracking ditutup jika status telah terupdate menjadi Delivered
+            const liveTrackingModalEl = document.getElementById('liveTrackingModal');
+            if (liveTrackingModalEl) {
+                liveTrackingModalEl.addEventListener('hidden.bs.modal', function() {
+                    if (window.hasDeliveryStatusChanged) {
+                        window.location.reload();
                     }
                 });
             }
