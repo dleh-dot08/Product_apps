@@ -203,6 +203,8 @@ Route::middleware('auth')->group(function () {
         Route::post('/', [\App\Http\Controllers\ExpeditionController::class, 'store'])->name('store')->middleware('permission:Create Ekspedisi');
         Route::put('/{ekspedisi}', [\App\Http\Controllers\ExpeditionController::class, 'update'])->name('update')->middleware('permission:Edit Ekspedisi');
         Route::patch('/{ekspedisi}/delivered', [\App\Http\Controllers\ExpeditionController::class, 'markDelivered'])->name('mark-delivered')->middleware('permission:Edit Ekspedisi');
+        Route::post('/{ekspedisi}/tracking-log', [\App\Http\Controllers\ExpeditionController::class, 'updateTrackingLog'])->name('tracking-log')->middleware('permission:Edit Ekspedisi');
+        Route::get('/{ekspedisi}/auto-sync', [\App\Http\Controllers\ExpeditionController::class, 'autoSyncTracking'])->name('auto-sync')->middleware('permission:Edit Ekspedisi');
         Route::delete('/{ekspedisi}', [\App\Http\Controllers\ExpeditionController::class, 'destroy'])->name('destroy')->middleware('permission:Delete Ekspedisi');
     });
 

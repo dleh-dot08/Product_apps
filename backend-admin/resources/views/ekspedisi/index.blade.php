@@ -492,9 +492,39 @@
                                 <tr>
                                     <td class="ps-3">
                                         <span class="fw-bold text-primary font-monospace d-block">{{ $item->expedition_number }}</span>
-                                        <span class="font-monospace small text-muted">
-                                            Resi: <strong class="text-dark">{{ $item->tracking_number ?: '-' }}</strong>
-                                        </span>
+                                        <div class="d-flex align-items-center gap-1.5 flex-wrap mt-0.5">
+                                            <span class="font-monospace small text-muted">
+                                                Resi: <strong class="text-dark">{{ $item->tracking_number ?: '-' }}</strong>
+                                            </span>
+                                            @if($item->tracking_number)
+                                                <button type="button" 
+                                                        class="btn btn-xs btn-outline-primary px-1.5 py-0.5 rounded-2 d-inline-flex align-items-center gap-1 btn-track-live"
+                                                        data-id="{{ $item->id }}"
+                                                        data-number="{{ $item->expedition_number }}"
+                                                        data-resi="{{ $item->tracking_number }}"
+                                                        data-vendor="{{ $item->vendor_name }}"
+                                                        data-destination="{{ $item->destination_name ?: $item->destination_address }}"
+                                                        data-receiver="{{ $item->receiver_pic_name }}"
+                                                        data-status="{{ $item->status }}"
+                                                        data-url="{{ $item->tracking_url }}"
+                                                        data-history='@json($item->tracking_history ?? [])'
+                                                        data-last-status="{{ $item->last_tracking_status }}"
+                                                        data-last-tracked="{{ $item->last_tracked_at ? $item->last_tracked_at->format('d/m/Y H:i') : '' }}"
+                                                        data-action="{{ route('ekspedisi.tracking-log', $item->id) }}"
+                                                        data-sync-url="{{ route('ekspedisi.auto-sync', $item->id) }}"
+                                                        title="Cek Resi & Riwayat Perjalanan">
+                                                    <i class="fa-solid fa-satellite-dish text-primary" style="font-size: 0.72rem;"></i>
+                                                    <span style="font-size: 0.68rem; font-weight: 700;">Lacak</span>
+                                                </button>
+                                            @endif
+                                        </div>
+                                        @if($item->last_tracking_status)
+                                            <div class="mt-1">
+                                                <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle font-monospace text-truncate" style="font-size: 0.65rem; max-width: 190px;" title="{{ $item->last_tracking_status }}">
+                                                    <i class="fa-solid fa-location-arrow me-1"></i>{{ Str::limit($item->last_tracking_status, 24) }}
+                                                </span>
+                                            </div>
+                                        @endif
                                     </td>
                                     <td>
                                         <span class="fw-bold d-block">{{ $item->vendor_name }}</span>
@@ -1079,6 +1109,163 @@
         </div>
     </div>
 
+    <!-- MODAL LIVE TRACKING & LOG RIWAYAT PERJALANAN (CLEAN & MODERN) -->
+    <div class="modal fade" id="liveTrackingModal" tabindex="-1" aria-labelledby="liveTrackingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg rounded-4 overflow-hidden">
+                <!-- Header Gradient -->
+                <div class="modal-header text-white border-bottom-0 py-3 px-4" style="background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%);">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="bg-white bg-opacity-20 rounded-circle d-flex align-items-center justify-content-center" style="width: 42px; height: 42px;">
+                            <i class="fa-solid fa-satellite-dish fs-5 text-white"></i>
+                        </div>
+                        <div>
+                            <h5 class="modal-title fw-bold text-white mb-0" id="liveTrackingModalLabel">Tracking & Riwayat Perjalanan</h5>
+                            <small class="text-white text-opacity-75" style="font-size: 0.75rem;">Pelacakan resi vendor otomatis & pencatatan checkpoint</small>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+
+                <div class="modal-body p-0 bg-white">
+                    <!-- Top Summary Card Bar -->
+                    <div class="p-3 px-4 bg-light border-bottom d-flex align-items-center justify-content-between flex-wrap gap-3">
+                        <div class="d-flex align-items-center gap-4 flex-wrap">
+                            <div>
+                                <span class="text-muted d-block small" style="font-size: 0.7rem; letter-spacing: 0.04em;">NO. PENGIRIMAN</span>
+                                <span class="fw-bold font-monospace text-primary fs-6" id="track_modal_number">-</span>
+                            </div>
+                            <div class="border-start ps-3">
+                                <span class="text-muted d-block small" style="font-size: 0.7rem; letter-spacing: 0.04em;">VENDOR EKSPEDISI</span>
+                                <span class="fw-bold text-dark fs-6" id="track_modal_vendor">-</span>
+                            </div>
+                            <div class="border-start ps-3">
+                                <span class="text-muted d-block small" style="font-size: 0.7rem; letter-spacing: 0.04em;">NOMOR RESI / AWB</span>
+                                <span class="fw-bold font-monospace text-dark d-flex align-items-center gap-2" id="track_modal_resi_wrapper">
+                                    <span id="track_modal_resi" class="fs-6">-</span>
+                                    <button type="button" class="btn btn-xs btn-outline-secondary p-1 py-0.5 rounded" id="btnCopyResi" title="Salin Resi">
+                                        <i class="fa-regular fa-copy"></i>
+                                    </button>
+                                </span>
+                            </div>
+                            <div class="border-start ps-3">
+                                <span class="text-muted d-block small" style="font-size: 0.7rem; letter-spacing: 0.04em;">STATUS SISTEM</span>
+                                <span class="badge bg-secondary-subtle text-secondary font-monospace" id="track_current_status_badge">ON DELIVERY</span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" id="btnTriggerAutoSync" class="btn btn-sm btn-primary fw-bold d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3 shadow-xs">
+                                <i class="fa-solid fa-arrows-rotate" id="iconSyncTracking"></i> 
+                                <span id="textSyncTracking">Sync Otomatis</span>
+                            </button>
+                            <a href="#" target="_blank" id="btnOpenVendorTab" class="btn btn-sm btn-outline-secondary fw-semibold d-inline-flex align-items-center gap-1.5 px-3 py-1.5 rounded-3">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> Cek di Web Vendor
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Main Content Grid -->
+                    <div class="row g-0">
+                        <!-- Kolom Kiri: Riwayat Perjalanan (Timeline View) -->
+                        <div class="col-lg-7 border-end bg-white d-flex flex-column" style="height: 520px;">
+                            <div class="p-2.5 px-4 bg-light bg-opacity-50 border-bottom d-flex justify-content-between align-items-center">
+                                <span class="small fw-bold text-dark d-flex align-items-center gap-2">
+                                    <i class="fa-solid fa-route text-primary"></i> 
+                                    <span>Timeline Perjalanan (<span id="countHistoryEntries" class="fw-bold text-primary">0</span> Checkpoint)</span>
+                                </span>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle px-2 py-0.5" style="font-size: 0.68rem;">
+                                    <i class="fa-solid fa-circle-check me-1"></i> Tersimpan Otomatis
+                                </span>
+                            </div>
+
+                            <div class="p-4 overflow-y-auto flex-grow-1" id="containerTimelineHistory">
+                                <div id="timelineHistoryList" class="position-relative ps-4" style="border-left: 2px dashed #93c5fd; margin-left: 12px; margin-right: 8px;">
+                                    <!-- Rendered dynamically by JS -->
+                                    <div class="text-center text-muted small py-5 fst-italic">
+                                        <div class="spinner-border spinner-border-sm text-primary mb-2" role="status"></div>
+                                        <div>Menghubungkan ke server tracking vendor...</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Kolom Kanan: Panel Kontrol & Konfirmasi Selesai -->
+                        <div class="col-lg-5 bg-light bg-opacity-40 d-flex flex-column" style="height: 520px;">
+                            <div class="p-2.5 px-4 bg-light bg-opacity-50 border-bottom d-flex align-items-center">
+                                <span class="small fw-bold text-dark d-flex align-items-center gap-1.5">
+                                    <i class="fa-solid fa-sliders text-primary"></i> Update Status & Checkpoint Manual
+                                </span>
+                            </div>
+
+                            <div class="p-4 flex-grow-1 overflow-y-auto">
+                                <form id="formUpdateTracking" method="POST" action="">
+                                    @csrf
+
+                                    <!-- Banner Konfirmasi Delivered -->
+                                    <div class="card border border-success-subtle shadow-xs rounded-3 mb-3 bg-white">
+                                        <div class="card-body p-3" style="background: #f0fdf4;">
+                                            <div class="form-check form-switch mb-1">
+                                                <input class="form-check-input" type="checkbox" role="switch" name="is_delivered" value="1" id="log_is_delivered" onchange="toggleDeliveredDetails(this.checked)" style="cursor: pointer; width: 2.2em; height: 1.2em;">
+                                                <label class="form-check-label fw-bold text-success small ps-1" for="log_is_delivered" style="cursor: pointer;">
+                                                    Tandai Paket Sudah Diterima (Delivered)
+                                                </label>
+                                            </div>
+                                            <div class="text-muted ps-1 small" style="font-size: 0.72rem;">
+                                                Otomatis mengubah status jadi <strong>Delivered</strong> & mencatat waktu aktual tiba.
+                                            </div>
+                                            <div id="containerDeliveredInput" style="display: none;" class="mt-2.5 pt-2.5 border-top border-success-subtle">
+                                                <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.72rem;">NAMA PENERIMA / PIC:</label>
+                                                <input type="text" name="receiver_name" id="log_receiver_name" class="form-control form-control-sm" placeholder="Nama penerima paket">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Form Edit Data -->
+                                    <div class="card border-0 shadow-xs rounded-3 bg-white p-3 mb-3">
+                                        <div class="mb-2.5">
+                                            <label class="form-label small fw-bold text-secondary mb-1" style="font-size: 0.72rem;">STATUS TRACKING TERAKHIR</label>
+                                            <input type="text" name="last_tracking_status" id="log_last_status" class="form-control form-control-sm font-monospace fw-semibold" placeholder="Contoh: Sedang Transit (KNO - MEDAN)" required>
+                                        </div>
+
+                                        <div class="row g-2 mb-2.5">
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold text-secondary mb-1" style="font-size: 0.72rem;">LOKASI / KOTA</label>
+                                                <input type="text" name="checkpoint_location" id="log_location" class="form-control form-control-sm" placeholder="Misal: Medan Hub">
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label small fw-bold text-secondary mb-1" style="font-size: 0.72rem;">WAKTU KEJADIAN</label>
+                                                <input type="datetime-local" name="checkpoint_time" id="log_checkpoint_time" class="form-control form-control-sm font-monospace">
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label class="form-label small fw-bold text-secondary mb-1" style="font-size: 0.72rem;">CATATAN MANUAL (OPSIONAL)</label>
+                                            <textarea name="checkpoint_note" id="log_note" rows="2" class="form-control form-control-sm" placeholder="Keterangan tambahan jika diperlukan..."></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-end">
+                                        <button type="submit" class="btn btn-sm btn-primary px-3 py-1.5 fw-bold shadow-xs d-inline-flex align-items-center gap-1.5 rounded-3" id="btnSubmitTrackingLog">
+                                            <i class="fa-solid fa-floppy-disk"></i> Simpan Perubahan
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light border-top py-2.5 px-4 d-flex justify-content-between align-items-center">
+                    <span class="text-muted small" style="font-size: 0.72rem;">
+                        <i class="fa-solid fa-shield-halved text-success me-1"></i> Data tracking otomatis tersinkronisasi dan tersimpan di database lokal.
+                    </span>
+                    <button type="button" class="btn btn-sm btn-secondary px-3 py-1.5 rounded-3 fw-semibold" data-bs-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL TANDAI SAMPAI (HARI INI / BACKDATE) -->
     <div class="modal fade" id="markDeliveredModal" tabindex="-1" aria-labelledby="markDeliveredModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -1534,6 +1721,300 @@
 
                         markDeliveredModal.show();
                     });
+                });
+            }
+
+            // ==========================================
+            // LIVE TRACKING & LOG RIWAYAT PERJALANAN JS
+            // ==========================================
+            window.toggleDeliveredDetails = function(isChecked) {
+                const container = document.getElementById('containerDeliveredInput');
+                if (container) {
+                    container.style.display = isChecked ? 'block' : 'none';
+                    if (isChecked) {
+                        const inputRec = document.getElementById('log_receiver_name');
+                        if (inputRec && !inputRec.value) {
+                            inputRec.focus();
+                        }
+                    }
+                }
+            };
+
+            const trackButtons = document.querySelectorAll('.btn-track-live');
+            const trackModalEl = document.getElementById('liveTrackingModal');
+            const trackModal = trackModalEl ? new bootstrap.Modal(trackModalEl) : null;
+            const trackIframe = document.getElementById('trackIframe');
+            const frameOverlay = document.getElementById('frameLoadingOverlay');
+            const formUpdateTracking = document.getElementById('formUpdateTracking');
+            let currentTrackingUrl = '';
+
+            // Copy Resi Button
+            const btnCopyResi = document.getElementById('btnCopyResi');
+            if (btnCopyResi) {
+                btnCopyResi.addEventListener('click', function() {
+                    const resi = document.getElementById('track_modal_resi').textContent;
+                    if (resi && resi !== '-') {
+                        navigator.clipboard.writeText(resi).then(() => {
+                            const original = this.innerHTML;
+                            this.innerHTML = '<i class="fa-solid fa-check text-success"></i>';
+                            setTimeout(() => { this.innerHTML = original; }, 1500);
+                        });
+                    }
+                });
+            }
+
+            // Reload Frame Button
+            const btnReloadFrame = document.getElementById('btnReloadFrame');
+            if (btnReloadFrame) {
+                btnReloadFrame.addEventListener('click', function() {
+                    if (trackIframe && currentTrackingUrl) {
+                        if (frameOverlay) frameOverlay.style.display = 'flex';
+                        trackIframe.src = currentTrackingUrl;
+                    }
+                });
+            }
+
+            if (trackIframe) {
+                trackIframe.addEventListener('load', function() {
+                    if (frameOverlay) frameOverlay.style.display = 'none';
+                });
+            }
+
+            function renderTimelineHistory(historyList) {
+                const container = document.getElementById('timelineHistoryList');
+                const countBadge = document.getElementById('countHistoryEntries');
+                if (!container) return;
+
+                if (!Array.isArray(historyList) || historyList.length === 0) {
+                    countBadge.textContent = '0';
+                    container.innerHTML = '<div class="text-center text-muted small py-4 fst-italic">Belum ada riwayat checkpoint yang dicatat.</div>';
+                    return;
+                }
+
+                countBadge.textContent = historyList.length;
+                let html = '';
+                historyList.forEach((entry, idx) => {
+                    const isLatest = idx === 0;
+                    const circleColor = isLatest ? '#2563eb' : '#94a3b8';
+                    const pulseAnimation = isLatest ? 'box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25);' : '';
+                    html += `
+                        <div class="position-relative mb-3.5 pb-2">
+                            <span class="position-absolute rounded-circle" style="width: 14px; height: 14px; background: ${circleColor}; left: -31px; top: 4px; border: 2.5px solid #ffffff; ${pulseAnimation}"></span>
+                            <div class="bg-light p-2.5 px-3 rounded-3 border ${isLatest ? 'border-primary border-opacity-50 shadow-xs' : 'border-light-subtle'}">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="fw-bold small ${isLatest ? 'text-primary' : 'text-dark'} font-monospace">
+                                        ${isLatest ? '<i class="fa-solid fa-circle-dot me-1 text-primary"></i>' : ''}${escapeHtml(entry.status || 'CHECKPOINT')}
+                                    </span>
+                                    <span class="badge bg-white text-muted border font-monospace" style="font-size: 0.68rem;">
+                                        <i class="fa-regular fa-clock me-1"></i>${escapeHtml(entry.time || '')}
+                                    </span>
+                                </div>
+                                ${entry.location && entry.location !== '-' ? `
+                                    <div class="small fw-semibold text-indigo mb-1" style="font-size: 0.72rem;">
+                                        <i class="fa-solid fa-location-dot me-1 text-danger"></i>${escapeHtml(entry.location)}
+                                    </div>` : ''}
+                                <div class="small text-secondary mb-1.5" style="font-size: 0.78rem; line-height: 1.4;">${escapeHtml(entry.note || '')}</div>
+                                <div class="text-muted d-flex align-items-center justify-content-between" style="font-size: 0.65rem;">
+                                    <span>Sumber: <strong class="text-dark">${escapeHtml(entry.logged_by || 'System')}</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+                return text.toString().replace(/[&<>"']/g, m => map[m]);
+            }
+
+            if (trackButtons.length > 0 && trackModal) {
+                trackButtons.forEach(btn => {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const number = this.getAttribute('data-number');
+                        const resi = this.getAttribute('data-resi');
+                        const vendor = this.getAttribute('data-vendor');
+                        const receiver = this.getAttribute('data-receiver');
+                        const status = this.getAttribute('data-status');
+                        const trackingUrl = this.getAttribute('data-url');
+                        const actionUrl = this.getAttribute('data-action');
+                        const lastStatus = this.getAttribute('data-last-status') || '';
+                        let history = [];
+                        try {
+                            history = JSON.parse(this.getAttribute('data-history') || '[]');
+                        } catch(err) { history = []; }
+
+                        currentTrackingUrl = trackingUrl || '#';
+
+                        // Set info dasar modal
+                        document.getElementById('track_modal_number').textContent = number || '-';
+                        document.getElementById('track_modal_vendor').textContent = vendor || '-';
+                        document.getElementById('track_modal_resi').textContent = resi || '-';
+                        document.getElementById('btnOpenVendorTab').href = currentTrackingUrl;
+
+                        const badgeStatus = document.getElementById('track_current_status_badge');
+                        badgeStatus.textContent = (status || 'ON DELIVERY').toUpperCase();
+                        if (status === 'delivered') {
+                            badgeStatus.className = 'badge bg-success font-monospace';
+                        } else {
+                            badgeStatus.className = 'badge bg-primary-subtle text-primary border border-primary font-monospace';
+                        }
+
+                        // Set Action URL Form
+                        if (formUpdateTracking) {
+                            formUpdateTracking.action = actionUrl;
+                        }
+
+                        // Reset Form input
+                        document.getElementById('log_last_status').value = lastStatus;
+                        document.getElementById('log_location').value = '';
+                        document.getElementById('log_note').value = '';
+                        document.getElementById('log_is_delivered').checked = (status === 'delivered');
+                        document.getElementById('log_receiver_name').value = receiver || '';
+                        toggleDeliveredDetails(status === 'delivered');
+
+                        // Set default time to now local ISO
+                        const now = new Date();
+                        const offset = now.getTimezoneOffset() * 60000;
+                        const localISOTime = (new Date(now.getTime() - offset)).toISOString().slice(0, 16);
+                        document.getElementById('log_checkpoint_time').value = localISOTime;
+
+                        // Render riwayat perjalanan tersimpan
+                        renderTimelineHistory(history);
+
+                        trackModal.show();
+
+                        // AUTO-SYNC BACKEND SECARA OTOMATIS SAAT MODAL DIBUKA
+                        const syncUrl = this.getAttribute('data-sync-url');
+                        if (syncUrl) {
+                            triggerAutoSync(syncUrl, this);
+                        }
+                    });
+                });
+            }
+
+            // Function trigger auto-sync ke backend
+            async function triggerAutoSync(syncUrl, callerBtn = null) {
+                const btnSync = document.getElementById('btnTriggerAutoSync');
+                const iconSync = document.getElementById('iconSyncTracking');
+                const textSync = document.getElementById('textSyncTracking');
+
+                if (btnSync) btnSync.disabled = true;
+                if (iconSync) iconSync.classList.add('fa-spin');
+                if (textSync) textSync.textContent = 'Mengekstrak Data...';
+
+                try {
+                    const response = await fetch(syncUrl, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        }
+                    });
+                    const res = await response.json();
+
+                    if (res.success && res.data) {
+                        const updated = res.data;
+                        if (Array.isArray(updated.tracking_history) && updated.tracking_history.length > 0) {
+                            renderTimelineHistory(updated.tracking_history);
+                        }
+                        if (updated.last_tracking_status) {
+                            document.getElementById('log_last_status').value = updated.last_tracking_status;
+                        }
+                        if (updated.receiver_pic_name) {
+                            document.getElementById('log_receiver_name').value = updated.receiver_pic_name;
+                        }
+
+                        // Update status badge modal
+                        const badgeStatus = document.getElementById('track_current_status_badge');
+                        badgeStatus.textContent = (updated.status || 'ON DELIVERY').toUpperCase();
+                        if (updated.status === 'delivered') {
+                            badgeStatus.className = 'badge bg-success font-monospace';
+                            document.getElementById('log_is_delivered').checked = true;
+                            toggleDeliveredDetails(true);
+                        }
+
+                        // Update atribut pada tombol Lacak di tabel agar sinkron
+                        if (callerBtn) {
+                            callerBtn.setAttribute('data-history', JSON.stringify(updated.tracking_history || []));
+                            callerBtn.setAttribute('data-last-status', updated.last_tracking_status || '');
+                            callerBtn.setAttribute('data-status', updated.status || '');
+                        }
+
+                        if (textSync) textSync.textContent = `Tersinkron (${res.synced_count || 0})`;
+                    } else {
+                        if (textSync) textSync.textContent = 'Sync Otomatis';
+                    }
+                } catch (err) {
+                    console.error('Auto sync tracking error:', err);
+                    if (textSync) textSync.textContent = 'Sync Gagal';
+                } finally {
+                    if (iconSync) iconSync.classList.remove('fa-spin');
+                    if (btnSync) btnSync.disabled = false;
+                    setTimeout(() => {
+                        if (textSync) textSync.textContent = 'Sync Otomatis';
+                    }, 3500);
+                }
+            }
+
+            // Tombol Sync Otomatis Manual Klik di Header Modal
+            const btnTriggerAutoSync = document.getElementById('btnTriggerAutoSync');
+            if (btnTriggerAutoSync) {
+                btnTriggerAutoSync.addEventListener('click', function() {
+                    const activeBtn = document.querySelector(`.btn-track-live[data-resi="${document.getElementById('track_modal_resi').textContent}"]`);
+                    const syncUrl = activeBtn ? activeBtn.getAttribute('data-sync-url') : null;
+                    if (syncUrl) {
+                        triggerAutoSync(syncUrl, activeBtn);
+                    }
+                });
+            }
+
+            // Submit tracking log handler
+            if (formUpdateTracking) {
+                formUpdateTracking.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    const submitBtn = document.getElementById('btnSubmitTrackingLog');
+                    const origBtnText = submitBtn.innerHTML;
+                    submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Menyimpan...';
+                    submitBtn.disabled = true;
+
+                    const formData = new FormData(this);
+
+                    try {
+                        const response = await fetch(this.action, {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                            },
+                            body: formData
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            // Update list riwayat langsung di modal tanpa harus reload penuh
+                            if (result.data && result.data.tracking_history) {
+                                renderTimelineHistory(result.data.tracking_history);
+                            }
+                            
+                            // Tampilkan notifikasi berhasil
+                            alert(result.message || 'Riwayat perjalanan berhasil disimpan!');
+
+                            // Jika status berubah jadi delivered, refresh halaman agar badge di tabel update
+                            if (formData.get('is_delivered') === '1') {
+                                window.location.reload();
+                            }
+                        } else {
+                            alert(result.message || 'Gagal menyimpan riwayat tracking.');
+                        }
+                    } catch (err) {
+                        alert('Terjadi kesalahan saat menyimpan data perjalanan.');
+                    } finally {
+                        submitBtn.innerHTML = origBtnText;
+                        submitBtn.disabled = false;
+                    }
                 });
             }
         });

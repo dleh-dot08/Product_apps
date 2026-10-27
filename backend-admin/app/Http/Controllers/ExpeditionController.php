@@ -309,4 +309,90 @@ class ExpeditionController extends Controller
 
         return redirect()->route('ekspedisi.index')->with('success', "Data pengiriman {$number} berhasil dihapus.");
     }
+
+    /**
+     * Update tracking log, checkpoint journey, and optionally mark delivered.
+     */
+    public function updateTrackingLog(Request $request, Expedition $ekspedisi)
+    {
+        $validated = $request->validate([
+            'last_tracking_status' => 'nullable|string|max:100',
+            'checkpoint_location' => 'nullable|string|max:255',
+            'checkpoint_note' => 'nullable|string|max:1000',
+            'checkpoint_time' => 'nullable|date',
+            'receiver_name' => 'nullable|string|max:150',
+            'is_delivered' => 'nullable|boolean',
+        ]);
+
+        $history = $ekspedisi->tracking_history ?: [];
+        $now = now();
+        $eventTime = $request->filled('checkpoint_time') 
+            ? \Carbon\Carbon::parse($request->checkpoint_time) 
+            : $now;
+
+        // Tambahkan entri riwayat jika ada info baru
+        if ($request->filled('checkpoint_note') || $request->filled('last_tracking_status')) {
+            $newEntry = [
+                'time' => $eventTime->format('Y-m-d H:i:s'),
+                'status' => $request->last_tracking_status ?: ($ekspedisi->last_tracking_status ?: 'UPDATE_PERJALANAN'),
+                'location' => $request->checkpoint_location ?: '-',
+                'note' => $request->checkpoint_note ?: 'Update riwayat pengiriman',
+                'logged_by' => auth()->user()->name ?? 'System',
+                'logged_at' => $now->format('Y-m-d H:i:s'),
+            ];
+            // Push ke riwayat (unshift agar urutan terbaru di atas)
+            array_unshift($history, $newEntry);
+        }
+
+        $updatePayload = [
+            'tracking_history' => $history,
+            'last_tracked_at' => $now,
+        ];
+
+        if ($request->filled('last_tracking_status')) {
+            $updatePayload['last_tracking_status'] = $request->last_tracking_status;
+        }
+
+        if ($request->filled('receiver_name')) {
+            $updatePayload['receiver_pic_name'] = $request->receiver_name;
+        }
+
+        // Jika ditandai selesai/delivered
+        if ($request->boolean('is_delivered')) {
+            $updatePayload['status'] = 'delivered';
+            $updatePayload['actual_arrival_date'] = $eventTime;
+            $statusText = 'Telah Sampai / Terkirim';
+        } else {
+            $statusText = 'Riwayat Perjalanan Diperbarui';
+        }
+
+        $ekspedisi->update($updatePayload);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Pengiriman {$ekspedisi->expedition_number}: {$statusText}.",
+                'data' => $ekspedisi->fresh(),
+            ]);
+        }
+
+        return redirect()->route('ekspedisi.index')->with('success', "Pengiriman {$ekspedisi->expedition_number}: {$statusText}.");
+    }
+
+    /**
+     * Otomatis sinkron dan ekstrak riwayat tracking dari vendor (100% Free / Public Endpoint)
+     */
+    public function autoSyncTracking(Request $request, Expedition $ekspedisi, \App\Services\ExpeditionTrackingService $trackingService)
+    {
+        $result = $trackingService->syncTracking($ekspedisi);
+
+        return response()->json([
+            'success' => $result['success'],
+            'synced_count' => $result['synced_count'],
+            'is_delivered' => $result['is_delivered'],
+            'message' => $result['message'],
+            'data' => $result['data'] ?? $ekspedisi->fresh(),
+        ], $result['success'] ? 200 : 422);
+    }
 }
+

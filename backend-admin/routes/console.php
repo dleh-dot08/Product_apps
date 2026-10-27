@@ -10,3 +10,4 @@ Artisan::command('inspire', function () {
 
 Schedule::command('akurasi:sync')->hourly();
 Schedule::command('tasks:auto-pending')->dailyAt('23:59');
+Schedule::command('ekspedisi:sync-tracking')->cron('0 */3 * * *')->withoutOverlapping();
