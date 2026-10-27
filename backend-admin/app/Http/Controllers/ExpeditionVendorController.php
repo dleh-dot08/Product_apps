@@ -61,7 +61,7 @@ class ExpeditionVendorController extends Controller
             'office_address' => 'nullable|string',
             'supported_services' => 'nullable|string', // comma-separated in modal
             'payment_terms' => 'required|in:cash_cod,tempo_14,tempo_30,monthly_invoice',
-            'website_tracking_url' => 'nullable|url|max:255',
+            'website_tracking_url' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
 
@@ -95,7 +95,7 @@ class ExpeditionVendorController extends Controller
             'office_address' => 'nullable|string',
             'supported_services' => 'nullable|string',
             'payment_terms' => 'required|in:cash_cod,tempo_14,tempo_30,monthly_invoice',
-            'website_tracking_url' => 'nullable|url|max:255',
+            'website_tracking_url' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
 
