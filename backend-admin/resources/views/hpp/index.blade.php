@@ -174,8 +174,8 @@
     ========================================================= */
     #hppDashboardPage .hpp-stats-grid {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 16px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 14px;
         margin-bottom: 16px;
     }
 
@@ -885,7 +885,13 @@
     /* =========================================================
        RESPONSIVE
     ========================================================= */
-    @media (max-width: 1250px) {
+    @media (max-width: 1400px) {
+        #hppDashboardPage .hpp-stats-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 1100px) {
         #hppDashboardPage .hpp-stats-grid {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -894,6 +900,7 @@
             grid-template-columns: 1fr 160px 180px 180px 80px;
         }
     }
+
 
     @media (max-width: 991.98px) {
         #hppDashboardPage {
@@ -968,7 +975,12 @@
         ? $shifts->getCollection()
         : collect($shifts);
 
-    $completedVisible = $currentShiftCollection->filter(fn($shift) => !empty($shift->check_out_at))->count();
+    $completedVisible = $currentShiftCollection->filter(function($item) {
+        if ($item->is_expedition ?? false) {
+            return $item->status === 'delivered';
+        }
+        return !empty($item->check_out_at);
+    })->count();
 
     $componentConfig = [
         'BBM' => [
@@ -1001,20 +1013,33 @@
             'color' => '#e11d48',
             'value' => (float) ($costComposition['Depresiasi'] ?? 0),
         ],
+        'Ekspedisi' => [
+            'label' => 'Ekspedisi (Vendor 3PL)',
+            'color' => '#ea580c',
+            'value' => (float) ($costComposition['Ekspedisi'] ?? 0),
+        ],
     ];
 
     $compositionTotal = collect($componentConfig)->sum('value');
 
     $driverFilterOptions = $currentShiftCollection
-        ->map(function ($shift) {
-            return $shift->driver->full_name ?? $shift->driver->name ?? null;
+        ->map(function ($item) {
+            if ($item->is_expedition ?? false) {
+                return $item->vendor_name ?: 'Vendor Ekspedisi';
+            }
+            return $item->driver->full_name ?? $item->driver->name ?? null;
         })
         ->filter()
         ->unique()
         ->values();
 
     $vehicleFilterOptions = $currentShiftCollection
-        ->map(fn($shift) => $shift->vehicle->plate_number ?? null)
+        ->map(function ($item) {
+            if ($item->is_expedition ?? false) {
+                return $item->service_type ? 'Ekspedisi (' . $item->service_type . ')' : 'Ekspedisi (3PL)';
+            }
+            return $item->vehicle->plate_number ?? null;
+        })
         ->filter()
         ->unique()
         ->values();
@@ -1082,20 +1107,33 @@
         {{-- SUMMARY CARDS --}}
         <div class="hpp-stats-grid">
             <div class="hpp-stat-card" style="--stat-color:#3b82f6; --stat-bg:#eff6ff;">
-                <div class="hpp-stat-icon"><i class="fas fa-truck"></i></div>
+                <div class="hpp-stat-icon"><i class="fas fa-truck-fast"></i></div>
                 <div class="hpp-stat-content">
-                    <div class="hpp-stat-label">Total Ritase</div>
-                    <div class="hpp-stat-value">{{ number_format($totalTrips, 0, ',', '.') }}</div>
-                    <div class="hpp-stat-meta">{{ $completedVisible }} trip selesai pada halaman ini</div>
+                    <div class="hpp-stat-label">Total Pengiriman</div>
+                    <div class="hpp-stat-value">{{ number_format(($totalTrips ?? 0) + ($totalExpeditions ?? 0), 0, ',', '.') }}</div>
+                    <div class="hpp-stat-meta">{{ $totalTrips ?? 0 }} armada &bull; {{ $totalExpeditions ?? 0 }} ekspedisi</div>
                 </div>
             </div>
 
             <div class="hpp-stat-card" style="--stat-color:#10b981; --stat-bg:#ecfdf5;">
-                <div class="hpp-stat-icon"><i class="fas fa-money-bill-wave"></i></div>
+                <div class="hpp-stat-icon"><i class="fas fa-wallet"></i></div>
                 <div class="hpp-stat-content">
-                    <div class="hpp-stat-label">Total Biaya</div>
-                    <div class="hpp-stat-value">Rp {{ number_format($totalCost, 0, ',', '.') }}</div>
-                    <div class="hpp-stat-meta">Akumulasi biaya seluruh ritase</div>
+                    <div class="hpp-stat-label">Total Biaya (HPP)</div>
+                    <div class="hpp-stat-value">Rp {{ number_format($grandTotalCost ?? ($totalCost ?? 0), 0, ',', '.') }}</div>
+                    <div class="hpp-stat-meta">Armada + Ekspedisi 3PL</div>
+                </div>
+            </div>
+
+            <div class="hpp-stat-card" style="--stat-color:#f97316; --stat-bg:#fff7ed;">
+                <div class="hpp-stat-icon"><i class="fas fa-boxes-packing"></i></div>
+                <div class="hpp-stat-content">
+                    <div class="hpp-stat-label">Biaya Ekspedisi</div>
+                    <div class="hpp-stat-value">Rp {{ number_format($totalExpeditionCost ?? 0, 0, ',', '.') }}</div>
+                    <div class="hpp-stat-meta">{{ number_format($totalExpeditions ?? 0, 0, ',', '.') }} kargo / vendor 3PL</div>
+                </div>
+                <div class="hpp-stat-side" style="color: #ea580c;">
+                    100% Beban
+                    <small>Vendor 3PL</small>
                 </div>
             </div>
 
@@ -1103,17 +1141,17 @@
                 <div class="hpp-stat-icon"><i class="fas fa-coins"></i></div>
                 <div class="hpp-stat-content">
                     <div class="hpp-stat-label">Rata-rata HPP</div>
-                    <div class="hpp-stat-value">Rp {{ number_format($avgHppPerItem, 0, ',', '.') }} <span class="unit">/ barang</span></div>
-                    <div class="hpp-stat-meta">Rata-rata HPP per item barang</div>
+                    <div class="hpp-stat-value">Rp {{ number_format($avgHppPerItem, 0, ',', '.') }} <span class="unit">/ item</span></div>
+                    <div class="hpp-stat-meta">Dari {{ number_format($grandTotalItems ?? 0, 0, ',', '.') }} total barang logistik</div>
                 </div>
             </div>
 
             <div class="hpp-stat-card" style="--stat-color:#ef4444; --stat-bg:#fef2f2;">
                 <div class="hpp-stat-icon"><i class="fas fa-location-dot"></i></div>
                 <div class="hpp-stat-content">
-                    <div class="hpp-stat-label">Total Jarak</div>
+                    <div class="hpp-stat-label">Jarak Armada Internal</div>
                     <div class="hpp-stat-value">{{ number_format($totalJarak, 0, ',', '.') }} <span class="unit">KM</span></div>
-                    <div class="hpp-stat-meta">{{ floor($totalDurasi / 60) }} jam {{ $totalDurasi % 60 }} menit total durasi</div>
+                    <div class="hpp-stat-meta">{{ floor($totalDurasi / 60) }} jam {{ $totalDurasi % 60 }} menit durasi</div>
                 </div>
             </div>
         </div>
@@ -1290,6 +1328,231 @@
                     <tbody id="ritaseTableBody">
 
                         @forelse($shifts as $shift)
+                            @if($shift->is_expedition ?? false)
+                                @php
+                                    $expDate = $shift->shipping_date ? $shift->shipping_date->format('Y-m-d') : ($shift->created_at ? $shift->created_at->format('Y-m-d') : '');
+                                    $statusKey = $shift->status === 'delivered' ? 'completed' : (in_array($shift->status, ['on_delivery', 'in_transit', 'picked_up']) ? 'trip' : 'planned');
+                                    $vendorName = $shift->vendor_name ?: ($shift->vendor->name ?? 'Vendor Ekspedisi');
+                                    $serviceName = $shift->service_type ? 'Ekspedisi (' . $shift->service_type . ')' : 'Ekspedisi (3PL)';
+                                    $receiverInfo = $shift->receiver_pic_name ?: ($shift->customer_vendor_name ?: '-');
+                                    $searchText = strtolower(trim(
+                                        ($vendorName ?? '') . ' ' .
+                                        ($shift->service_type ?? '') . ' ' .
+                                        ($shift->tracking_number ?? '') . ' ' .
+                                        ($shift->reference_number ?? '') . ' ' .
+                                        ($shift->expedition_number ?? '') . ' ' .
+                                        ($receiverInfo ?? '') . ' ' .
+                                        ($shift->destination_name ?? '')
+                                    ));
+                                @endphp
+
+                                <tr class="main-ritase-row"
+                                    data-search="{{ $searchText }}"
+                                    data-status="{{ $statusKey }}"
+                                    data-driver="{{ strtolower($vendorName) }}"
+                                    data-vehicle="{{ strtolower($serviceName) }}"
+                                    data-date="{{ $expDate }}"
+                                >
+                                    <td>
+                                        <span style="white-space:nowrap;">
+                                            <i class="far fa-calendar-alt" style="color:#ea580c; margin-right:5px;"></i>
+                                            {{ $shift->shipping_date ? $shift->shipping_date->format('d M Y') : ($shift->created_at ? $shift->created_at->format('d M Y') : '-') }}
+                                        </span>
+                                        <div class="mt-1">
+                                            <span class="badge" style="background:#fff7ed; color:#ea580c; border:1px solid #fed7aa; font-size:9.5px; padding:2px 6px; font-weight:800;">
+                                                <i class="fas fa-boxes-packing mr-1"></i> Vendor Ekspedisi
+                                            </span>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <div class="font-weight-bold" style="color:#0f172a; font-size:12px;">{{ $vendorName }}</div>
+                                        <small class="text-muted" style="font-size:10px;">{{ $shift->service_type ?: 'Layanan Standar' }}</small>
+                                    </td>
+
+                                    <td>
+                                        <span class="driver-name" title="Penerima"><i class="fas fa-user-check text-success mr-1" style="font-size:10px;"></i>{{ $receiverInfo }}</span>
+                                        @if($shift->destination_name)
+                                            <div style="font-size:10px; color:#94a3b8;"><i class="fas fa-map-marker-alt mr-1"></i>{{ Str::limit($shift->destination_name, 22) }}</div>
+                                        @endif
+                                    </td>
+
+                                    <td>
+                                        <div class="d-flex flex-column gap-1">
+                                            @if($shift->tracking_number)
+                                                <div class="delivery-code mb-1">
+                                                    @if(!empty($shift->tracking_url))
+                                                        <a href="{{ $shift->tracking_url }}" target="_blank" rel="noopener noreferrer" class="delivery-code-ref text-primary font-weight-bold" style="text-decoration:none;" title="Lacak Resi">
+                                                            <i class="fas fa-barcode mr-1"></i>{{ $shift->tracking_number }}
+                                                            <i class="fas fa-arrow-up-right-from-square ml-1" style="font-size:8px;"></i>
+                                                        </a>
+                                                    @else
+                                                        <span class="delivery-code-ref"><i class="fas fa-barcode mr-1"></i>{{ $shift->tracking_number }}</span>
+                                                    @endif
+                                                    <span class="delivery-type delivery" style="background:#fef3c7; color:#b45309; border-color:#fde68a;">Resi</span>
+                                                </div>
+                                            @endif
+
+                                            @if($shift->reference_number || $shift->expedition_number)
+                                                <div class="delivery-code mb-1">
+                                                    <span class="delivery-code-ref">{{ $shift->reference_number ?: $shift->expedition_number }}</span>
+                                                    <span class="delivery-type pickup" style="background:#e0e7ff; color:#4338ca; border-color:#c7d2fe;">SPK/DO</span>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <div class="trip-metric">
+                                            <i class="fas fa-route" style="color:#f97316;"></i>
+                                            <span title="{{ $shift->origin_name }} &rarr; {{ $shift->destination_name }}">{{ Str::limit($shift->destination_name ?: 'Tujuan', 15) }}</span>
+                                            <span style="color:#cbd5e1;">&bull;</span>
+                                            <span>{{ number_format($shift->weight_kg, 1) }} kg</span>
+                                        </div>
+                                        <div style="font-size:9.5px; color:#94a3b8; margin-top:2px;">
+                                            {{ $shift->total_colli ?: 1 }} koli kargo
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <span class="cost-value" style="color:#ea580c;">Rp {{ number_format($shift->total_cost, 0, ',', '.') }}</span>
+                                        <div style="font-size:9.5px; color:#94a3b8; font-weight:700;">100% Ekspedisi</div>
+                                    </td>
+
+                                    <td>
+                                        @if($statusKey === 'completed')
+                                            <span class="status-badge status-completed"><i class="fas fa-check-circle mr-1"></i> Delivered</span>
+                                        @elseif($statusKey === 'trip')
+                                            <span class="status-badge status-trip"><i class="fas fa-plane-departure mr-1"></i> In Transit</span>
+                                        @else
+                                            <span class="status-badge status-planned"><i class="fas fa-clock mr-1"></i> Pending</span>
+                                        @endif
+                                    </td>
+
+                                    <td>
+                                        <div class="action-cell" style="display: flex; gap: 8px; justify-content: center;">
+                                            <button type="button" class="btn-row-more toggle-btn" data-toggle="collapse" data-target="#detail-exp-{{ $shift->id }}" title="Buka rincian alokasi HPP">
+                                                <i class="fas fa-chevron-down transition-icon"></i>
+                                            </button>
+                                            <a href="{{ route('ekspedisi.index') }}" class="btn-row-more" title="Buka Menu Ekspedisi" style="display:flex; align-items:center; justify-content:center; text-decoration:none;">
+                                                <i class="fas fa-external-link-alt" style="font-size:11px;"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                {{-- Collapsible Detail Row for Expedition --}}
+                                <tr class="detail-ritase-tr">
+                                    <td colspan="8" class="p-0 border-0">
+                                        <div id="detail-exp-{{ $shift->id }}" class="collapse">
+                                            <div class="ritase-detail-panel">
+                                                <div class="row">
+                                                    {{-- Rincian Biaya Ekspedisi --}}
+                                                    <div class="col-12 mb-4">
+                                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                                            <h6 class="font-weight-bold m-0" style="color: #1e293b;"><i class="fas fa-boxes-packing text-warning mr-2"></i> Rincian Pembebanan Biaya Ekspedisi (Vendor 3PL)</h6>
+                                                            <span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; font-size:11px; padding: 6px 10px;">
+                                                                Vendor: {{ $vendorName }} &bull; Layanan: {{ $shift->service_type ?: 'Standar' }} &bull; Berat: {{ number_format($shift->weight_kg, 1) }} KG
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="row">
+                                                            <div class="col-md-3 col-sm-6 mb-2">
+                                                                <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                                                                    <div class="text-muted mb-1" style="font-size: 10px; font-weight:700; text-transform:uppercase;">Tagihan Vendor Ekspedisi</div>
+                                                                    <div class="font-weight-bold" style="color:#0f172a;">Rp {{ number_format($shift->total_cost, 0, ',', '.') }}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-3 col-sm-6 mb-2">
+                                                                <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                                                                    <div class="text-muted mb-1" style="font-size: 10px; font-weight:700; text-transform:uppercase;">No. Resi Pengiriman</div>
+                                                                    <div class="font-weight-bold" style="color:#0f172a; word-break:break-all;">{{ $shift->tracking_number ?: '-' }}</div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-3 col-sm-6 mb-2">
+                                                                <div style="background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+                                                                    <div class="text-muted mb-1" style="font-size: 10px; font-weight:700; text-transform:uppercase;">Metode Pembebanan HPP</div>
+                                                                    <div class="font-weight-bold text-success" style="font-size:12px;"><i class="fas fa-check-circle mr-1"></i> 100% Beban Vendor</div>
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-md-3 col-sm-6 mb-2">
+                                                                <div style="background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 12px;">
+                                                                    <div class="text-warning mb-1" style="font-size: 10px; font-weight:800; text-transform:uppercase; color:#c2410c !important;">Total HPP Ekspedisi</div>
+                                                                    <div class="font-weight-bold" style="font-size: 15px; color:#ea580c;">Rp {{ number_format($shift->total_cost, 0, ',', '.') }}</div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- Alokasi HPP per Barang Ekspedisi --}}
+                                                    <div class="col-12">
+                                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                                            <h6 class="font-weight-bold m-0" style="color: #1e293b;"><i class="fas fa-box-open text-primary mr-2"></i> Alokasi HPP per Barang Ekspedisi</h6>
+                                                            <span class="badge" style="background-color: #fff7ed; color: #ea580c; border: 1px solid #fed7aa; padding: 6px 12px;">
+                                                                <i class="fas fa-calculator mr-1"></i> Skenario: 100% Beban Prorata Nilai Barang
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="table-responsive" style="border: 1px solid #e2e8f0; border-radius: 10px; overflow:hidden;">
+                                                            <table class="table table-sm table-hover mb-0" style="background: #fff;">
+                                                                <thead style="background: #f8fafc;">
+                                                                    <tr>
+                                                                        <th class="border-0 text-muted" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">Kode / Deskripsi</th>
+                                                                        <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">Qty</th>
+                                                                        <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">Harga Satuan</th>
+                                                                        <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">Nilai Barang (Total)</th>
+                                                                        <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">HPP per Baris</th>
+                                                                        <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">HPP / Qty</th>
+                                                                        <th class="border-0 text-muted text-right" style="font-size:10px; font-weight:800; text-transform:uppercase; padding: 12px 15px;">% Beban</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @forelse($shift->calc_details['allocations'] as $item)
+                                                                    <tr>
+                                                                        <td style="padding: 12px 15px; border-color: #f1f5f9;">
+                                                                            <strong style="color: #0f172a; font-size:12px;">{{ $item['reference_number'] }}</strong><br>
+                                                                            <small class="text-muted" style="font-size:11px;">{{ $item['item_description'] }}</small>
+                                                                        </td>
+                                                                        <td class="text-right" style="padding: 12px 15px; border-color: #f1f5f9;">
+                                                                            <span style="color:#334155; font-weight:700;">{{ number_format($item['quantity'], 2) }}</span>
+                                                                            <small class="text-muted ml-1">{{ $item['unit'] }}</small>
+                                                                        </td>
+                                                                        <td class="text-right" style="padding: 12px 15px; border-color: #f1f5f9; color:#475569;">
+                                                                            Rp {{ number_format($item['unit_price'] ?? 0, 0, ',', '.') }}
+                                                                        </td>
+                                                                        <td class="text-right" style="padding: 12px 15px; border-color: #f1f5f9; color:#475569;">
+                                                                            Rp {{ number_format($item['line_total'], 0, ',', '.') }}
+                                                                        </td>
+                                                                        <td class="text-right font-weight-bold" style="padding: 12px 15px; border-color: #f1f5f9; color:#ea580c;">
+                                                                            Rp {{ number_format($item['hpp_per_baris'], 0, ',', '.') }}
+                                                                        </td>
+                                                                        <td class="text-right font-weight-bold" style="padding: 12px 15px; border-color: #f1f5f9; color:#0f172a;">
+                                                                            Rp {{ number_format($item['hpp_per_qty'], 0, ',', '.') }}
+                                                                        </td>
+                                                                        <td class="text-right" style="padding: 12px 15px; border-color: #f1f5f9; width: 120px;">
+                                                                            <div class="progress progress-xs mb-1" style="height: 6px; border-radius: 3px; background: #e2e8f0;">
+                                                                                <div class="progress-bar" style="width: {{ $item['percentage'] }}%; background: #ea580c;"></div>
+                                                                            </div>
+                                                                            <small class="font-weight-bold" style="color:#64748b;">{{ number_format($item['percentage'], 1) }}%</small>
+                                                                        </td>
+                                                                    </tr>
+                                                                    @empty
+                                                                    <tr>
+                                                                        <td colspan="7" class="text-center text-muted py-4" style="background:#f8fafc;">
+                                                                            Tidak ada rincian barang.
+                                                                        </td>
+                                                                    </tr>
+                                                                    @endforelse
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @else
                             @php
                                 $distanceValue = null;
                                 $distanceLabel = '-';
@@ -1327,8 +1590,13 @@
                                 <td>
                                     <span style="white-space:nowrap;">
                                         <i class="far fa-calendar-alt" style="color:#64748b; margin-right:5px;"></i>
-                                        {{ $shift->work_date->format('d M Y') }}
+                                        {{ $shift->work_date ? $shift->work_date->format('d M Y') : '-' }}
                                     </span>
+                                    <div class="mt-1">
+                                        <span class="badge" style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; font-size:9.5px; padding:2px 6px; font-weight:800;">
+                                            <i class="fas fa-truck mr-1"></i> Armada Internal
+                                        </span>
+                                    </div>
                                 </td>
 
                                 <td>
@@ -1402,7 +1670,7 @@
                                 </td>
                             </tr>
                                 {{-- Collapsible Detail Row --}}
-                                <tr>
+                                <tr class="detail-ritase-tr">
                                     <td colspan="8" class="p-0 border-0">
                                         <div id="detail-{{ $shift->id }}" class="collapse">
                                             <div class="ritase-detail-panel">
@@ -1519,7 +1787,7 @@
                                         </div>
                                     </td>
                                 </tr>
-                                    
+                            @endif
                         @empty
                             <tr>
                                 <td colspan="8" class="text-center empty-ritase">
@@ -1682,9 +1950,10 @@
                 row.style.display = show ? '' : 'none';
 
                 const nextRow = row.nextElementSibling;
-                if (nextRow && nextRow.id && nextRow.id.startsWith('detail-')) {
+                if (nextRow && (nextRow.classList.contains('detail-ritase-tr') || (nextRow.id && nextRow.id.startsWith('detail-')))) {
                     if (!show) {
-                        nextRow.classList.remove('show');
+                        const collapseEl = nextRow.querySelector('.collapse');
+                        if (collapseEl) collapseEl.classList.remove('show');
                         nextRow.style.display = 'none';
                     } else {
                         nextRow.style.display = '';
