@@ -96,6 +96,12 @@ class Expedition extends Model
         // 1. Dari master vendor jika ada pola URL
         if ($this->vendor && !empty($this->vendor->website_tracking_url)) {
             $template = $this->vendor->website_tracking_url;
+
+            // Express Jaya Group (pencarian resi melalui form POST di homepage)
+            if (str_contains($template, 'expressjayagroup.com')) {
+                return 'https://www.expressjayagroup.com/';
+            }
+
             if (str_contains($template, '{RESI}')) {
                 return str_replace('{RESI}', urlencode($resi), $template);
             }
@@ -110,8 +116,14 @@ class Expedition extends Model
 
         // 2. Default fallback berdasarkan vendor_name
         $vName = strtolower($this->vendor_name ?? '');
+        if (str_contains($vName, 'express jaya') || str_contains($vName, 'expressjaya')) {
+            return "https://www.expressjayagroup.com/";
+        }
         if (str_contains($vName, 'lion')) {
             return "https://lionparcel.com/track/stt?q=" . urlencode($resi);
+        }
+        if (str_contains($vName, 'ginta')) {
+            return "https://trace.gintacargo.com/?awb=" . urlencode($resi);
         }
         if (str_contains($vName, 'j&t') || str_contains($vName, 'jnt')) {
             return "https://www.jet.co.id/track?awb=" . urlencode($resi);

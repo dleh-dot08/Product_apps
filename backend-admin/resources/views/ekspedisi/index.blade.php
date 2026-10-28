@@ -1774,6 +1774,17 @@
                 });
             }
 
+            // Open Vendor Tab Button - auto copy resi so user can easily paste on vendor portal
+            const btnOpenVendorTab = document.getElementById('btnOpenVendorTab');
+            if (btnOpenVendorTab) {
+                btnOpenVendorTab.addEventListener('click', function() {
+                    const resi = document.getElementById('track_modal_resi').textContent;
+                    if (resi && resi !== '-') {
+                        navigator.clipboard.writeText(resi.trim());
+                    }
+                });
+            }
+
             // Reload Frame Button
             const btnReloadFrame = document.getElementById('btnReloadFrame');
             if (btnReloadFrame) {

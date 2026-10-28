@@ -193,7 +193,131 @@ class ExpeditionTrackingService
             }
         }
 
-        // 3. Vendor Dinamis Lainnya (Berdasarkan website_tracking_url dari master vendor)
+        // 3. Express Jaya Group (https://www.expressjayagroup.com/)
+        $isExpressJaya = str_contains($vendorName, 'EXPRESS JAYA') 
+            || ($ekspedisi->vendor && str_contains($ekspedisi->vendor->website_tracking_url ?? '', 'expressjayagroup.com'));
+
+        if ($isExpressJaya) {
+            try {
+                $response = Http::asForm()
+                    ->timeout(12)
+                    ->withHeaders([
+                        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                        'Referer' => 'https://www.expressjayagroup.com/',
+                    ])
+                    ->post('https://www.expressjayagroup.com/index.php', [
+                        'keyword' => $resi,
+                        'cari' => 'Search',
+                    ]);
+
+                if ($response->successful()) {
+                    $html = $response->body();
+
+                    // Cek apakah tabel No. Resi ditemukan dan terisi
+                    if (preg_match('/<b>No\.\s*Resi\s*:\s*<\/b>\s*(?:<p>)?\s*([^<]+)/i', $html, $resiMatch)) {
+                        $foundResi = trim($resiMatch[1]);
+
+                        if (!empty($foundResi)) {
+                            // 1. Parse Nama Penerima (baik di tabel ringkasan atas maupun di footer tabel status)
+                            $parsedReceiver = null;
+                            if (preg_match('/<b>Nama\s*Penerima\s*:\s*<\/b>\s*(?:<p>)?\s*([^<]+)/i', $html, $m)) {
+                                $val = trim(strip_tags($m[1]));
+                                if (!empty($val) && $val !== '-') {
+                                    $parsedReceiver = $val;
+                                    $receiverName = $val;
+                                }
+                            }
+
+                            if (!$parsedReceiver && preg_match('/<b>Penerima\s*:\s*<\/b>\s*<dd>([^<]*)<\/dd>/i', $html, $m)) {
+                                $val = trim(strip_tags($m[1]));
+                                if (!empty($val) && $val !== '-') {
+                                    $parsedReceiver = $val;
+                                    $receiverName = $val;
+                                }
+                            }
+
+                            // 2. Parse Status Akhir (toleran terhadap tag <p> yang tidak ditutup di Express Jaya)
+                            $endStatus = '';
+                            if (preg_match('/<b>Status\s*:\s*<\/b>\s*(?:<p>)?\s*([^<]+)/i', $html, $m)) {
+                                $endStatus = trim(strip_tags($m[1]));
+                            }
+
+                            // 3. Parse Perjalanan Barang
+                            $newHistory = [];
+                            if (preg_match('/Perjalanan Barang<\/center><\/th>[\s\S]*?<\/tr>([\s\S]*?)<\/table>/i', $html, $m)) {
+                                $rowsHtml = $m[1];
+                                preg_match_all('/<tr>([\s\S]*?)<\/tr>/i', $rowsHtml, $trMatches);
+                                foreach ($trMatches[1] as $tr) {
+                                    if (preg_match('/<td[^>]*colspan=["\']?2["\']?[^>]*>([\s\S]*?)<\/td>/i', $tr, $tdMatch)) {
+                                        $rawText = trim(strip_tags($tdMatch[1]));
+                                        $cleanText = preg_replace('/\s+/', ' ', $rawText);
+                                        if (!empty($cleanText)) {
+                                            $checkpointTime = now()->format('Y-m-d H:i:s');
+                                            if (preg_match('/(\d{1,2}\s+[A-Za-z]+\s+\d{4})/i', $cleanText, $dateM)) {
+                                                try {
+                                                    $checkpointTime = Carbon::parse($dateM[1])->format('Y-m-d H:i:s');
+                                                } catch (\Exception $ex) {}
+                                            }
+
+                                            $newHistory[] = [
+                                                'time' => $checkpointTime,
+                                                'status' => $cleanText,
+                                                'location' => 'Express Jaya Hub',
+                                                'note' => $cleanText,
+                                                'logged_by' => 'Auto-Sync Express Jaya',
+                                                'logged_at' => now()->format('Y-m-d H:i:s'),
+                                            ];
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Tambahkan status akhir sebagai checkpoint paling baru jika ada
+                            if (!empty($endStatus)) {
+                                $statusNote = "Status: {$endStatus}" . ($receiverName ? " (Penerima: {$receiverName})" : "");
+                                $newHistory[] = [
+                                    'time' => now()->format('Y-m-d H:i:s'),
+                                    'status' => $endStatus,
+                                    'location' => 'Alamat Penerima / Hub Tujuan',
+                                    'note' => $statusNote,
+                                    'logged_by' => 'Auto-Sync Express Jaya',
+                                    'logged_at' => now()->format('Y-m-d H:i:s'),
+                                ];
+                            }
+
+                            // 4. Deteksi apakah paket SUDAH SAMPAI / DITERIMA
+                            $allCheckStr = strtoupper("{$endStatus} {$receiverName} " . implode(' ', array_column($newHistory, 'status')));
+                            if (
+                                str_contains($allCheckStr, 'DITERIMA') ||
+                                str_contains($allCheckStr, 'DELIVERED') ||
+                                str_contains($allCheckStr, 'SAMPAI') ||
+                                str_contains($allCheckStr, 'TIBA') ||
+                                str_contains($allCheckStr, 'SELESAI') ||
+                                str_contains($allCheckStr, 'POD') ||
+                                str_contains($allCheckStr, 'SUCCESS') ||
+                                str_contains($allCheckStr, 'SUDAH') ||
+                                (!empty($receiverName) && $receiverName !== '-')
+                            ) {
+                                $isDelivered = true;
+                                if (!$actualArrivalDate) {
+                                    $actualArrivalDate = now();
+                                }
+                            }
+
+                            if (!empty($newHistory)) {
+                                $history = array_reverse($newHistory);
+                                $syncedCount = count($newHistory);
+                                $lastStatus = $endStatus ?: $history[0]['status'];
+                            }
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning("ExpeditionTrackingService Express Jaya error for {$resi}: " . $e->getMessage());
+            }
+        }
+
+        // 4. Vendor Dinamis Lainnya (Berdasarkan website_tracking_url dari master vendor)
         if ($syncedCount === 0 && $ekspedisi->vendor && !empty($ekspedisi->vendor->website_tracking_url)) {
             $template = $ekspedisi->vendor->website_tracking_url;
             $targetUrl = str_contains($template, '{RESI}') 

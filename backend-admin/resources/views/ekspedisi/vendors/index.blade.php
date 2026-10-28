@@ -610,6 +610,7 @@
                                         <span class="small text-muted me-1" style="font-size: 0.7rem;"><i class="fa-solid fa-bolt text-warning me-1"></i>Pilih Cepat:</span>
                                         <button type="button" class="quick-preset-pill" data-target="create_tracking_url" data-url="https://trace.gintacargo.com/?awb={RESI}" data-name="Ginta Cargo">Ginta Cargo</button>
                                         <button type="button" class="quick-preset-pill" data-target="create_tracking_url" data-url="https://lionparcel.com/track/stt?q={RESI}" data-name="Lion Parcel">Lion Parcel</button>
+                                        <button type="button" class="quick-preset-pill" data-target="create_tracking_url" data-url="https://www.expressjayagroup.com/" data-name="Express Jaya Group">Express Jaya</button>
                                         <button type="button" class="quick-preset-pill" data-target="create_tracking_url" data-url="https://www.jtcargo.id/tracking?awb={RESI}" data-name="J&T Cargo">J&T Cargo</button>
                                         <button type="button" class="quick-preset-pill" data-target="create_tracking_url" data-url="https://indahonline.com/tracking?resi={RESI}" data-name="Indah Logistik Cargo">Indah Logistik</button>
                                         <button type="button" class="quick-preset-pill" data-target="create_tracking_url" data-url="https://www.jne.co.id/tracking/{RESI}" data-name="JNE Express">JNE</button>
@@ -831,6 +832,7 @@
                                         <span class="small text-muted me-1" style="font-size: 0.7rem;"><i class="fa-solid fa-bolt text-warning me-1"></i>Pilih Cepat:</span>
                                         <button type="button" class="quick-preset-pill" data-target="edit_website_tracking_url" data-url="https://trace.gintacargo.com/?awb={RESI}" data-name="Ginta Cargo">Ginta Cargo</button>
                                         <button type="button" class="quick-preset-pill" data-target="edit_website_tracking_url" data-url="https://lionparcel.com/track/stt?q={RESI}" data-name="Lion Parcel">Lion Parcel</button>
+                                        <button type="button" class="quick-preset-pill" data-target="edit_website_tracking_url" data-url="https://www.expressjayagroup.com/" data-name="Express Jaya Group">Express Jaya</button>
                                         <button type="button" class="quick-preset-pill" data-target="edit_website_tracking_url" data-url="https://www.jtcargo.id/tracking?awb={RESI}" data-name="J&T Cargo">J&T Cargo</button>
                                         <button type="button" class="quick-preset-pill" data-target="edit_website_tracking_url" data-url="https://indahonline.com/tracking?resi={RESI}" data-name="Indah Logistik Cargo">Indah Logistik</button>
                                         <button type="button" class="quick-preset-pill" data-target="edit_website_tracking_url" data-url="https://www.jne.co.id/tracking/{RESI}" data-name="JNE Express">JNE</button>
@@ -976,6 +978,11 @@
                 const val = (inputEl.value || '').trim();
                 if (!val) {
                     previewEl.innerHTML = '<span class="text-muted fst-italic">(Ketik URL atau pilih template di atas dengan tag {RESI})</span>';
+                    return;
+                }
+
+                if (val.includes('expressjayagroup.com')) {
+                    previewEl.innerHTML = `${escapeHtml(val)} <span class="badge bg-success-subtle text-success ms-1" style="font-size: 0.65rem;"><i class="fa-solid fa-circle-check me-1"></i>Auto-Sync Terintegrasi via Form POST</span>`;
                     return;
                 }
 
