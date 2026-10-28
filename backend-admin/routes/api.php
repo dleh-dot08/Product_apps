@@ -300,6 +300,9 @@ Route::middleware('web')->group(function () {
         ->name('api.integration.search_po');
     Route::get('/integration/detail-po/{no_po}', [IntegrationController::class, 'detailPo'])
         ->where('no_po', '.*')->name('api.integration.detail_po');
+    Route::post('/integration/shipment-tracking', [IntegrationController::class, 'shipmentTracking'])
+        ->middleware('api.router.key')
+        ->name('api.integration.shipment_tracking');
 });
 
  // MinIO Storage Routes
