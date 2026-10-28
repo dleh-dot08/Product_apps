@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\PembelianOrderAkurasi;
 use App\Models\SalesOrderAkurasi;
+use App\Models\Expedition;
+use App\Models\PackagingJob;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -14,6 +16,85 @@ use Illuminate\Http\Client\RequestException;
 
 class IntegrationController extends Controller
 {
+    public function shipmentTracking(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'no_so' => ['required', 'array', 'min:1', 'max:100'],
+            'no_so.*' => ['required', 'string', 'max:100'],
+        ]);
+
+        $soNumbers = collect($validated['no_so'])
+            ->map(fn (string $number) => trim($number))
+            ->filter()
+            ->unique()
+            ->values();
+
+        $packagingJobs = PackagingJob::with('items')
+            ->whereHas('items', fn ($query) => $query->whereIn('no_so', $soNumbers))
+            ->get();
+
+        $expeditions = Expedition::where(function ($query) use ($soNumbers) {
+            $query->whereIn('reference_number', $soNumbers)
+                ->orWhereHas('items', fn ($items) => $items->whereIn('ref_no', $soNumbers));
+        })->get();
+
+        $data = $soNumbers->map(function (string $soNumber) use ($packagingJobs, $expeditions) {
+            $packing = $packagingJobs->filter(
+                fn ($job) => $job->items->contains('no_so', $soNumber)
+            );
+            $delivery = $expeditions->filter(
+                fn ($expedition) => $expedition->reference_number === $soNumber
+                    || $expedition->items->contains('ref_no', $soNumber)
+            );
+
+            $timeline = $packing->flatMap(function ($job) {
+                $events = [];
+                if ($job->start_date) {
+                    $events[] = ['status' => 'packing_started', 'label' => 'Packing dimulai', 'date' => $job->start_date->format('Y-m-d')];
+                }
+                if ($job->completion_date) {
+                    $events[] = ['status' => 'packing_completed', 'label' => 'Packing selesai', 'date' => $job->completion_date->format('Y-m-d')];
+                }
+                return $events;
+            })->merge($delivery->flatMap(function ($expedition) {
+                return collect($expedition->tracking_history ?: [])->map(fn ($event) => [
+                    'status' => $event['status'] ?? 'tracking_update',
+                    'label' => $event['status'] ?? 'Update pengiriman',
+                    'date' => $event['time'] ?? $event['logged_at'] ?? null,
+                    'location' => $event['location'] ?? null,
+                    'note' => $event['note'] ?? null,
+                ]);
+            }))->filter(fn ($event) => !empty($event['date']))
+                ->sortBy('date')
+                ->values()
+                ->all();
+
+            return [
+                'no_so' => $soNumber,
+                'no_do' => $delivery->pluck('do_easy')->filter()->unique()->values()->all(),
+                'packing_cost' => (float) $packing->sum('harga_total'),
+                'delivery_cost' => (float) $delivery->sum('cost_amount'),
+                'tgl_kirim' => $delivery->min('shipping_date')?->format('Y-m-d'),
+                'tgl_estimasi' => $delivery->max('estimated_arrival_date')?->format('Y-m-d'),
+                'no_resi' => $delivery->pluck('tracking_number')->filter()->unique()->values()->all(),
+                'no_pengiriman' => $delivery->pluck('expedition_number')->filter()->unique()->values()->all(),
+                'timeline' => $timeline,
+                '_found' => $packing->isNotEmpty() || $delivery->isNotEmpty(),
+            ];
+        });
+
+        $found = $data->filter(fn (array $item) => $item['_found'])->values();
+        $responseData = $found->map(function (array $item) {
+            unset($item['_found']);
+            return $item;
+        })->values();
+
+        return response()->json([
+            'data' => $responseData->all(),
+            'not_found' => $soNumbers->diff($found->pluck('no_so'))->values()->all(),
+        ]);
+    }
+
     public function triggerSyncSo(): JsonResponse
     {
         set_time_limit(300);
