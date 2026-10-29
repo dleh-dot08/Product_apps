@@ -302,6 +302,11 @@ Route::middleware('web')->group(function () {
         ->where('no_po', '.*')->name('api.integration.detail_po');
 });
 
+Route::middleware('api.router.key')->group(function () {
+    Route::post('/integration/shipment-tracking', [IntegrationController::class, 'shipmentTracking'])
+        ->name('api.integration.shipment_tracking');
+});
+
  // MinIO Storage Routes
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/storage/presigned-url', [\App\Http\Controllers\Api\StorageController::class, 'getPresignedUploadUrl']);
