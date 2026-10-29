@@ -645,7 +645,7 @@
 
             @if($expeditions->hasPages())
                 <div class="card-footer bg-transparent py-2 border-top">
-                    {{ $expeditions->links() }}
+                    {{ $expeditions->withQueryString()->links('pagination::bootstrap-5') }}
                 </div>
             @endif
         </div>
