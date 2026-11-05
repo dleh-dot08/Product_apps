@@ -104,6 +104,8 @@ Route::middleware('auth')->group(function () {
     // ============================================================
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/', [\App\Http\Controllers\ReportController::class, 'driverReport'])->name('index')->middleware('permission:View Laporan');
+        Route::get('/logistics', [\App\Http\Controllers\ReportController::class, 'logisticsReport'])->name('logistics')->middleware('permission:View Laporan Logistik');
+        Route::get('/logistics/export', [\App\Http\Controllers\ReportController::class, 'exportLogistics'])->name('logistics.export')->middleware('permission:Export Laporan Logistik');
         Route::get('/driver', [\App\Http\Controllers\ReportController::class, 'driverReport'])->name('driver')->middleware('permission:View Laporan');
         Route::match(['get', 'post'], '/driver/export', [\App\Http\Controllers\ReportController::class, 'exportDriverReport'])->name('driver.export')->middleware('permission:Export Laporan');
         Route::get('/finance', [\App\Http\Controllers\ExpenseController::class, 'index'])->name('finance')->middleware('permission:View Pengeluaran');

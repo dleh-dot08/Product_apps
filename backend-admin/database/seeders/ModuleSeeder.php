@@ -83,7 +83,7 @@ class ModuleSeeder extends Seeder
                 'name' => 'Laporan & Rekapitulasi', 
                 'icon' => 'fa-file-invoice', 
                 'color' => 'text-warning',
-                'available_permissions' => ['View Laporan', 'Export Laporan']
+                'available_permissions' => ['View Laporan', 'Export Laporan', 'View Laporan Logistik', 'Export Laporan Logistik']
             ],
             [
                 'name' => 'Ekspedisi & Vendor', 

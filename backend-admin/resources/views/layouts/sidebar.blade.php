@@ -423,8 +423,8 @@
                     </li>
                     @endif
 
-                    <!-- 7.5 Laporan (Laporan Driver & Laporan Keuangan/Pengeluaran) -->
-                    @if(auth()->user()->hasPermission('View Laporan') || auth()->user()->hasPermission('View Pengeluaran'))
+                    <!-- 7.5 Laporan (Laporan Driver, Laporan Logistik & Laporan Keuangan/Pengeluaran) -->
+                    @if(auth()->user()->hasPermission('View Laporan') || auth()->user()->hasPermission('View Laporan Logistik') || auth()->user()->hasPermission('View Pengeluaran'))
                     <li class="nav-item {{ (request()->routeIs('reports.*') || request()->routeIs('expenses.*')) ? 'menu-open' : '' }}">
                         <a href="#" class="nav-link {{ (request()->routeIs('reports.*') || request()->routeIs('expenses.*')) ? 'active' : '' }}">
                             <i class="nav-icon fa-solid fa-file-invoice"></i>
@@ -434,6 +434,14 @@
                             </p>
                         </a>
                         <ul class="nav nav-treeview ms-3">
+                            @if(auth()->user()->hasPermission('View Laporan Logistik'))
+                            <li class="nav-item">
+                                <a href="{{ route('reports.logistics') }}" class="nav-link {{ request()->routeIs('reports.logistics') ? 'active' : '' }}">
+                                    <i class="nav-icon fa-solid fa-boxes-packing" style="font-size: 0.9rem;"></i>
+                                    <p class="ms-2 mb-0" style="font-size: 0.9rem;">Logistik & Distribusi</p>
+                                </a>
+                            </li>
+                            @endif
                             @if(auth()->user()->hasPermission('View Laporan'))
                             <li class="nav-item">
                                 <a href="{{ route('reports.driver') }}" class="nav-link {{ request()->routeIs('reports.driver') ? 'active' : '' }}">

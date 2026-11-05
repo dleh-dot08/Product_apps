@@ -537,6 +537,13 @@
                                         @if($item->reference_number)
                                             <span class="d-block small font-monospace fw-semibold mt-0.5">{{ $item->reference_number }}</span>
                                         @endif
+                                        @if($item->do_easy)
+                                            <div class="mt-0.5">
+                                                <span class="badge bg-light text-secondary border font-monospace" style="font-size: 0.65rem;" title="Nomor DO Easy">
+                                                    <i class="fa-solid fa-file-invoice me-1 text-primary"></i>{{ $item->do_easy }}
+                                                </span>
+                                            </div>
+                                        @endif
                                         @if($item->customer_vendor_name)
                                             <span class="d-block text-muted" style="font-size: 0.72rem;">{{ Str::limit($item->customer_vendor_name, 22) }}</span>
                                         @endif
@@ -765,11 +772,11 @@
                                     </div>
                                     <div class="mb-2.5">
                                         <label class="exp-form-label">Nama Tempat Asal</label>
-                                        <input type="text" name="origin_name" class="form-control exp-form-control" value="Gudang AQPA Cikarang">
+                                        <input type="text" name="origin_name" class="form-control exp-form-control" value="PT AQPA INDONESIA">
                                     </div>
                                     <div class="mb-2.5">
                                         <label class="exp-form-label">Alamat Lengkap Asal <span class="text-danger">*</span></label>
-                                        <textarea name="origin_address" rows="2" required class="form-control exp-form-control" placeholder="Alamat asal...">Kawasan Industri Jababeka, Cikarang, Bekasi</textarea>
+                                        <textarea name="origin_address" rows="2" required class="form-control exp-form-control" placeholder="Alamat asal...">BKKBN, Jl. Raya Kedaung No.20, RT.001/RW.04, Cimuning, Kec. Mustika Jaya, Kota Bks, Jawa Barat 17155</textarea>
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-6">
@@ -987,6 +994,10 @@
                                 <div class="col-6 col-md-4">
                                     <label class="exp-form-label">No. SO / PO</label>
                                     <input type="text" name="reference_number" id="edit_reference_number" class="form-control exp-form-control font-monospace">
+                                </div>
+                                <div class="col-12 col-md-4">
+                                    <label class="exp-form-label">Nomor DO Easy</label>
+                                    <input type="text" name="do_easy" id="edit_do_easy" class="form-control exp-form-control font-monospace" placeholder="DO-EASY-...">
                                 </div>
                             </div>
                         </div>
@@ -1591,7 +1602,7 @@
                                 item_description: desc,
                                 quantity: Number(it.qty || it.quantity || 1),
                                 unit: it.uom || it.satuan || it.unit || 'pcs',
-                                unit_price: Number(it.price || it.harga || 0)
+                                unit_price: Number(it.unit_price || it.price || it.harga_satuan || it.harga || 0)
                             });
                         }
                     });
@@ -1655,6 +1666,7 @@
                     document.getElementById('edit_tracking_number').value = data.tracking_number || '';
                     document.getElementById('edit_task_type').value = data.task_type || 'delivery';
                     document.getElementById('edit_reference_number').value = data.reference_number || '';
+                    document.getElementById('edit_do_easy').value = data.do_easy || '';
                     document.getElementById('edit_origin_name').value = data.origin_name || '';
                     document.getElementById('edit_origin_address').value = data.origin_address || '';
                     document.getElementById('edit_origin_pic_name').value = data.origin_pic_name || '';
