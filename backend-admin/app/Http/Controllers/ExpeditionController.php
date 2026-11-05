@@ -26,6 +26,7 @@ class ExpeditionController extends Controller
                   ->orWhere('tracking_number', 'ilike', "%{$search}%")
                   ->orWhere('vendor_name', 'ilike', "%{$search}%")
                   ->orWhere('reference_number', 'ilike', "%{$search}%")
+                  ->orWhere('do_easy', 'ilike', "%{$search}%")
                   ->orWhere('customer_vendor_name', 'ilike', "%{$search}%")
                   ->orWhere('item_description', 'ilike', "%{$search}%")
                   ->orWhere('destination_name', 'ilike', "%{$search}%")

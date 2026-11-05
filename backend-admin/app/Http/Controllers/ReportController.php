@@ -15,6 +15,8 @@ use App\Models\Shift;
 use App\Models\User;
 use App\Models\Vehicle;
 use App\Services\HppCalculationService;
+use App\Services\LogisticsReportService;
+use App\Exports\LogisticsReportExport;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Maatwebsite\Excel\Facades\Excel;
@@ -22,10 +24,12 @@ use Maatwebsite\Excel\Facades\Excel;
 class ReportController extends Controller
 {
     protected $hppService;
+    protected $logisticsService;
 
-    public function __construct(HppCalculationService $hppService)
+    public function __construct(HppCalculationService $hppService, LogisticsReportService $logisticsService)
     {
         $this->hppService = $hppService;
+        $this->logisticsService = $logisticsService;
     }
 
     /**
@@ -528,5 +532,86 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         return $this->driverReport($request);
+    }
+
+    /**
+     * Laporan Logistik & Distribusi (Submenu Baru)
+     */
+    public function logisticsReport(Request $request)
+    {
+        [$startDate, $endDate] = $this->logisticsService->parseDateRange($request);
+
+        $filters = [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'search' => $request->input('search'),
+            'customer' => $request->input('customer'),
+            'task_type' => $request->input('task_type'),
+            'status' => $request->input('status'),
+        ];
+
+        $logistics = $this->logisticsService->getLogisticsReport($filters);
+        $expedition = $this->logisticsService->getExpeditionReport($filters);
+        $internal = $this->logisticsService->getInternalShippingReport($filters);
+
+        // Kumpulkan list customer unik untuk filter dropdown
+        $allCustomers = collect($logistics['rows'])->pluck('customer')
+            ->merge(collect($expedition['rows'])->pluck('customer'))
+            ->merge(collect($internal['rows'])->pluck('customer'))
+            ->filter(fn($c) => $c && $c !== '-')
+            ->unique()
+            ->sort()
+            ->values();
+
+        // Kumpulkan list jenis tugas unik
+        $allTaskTypes = collect($logistics['rows'])->pluck('task_type')
+            ->merge(collect($expedition['rows'])->pluck('task_type'))
+            ->merge(collect($internal['rows'])->pluck('task_type'))
+            ->filter(fn($t) => $t && $t !== '-')
+            ->unique()
+            ->sort()
+            ->values();
+
+        $activeTab = $request->input('tab', 'logistics');
+
+        return view('reports.logistics', compact(
+            'logistics',
+            'expedition',
+            'internal',
+            'startDate',
+            'endDate',
+            'filters',
+            'allCustomers',
+            'allTaskTypes',
+            'activeTab'
+        ));
+    }
+
+    /**
+     * Export Excel Laporan Logistik & Distribusi
+     */
+    public function exportLogistics(Request $request)
+    {
+        [$startDate, $endDate] = $this->logisticsService->parseDateRange($request);
+
+        $filters = [
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'search' => $request->input('search'),
+            'customer' => $request->input('customer'),
+            'task_type' => $request->input('task_type'),
+            'status' => $request->input('status'),
+        ];
+
+        $data = [
+            'logistics' => $this->logisticsService->getLogisticsReport($filters),
+            'expedition' => $this->logisticsService->getExpeditionReport($filters),
+            'internal' => $this->logisticsService->getInternalShippingReport($filters),
+        ];
+
+        $activeTab = $request->input('tab', 'logistics');
+        $filename = 'Laporan_Logistik_Distribusi_' . $startDate->format('Ymd') . '_' . $endDate->format('Ymd') . '.xlsx';
+
+        return Excel::download(new LogisticsReportExport($data, $activeTab), $filename);
     }
 }
