@@ -55,29 +55,112 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: build_images
+    timeout-minutes: 60
+    environment: production
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Connect to NetBird
-        uses: Alemiz112/netbird-connect@v1.0.1
-        with:
-          setup-key: ${{ secrets.NETBIRD_SETUP_KEY }}
-          hostname: github-actions-deploy
-          management-url: https://api.netbird.io:443
+      - name: Install OpenVPN
+        shell: bash
+        run: |
+          set -Eeuo pipefail
 
-      - name: Wait for NetBird and SSH
+          sudo apt-get update
+          sudo apt-get install -y openvpn
+
+          echo "OpenVPN version:"
+          openvpn --version | head -n 2
+
+      - name: Connect to OpenVPN
+        shell: bash
+        env:
+          OPENVPN_CONFIG: ${{ secrets.OPENVPN_CONFIG }}
+        run: |
+          set -Eeuo pipefail
+
+          LOG_FILE="$RUNNER_TEMP/openvpn.log"
+          CONFIG_FILE="$RUNNER_TEMP/openvpn-client.ovpn"
+          PID_FILE="$RUNNER_TEMP/openvpn.pid"
+
+          if [ -z "$OPENVPN_CONFIG" ]; then
+            echo "ERROR: OPENVPN_CONFIG secret is empty"
+            exit 1
+          fi
+
+          printf '%s' "$OPENVPN_CONFIG" > "$CONFIG_FILE"
+          chmod 600 "$CONFIG_FILE"
+
+          sudo touch "$LOG_FILE" "$PID_FILE"
+          sudo chmod 644 "$LOG_FILE"
+          sudo chmod 600 "$PID_FILE"
+
+          echo "Starting OpenVPN..."
+
+          sudo openvpn \
+            --config "$CONFIG_FILE" \
+            --daemon \
+            --writepid "$PID_FILE" \
+            --log "$LOG_FILE"
+
+          connected=false
+
+          for attempt in {1..60}; do
+            if sudo grep -q "Initialization Sequence Completed" "$LOG_FILE"; then
+              connected=true
+              break
+            fi
+
+            if ! sudo test -s "$PID_FILE"; then
+              echo "Waiting for OpenVPN PID..."
+              sleep 2
+              continue
+            fi
+
+            VPN_PID=$(sudo cat "$PID_FILE")
+
+            if ! sudo kill -0 "$VPN_PID" 2>/dev/null; then
+              echo "ERROR: OpenVPN process stopped!"
+              sudo cat "$LOG_FILE"
+              exit 1
+            fi
+
+            echo "Waiting for VPN connection ($attempt/60)..."
+            sleep 2
+          done
+
+          if [ "$connected" != true ]; then
+            echo "ERROR: OpenVPN connection timeout!"
+            sudo cat "$LOG_FILE"
+            exit 1
+          fi
+
+          echo "OpenVPN connected successfully!"
+
+          echo "VPN interface:"
+          ip addr show tun0 || true
+
+          echo "Routing table:"
+          ip route
+
+      - name: Test VPS SSH reachability
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_PORT: ${{ secrets.SERVER_PORT }}
         run: |
-          echo "Waiting for NetBird..."
-          sleep 15
+          set -Eeuo pipefail
 
-          echo "NetBird status:"
-          netbird status
+          if [ -z "$SERVER_HOST" ]; then
+            echo "ERROR: SERVER_HOST is empty"
+            exit 1
+          fi
 
-          echo "Testing SSH connection to $SERVER_HOST:$SERVER_PORT"
+          SERVER_PORT="${SERVER_PORT:-22}"
+          echo "Testing VPS: $SERVER_HOST:$SERVER_PORT"
+
+          if ! ping -c 3 -W 5 "$SERVER_HOST"; then
+            echo "WARNING: Ping failed. ICMP may be blocked."
+          fi
 
           for i in {1..10}; do
             if timeout 5 bash -c "</dev/tcp/$SERVER_HOST/$SERVER_PORT" 2>/dev/null; then
@@ -89,7 +172,7 @@ jobs:
             sleep 5
           done
 
-          echo "ERROR: Server SSH port is not reachable through NetBird."
+          echo "ERROR: Server SSH port is not reachable through OpenVPN."
           exit 1
 
       - name: Upload compose file
@@ -98,7 +181,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
           source: backend-admin/docker-compose.yml
           target: ~/repositories/Product_apps
 
@@ -108,7 +191,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
           timeout: 60s
           command_timeout: 25m
           script: |
