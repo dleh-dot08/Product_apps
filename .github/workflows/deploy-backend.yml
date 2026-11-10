@@ -156,14 +156,24 @@ jobs:
           fi
 
           SERVER_PORT="${SERVER_PORT:-22}"
+          if ! [[ "$SERVER_PORT" =~ ^[0-9]+$ ]] || [ "$SERVER_PORT" -lt 1 ] || [ "$SERVER_PORT" -gt 65535 ]; then
+            echo "ERROR: SERVER_PORT must be a valid TCP port"
+            exit 1
+          fi
+
           echo "Testing VPS: $SERVER_HOST:$SERVER_PORT"
+          echo "Resolved VPS address:"
+          getent hosts "$SERVER_HOST" || true
+
+          echo "Route to VPS:"
+          ip route get "$SERVER_HOST" || true
 
           if ! ping -c 3 -W 5 "$SERVER_HOST"; then
             echo "WARNING: Ping failed. ICMP may be blocked."
           fi
 
           for i in {1..10}; do
-            if timeout 5 bash -c "</dev/tcp/$SERVER_HOST/$SERVER_PORT" 2>/dev/null; then
+            if timeout 5 nc -zv "$SERVER_HOST" "$SERVER_PORT" 2>&1; then
               echo "SSH port is reachable."
               exit 0
             fi
