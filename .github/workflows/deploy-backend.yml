@@ -143,48 +143,6 @@ jobs:
           echo "Routing table:"
           ip route
 
-      - name: Test VPS SSH reachability
-        env:
-          SERVER_HOST: ${{ secrets.SERVER_HOST }}
-          SERVER_PORT: ${{ secrets.SERVER_PORT }}
-        run: |
-          set -Eeuo pipefail
-
-          if [ -z "$SERVER_HOST" ]; then
-            echo "ERROR: SERVER_HOST is empty"
-            exit 1
-          fi
-
-          SERVER_PORT="${SERVER_PORT:-22}"
-          if ! [[ "$SERVER_PORT" =~ ^[0-9]+$ ]] || [ "$SERVER_PORT" -lt 1 ] || [ "$SERVER_PORT" -gt 65535 ]; then
-            echo "ERROR: SERVER_PORT must be a valid TCP port"
-            exit 1
-          fi
-
-          echo "Testing VPS: $SERVER_HOST:$SERVER_PORT"
-          echo "Resolved VPS address:"
-          getent hosts "$SERVER_HOST" || true
-
-          echo "Route to VPS:"
-          ip route get "$SERVER_HOST" || true
-
-          if ! ping -c 3 -W 5 "$SERVER_HOST"; then
-            echo "WARNING: Ping failed. ICMP may be blocked."
-          fi
-
-          for i in {1..10}; do
-            if timeout 5 nc -zv "$SERVER_HOST" "$SERVER_PORT" 2>&1; then
-              echo "SSH port is reachable."
-              exit 0
-            fi
-
-            echo "Attempt $i/10 failed. Retrying in 5 seconds..."
-            sleep 5
-          done
-
-          echo "ERROR: Server SSH port is not reachable through OpenVPN."
-          exit 1
-
       - name: Upload compose file
         uses: appleboy/scp-action@v0.1.7
         with:
