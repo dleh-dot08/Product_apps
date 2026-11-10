@@ -13,7 +13,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  SERVER_APP_DIR: ~/repositories/Product_apps/backend-admin
+  SERVER_APP_DIR: ~/serverweb/services/Product_apps/backend-admin
   CONTAINER_NAME: backend-admin
 
 jobs:
@@ -151,7 +151,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
           source: backend-admin/docker-compose.yml
-          target: ~/repositories/Product_apps
+          target: ~/serverweb/services/Product_apps
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
