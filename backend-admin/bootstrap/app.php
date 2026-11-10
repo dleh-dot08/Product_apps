@@ -22,6 +22,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \App\Http\Middleware\CheckPermission::class,
         ]);
 
+        $middleware->trustProxies(at: '*');
+
         //
     })
     ->withExceptions(function (Exceptions $exceptions): void {

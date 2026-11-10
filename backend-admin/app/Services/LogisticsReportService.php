@@ -512,7 +512,8 @@ class LogisticsReportService
                   ->orWhere('tracking_number', 'ilike', "%{$search}%")
                   ->orWhere('vendor_name', 'ilike', "%{$search}%")
                   ->orWhere('reference_number', 'ilike', "%{$search}%")
-                  ->orWhere('customer_vendor_name', 'ilike', "%{$search}%");
+                  ->orWhere('customer_vendor_name', 'ilike', "%{$search}%")
+                  ->orWhere('do_easy', 'ilike', "%{$search}%");
             });
         }
 
@@ -521,11 +522,20 @@ class LogisticsReportService
         }
 
         if ($taskType && $taskType !== 'ALL') {
-            $query->where('task_type', $taskType);
+            $query->where('task_type', strtolower($taskType));
         }
 
         if ($status && $status !== 'ALL') {
-            $query->where('status', $status);
+            $st = strtolower($status);
+            $query->where(function($q) use ($st) {
+                if ($st === 'terkirim') {
+                    $q->whereIn('status', ['delivered', 'completed', 'terkirim', 'selesai']);
+                } elseif ($st === 'dalam pengiriman') {
+                    $q->whereIn('status', ['on_delivery', 'active', 'in_progress', 'berjalan', 'dalam pengiriman']);
+                } else {
+                    $q->where('status', 'ilike', $st);
+                }
+            });
         }
 
         $items = $query->orderBy('shipping_date', 'desc')->get();
@@ -796,6 +806,7 @@ class LogisticsReportService
             $collection = $collection->filter(function($r) use ($s) {
                 return str_contains(strtolower($r['ref_no']), $s)
                     || str_contains(strtolower($r['customer']), $s)
+                    || str_contains(strtolower($r['do_easy']), $s)
                     || str_contains(strtolower($r['driver']), $s)
                     || str_contains(strtolower($r['vehicle']), $s);
             });

@@ -428,7 +428,16 @@
                     </select>
                 </div>
 
-                <div class="col-12 col-md-3 d-flex gap-2 justify-content-end">
+                <div class="col-6 col-md-1">
+                    <select name="per_page" class="form-select form-select-sm filter-input" title="Baris per halaman">
+                        <option value="10" {{ request('per_page') == 10 ? 'selected' : '' }}>10 / hal</option>
+                        <option value="15" {{ (!request('per_page') || request('per_page') == 15) ? 'selected' : '' }}>15 / hal</option>
+                        <option value="25" {{ request('per_page') == 25 ? 'selected' : '' }}>25 / hal</option>
+                        <option value="50" {{ request('per_page') == 50 ? 'selected' : '' }}>50 / hal</option>
+                    </select>
+                </div>
+
+                <div class="col-12 col-md-2 d-flex gap-2 justify-content-end">
                     <a href="{{ route('reports.logistics', ['tab' => $activeTab, 'start_date' => $startDate->toDateString(), 'end_date' => $endDate->toDateString()]) }}" class="btn btn-outline-secondary btn-sm px-3 rounded-2 fw-semibold">
                         <i class="fa-solid fa-rotate-right me-1"></i> Reset
                     </a>
@@ -575,9 +584,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($logistics['rows'] as $index => $row)
+                            @forelse($paginatedLogisticsRows as $index => $row)
                                 <tr>
-                                    <td class="text-center text-muted">{{ $index + 1 }}</td>
+                                    <td class="text-center text-muted">{{ $paginatedLogisticsRows->firstItem() + $index }}</td>
                                     <td>
                                         <a href="javascript:void(0)" class="fw-bold text-primary font-monospace text-decoration-none" onclick="showSoDetailModal('{{ $row['ref_no'] }}', {{ json_encode($row) }})">
                                             {{ $row['ref_no'] }}
@@ -622,8 +631,13 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="px-3 py-2 border-top bg-light d-flex justify-content-between align-items-center small text-muted">
-                    <span>Menampilkan {{ count($logistics['rows']) }} transaksi SO/PO</span>
+                <div class="px-3 py-2 border-top bg-light d-flex flex-wrap justify-content-between align-items-center gap-2 small text-muted">
+                    <span>Menampilkan {{ $paginatedLogisticsRows->firstItem() ?? 0 }} - {{ $paginatedLogisticsRows->lastItem() ?? 0 }} dari {{ $paginatedLogisticsRows->total() }} transaksi SO/PO</span>
+                    @if($paginatedLogisticsRows->hasPages())
+                        <div>
+                            {{ $paginatedLogisticsRows->appends(request()->except('page_logistics'))->links('pagination::bootstrap-5') }}
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -703,9 +717,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($expedition['rows'] as $index => $row)
+                            @forelse($paginatedExpeditionRows as $index => $row)
                                 <tr>
-                                    <td class="text-center text-muted">{{ $index + 1 }}</td>
+                                    <td class="text-center text-muted">{{ $paginatedExpeditionRows->firstItem() + $index }}</td>
                                     <td class="fw-bold font-monospace text-primary">{{ $row['ref_no'] }}</td>
                                     <td>{{ $row['customer'] }}</td>
                                     <td><span class="badge bg-light text-dark border">{{ $row['vendor_name'] }}</span></td>
@@ -740,8 +754,13 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="px-3 py-2 border-top bg-light d-flex justify-content-between align-items-center small text-muted">
-                    <span>Menampilkan {{ count($expedition['rows']) }} data ekspedisi 3PL</span>
+                <div class="px-3 py-2 border-top bg-light d-flex flex-wrap justify-content-between align-items-center gap-2 small text-muted">
+                    <span>Menampilkan {{ $paginatedExpeditionRows->firstItem() ?? 0 }} - {{ $paginatedExpeditionRows->lastItem() ?? 0 }} dari {{ $paginatedExpeditionRows->total() }} data ekspedisi 3PL</span>
+                    @if($paginatedExpeditionRows->hasPages())
+                        <div>
+                            {{ $paginatedExpeditionRows->appends(request()->except('page_expedition'))->links('pagination::bootstrap-5') }}
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -819,9 +838,9 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($internal['rows'] as $index => $row)
+                            @forelse($paginatedInternalRows as $index => $row)
                                 <tr>
-                                    <td class="text-center text-muted">{{ $index + 1 }}</td>
+                                    <td class="text-center text-muted">{{ $paginatedInternalRows->firstItem() + $index }}</td>
                                     <td><span class="badge bg-secondary-subtle text-secondary fw-bold">{{ $row['task_type'] }}</span></td>
                                     <td class="fw-bold font-monospace text-primary">{{ $row['ref_no'] }}</td>
                                     <td class="fw-semibold text-dark">{{ $row['customer'] }}</td>
@@ -853,8 +872,13 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="px-3 py-2 border-top bg-light d-flex justify-content-between align-items-center small text-muted">
-                    <span>Menampilkan {{ count($internal['rows']) }} pengiriman armada internal</span>
+                <div class="px-3 py-2 border-top bg-light d-flex flex-wrap justify-content-between align-items-center gap-2 small text-muted">
+                    <span>Menampilkan {{ $paginatedInternalRows->firstItem() ?? 0 }} - {{ $paginatedInternalRows->lastItem() ?? 0 }} dari {{ $paginatedInternalRows->total() }} pengiriman armada internal</span>
+                    @if($paginatedInternalRows->hasPages())
+                        <div>
+                            {{ $paginatedInternalRows->appends(request()->except('page_internal'))->links('pagination::bootstrap-5') }}
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
