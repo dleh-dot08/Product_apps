@@ -185,7 +185,7 @@
             </tr>
         `;
 
-        fetch('{{ route("api.unassigned-tasks") }}')
+        fetch('{{ route("api.unassigned-tasks", [], false) }}')
             .then(response => response.json())
             .then(tasks => {
                 if (tasks.length === 0) {

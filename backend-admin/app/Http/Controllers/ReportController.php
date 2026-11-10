@@ -19,6 +19,8 @@ use App\Services\LogisticsReportService;
 use App\Exports\LogisticsReportExport;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Pagination\Paginator;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ReportController extends Controller
@@ -573,17 +575,54 @@ class ReportController extends Controller
             ->values();
 
         $activeTab = $request->input('tab', 'logistics');
+        $perPage = (int) $request->input('per_page', 15);
+        if ($perPage < 5 || $perPage > 100) $perPage = 15;
+
+        // Siapkan Pagination untuk masing-masing tab
+        $pageLogistics = (int) $request->input('page_logistics', ($activeTab === 'logistics' ? $request->input('page', 1) : 1));
+        $logisticsCollection = collect($logistics['rows']);
+        $paginatedLogisticsRows = new LengthAwarePaginator(
+            $logisticsCollection->forPage($pageLogistics, $perPage)->values(),
+            $logisticsCollection->count(),
+            $perPage,
+            $pageLogistics,
+            ['path' => Paginator::resolveCurrentPath(), 'pageName' => 'page_logistics', 'query' => $request->query()]
+        );
+
+        $pageExpedition = (int) $request->input('page_expedition', ($activeTab === 'expedition' ? $request->input('page', 1) : 1));
+        $expeditionCollection = collect($expedition['rows']);
+        $paginatedExpeditionRows = new LengthAwarePaginator(
+            $expeditionCollection->forPage($pageExpedition, $perPage)->values(),
+            $expeditionCollection->count(),
+            $perPage,
+            $pageExpedition,
+            ['path' => Paginator::resolveCurrentPath(), 'pageName' => 'page_expedition', 'query' => $request->query()]
+        );
+
+        $pageInternal = (int) $request->input('page_internal', ($activeTab === 'internal' ? $request->input('page', 1) : 1));
+        $internalCollection = collect($internal['rows']);
+        $paginatedInternalRows = new LengthAwarePaginator(
+            $internalCollection->forPage($pageInternal, $perPage)->values(),
+            $internalCollection->count(),
+            $perPage,
+            $pageInternal,
+            ['path' => Paginator::resolveCurrentPath(), 'pageName' => 'page_internal', 'query' => $request->query()]
+        );
 
         return view('reports.logistics', compact(
             'logistics',
             'expedition',
             'internal',
+            'paginatedLogisticsRows',
+            'paginatedExpeditionRows',
+            'paginatedInternalRows',
             'startDate',
             'endDate',
             'filters',
             'allCustomers',
             'allTaskTypes',
-            'activeTab'
+            'activeTab',
+            'perPage'
         ));
     }
 
