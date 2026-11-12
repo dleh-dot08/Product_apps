@@ -61,20 +61,25 @@ class PickupTaskController extends Controller
         return $prefix . '-' . $dateStr . '-' . str_pad($sequence, 4, '0', STR_PAD_LEFT);
     }
 
-    public function index(Request $request)
+    private function getFilteredTugasList(Request $request)
     {
         $user = Auth::user();
-        
+
         $pickupQuery = PickupTask::with(['driver', 'vehicle', 'assignedBy', 'items'])->latest();
-        $deliveryQuery = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'salesOrder.items'])->orderByRaw('COALESCE(assigned_at, dispatch_date) DESC NULLS FIRST');
-        
+        $hasDeliveryCreatedAt = \Illuminate\Support\Facades\Schema::hasColumn('delivery_assignments', 'created_at');
+        $deliveryOrderExpr = $hasDeliveryCreatedAt
+            ? 'COALESCE(created_at, assigned_at, dispatch_date) DESC NULLS LAST'
+            : 'COALESCE(assigned_at, dispatch_date) DESC NULLS LAST';
+        $deliveryQuery = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'salesOrder.items'])
+            ->orderByRaw($deliveryOrderExpr);
+
         // Super admin melihat semua data termasuk yang dihapus
         $isSuperAdmin = ($user->roleRelation && strtoupper($user->roleRelation->name) === 'SUPER ADMIN') || strtoupper($user->role) === 'SUPER ADMIN';
         if ($isSuperAdmin) {
             $pickupQuery->withTrashed();
             $deliveryQuery->withTrashed();
         }
-        
+
         if (strtolower($user->role) === 'driver') {
             $pickupQuery->where('driver_id', $user->id);
             $deliveryQuery->where('driver_id', $user->id);
@@ -88,13 +93,13 @@ class PickupTaskController extends Controller
 
         // Search text (Reference Number, Item, Destination)
         if ($search) {
-            $pickupQuery->where(function($q) use ($search) {
+            $pickupQuery->where(function ($q) use ($search) {
                 $q->where('reference_number', 'ILIKE', "%{$search}%")
                   ->orWhere('pickup_name', 'ILIKE', "%{$search}%")
                   ->orWhere('item_description', 'ILIKE', "%{$search}%");
             });
 
-            $deliveryQuery->whereHas('salesOrder', function($q) use ($search) {
+            $deliveryQuery->whereHas('salesOrder', function ($q) use ($search) {
                 $q->where('so_number', 'ILIKE', "%{$search}%")
                   ->orWhere('customer_name', 'ILIKE', "%{$search}%")
                   ->orWhere('item_description', 'ILIKE', "%{$search}%");
@@ -115,24 +120,31 @@ class PickupTaskController extends Controller
 
         $pickups = collect();
         if (!$filterType || $filterType === 'pickup') {
-            $pickups = $pickupQuery->get()->map(function($task) {
+            $pickups = $pickupQuery->get()->map(function ($task) {
                 $task->task_type = 'pickup';
-                $task->sort_date = $task->created_at ?? now();
+                $task->sort_date = $task->created_at ?? $task->assigned_at ?? $task->dispatch_date;
                 return $task;
             });
         }
 
         $deliveries = collect();
         if (!$filterType || $filterType === 'delivery') {
-            $deliveries = $deliveryQuery->get()->map(function($task) {
+            $deliveries = $deliveryQuery->get()->map(function ($task) {
                 $task->task_type = 'delivery';
-                $task->sort_date = $task->assigned_at ?? $task->dispatch_date ?? now();
+                $task->sort_date = $task->created_at ?? $task->assigned_at ?? $task->dispatch_date;
                 return $task;
             });
         }
 
-        // Gabungkan koleksi dan urutkan berdasarkan tanggal descending
-        $allTasks = $pickups->concat($deliveries)->sortByDesc('sort_date')->values();
+        // Gabungkan koleksi dan urutkan berdasarkan waktu pembuatan terbaru (descending)
+        return $pickups->concat($deliveries)->sortByDesc(function ($task) {
+            return $task->sort_date ? \Carbon\Carbon::parse($task->sort_date)->valueOf() : 0;
+        })->values();
+    }
+
+    public function index(Request $request)
+    {
+        $allTasks = $this->getFilteredTugasList($request);
 
         $totalTasksCount = $allTasks->count();
         $perPage = 10;
@@ -284,70 +296,7 @@ class PickupTaskController extends Controller
 
     public function exportTugas(Request $request)
     {
-        $user = Auth::user();
-        
-        $pickupQuery = PickupTask::with(['driver', 'vehicle', 'assignedBy', 'items'])->latest();
-        $deliveryQuery = DeliveryAssignment::with(['driver', 'vehicle', 'assigner', 'salesOrder', 'salesOrder.items'])->orderByRaw('COALESCE(assigned_at, dispatch_date) DESC NULLS FIRST');
-        
-        $isSuperAdmin = ($user->roleRelation && strtoupper($user->roleRelation->name) === 'SUPER ADMIN') || strtoupper($user->role) === 'SUPER ADMIN';
-        if ($isSuperAdmin) {
-            $pickupQuery->withTrashed();
-            $deliveryQuery->withTrashed();
-        }
-        
-        if (strtolower($user->role) === 'driver') {
-            $pickupQuery->where('driver_id', $user->id);
-            $deliveryQuery->where('driver_id', $user->id);
-        }
-
-        $search = $request->get('search');
-        $filterStatus = $request->get('status');
-        $filterDriver = $request->get('driver_id');
-        $filterType = $request->get('task_type');
-
-        if ($search) {
-            $pickupQuery->where(function($q) use ($search) {
-                $q->where('reference_number', 'ILIKE', "%{$search}%")
-                  ->orWhere('pickup_name', 'ILIKE', "%{$search}%")
-                  ->orWhere('item_description', 'ILIKE', "%{$search}%");
-            });
-
-            $deliveryQuery->whereHas('salesOrder', function($q) use ($search) {
-                $q->where('so_number', 'ILIKE', "%{$search}%")
-                  ->orWhere('customer_name', 'ILIKE', "%{$search}%")
-                  ->orWhere('item_description', 'ILIKE', "%{$search}%");
-            });
-        }
-
-        if ($filterStatus) {
-            $pickupQuery->where('status', $filterStatus);
-            $deliveryQuery->where('status', $filterStatus);
-        }
-
-        if ($filterDriver) {
-            $pickupQuery->where('driver_id', $filterDriver);
-            $deliveryQuery->where('driver_id', $filterDriver);
-        }
-
-        $pickups = collect();
-        if (!$filterType || $filterType === 'pickup') {
-            $pickups = $pickupQuery->get()->map(function($task) {
-                $task->task_type = 'pickup';
-                $task->sort_date = $task->created_at ?? now();
-                return $task;
-            });
-        }
-
-        $deliveries = collect();
-        if (!$filterType || $filterType === 'delivery') {
-            $deliveries = $deliveryQuery->get()->map(function($task) {
-                $task->task_type = 'delivery';
-                $task->sort_date = $task->assigned_at ?? $task->dispatch_date ?? now();
-                return $task;
-            });
-        }
-
-        $allTasks = $pickups->concat($deliveries)->sortByDesc('sort_date')->values();
+        $allTasks = $this->getFilteredTugasList($request);
 
         return Excel::download(new ListTugasExport($allTasks), 'List_Tugas_' . now()->format('Ymd_His') . '.xlsx');
     }
@@ -605,7 +554,7 @@ class PickupTaskController extends Controller
                 'delivery_origin_point' => $request->delivery_origin_point,
                 'delivery_receiver_pic' => $request->delivery_receiver_pic,
                 'delivery_target_point' => $request->delivery_target_point,
-                'assigned_at' => ($request->driver_id && $request->vehicle_id) ? now() : null,
+                'assigned_at' => ($driver_id && $vehicle_id) ? now() : null,
                 'dispatch_date' => $request->dispatch_date ?: now()->toDateString(),
                 'estimated_arrival' => $request->estimated_arrival,
                 'is_out_of_city' => $request->boolean('is_out_of_city'),
