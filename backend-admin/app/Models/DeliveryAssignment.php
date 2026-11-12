@@ -12,7 +12,18 @@ class DeliveryAssignment extends Model
     use HasFactory, HasUuids, SoftDeletes;
 
     protected $guarded = [];
-    public $timestamps = false;
+    public $timestamps = true;
+
+    public function usesTimestamps()
+    {
+        static $hasTimestamps = null;
+
+        if ($hasTimestamps === null) {
+            $hasTimestamps = \Illuminate\Support\Facades\Schema::hasColumn($this->getTable(), 'created_at');
+        }
+
+        return $hasTimestamps;
+    }
 
     protected static function booted()
     {
