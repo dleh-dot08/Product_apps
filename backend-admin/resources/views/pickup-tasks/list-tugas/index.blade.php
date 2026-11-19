@@ -21,6 +21,9 @@
                             </div>
                         </div>
                         <div class="col-md-2">
+                            <input type="date" name="date" class="form-control form-control-sm filter-control px-2" value="{{ request('date') }}" title="Filter Tanggal">
+                        </div>
+                        <div class="col-md-2">
                             <select name="task_type" class="form-select form-select-sm filter-control px-3">
                                 <option value="">Semua Jenis Tugas</option>
                                 <option value="pickup" {{ request('task_type') == 'pickup' ? 'selected' : '' }}>Pickup</option>

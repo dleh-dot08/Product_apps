@@ -648,9 +648,9 @@ class LogisticsReportService
                 'do_easy' => $exp->do_easy ?: '-',
                 'vendor_name' => $exp->vendor_name ?: ($exp->vendor ? $exp->vendor->vendor_name : '-'),
                 'tracking_number' => $exp->tracking_number ?: '-',
-                'shipping_date' => $exp->shipping_date ? $exp->shipping_date->format('d/m/Y') : '-',
-                'estimated_arrival_date' => $exp->estimated_arrival_date ? $exp->estimated_arrival_date->format('d/m/Y') : '-',
-                'actual_arrival_date' => $exp->actual_arrival_date ? $exp->actual_arrival_date->format('d/m/Y') : '-',
+                'shipping_date' => $exp->shipping_date ? $exp->shipping_date->toDateString() : '-',
+                'estimated_arrival_date' => $exp->estimated_arrival_date ? $exp->estimated_arrival_date->toDateString() : '-',
+                'actual_arrival_date' => $exp->actual_arrival_date ? $exp->actual_arrival_date->toDateString() : '-',
                 'item_value' => (float)$itemValue,
                 'cost_amount' => (float)$exp->cost_amount,
                 'status' => $this->normalizeStatus($exp->status),
@@ -774,7 +774,7 @@ class LogisticsReportService
                     }
 
                     $rows[] = [
-                        'date' => $shift->work_date ? $shift->work_date->format('d/m/Y') : '-',
+                        'date' => $shift->work_date ? $shift->work_date->toDateString() : '-',
                         'raw_date' => $shift->work_date ? $shift->work_date->toDateString() : '',
                         'ref_no' => $ref,
                         'customer' => $cust,

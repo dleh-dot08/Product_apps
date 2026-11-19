@@ -50,21 +50,13 @@ class PenugasanExport implements FromCollection, WithHeadings, WithMapping, With
             $taskCount = $manifest->task_count;
         }
 
-        $dateValue = null;
-        if (!empty($manifest->dispatch_date)) {
-            $dateValue = Date::dateTimeToExcel(Carbon::parse($manifest->dispatch_date));
-        } elseif (!empty($manifest->date) && $manifest->date !== '-') {
-            try {
-                $dateValue = Date::dateTimeToExcel(Carbon::parse($manifest->date));
-            } catch (\Exception $e) {
-                $dateValue = $manifest->date;
-            }
-        }
+        $rawDate = !empty($manifest->dispatch_date) ? $manifest->dispatch_date : ($manifest->date ?? null);
+        $dateValue = $this->parseExcelDate($rawDate);
 
         return [
             $no++,
             $manifest->manifest_number ?? ($manifest->no_do ?? '-'),
-            $dateValue ?? '-',
+            $dateValue,
             $manifest->driver ? ($manifest->driver->full_name ?? $manifest->driver->name) : '-',
             $manifest->coDriver ? ($manifest->coDriver->full_name ?? $manifest->coDriver->name) : '-',
             $manifest->vehicle ? '[' . $manifest->vehicle->plate_number . '] ' . $manifest->vehicle->name : '-',
@@ -74,10 +66,31 @@ class PenugasanExport implements FromCollection, WithHeadings, WithMapping, With
         ];
     }
 
+    private function parseExcelDate($val): ?float
+    {
+        if (empty($val) || $val === '-') {
+            return null;
+        }
+        if ($val instanceof \DateTimeInterface) {
+            return Date::dateTimeToExcel($val);
+        }
+        $val = trim((string)$val);
+        try {
+            if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $val, $m)) {
+                $c = Carbon::createFromDate((int)$m[3], (int)$m[2], (int)$m[1])->startOfDay();
+                return Date::dateTimeToExcel($c);
+            }
+            $c = Carbon::parse($val);
+            return Date::dateTimeToExcel($c);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     public function columnFormats(): array
     {
         return [
-            'C' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+            'C' => 'm/d/yyyy',
         ];
     }
 }

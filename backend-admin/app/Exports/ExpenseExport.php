@@ -31,6 +31,8 @@ class ExpenseExport implements FromCollection, WithHeadings, WithMapping, WithCo
             'Tanggal',
             'Jam',
             'Driver',
+            'Shift',
+            'Kode Delivery',
             'Kategori',
             'Deskripsi',
             'Nominal (Rp)',
@@ -41,16 +43,25 @@ class ExpenseExport implements FromCollection, WithHeadings, WithMapping, WithCo
     {
         static $no = 1;
         $driverName = $expense->driver->full_name ?? $expense->driver->name ?? 'Belum ditentukan';
+        $shiftDate = $expense->shift->work_date ?? '-';
+        
+        $deliveryCode = '-';
+        if ($expense->shift_id) {
+            $taskData = \App\Models\PickupTask::where('shift_id', $expense->shift_id)->first();
+            if ($taskData && $taskData->reference_number) {
+                $deliveryCode = $taskData->reference_number;
+            }
+        }
 
-        $tanggal = '-';
-        $jam = '-';
+        $tanggal = null;
+        $jam = null;
         if ($expense->occurred_at) {
             try {
                 $tanggal = Date::dateTimeToExcel(Carbon::parse($expense->occurred_at));
                 $jam = Date::dateTimeToExcel(Carbon::parse($expense->occurred_at));
             } catch (\Exception $e) {
-                $tanggal = $expense->occurred_at->format('Y-m-d');
-                $jam = $expense->occurred_at->format('H:i');
+                $tanggal = null;
+                $jam = null;
             }
         }
 
@@ -59,6 +70,8 @@ class ExpenseExport implements FromCollection, WithHeadings, WithMapping, WithCo
             $tanggal,
             $jam,
             $driverName,
+            $shiftDate,
+            $deliveryCode,
             ucfirst($expense->category ?? '-'),
             $expense->description ?? '-',
             (float) ($expense->amount ?? 0),
@@ -68,9 +81,9 @@ class ExpenseExport implements FromCollection, WithHeadings, WithMapping, WithCo
     public function columnFormats(): array
     {
         return [
-            'B' => NumberFormat::FORMAT_DATE_YYYYMMDD,
-            'C' => 'hh:mm',
-            'G' => '"Rp "#,##0',
+            'B' => 'm/d/yyyy',
+            'C' => 'h:mm',
+            'I' => '"Rp "#,##0',
         ];
     }
 }

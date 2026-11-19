@@ -40,12 +40,12 @@ class PackagingExport implements FromCollection, WithHeadings, WithMapping, Shou
         $firstItem = $job->items->first();
         $dimensi = ($job->panjang ?? 0) . ' × ' . ($job->lebar ?? 0) . ' × ' . ($job->tinggi ?? 0) . ' mm';
 
-        $packagingDate = '-';
+        $packagingDate = null;
         if ($job->created_at) {
             try {
                 $packagingDate = Date::dateTimeToExcel(Carbon::parse($job->created_at));
             } catch (\Exception $e) {
-                $packagingDate = $job->created_at->format('Y-m-d H:i');
+                $packagingDate = null;
             }
         }
 
@@ -65,7 +65,7 @@ class PackagingExport implements FromCollection, WithHeadings, WithMapping, Shou
     public function columnFormats(): array
     {
         return [
-            'G' => 'yyyy-mm-dd hh:mm',
+            'G' => 'm/d/yyyy h:mm',
             'H' => '"Rp "#,##0',
         ];
     }

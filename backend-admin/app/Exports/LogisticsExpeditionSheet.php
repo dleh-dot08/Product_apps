@@ -52,23 +52,8 @@ class LogisticsExpeditionSheet implements FromCollection, WithTitle, WithHeading
 
     public function map($row): array
     {
-        $shippingDate = '-';
-        if (!empty($row['shipping_date']) && $row['shipping_date'] !== '-') {
-            try {
-                $shippingDate = Date::dateTimeToExcel(Carbon::parse($row['shipping_date']));
-            } catch (\Exception $e) {
-                $shippingDate = $row['shipping_date'];
-            }
-        }
-
-        $etaDate = '-';
-        if (!empty($row['estimated_arrival_date']) && $row['estimated_arrival_date'] !== '-') {
-            try {
-                $etaDate = Date::dateTimeToExcel(Carbon::parse($row['estimated_arrival_date']));
-            } catch (\Exception $e) {
-                $etaDate = $row['estimated_arrival_date'];
-            }
-        }
+        $shippingDate = $this->parseExcelDate($row['shipping_date'] ?? null);
+        $etaDate = $this->parseExcelDate($row['estimated_arrival_date'] ?? null);
 
         return [
             $row['task_type'] ?? '-',
@@ -85,11 +70,32 @@ class LogisticsExpeditionSheet implements FromCollection, WithTitle, WithHeading
         ];
     }
 
+    private function parseExcelDate($val): ?float
+    {
+        if (empty($val) || $val === '-') {
+            return null;
+        }
+        if ($val instanceof \DateTimeInterface) {
+            return Date::dateTimeToExcel($val);
+        }
+        $val = trim((string)$val);
+        try {
+            if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $val, $m)) {
+                $c = Carbon::createFromDate((int)$m[3], (int)$m[2], (int)$m[1])->startOfDay();
+                return Date::dateTimeToExcel($c);
+            }
+            $c = Carbon::parse($val);
+            return Date::dateTimeToExcel($c);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     public function columnFormats(): array
     {
         return [
-            'G' => NumberFormat::FORMAT_DATE_YYYYMMDD,
-            'H' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+            'G' => 'm/d/yyyy',
+            'H' => 'm/d/yyyy',
             'J' => '"Rp "#,##0',
             'K' => '"Rp "#,##0',
         ];

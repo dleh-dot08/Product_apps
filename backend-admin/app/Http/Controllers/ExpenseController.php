@@ -14,48 +14,33 @@ class ExpenseController extends Controller
     {
         $query = Expense::with(['shift', 'driver'])->latest('occurred_at');
 
+        // Filter Scope Driver (jika yang login adalah driver, batasi hanya datanya sendiri)
+        $user = auth()->user();
+        if ($user && strtolower($user->role) === 'driver') {
+            $query->where('driver_id', $user->id);
+        } elseif ($request->filled('driver_id')) {
+            $query->where('driver_id', $request->driver_id);
+        }
+
         if ($request->filled('category')) {
             $query->where('category', $request->category);
         }
-        if ($request->filled('driver_id')) {
-            $query->where('driver_id', $request->driver_id);
+
+        if ($request->filled('date')) {
+            $query->whereDate('occurred_at', $request->date);
+        }
+        if ($request->filled('start_date')) {
+            $query->whereDate('occurred_at', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('occurred_at', '<=', $request->end_date);
         }
 
         $expenses = $query->get();
 
         if ($request->export == 'excel') {
-            $filename = "pengeluaran_" . date('Ymd_His') . ".csv";
-            
-            return response()->streamDownload(function () use ($expenses) {
-                $file = fopen('php://output', 'w');
-                fputcsv($file, ['Tanggal', 'Jam', 'Driver', 'Shift', 'Kode Delivery', 'Kategori', 'Deskripsi', 'Nominal']);
-
-                foreach ($expenses as $expense) {
-                    $driverName = $expense->driver->full_name ?? $expense->driver->name ?? 'Belum ditentukan';
-                    $shiftDate = $expense->shift->work_date ?? '-';
-                    $description = $expense->description ?? '-';
-                    
-                    $deliveryCode = '-';
-                    if ($expense->shift_id) {
-                        $taskData = \App\Models\PickupTask::where('shift_id', $expense->shift_id)->first();
-                        if ($taskData && $taskData->reference_number) {
-                            $deliveryCode = $taskData->reference_number;
-                        }
-                    }
-
-                    fputcsv($file, [
-                        $expense->occurred_at ? $expense->occurred_at->format('d M Y') : '-',
-                        $expense->occurred_at ? $expense->occurred_at->format('H:i') : '-',
-                        $driverName,
-                        $shiftDate,
-                        $deliveryCode,
-                        $expense->category ?? '-',
-                        $description,
-                        $expense->amount
-                    ]);
-                }
-                fclose($file);
-            }, $filename);
+            $filename = "pengeluaran_" . date('Ymd_His') . ".xlsx";
+            return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\ExpenseExport($expenses), $filename);
         }
 
         $drivers = User::where('role', 'driver')->get();

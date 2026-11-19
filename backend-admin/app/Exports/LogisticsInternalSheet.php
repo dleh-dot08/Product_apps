@@ -48,14 +48,7 @@ class LogisticsInternalSheet implements FromCollection, WithTitle, WithHeadings,
 
     public function map($row): array
     {
-        $taskDate = '-';
-        if (!empty($row['date']) && $row['date'] !== '-') {
-            try {
-                $taskDate = Date::dateTimeToExcel(Carbon::parse($row['date']));
-            } catch (\Exception $e) {
-                $taskDate = $row['date'];
-            }
-        }
+        $taskDate = $this->parseExcelDate($row['date'] ?? null);
 
         return [
             $row['task_type'] ?? '-',
@@ -68,10 +61,31 @@ class LogisticsInternalSheet implements FromCollection, WithTitle, WithHeadings,
         ];
     }
 
+    private function parseExcelDate($val): ?float
+    {
+        if (empty($val) || $val === '-') {
+            return null;
+        }
+        if ($val instanceof \DateTimeInterface) {
+            return Date::dateTimeToExcel($val);
+        }
+        $val = trim((string)$val);
+        try {
+            if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $val, $m)) {
+                $c = Carbon::createFromDate((int)$m[3], (int)$m[2], (int)$m[1])->startOfDay();
+                return Date::dateTimeToExcel($c);
+            }
+            $c = Carbon::parse($val);
+            return Date::dateTimeToExcel($c);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     public function columnFormats(): array
     {
         return [
-            'E' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+            'E' => 'm/d/yyyy',
             'F' => '"Rp "#,##0',
             'G' => '"Rp "#,##0',
         ];
