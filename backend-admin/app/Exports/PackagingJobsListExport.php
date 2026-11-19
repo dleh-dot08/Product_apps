@@ -145,7 +145,12 @@ class PackagingJobsListExport
 
                 $sheet->setCellValue("A{$currentRow}", $noCounter);
                 $sheet->setCellValue("B{$currentRow}", $job->packaging_number ?: ('JOB-' . $job->id));
-                $sheet->setCellValue("C{$currentRow}", $job->created_at ? $job->created_at->format('d/m/Y') : '-');
+                if ($job->created_at) {
+                    $sheet->setCellValue("C{$currentRow}", \PhpOffice\PhpSpreadsheet\Shared\Date::dateTimeToExcel(\Carbon\Carbon::parse($job->created_at)));
+                    $sheet->getStyle("C{$currentRow}")->getNumberFormat()->setFormatCode(\PhpOffice\PhpSpreadsheet\Style\NumberFormat::FORMAT_DATE_YYYYMMDD);
+                } else {
+                    $sheet->setCellValue("C{$currentRow}", '-');
+                }
                 $sheet->setCellValue("D{$currentRow}", $customer);
                 $sheet->setCellValue("E{$currentRow}", $noSo);
                 $sheet->setCellValue("F{$currentRow}", strtoupper($job->type_packaging ?: 'BOX'));

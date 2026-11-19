@@ -2,11 +2,14 @@
 
 namespace App\Exports;
 
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
-class ListTugasExport implements FromCollection, WithHeadings, WithMapping
+class ListTugasExport implements FromCollection, WithHeadings, WithMapping, WithColumnFormatting
 {
     protected $tasks;
 
@@ -62,6 +65,8 @@ class ListTugasExport implements FromCollection, WithHeadings, WithMapping
             }
         }
 
+        $assignedAt = !empty($task->assigned_at) ? Date::dateTimeToExcel(Carbon::parse($task->assigned_at)) : '-';
+
         return [
             $no++,
             strtoupper($task->task_type),
@@ -71,8 +76,15 @@ class ListTugasExport implements FromCollection, WithHeadings, WithMapping
             $task->pickup_name ?? '-',
             $task->task_type === 'pickup' ? ($task->destination_name ?? '-') : ($task->salesOrder->customer_name ?? '-'),
             $task->driver ? ($task->driver->full_name ?? $task->driver->name) : '-',
-            $task->assigned_at ? \Carbon\Carbon::parse($task->assigned_at)->format('Y-m-d H:i') : '-',
+            $assignedAt,
             str_replace('_', ' ', strtoupper($task->status)),
+        ];
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'I' => 'yyyy-mm-dd hh:mm',
         ];
     }
 }

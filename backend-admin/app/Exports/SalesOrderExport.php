@@ -2,11 +2,15 @@
 
 namespace App\Exports;
 
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class SalesOrderExport implements FromCollection, WithHeadings, WithMapping
+class SalesOrderExport implements FromCollection, WithHeadings, WithMapping, WithColumnFormatting
 {
     protected $orders;
 
@@ -39,16 +43,42 @@ class SalesOrderExport implements FromCollection, WithHeadings, WithMapping
     {
         static $no = 1;
 
+        $soDate = '-';
+        if (!empty($so->so_date) && $so->so_date !== '-') {
+            try {
+                $soDate = Date::dateTimeToExcel(Carbon::parse($so->so_date));
+            } catch (\Exception $e) {
+                $soDate = $so->so_date;
+            }
+        }
+
+        $estDate = '-';
+        if (!empty($so->estimated_delivery_date) && $so->estimated_delivery_date !== '-') {
+            try {
+                $estDate = Date::dateTimeToExcel(Carbon::parse($so->estimated_delivery_date));
+            } catch (\Exception $e) {
+                $estDate = $so->estimated_delivery_date;
+            }
+        }
+
         return [
             $no++,
             $so->so_number ?? '-',
-            $so->so_date ? \Carbon\Carbon::parse($so->so_date)->format('d/m/Y') : '-',
+            $soDate,
             $so->customer_name ?? '-',
             (float) ($so->ordered_quantity ?? 0),
             (float) ($so->shipped_quantity ?? 0),
             (float) ($so->remaining_quantity ?? 0),
             strtoupper($so->status ?? 'DRAFT'),
-            $so->estimated_delivery_date ? \Carbon\Carbon::parse($so->estimated_delivery_date)->format('d/m/Y') : '-',
+            $estDate,
+        ];
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'C' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+            'I' => NumberFormat::FORMAT_DATE_YYYYMMDD,
         ];
     }
 }

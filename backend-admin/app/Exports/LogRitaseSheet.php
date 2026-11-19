@@ -3,12 +3,16 @@
 namespace App\Exports;
 
 use App\Models\Trip;
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class LogRitaseSheet implements FromCollection, WithHeadings, WithTitle, WithMapping
+class LogRitaseSheet implements FromCollection, WithHeadings, WithTitle, WithMapping, WithColumnFormatting
 {
     public function collection()
     {
@@ -35,9 +39,18 @@ class LogRitaseSheet implements FromCollection, WithHeadings, WithTitle, WithMap
 
     public function map($trip): array
     {
+        $tanggal = '-';
+        if ($trip->date) {
+            try {
+                $tanggal = Date::dateTimeToExcel(Carbon::parse($trip->date));
+            } catch (\Exception $e) {
+                $tanggal = $trip->date->format('Y-m-d');
+            }
+        }
+
         return [
             $trip->id,
-            $trip->date->format('Y-m-d'),
+            $tanggal,
             $trip->vehicle->plate_number ?? '-',
             $trip->driver->full_name ?? '-',
             $trip->distance_km,
@@ -48,6 +61,20 @@ class LogRitaseSheet implements FromCollection, WithHeadings, WithTitle, WithMap
             $trip->other_cost,
             $trip->total_cost,
             $trip->status
+        ];
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'B' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+            'E' => '#,##0',
+            'F' => '"Rp "#,##0',
+            'G' => '"Rp "#,##0',
+            'H' => '"Rp "#,##0',
+            'I' => '"Rp "#,##0',
+            'J' => '"Rp "#,##0',
+            'K' => '"Rp "#,##0',
         ];
     }
 

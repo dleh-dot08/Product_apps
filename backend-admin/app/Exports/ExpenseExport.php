@@ -2,11 +2,15 @@
 
 namespace App\Exports;
 
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class ExpenseExport implements FromCollection, WithHeadings, WithMapping
+class ExpenseExport implements FromCollection, WithHeadings, WithMapping, WithColumnFormatting
 {
     protected $expenses;
 
@@ -38,14 +42,35 @@ class ExpenseExport implements FromCollection, WithHeadings, WithMapping
         static $no = 1;
         $driverName = $expense->driver->full_name ?? $expense->driver->name ?? 'Belum ditentukan';
 
+        $tanggal = '-';
+        $jam = '-';
+        if ($expense->occurred_at) {
+            try {
+                $tanggal = Date::dateTimeToExcel(Carbon::parse($expense->occurred_at));
+                $jam = Date::dateTimeToExcel(Carbon::parse($expense->occurred_at));
+            } catch (\Exception $e) {
+                $tanggal = $expense->occurred_at->format('Y-m-d');
+                $jam = $expense->occurred_at->format('H:i');
+            }
+        }
+
         return [
             $no++,
-            $expense->occurred_at ? $expense->occurred_at->format('d/m/Y') : '-',
-            $expense->occurred_at ? $expense->occurred_at->format('H:i') : '-',
+            $tanggal,
+            $jam,
             $driverName,
             ucfirst($expense->category ?? '-'),
             $expense->description ?? '-',
             (float) ($expense->amount ?? 0),
+        ];
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'B' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+            'C' => 'hh:mm',
+            'G' => '"Rp "#,##0',
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -9,6 +10,8 @@ use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnFormatting;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class LogisticsInternalSheet implements FromCollection, WithTitle, WithHeadings, WithMapping, ShouldAutoSize, WithStyles, WithColumnFormatting
@@ -45,12 +48,21 @@ class LogisticsInternalSheet implements FromCollection, WithTitle, WithHeadings,
 
     public function map($row): array
     {
+        $taskDate = '-';
+        if (!empty($row['date']) && $row['date'] !== '-') {
+            try {
+                $taskDate = Date::dateTimeToExcel(Carbon::parse($row['date']));
+            } catch (\Exception $e) {
+                $taskDate = $row['date'];
+            }
+        }
+
         return [
             $row['task_type'] ?? '-',
             $row['ref_no'] ?? '-',
             $row['customer'] ?? '-',
             $row['do_easy'] ?? '-',
-            $row['date'] ?? '-',
+            $taskDate,
             (float)($row['item_value'] ?? 0),
             (float)($row['total_cost'] ?? 0),
         ];
@@ -59,6 +71,7 @@ class LogisticsInternalSheet implements FromCollection, WithTitle, WithHeadings,
     public function columnFormats(): array
     {
         return [
+            'E' => NumberFormat::FORMAT_DATE_YYYYMMDD,
             'F' => '"Rp "#,##0',
             'G' => '"Rp "#,##0',
         ];
