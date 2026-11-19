@@ -2,14 +2,17 @@
 
 namespace App\Exports;
 
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithTitle;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMapping, WithStyles
+class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMapping, WithStyles, WithColumnFormatting
 {
     protected $shifts;
 
@@ -58,8 +61,8 @@ class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMa
         $odoEnd = (int) ($shift->end_odometer ?? 0);
         $totalOdo = ($odoEnd && $odoStart) ? max(0, $odoEnd - $odoStart) : 0;
 
-        $startTime = $shift->check_in_at ? $shift->check_in_at->format('d/m/Y H:i') : '-';
-        $endTime = $shift->check_out_at ? $shift->check_out_at->format('d/m/Y H:i') : ($shift->check_in_at ? 'Sedang Berjalan' : '-');
+        $startTime = $shift->check_in_at ? Date::dateTimeToExcel(Carbon::parse($shift->check_in_at)) : '-';
+        $endTime = $shift->check_out_at ? Date::dateTimeToExcel(Carbon::parse($shift->check_out_at)) : ($shift->check_in_at ? 'Sedang Berjalan' : '-');
 
         $durasiStr = '-';
         if ($shift->check_in_at && $shift->check_out_at) {
@@ -112,5 +115,13 @@ class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMa
         $sheet->getColumnDimension('L')->setWidth(12);
 
         return [];
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'H' => 'yyyy-mm-dd hh:mm',
+            'I' => 'yyyy-mm-dd hh:mm',
+        ];
     }
 }

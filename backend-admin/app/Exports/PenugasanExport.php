@@ -2,11 +2,15 @@
 
 namespace App\Exports;
 
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class PenugasanExport implements FromCollection, WithHeadings, WithMapping
+class PenugasanExport implements FromCollection, WithHeadings, WithMapping, WithColumnFormatting
 {
     protected $assignments;
 
@@ -46,16 +50,34 @@ class PenugasanExport implements FromCollection, WithHeadings, WithMapping
             $taskCount = $manifest->task_count;
         }
 
+        $dateValue = null;
+        if (!empty($manifest->dispatch_date)) {
+            $dateValue = Date::dateTimeToExcel(Carbon::parse($manifest->dispatch_date));
+        } elseif (!empty($manifest->date) && $manifest->date !== '-') {
+            try {
+                $dateValue = Date::dateTimeToExcel(Carbon::parse($manifest->date));
+            } catch (\Exception $e) {
+                $dateValue = $manifest->date;
+            }
+        }
+
         return [
             $no++,
             $manifest->manifest_number ?? ($manifest->no_do ?? '-'),
-            $manifest->dispatch_date ? \Carbon\Carbon::parse($manifest->dispatch_date)->format('Y-m-d') : ($manifest->date ?? '-'),
+            $dateValue ?? '-',
             $manifest->driver ? ($manifest->driver->full_name ?? $manifest->driver->name) : '-',
             $manifest->coDriver ? ($manifest->coDriver->full_name ?? $manifest->coDriver->name) : '-',
             $manifest->vehicle ? '[' . $manifest->vehicle->plate_number . '] ' . $manifest->vehicle->name : '-',
             $taskCount,
             $manifest->assignedBy ? $manifest->assignedBy->name : ($manifest->assigned_by_name ?? 'Sistem/Admin'),
             str_replace('_', ' ', strtoupper($manifest->status)),
+        ];
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'C' => NumberFormat::FORMAT_DATE_YYYYMMDD,
         ];
     }
 }

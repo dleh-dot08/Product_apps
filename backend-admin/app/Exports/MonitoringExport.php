@@ -2,11 +2,14 @@
 
 namespace App\Exports;
 
+use Carbon\Carbon;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
 
-class MonitoringExport implements FromCollection, WithHeadings, WithMapping
+class MonitoringExport implements FromCollection, WithHeadings, WithMapping, WithColumnFormatting
 {
     protected $shifts;
 
@@ -47,15 +50,26 @@ class MonitoringExport implements FromCollection, WithHeadings, WithMapping
             ? max(0, $shift->end_odometer - $shift->start_odometer) 
             : 0;
 
+        $checkIn = !empty($shift->check_in_at) ? Date::dateTimeToExcel(Carbon::parse($shift->check_in_at)) : '-';
+        $checkOut = !empty($shift->check_out_at) ? Date::dateTimeToExcel(Carbon::parse($shift->check_out_at)) : 'Berjalan';
+
         return [
             $no++,
             $shift->driver->full_name ?? ($shift->driver->name ?? '-'),
             $shift->vehicle ? '[' . $shift->vehicle->plate_number . '] ' . $shift->vehicle->name : '-',
-            $shift->check_in_at ? \Carbon\Carbon::parse($shift->check_in_at)->format('Y-m-d H:i') : '-',
-            $shift->check_out_at ? \Carbon\Carbon::parse($shift->check_out_at)->format('Y-m-d H:i') : 'Berjalan',
+            $checkIn,
+            $checkOut,
             $totalDistance . ' KM',
             $hasTasks ? 'Ya' : 'Tidak',
             $hasExpenses ? 'Ya' : 'Tidak',
+        ];
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'D' => 'yyyy-mm-dd hh:mm',
+            'E' => 'yyyy-mm-dd hh:mm',
         ];
     }
 }
