@@ -14,9 +14,31 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 class LogRitaseSheet implements FromCollection, WithHeadings, WithTitle, WithMapping, WithColumnFormatting
 {
+    protected array $filters;
+
+    public function __construct(array $filters = [])
+    {
+        $this->filters = $filters;
+    }
+
     public function collection()
     {
-        return Trip::with(['vehicle', 'driver'])->orderBy('date', 'desc')->get();
+        $query = Trip::with(['vehicle', 'driver'])->orderBy('date', 'desc');
+
+        if (!empty($this->filters['start_date'])) {
+            $query->whereDate('date', '>=', $this->filters['start_date']);
+        }
+        if (!empty($this->filters['end_date'])) {
+            $query->whereDate('date', '<=', $this->filters['end_date']);
+        }
+        if (!empty($this->filters['driver_id'])) {
+            $query->where('driver_id', $this->filters['driver_id']);
+        }
+        if (!empty($this->filters['vehicle_id'])) {
+            $query->where('vehicle_id', $this->filters['vehicle_id']);
+        }
+
+        return $query->get();
     }
 
     public function headings(): array
@@ -67,7 +89,7 @@ class LogRitaseSheet implements FromCollection, WithHeadings, WithTitle, WithMap
     public function columnFormats(): array
     {
         return [
-            'B' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+            'B' => 'm/d/yyyy',
             'E' => '#,##0',
             'F' => '"Rp "#,##0',
             'G' => '"Rp "#,##0',

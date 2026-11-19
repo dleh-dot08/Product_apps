@@ -135,9 +135,16 @@ class TripHppController extends Controller
         return view('hpp.show', compact('shift', 'prorataDetails'));
     }
 
-    public function export()
+    public function export(Request $request)
     {
-        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\HppRitaseExport, 'Laporan_HPP_Ritase_' . date('Ymd_His') . '.xlsx');
+        $filters = [
+            'start_date' => $request->input('date_from'),
+            'end_date' => $request->input('date_to'),
+            'driver_id' => $request->input('driver_id'),
+            'vehicle_id' => $request->input('vehicle_id'),
+        ];
+
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\HppRitaseExport(null, $filters), 'Laporan_HPP_Ritase_' . date('Ymd_His') . '.xlsx');
     }
 
     public function destroy($id)

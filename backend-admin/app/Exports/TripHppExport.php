@@ -9,12 +9,19 @@ class TripHppExport implements WithMultipleSheets
 {
     use Exportable;
 
+    protected array $filters;
+
+    public function __construct(array $filters = [])
+    {
+        $this->filters = $filters;
+    }
+
     public function sheets(): array
     {
         $sheets = [];
 
-        $sheets[] = new LogRitaseSheet();
-        $sheets[] = new RincianPOSheet();
+        $sheets[] = new LogRitaseSheet($this->filters);
+        $sheets[] = new RincianPOSheet($this->filters);
         $sheets[] = new PenjabaranHPPSheet();
 
         return $sheets;

@@ -90,6 +90,42 @@ class PickupTaskController extends Controller
         $filterStatus = $request->get('status');
         $filterDriver = $request->get('driver_id');
         $filterType = $request->get('task_type'); // 'pickup', 'delivery', or empty for both
+        $filterDate = $request->get('date');
+        $filterStartDate = $request->get('start_date');
+        $filterEndDate = $request->get('end_date');
+
+        // Filter by Date / Date Range
+        if ($filterDate) {
+            $pickupQuery->where(function ($q) use ($filterDate) {
+                $q->whereDate('dispatch_date', $filterDate)
+                  ->orWhereDate('assigned_at', $filterDate);
+            });
+            $deliveryQuery->where(function ($q) use ($filterDate) {
+                $q->whereDate('dispatch_date', $filterDate)
+                  ->orWhereDate('assigned_at', $filterDate);
+            });
+        } elseif ($filterStartDate || $filterEndDate) {
+            if ($filterStartDate) {
+                $pickupQuery->where(function ($q) use ($filterStartDate) {
+                    $q->whereDate('dispatch_date', '>=', $filterStartDate)
+                      ->orWhereDate('assigned_at', '>=', $filterStartDate);
+                });
+                $deliveryQuery->where(function ($q) use ($filterStartDate) {
+                    $q->whereDate('dispatch_date', '>=', $filterStartDate)
+                      ->orWhereDate('assigned_at', '>=', $filterStartDate);
+                });
+            }
+            if ($filterEndDate) {
+                $pickupQuery->where(function ($q) use ($filterEndDate) {
+                    $q->whereDate('dispatch_date', '<=', $filterEndDate)
+                      ->orWhereDate('assigned_at', '<=', $filterEndDate);
+                });
+                $deliveryQuery->where(function ($q) use ($filterEndDate) {
+                    $q->whereDate('dispatch_date', '<=', $filterEndDate)
+                      ->orWhereDate('assigned_at', '<=', $filterEndDate);
+                });
+            }
+        }
 
         // Search text (Reference Number, Item, Destination)
         if ($search) {
@@ -181,7 +217,10 @@ class PickupTaskController extends Controller
         }
 
         if ($user && strtolower($user->role) === 'driver') {
-            $query->where('driver_id', $user->id);
+            $query->where(function($q) use ($user) {
+                $q->where('driver_id', $user->id)
+                  ->orWhere('co_driver_id', $user->id);
+            });
         }
         
         if ($request->filled('search')) {
@@ -189,7 +228,8 @@ class PickupTaskController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('manifest_number', 'like', "%{$search}%")
                   ->orWhereHas('driver', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
+                      $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('full_name', 'like', "%{$search}%");
                   });
             });
         }
@@ -199,10 +239,18 @@ class PickupTaskController extends Controller
         }
 
         if ($request->filled('driver_id')) {
-            $query->where(function($q) use ($request) {
-                $q->where('driver_id', $request->driver_id)
-                  ->orWhere('co_driver_id', $request->driver_id);
-            });
+            // Jika user adalah driver, jangan izinkan override driver_id orang lain
+            if ($user && strtolower($user->role) === 'driver') {
+                $query->where(function($q) use ($user) {
+                    $q->where('driver_id', $user->id)
+                      ->orWhere('co_driver_id', $user->id);
+                });
+            } else {
+                $query->where(function($q) use ($request) {
+                    $q->where('driver_id', $request->driver_id)
+                      ->orWhere('co_driver_id', $request->driver_id);
+                });
+            }
         }
         
         $assignmentsPaginated = $query->paginate(10)->withQueryString();
@@ -313,7 +361,10 @@ class PickupTaskController extends Controller
         }
 
         if ($user && strtolower($user->role) === 'driver') {
-            $query->where('driver_id', $user->id);
+            $query->where(function($q) use ($user) {
+                $q->where('driver_id', $user->id)
+                  ->orWhere('co_driver_id', $user->id);
+            });
         }
         
         if ($request->filled('search')) {
@@ -321,7 +372,8 @@ class PickupTaskController extends Controller
             $query->where(function($q) use ($search) {
                 $q->where('manifest_number', 'like', "%{$search}%")
                   ->orWhereHas('driver', function($q) use ($search) {
-                      $q->where('name', 'like', "%{$search}%");
+                      $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('full_name', 'like', "%{$search}%");
                   });
             });
         }
@@ -331,10 +383,18 @@ class PickupTaskController extends Controller
         }
 
         if ($request->filled('driver_id')) {
-            $query->where(function($q) use ($request) {
-                $q->where('driver_id', $request->driver_id)
-                  ->orWhere('co_driver_id', $request->driver_id);
-            });
+            // Jika user adalah driver, jangan izinkan override driver_id orang lain
+            if ($user && strtolower($user->role) === 'driver') {
+                $query->where(function($q) use ($user) {
+                    $q->where('driver_id', $user->id)
+                      ->orWhere('co_driver_id', $user->id);
+                });
+            } else {
+                $query->where(function($q) use ($request) {
+                    $q->where('driver_id', $request->driver_id)
+                      ->orWhere('co_driver_id', $request->driver_id);
+                });
+            }
         }
         
         $assignments = $query->get();

@@ -50,8 +50,8 @@ class MonitoringExport implements FromCollection, WithHeadings, WithMapping, Wit
             ? max(0, $shift->end_odometer - $shift->start_odometer) 
             : 0;
 
-        $checkIn = !empty($shift->check_in_at) ? Date::dateTimeToExcel(Carbon::parse($shift->check_in_at)) : '-';
-        $checkOut = !empty($shift->check_out_at) ? Date::dateTimeToExcel(Carbon::parse($shift->check_out_at)) : 'Berjalan';
+        $checkIn = !empty($shift->check_in_at) ? Date::dateTimeToExcel(Carbon::parse($shift->check_in_at)) : null;
+        $checkOut = !empty($shift->check_out_at) ? Date::dateTimeToExcel(Carbon::parse($shift->check_out_at)) : null;
 
         return [
             $no++,
@@ -68,8 +68,8 @@ class MonitoringExport implements FromCollection, WithHeadings, WithMapping, Wit
     public function columnFormats(): array
     {
         return [
-            'D' => 'yyyy-mm-dd hh:mm',
-            'E' => 'yyyy-mm-dd hh:mm',
+            'D' => 'm/d/yyyy h:mm',
+            'E' => 'm/d/yyyy h:mm',
         ];
     }
 }

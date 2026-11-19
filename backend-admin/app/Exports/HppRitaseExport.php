@@ -4,24 +4,48 @@ namespace App\Exports;
 
 use App\Models\Shift;
 use App\Services\HppCalculationService;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Maatwebsite\Excel\Concerns\WithHeadings;
+use PhpOffice\PhpSpreadsheet\Shared\Date;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
-class HppRitaseExport implements FromCollection, WithHeadings
+class HppRitaseExport implements FromCollection, WithHeadings, WithColumnFormatting
 {
     protected $shifts;
+    protected $filters;
 
-    public function __construct($shifts = null)
+    public function __construct($shifts = null, array $filters = [])
     {
         $this->shifts = $shifts;
+        $this->filters = $filters;
     }
 
     public function collection()
     {
-        $shifts = $this->shifts ?? Shift::with(['vehicle', 'driver', 'pickupTasks', 'expenses'])
-            ->orderBy('work_date', 'desc')
-            ->get();
+        if ($this->shifts) {
+            $shifts = $this->shifts;
+        } else {
+            $query = Shift::with(['vehicle', 'driver', 'pickupTasks', 'expenses'])
+                ->orderBy('work_date', 'desc');
+
+            if (!empty($this->filters['start_date'])) {
+                $query->whereDate('work_date', '>=', $this->filters['start_date']);
+            }
+            if (!empty($this->filters['end_date'])) {
+                $query->whereDate('work_date', '<=', $this->filters['end_date']);
+            }
+            if (!empty($this->filters['driver_id'])) {
+                $query->where('driver_id', $this->filters['driver_id']);
+            }
+            if (!empty($this->filters['vehicle_id'])) {
+                $query->where('vehicle_id', $this->filters['vehicle_id']);
+            }
+
+            $shifts = $query->get();
+        }
             
         $service = app(HppCalculationService::class);
         $data = new Collection();
@@ -31,7 +55,7 @@ class HppRitaseExport implements FromCollection, WithHeadings
             
             $driverName = $shift->driver->full_name ?? $shift->driver->name ?? '-';
             $vehicle = $shift->vehicle->plate_number ?? '-';
-            $date = $shift->work_date ? $shift->work_date->format('Y-m-d') : '-';
+            $date = $shift->work_date ? Date::dateTimeToExcel(Carbon::parse($shift->work_date)) : '-';
             $taskRef = $shift->task_reference ?? '-';
             
             foreach ($calcDetails['allocations'] as $item) {
@@ -50,18 +74,30 @@ class HppRitaseExport implements FromCollection, WithHeadings
                     'Kode Ritase' => $taskRef,
                     'Kode Barang' => $item['reference_number'],
                     'Deskripsi' => $descText,
-                    'Qty' => $item['quantity'],
+                    'Qty' => (float) ($item['quantity'] ?? 0),
                     'Unit' => $item['unit'],
-                    'Harga Satuan' => $unitPrice,
-                    'Nilai Barang (Total)' => $item['line_total'],
-                    'HPP Per Baris' => $item['hpp_per_baris'],
-                    'HPP / Qty' => $item['hpp_per_qty'],
-                    '% Beban' => $item['percentage'] . '%'
+                    'Harga Satuan' => (float) $unitPrice,
+                    'Nilai Barang (Total)' => (float) ($item['line_total'] ?? 0),
+                    'HPP Per Baris' => (float) ($item['hpp_per_baris'] ?? 0),
+                    'HPP / Qty' => (float) ($item['hpp_per_qty'] ?? 0),
+                    '% Beban' => ($item['percentage'] ?? 0) . '%'
                 ]);
             }
         }
 
         return $data;
+    }
+
+    public function columnFormats(): array
+    {
+        return [
+            'A' => 'm/d/yyyy',
+            'G' => '#,##0',
+            'I' => '"Rp "#,##0',
+            'J' => '"Rp "#,##0',
+            'K' => '"Rp "#,##0',
+            'L' => '"Rp "#,##0',
+        ];
     }
 
     public function headings(): array

@@ -65,7 +65,7 @@ class ListTugasExport implements FromCollection, WithHeadings, WithMapping, With
             }
         }
 
-        $assignedAt = !empty($task->assigned_at) ? Date::dateTimeToExcel(Carbon::parse($task->assigned_at)) : '-';
+        $assignedAt = !empty($task->assigned_at) ? Date::dateTimeToExcel(Carbon::parse($task->assigned_at)) : null;
 
         return [
             $no++,
@@ -84,7 +84,7 @@ class ListTugasExport implements FromCollection, WithHeadings, WithMapping, With
     public function columnFormats(): array
     {
         return [
-            'I' => 'yyyy-mm-dd hh:mm',
+            'I' => 'm/d/yyyy h:mm',
         ];
     }
 }

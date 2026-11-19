@@ -1079,7 +1079,7 @@
                 </button>
 
                 @if(auth()->check() && auth()->user()->hasPermission('Export Data'))
-                <a href="{{ route('hpp.export') }}" class="btn-hpp-export">
+                <a href="{{ route('hpp.export') }}" class="btn-hpp-export" id="btnHppExportExcel">
                     <i class="fas fa-download"></i>
                     Export Excel
                 </a>
@@ -1972,6 +1972,21 @@
         });
 
         applyDateFilter?.addEventListener('click', applyFilters);
+
+        // Update link Export Excel secara dinamis sesuai filter tanggal yang dipilih
+        const exportExcelBtn = document.getElementById('btnHppExportExcel');
+        if (exportExcelBtn) {
+            function updateExportLink() {
+                const params = new URLSearchParams();
+                if (dateFrom && dateFrom.value) params.set('date_from', dateFrom.value);
+                if (dateTo && dateTo.value) params.set('date_to', dateTo.value);
+                const baseUrl = "{{ route('hpp.export') }}";
+                exportExcelBtn.href = params.toString() ? baseUrl + '?' + params.toString() : baseUrl;
+            }
+            dateFrom?.addEventListener('change', updateExportLink);
+            dateTo?.addEventListener('change', updateExportLink);
+            updateExportLink();
+        }
 
         resetButton?.addEventListener('click', function () {
             if (searchInput) searchInput.value = '';

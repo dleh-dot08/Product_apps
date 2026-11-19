@@ -724,9 +724,9 @@
                                     <td>{{ $row['customer'] }}</td>
                                     <td><span class="badge bg-light text-dark border">{{ $row['vendor_name'] }}</span></td>
                                     <td class="font-monospace small text-muted">{{ $row['tracking_number'] }}</td>
-                                    <td class="text-center">{{ $row['shipping_date'] }}</td>
-                                    <td class="text-center">{{ $row['estimated_arrival_date'] }}</td>
-                                    <td class="text-center">{{ $row['actual_arrival_date'] }}</td>
+                                    <td class="text-center">{{ !empty($row['shipping_date']) && $row['shipping_date'] !== '-' ? date('d/m/Y', strtotime($row['shipping_date'])) : '-' }}</td>
+                                    <td class="text-center">{{ !empty($row['estimated_arrival_date']) && $row['estimated_arrival_date'] !== '-' ? date('d/m/Y', strtotime($row['estimated_arrival_date'])) : '-' }}</td>
+                                    <td class="text-center">{{ !empty($row['actual_arrival_date']) && $row['actual_arrival_date'] !== '-' ? date('d/m/Y', strtotime($row['actual_arrival_date'])) : '-' }}</td>
                                     <td class="text-end font-monospace">Rp {{ number_format($row['item_value'], 0, ',', '.') }}</td>
                                     <td class="text-end font-monospace fw-bold text-dark">Rp {{ number_format($row['cost_amount'], 0, ',', '.') }}</td>
                                     <td class="text-center">
@@ -845,7 +845,7 @@
                                     <td class="fw-bold font-monospace text-primary">{{ $row['ref_no'] }}</td>
                                     <td class="fw-semibold text-dark">{{ $row['customer'] }}</td>
                                     <td class="font-monospace small text-muted">{{ $row['do_easy'] ?: '-' }}</td>
-                                    <td class="text-center">{{ $row['date'] }}</td>
+                                    <td class="text-center">{{ !empty($row['date']) && $row['date'] !== '-' ? date('d/m/Y', strtotime($row['date'])) : '-' }}</td>
                                     <td class="text-end font-monospace">Rp {{ number_format($row['item_value'], 0, ',', '.') }}</td>
                                     <td class="text-end font-monospace fw-bold text-dark">Rp {{ number_format($row['total_cost'], 0, ',', '.') }}</td>
                                     <td class="text-center">

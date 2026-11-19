@@ -43,23 +43,8 @@ class SalesOrderExport implements FromCollection, WithHeadings, WithMapping, Wit
     {
         static $no = 1;
 
-        $soDate = '-';
-        if (!empty($so->so_date) && $so->so_date !== '-') {
-            try {
-                $soDate = Date::dateTimeToExcel(Carbon::parse($so->so_date));
-            } catch (\Exception $e) {
-                $soDate = $so->so_date;
-            }
-        }
-
-        $estDate = '-';
-        if (!empty($so->estimated_delivery_date) && $so->estimated_delivery_date !== '-') {
-            try {
-                $estDate = Date::dateTimeToExcel(Carbon::parse($so->estimated_delivery_date));
-            } catch (\Exception $e) {
-                $estDate = $so->estimated_delivery_date;
-            }
-        }
+        $soDate = $this->parseExcelDate($so->so_date ?? null);
+        $estDate = $this->parseExcelDate($so->estimated_delivery_date ?? null);
 
         return [
             $no++,
@@ -74,11 +59,32 @@ class SalesOrderExport implements FromCollection, WithHeadings, WithMapping, Wit
         ];
     }
 
+    private function parseExcelDate($val): ?float
+    {
+        if (empty($val) || $val === '-') {
+            return null;
+        }
+        if ($val instanceof \DateTimeInterface) {
+            return Date::dateTimeToExcel($val);
+        }
+        $val = trim((string)$val);
+        try {
+            if (preg_match('/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/', $val, $m)) {
+                $c = Carbon::createFromDate((int)$m[3], (int)$m[2], (int)$m[1])->startOfDay();
+                return Date::dateTimeToExcel($c);
+            }
+            $c = Carbon::parse($val);
+            return Date::dateTimeToExcel($c);
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     public function columnFormats(): array
     {
         return [
-            'C' => NumberFormat::FORMAT_DATE_YYYYMMDD,
-            'I' => NumberFormat::FORMAT_DATE_YYYYMMDD,
+            'C' => 'm/d/yyyy',
+            'I' => 'm/d/yyyy',
         ];
     }
 }

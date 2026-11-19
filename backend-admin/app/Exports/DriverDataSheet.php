@@ -61,8 +61,8 @@ class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMa
         $odoEnd = (int) ($shift->end_odometer ?? 0);
         $totalOdo = ($odoEnd && $odoStart) ? max(0, $odoEnd - $odoStart) : 0;
 
-        $startTime = $shift->check_in_at ? Date::dateTimeToExcel(Carbon::parse($shift->check_in_at)) : '-';
-        $endTime = $shift->check_out_at ? Date::dateTimeToExcel(Carbon::parse($shift->check_out_at)) : ($shift->check_in_at ? 'Sedang Berjalan' : '-');
+        $startTime = $shift->check_in_at ? Date::dateTimeToExcel(Carbon::parse($shift->check_in_at)) : null;
+        $endTime = $shift->check_out_at ? Date::dateTimeToExcel(Carbon::parse($shift->check_out_at)) : null;
 
         $durasiStr = '-';
         if ($shift->check_in_at && $shift->check_out_at) {
@@ -120,8 +120,8 @@ class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMa
     public function columnFormats(): array
     {
         return [
-            'H' => 'yyyy-mm-dd hh:mm',
-            'I' => 'yyyy-mm-dd hh:mm',
+            'H' => 'm/d/yyyy h:mm',
+            'I' => 'm/d/yyyy h:mm',
         ];
     }
 }
