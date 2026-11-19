@@ -55,7 +55,14 @@ class HppRitaseExport implements FromCollection, WithHeadings, WithColumnFormatt
             
             $driverName = $shift->driver->full_name ?? $shift->driver->name ?? '-';
             $vehicle = $shift->vehicle->plate_number ?? '-';
-            $date = $shift->work_date ? Date::dateTimeToExcel(Carbon::parse($shift->work_date)) : '-';
+            $date = null;
+            if (!empty($shift->work_date)) {
+                try {
+                    $date = Date::dateTimeToExcel(Carbon::parse($shift->work_date)->startOfDay());
+                } catch (\Exception $e) {
+                    $date = null;
+                }
+            }
             $taskRef = $shift->task_reference ?? '-';
             
             foreach ($calcDetails['allocations'] as $item) {

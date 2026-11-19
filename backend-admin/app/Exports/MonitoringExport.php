@@ -29,8 +29,10 @@ class MonitoringExport implements FromCollection, WithHeadings, WithMapping, Wit
             'No',
             'Driver',
             'Mobil',
-            'Clock In',
-            'Clock Out',
+            'Tgl Clock In',
+            'Jam Clock In',
+            'Tgl Clock Out',
+            'Jam Clock Out',
             'Total KM',
             'Laporan Tugas',
             'Laporan Pengeluaran',
@@ -50,15 +52,30 @@ class MonitoringExport implements FromCollection, WithHeadings, WithMapping, Wit
             ? max(0, $shift->end_odometer - $shift->start_odometer) 
             : 0;
 
-        $checkIn = !empty($shift->check_in_at) ? Date::dateTimeToExcel(Carbon::parse($shift->check_in_at)) : null;
-        $checkOut = !empty($shift->check_out_at) ? Date::dateTimeToExcel(Carbon::parse($shift->check_out_at)) : null;
+        $checkInDate = null;
+        $checkInTime = null;
+        if (!empty($shift->check_in_at)) {
+            $dtIn = Carbon::parse($shift->check_in_at);
+            $checkInDate = Date::dateTimeToExcel($dtIn->copy()->startOfDay());
+            $checkInTime = ($dtIn->hour * 3600 + $dtIn->minute * 60 + $dtIn->second) / 86400;
+        }
+
+        $checkOutDate = null;
+        $checkOutTime = null;
+        if (!empty($shift->check_out_at)) {
+            $dtOut = Carbon::parse($shift->check_out_at);
+            $checkOutDate = Date::dateTimeToExcel($dtOut->copy()->startOfDay());
+            $checkOutTime = ($dtOut->hour * 3600 + $dtOut->minute * 60 + $dtOut->second) / 86400;
+        }
 
         return [
             $no++,
             $shift->driver->full_name ?? ($shift->driver->name ?? '-'),
             $shift->vehicle ? '[' . $shift->vehicle->plate_number . '] ' . $shift->vehicle->name : '-',
-            $checkIn,
-            $checkOut,
+            $checkInDate,
+            $checkInTime,
+            $checkOutDate,
+            $checkOutTime,
             $totalDistance . ' KM',
             $hasTasks ? 'Ya' : 'Tidak',
             $hasExpenses ? 'Ya' : 'Tidak',
@@ -68,8 +85,10 @@ class MonitoringExport implements FromCollection, WithHeadings, WithMapping, Wit
     public function columnFormats(): array
     {
         return [
-            'D' => 'm/d/yyyy h:mm',
-            'E' => 'm/d/yyyy h:mm',
+            'D' => 'm/d/yyyy',
+            'E' => 'hh:mm',
+            'F' => 'm/d/yyyy',
+            'G' => 'hh:mm',
         ];
     }
 }
