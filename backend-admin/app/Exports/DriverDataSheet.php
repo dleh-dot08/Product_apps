@@ -41,8 +41,10 @@ class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMa
             'Odo Awal (KM)',
             'Odo Akhir (KM)',
             'Total Odo (KM)',
-            'Perjalanan Awal (Mulai)',
-            'Sampai (Selesai)',
+            'Tgl Mulai',
+            'Jam Mulai',
+            'Tgl Selesai',
+            'Jam Selesai',
             'Total Durasi',
             'Tugas Dikerjakan',
             'Status',
@@ -61,8 +63,21 @@ class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMa
         $odoEnd = (int) ($shift->end_odometer ?? 0);
         $totalOdo = ($odoEnd && $odoStart) ? max(0, $odoEnd - $odoStart) : 0;
 
-        $startTime = $shift->check_in_at ? Date::dateTimeToExcel(Carbon::parse($shift->check_in_at)) : null;
-        $endTime = $shift->check_out_at ? Date::dateTimeToExcel(Carbon::parse($shift->check_out_at)) : null;
+        $startDate = null;
+        $startTime = null;
+        if ($shift->check_in_at) {
+            $dtStart = Carbon::parse($shift->check_in_at);
+            $startDate = Date::dateTimeToExcel($dtStart->copy()->startOfDay());
+            $startTime = ($dtStart->hour * 3600 + $dtStart->minute * 60 + $dtStart->second) / 86400;
+        }
+
+        $endDate = null;
+        $endTime = null;
+        if ($shift->check_out_at) {
+            $dtEnd = Carbon::parse($shift->check_out_at);
+            $endDate = Date::dateTimeToExcel($dtEnd->copy()->startOfDay());
+            $endTime = ($dtEnd->hour * 3600 + $dtEnd->minute * 60 + $dtEnd->second) / 86400;
+        }
 
         $durasiStr = '-';
         if ($shift->check_in_at && $shift->check_out_at) {
@@ -87,7 +102,9 @@ class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMa
             $odoStart,
             $odoEnd,
             $totalOdo,
+            $startDate,
             $startTime,
+            $endDate,
             $endTime,
             $durasiStr,
             $tasksStr,
@@ -97,8 +114,8 @@ class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMa
 
     public function styles(Worksheet $sheet)
     {
-        $sheet->getStyle('A1:L1')->getFont()->setBold(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FFFFFF'));
-        $sheet->getStyle('A1:L1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+        $sheet->getStyle('A1:N1')->getFont()->setBold(true)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FFFFFF'));
+        $sheet->getStyle('A1:N1')->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
             ->getStartColor()->setARGB('FFEA580C');
 
         $sheet->getColumnDimension('A')->setWidth(6);
@@ -108,11 +125,13 @@ class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMa
         $sheet->getColumnDimension('E')->setWidth(15);
         $sheet->getColumnDimension('F')->setWidth(15);
         $sheet->getColumnDimension('G')->setWidth(15);
-        $sheet->getColumnDimension('H')->setWidth(22);
-        $sheet->getColumnDimension('I')->setWidth(22);
-        $sheet->getColumnDimension('J')->setWidth(18);
-        $sheet->getColumnDimension('K')->setWidth(35);
-        $sheet->getColumnDimension('L')->setWidth(12);
+        $sheet->getColumnDimension('H')->setWidth(15);
+        $sheet->getColumnDimension('I')->setWidth(12);
+        $sheet->getColumnDimension('J')->setWidth(15);
+        $sheet->getColumnDimension('K')->setWidth(12);
+        $sheet->getColumnDimension('L')->setWidth(18);
+        $sheet->getColumnDimension('M')->setWidth(35);
+        $sheet->getColumnDimension('N')->setWidth(12);
 
         return [];
     }
@@ -120,8 +139,10 @@ class DriverDataSheet implements FromCollection, WithTitle, WithHeadings, WithMa
     public function columnFormats(): array
     {
         return [
-            'H' => 'm/d/yyyy h:mm',
-            'I' => 'm/d/yyyy h:mm',
+            'H' => 'm/d/yyyy',
+            'I' => 'hh:mm',
+            'J' => 'm/d/yyyy',
+            'K' => 'hh:mm',
         ];
     }
 }

@@ -34,7 +34,8 @@ class ListTugasExport implements FromCollection, WithHeadings, WithMapping, With
             'Lokasi Awal',
             'Lokasi Tujuan',
             'Driver',
-            'Tanggal Penugasan',
+            'Tgl Penugasan',
+            'Jam Penugasan',
             'Status',
         ];
     }
@@ -65,7 +66,13 @@ class ListTugasExport implements FromCollection, WithHeadings, WithMapping, With
             }
         }
 
-        $assignedAt = !empty($task->assigned_at) ? Date::dateTimeToExcel(Carbon::parse($task->assigned_at)) : null;
+        $assignedDate = null;
+        $assignedTime = null;
+        if (!empty($task->assigned_at)) {
+            $dt = Carbon::parse($task->assigned_at);
+            $assignedDate = Date::dateTimeToExcel($dt->copy()->startOfDay());
+            $assignedTime = ($dt->hour * 3600 + $dt->minute * 60 + $dt->second) / 86400;
+        }
 
         return [
             $no++,
@@ -76,7 +83,8 @@ class ListTugasExport implements FromCollection, WithHeadings, WithMapping, With
             $task->pickup_name ?? '-',
             $task->task_type === 'pickup' ? ($task->destination_name ?? '-') : ($task->salesOrder->customer_name ?? '-'),
             $task->driver ? ($task->driver->full_name ?? $task->driver->name) : '-',
-            $assignedAt,
+            $assignedDate,
+            $assignedTime,
             str_replace('_', ' ', strtoupper($task->status)),
         ];
     }
@@ -84,7 +92,8 @@ class ListTugasExport implements FromCollection, WithHeadings, WithMapping, With
     public function columnFormats(): array
     {
         return [
-            'I' => 'm/d/yyyy h:mm',
+            'I' => 'm/d/yyyy',
+            'J' => 'hh:mm',
         ];
     }
 }

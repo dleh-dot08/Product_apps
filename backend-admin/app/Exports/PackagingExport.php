@@ -28,7 +28,8 @@ class PackagingExport implements FromCollection, WithHeadings, WithMapping, Shou
             'Customer',
             'Tipe Packaging',
             'Dimensi (P × L × T mm)',
-            'Packaging Date',
+            'Tgl Packaging',
+            'Jam Packaging',
             'Harga Total',
             'Status'
         ];
@@ -41,11 +42,15 @@ class PackagingExport implements FromCollection, WithHeadings, WithMapping, Shou
         $dimensi = ($job->panjang ?? 0) . ' × ' . ($job->lebar ?? 0) . ' × ' . ($job->tinggi ?? 0) . ' mm';
 
         $packagingDate = null;
+        $packagingTime = null;
         if ($job->created_at) {
             try {
-                $packagingDate = Date::dateTimeToExcel(Carbon::parse($job->created_at));
+                $dt = Carbon::parse($job->created_at);
+                $packagingDate = Date::dateTimeToExcel($dt->copy()->startOfDay());
+                $packagingTime = ($dt->hour * 3600 + $dt->minute * 60 + $dt->second) / 86400;
             } catch (\Exception $e) {
                 $packagingDate = null;
+                $packagingTime = null;
             }
         }
 
@@ -57,6 +62,7 @@ class PackagingExport implements FromCollection, WithHeadings, WithMapping, Shou
             $job->type_packaging ?? '-',
             $dimensi,
             $packagingDate,
+            $packagingTime,
             (float) ($job->harga_total ?? 0),
             strtoupper($job->status ?? 'DRAFT')
         ];
@@ -65,8 +71,9 @@ class PackagingExport implements FromCollection, WithHeadings, WithMapping, Shou
     public function columnFormats(): array
     {
         return [
-            'G' => 'm/d/yyyy h:mm',
-            'H' => '"Rp "#,##0',
+            'G' => 'm/d/yyyy',
+            'H' => 'hh:mm',
+            'I' => '"Rp "#,##0',
         ];
     }
 }

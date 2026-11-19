@@ -45,7 +45,14 @@ class RincianPOSheet implements FromCollection, WithHeadings, WithTitle, WithCol
 
         foreach ($trips as $trip) {
             $prorataDetails = $service->calculateProrata($trip);
-            $tripDate = $trip->date ? Date::dateTimeToExcel(Carbon::parse($trip->date)) : '-';
+            $tripDate = null;
+            if (!empty($trip->date)) {
+                try {
+                    $tripDate = Date::dateTimeToExcel(Carbon::parse($trip->date)->startOfDay());
+                } catch (\Exception $e) {
+                    $tripDate = null;
+                }
+            }
             foreach ($prorataDetails as $item) {
                 $data->push([
                     'trip_id' => $trip->id,

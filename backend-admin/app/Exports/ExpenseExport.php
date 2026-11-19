@@ -43,7 +43,15 @@ class ExpenseExport implements FromCollection, WithHeadings, WithMapping, WithCo
     {
         static $no = 1;
         $driverName = $expense->driver->full_name ?? $expense->driver->name ?? 'Belum ditentukan';
-        $shiftDate = $expense->shift->work_date ?? '-';
+        
+        $shiftDate = null;
+        if (!empty($expense->shift->work_date)) {
+            try {
+                $shiftDate = Date::dateTimeToExcel(Carbon::parse($expense->shift->work_date)->startOfDay());
+            } catch (\Exception $e) {
+                $shiftDate = null;
+            }
+        }
         
         $deliveryCode = '-';
         if ($expense->shift_id) {
@@ -57,8 +65,9 @@ class ExpenseExport implements FromCollection, WithHeadings, WithMapping, WithCo
         $jam = null;
         if ($expense->occurred_at) {
             try {
-                $tanggal = Date::dateTimeToExcel(Carbon::parse($expense->occurred_at));
-                $jam = Date::dateTimeToExcel(Carbon::parse($expense->occurred_at));
+                $dt = Carbon::parse($expense->occurred_at);
+                $tanggal = Date::dateTimeToExcel($dt->copy()->startOfDay());
+                $jam = ($dt->hour * 3600 + $dt->minute * 60 + $dt->second) / 86400;
             } catch (\Exception $e) {
                 $tanggal = null;
                 $jam = null;
@@ -82,7 +91,8 @@ class ExpenseExport implements FromCollection, WithHeadings, WithMapping, WithCo
     {
         return [
             'B' => 'm/d/yyyy',
-            'C' => 'h:mm',
+            'C' => 'hh:mm',
+            'E' => 'm/d/yyyy',
             'I' => '"Rp "#,##0',
         ];
     }

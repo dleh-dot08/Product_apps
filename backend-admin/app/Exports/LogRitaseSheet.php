@@ -61,12 +61,12 @@ class LogRitaseSheet implements FromCollection, WithHeadings, WithTitle, WithMap
 
     public function map($trip): array
     {
-        $tanggal = '-';
-        if ($trip->date) {
+        $tanggal = null;
+        if (!empty($trip->date)) {
             try {
-                $tanggal = Date::dateTimeToExcel(Carbon::parse($trip->date));
+                $tanggal = Date::dateTimeToExcel(Carbon::parse($trip->date)->startOfDay());
             } catch (\Exception $e) {
-                $tanggal = $trip->date->format('Y-m-d');
+                $tanggal = null;
             }
         }
 
