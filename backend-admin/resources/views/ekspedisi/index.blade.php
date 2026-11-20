@@ -861,7 +861,7 @@
                                             <th>Ref SO/PO</th>
                                             <th>Kode Barang</th>
                                             <th>Deskripsi Barang</th>
-                                            <th class="text-center" style="width: 80px;">Qty</th>
+                                            <th class="text-center" style="width: 110px;">Qty Kirim</th>
                                             <th class="text-center" style="width: 90px;">Satuan</th>
                                             <th class="text-center" style="width: 60px;">Aksi</th>
                                         </tr>
@@ -1054,18 +1054,73 @@
                             </div>
                         </div>
 
+                        <!-- SECTION 3: EDIT MULTI-ITEM BARANG MUATAN -->
                         <div class="exp-card">
-                            <div class="exp-card-title">
-                                <i class="fa-solid fa-boxes-packing"></i>
-                                <span>Muatan Barang & Biaya</span>
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <div class="exp-card-title mb-0">
+                                    <i class="fa-solid fa-boxes-packing"></i>
+                                    <span>Rincian Item Barang Muatan (<span id="editItemCountBadge">0 Item</span>)</span>
+                                </div>
+                                <span class="badge bg-light text-muted border font-monospace">Bisa Diedit / Parsial</span>
                             </div>
-                            <div class="row g-3">
+
+                            <!-- Input Bar Tambah Item Manual (Edit Modal) -->
+                            <div class="items-editor-card">
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-12 col-md-5">
+                                        <label class="exp-form-label">Deskripsi / Nama Barang</label>
+                                        <input type="text" id="manualEditItemDesc" class="form-control exp-form-control" placeholder="Ketik nama / spesifikasi barang...">
+                                    </div>
+                                    <div class="col-4 col-md-2">
+                                        <label class="exp-form-label">Qty</label>
+                                        <input type="number" min="1" id="manualEditItemQty" class="form-control exp-form-control text-center" value="1">
+                                    </div>
+                                    <div class="col-4 col-md-2">
+                                        <label class="exp-form-label">Satuan</label>
+                                        <input type="text" id="manualEditItemUnit" class="form-control exp-form-control text-center" placeholder="pcs / koli / box">
+                                    </div>
+                                    <div class="col-4 col-md-3">
+                                        <button type="button" class="btn btn-outline-primary w-100 fw-bold exp-form-control d-flex align-items-center justify-content-center gap-1.5" id="btnAddEditManualItem">
+                                            <i class="fa-solid fa-plus"></i>
+                                            <span>Tambah Item</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Table Items Container (Edit Modal) -->
+                            <div class="table-responsive" id="editItemsTableWrapper" style="display: none;">
+                                <table class="table table-bordered items-table align-middle mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th>Ref SO/PO</th>
+                                            <th>Kode Barang</th>
+                                            <th>Deskripsi Barang</th>
+                                            <th class="text-center" style="width: 110px;">Qty Kirim</th>
+                                            <th class="text-center" style="width: 90px;">Satuan</th>
+                                            <th class="text-center" style="width: 60px;">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="editItemsTableBody"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="empty-items-box" id="editEmptyItemsBox">
+                                <i class="fa-solid fa-box-open fs-2 mb-2 text-muted opacity-50"></i>
+                                <div class="fw-semibold text-secondary">Belum ada rincian item barang.</div>
+                                <div class="small text-muted">Tambahkan item barang manual di atas jika diperlukan.</div>
+                            </div>
+
+                            <div id="editItemsHiddenInputs"></div>
+
+                            <!-- Muatan Barang Ringkasan & Ongkir -->
+                            <div class="row g-3 mt-2 pt-3 border-top">
                                 <div class="col-12 col-md-6">
-                                    <label class="exp-form-label">Deskripsi Muatan <span class="text-danger">*</span></label>
+                                    <label class="exp-form-label">Deskripsi Muatan (Ringkasan) <span class="text-danger">*</span></label>
                                     <input type="text" name="item_description" id="edit_item_description" required class="form-control exp-form-control">
                                 </div>
                                 <div class="col-4 col-md-2">
-                                    <label class="exp-form-label">Jml Koli</label>
+                                    <label class="exp-form-label">Jml Koli <span class="text-danger">*</span></label>
                                     <input type="number" name="total_colli" id="edit_total_colli" min="1" required class="form-control exp-form-control text-center fw-bold">
                                 </div>
                                 <div class="col-4 col-md-2">
@@ -1465,13 +1520,21 @@
                 let totalQty = 0;
 
                 expeditionItems.forEach((item, index) => {
-                    totalQty += Number(item.quantity || 1);
+                    const itemQty = Number(item.quantity) || 1;
+                    totalQty += itemQty;
                     tbodyHtml += `
                         <tr>
                             <td class="font-monospace small">${item.ref_no || '-'}</td>
                             <td class="font-monospace small text-muted">${item.item_number || '-'}</td>
                             <td class="fw-semibold text-dark">${item.item_description}</td>
-                            <td class="text-center font-monospace fw-bold text-primary">${item.quantity}</td>
+                            <td class="text-center">
+                                <input type="number" min="1" step="1" 
+                                    class="form-control form-control-sm text-center fw-bold text-primary item-qty-input" 
+                                    style="min-height: 32px; border-radius: 6px;"
+                                    data-index="${index}" 
+                                    value="${itemQty}" 
+                                    title="Edit Qty Kirim Parsial">
+                            </td>
                             <td class="text-center small text-muted">${item.unit || 'pcs'}</td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1.5 remove-item-btn" data-index="${index}" title="Hapus Item">
@@ -1485,7 +1548,7 @@
                         <input type="hidden" name="items[${index}][ref_no]" value="${item.ref_no || ''}">
                         <input type="hidden" name="items[${index}][item_number]" value="${item.item_number || ''}">
                         <input type="hidden" name="items[${index}][item_description]" value="${item.item_description || ''}">
-                        <input type="hidden" name="items[${index}][quantity]" value="${item.quantity || 1}">
+                        <input type="hidden" name="items[${index}][quantity]" id="input_hidden_qty_${index}" value="${itemQty}">
                         <input type="hidden" name="items[${index}][unit]" value="${item.unit || ''}">
                         <input type="hidden" name="items[${index}][unit_price]" value="${item.unit_price || 0}">
                     `;
@@ -1493,6 +1556,44 @@
 
                 tbody.innerHTML = tbodyHtml;
                 hiddenInputs.innerHTML = inputsHtml;
+
+                // Sync Total Colli dengan total Qty jika user belum ubah manual
+                const totalColliInput = document.getElementById('create_total_colli');
+                if (totalColliInput && (!totalColliInput.dataset.manualEdited || totalColliInput.dataset.manualEdited === 'false')) {
+                    totalColliInput.value = Math.max(1, totalQty);
+                }
+
+                // Bind Qty inputs change
+                document.querySelectorAll('.item-qty-input').forEach(input => {
+                    input.addEventListener('change', function () {
+                        const idx = parseInt(this.getAttribute('data-index'));
+                        let val = parseInt(this.value);
+                        if (isNaN(val) || val < 1) val = 1;
+                        this.value = val;
+                        expeditionItems[idx].quantity = val;
+                        const hiddenQty = document.getElementById(`input_hidden_qty_${idx}`);
+                        if (hiddenQty) hiddenQty.value = val;
+
+                        // Recalculate total qty
+                        let newTotal = 0;
+                        expeditionItems.forEach(it => {
+                            newTotal += (Number(it.quantity) || 1);
+                        });
+                        if (totalColliInput && (!totalColliInput.dataset.manualEdited || totalColliInput.dataset.manualEdited === 'false')) {
+                            totalColliInput.value = Math.max(1, newTotal);
+                        }
+                    });
+
+                    input.addEventListener('input', function () {
+                        const idx = parseInt(this.getAttribute('data-index'));
+                        let val = parseInt(this.value);
+                        if (!isNaN(val) && val >= 1) {
+                            expeditionItems[idx].quantity = val;
+                            const hiddenQty = document.getElementById(`input_hidden_qty_${idx}`);
+                            if (hiddenQty) hiddenQty.value = val;
+                        }
+                    });
+                });
 
                 // Bind remove buttons
                 document.querySelectorAll('.remove-item-btn').forEach(btn => {
@@ -1654,6 +1755,155 @@
                 });
             }
 
+            // MULTI ITEMS LOGIC FOR EDIT MODAL
+            let editExpeditionItems = [];
+
+            function renderEditItems() {
+                const tbody = document.getElementById('editItemsTableBody');
+                const tableWrapper = document.getElementById('editItemsTableWrapper');
+                const emptyBox = document.getElementById('editEmptyItemsBox');
+                const hiddenInputs = document.getElementById('editItemsHiddenInputs');
+                const badge = document.getElementById('editItemCountBadge');
+
+                if (!tbody) return;
+
+                badge.textContent = `${editExpeditionItems.length} Item`;
+
+                if (editExpeditionItems.length === 0) {
+                    tableWrapper.style.display = 'none';
+                    emptyBox.style.display = 'block';
+                    hiddenInputs.innerHTML = '';
+                    tbody.innerHTML = '';
+                    return;
+                }
+
+                tableWrapper.style.display = 'block';
+                emptyBox.style.display = 'none';
+
+                let tbodyHtml = '';
+                let inputsHtml = '';
+                let totalQty = 0;
+
+                editExpeditionItems.forEach((item, index) => {
+                    const itemQty = Number(item.quantity) || 1;
+                    totalQty += itemQty;
+                    tbodyHtml += `
+                        <tr>
+                            <td class="font-monospace small">${item.ref_no || '-'}</td>
+                            <td class="font-monospace small text-muted">${item.item_number || '-'}</td>
+                            <td class="fw-semibold text-dark">${item.item_description}</td>
+                            <td class="text-center">
+                                <input type="number" min="1" step="1" 
+                                    class="form-control form-control-sm text-center fw-bold text-primary edit-item-qty-input" 
+                                    style="min-height: 32px; border-radius: 6px;"
+                                    data-index="${index}" 
+                                    value="${itemQty}" 
+                                    title="Edit Qty Kirim Parsial">
+                            </td>
+                            <td class="text-center small text-muted">${item.unit || 'pcs'}</td>
+                            <td class="text-center">
+                                <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1.5 remove-edit-item-btn" data-index="${index}" title="Hapus Item">
+                                    <i class="fa-solid fa-xmark"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+
+                    inputsHtml += `
+                        <input type="hidden" name="items[${index}][ref_no]" value="${item.ref_no || ''}">
+                        <input type="hidden" name="items[${index}][item_number]" value="${item.item_number || ''}">
+                        <input type="hidden" name="items[${index}][item_description]" value="${item.item_description || ''}">
+                        <input type="hidden" name="items[${index}][quantity]" id="input_hidden_edit_qty_${index}" value="${itemQty}">
+                        <input type="hidden" name="items[${index}][unit]" value="${item.unit || ''}">
+                        <input type="hidden" name="items[${index}][unit_price]" value="${item.unit_price || 0}">
+                    `;
+                });
+
+                tbody.innerHTML = tbodyHtml;
+                hiddenInputs.innerHTML = inputsHtml;
+
+                // Sync Total Colli dengan total Qty jika user belum ubah manual
+                const totalColliInput = document.getElementById('edit_total_colli');
+                if (totalColliInput && (!totalColliInput.dataset.manualEdited || totalColliInput.dataset.manualEdited === 'false')) {
+                    totalColliInput.value = Math.max(1, totalQty);
+                }
+
+                // Bind Qty inputs change
+                document.querySelectorAll('.edit-item-qty-input').forEach(input => {
+                    input.addEventListener('change', function () {
+                        const idx = parseInt(this.getAttribute('data-index'));
+                        let val = parseInt(this.value);
+                        if (isNaN(val) || val < 1) val = 1;
+                        this.value = val;
+                        editExpeditionItems[idx].quantity = val;
+                        const hiddenQty = document.getElementById(`input_hidden_edit_qty_${idx}`);
+                        if (hiddenQty) hiddenQty.value = val;
+
+                        let newTotal = 0;
+                        editExpeditionItems.forEach(it => {
+                            newTotal += (Number(it.quantity) || 1);
+                        });
+                        if (totalColliInput && (!totalColliInput.dataset.manualEdited || totalColliInput.dataset.manualEdited === 'false')) {
+                            totalColliInput.value = Math.max(1, newTotal);
+                        }
+                    });
+
+                    input.addEventListener('input', function () {
+                        const idx = parseInt(this.getAttribute('data-index'));
+                        let val = parseInt(this.value);
+                        if (!isNaN(val) && val >= 1) {
+                            editExpeditionItems[idx].quantity = val;
+                            const hiddenQty = document.getElementById(`input_hidden_edit_qty_${idx}`);
+                            if (hiddenQty) hiddenQty.value = val;
+                        }
+                    });
+                });
+
+                // Bind remove buttons
+                document.querySelectorAll('.remove-edit-item-btn').forEach(btn => {
+                    btn.addEventListener('click', function () {
+                        const idx = parseInt(this.getAttribute('data-index'));
+                        editExpeditionItems.splice(idx, 1);
+                        renderEditItems();
+                    });
+                });
+            }
+
+            // Tambah Item Manual di Modal Edit
+            const btnAddEditItem = document.getElementById('btnAddEditManualItem');
+            if (btnAddEditItem) {
+                btnAddEditItem.addEventListener('click', function () {
+                    const descInput = document.getElementById('manualEditItemDesc');
+                    const qtyInput = document.getElementById('manualEditItemQty');
+                    const unitInput = document.getElementById('manualEditItemUnit');
+                    const refInputVal = document.getElementById('edit_reference_number').value.trim();
+
+                    const desc = descInput ? descInput.value.trim() : '';
+                    const qty = parseInt(qtyInput ? qtyInput.value : 1) || 1;
+                    const unit = unitInput ? (unitInput.value.trim() || 'pcs') : 'pcs';
+
+                    if (!desc) {
+                        alert('Silakan isi nama / deskripsi barang terlebih dahulu.');
+                        return;
+                    }
+
+                    editExpeditionItems.push({
+                        ref_no: refInputVal,
+                        item_number: '',
+                        item_description: desc,
+                        quantity: qty,
+                        unit: unit,
+                        unit_price: 0
+                    });
+
+                    if (descInput) descInput.value = '';
+                    if (qtyInput) qtyInput.value = 1;
+                    if (unitInput) unitInput.value = '';
+
+                    renderEditItems();
+                });
+            }
+
             editButtons.forEach(btn => {
                 btn.addEventListener('click', function () {
                     const data = JSON.parse(this.getAttribute('data-expedition'));
@@ -1677,12 +1927,29 @@
                     document.getElementById('edit_receiver_pic_phone').value = data.receiver_pic_phone || '';
                     document.getElementById('edit_item_description').value = data.item_description || '';
                     document.getElementById('edit_total_colli').value = data.total_colli || 1;
+                    document.getElementById('edit_total_colli').dataset.manualEdited = 'false';
                     document.getElementById('edit_weight_kg').value = data.weight_kg || '';
                     document.getElementById('edit_cost_amount').value = data.cost_amount || 0;
                     document.getElementById('edit_shipping_date').value = parseDateForInput(data.shipping_date);
                     document.getElementById('edit_estimated_arrival_date').value = parseDateForInput(data.estimated_arrival_date);
                     document.getElementById('edit_status').value = data.status || 'on_delivery';
                     document.getElementById('edit_notes').value = data.notes || '';
+
+                    // Load existing items if available
+                    editExpeditionItems = [];
+                    if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+                        data.items.forEach(it => {
+                            editExpeditionItems.push({
+                                ref_no: it.ref_no || data.reference_number || '',
+                                item_number: it.item_number || '',
+                                item_description: it.item_description || '',
+                                quantity: Number(it.quantity) || 1,
+                                unit: it.unit || 'pcs',
+                                unit_price: Number(it.unit_price) || 0
+                            });
+                        });
+                    }
+                    renderEditItems();
 
                     const actualArrivalContainer = document.getElementById('container_edit_actual_arrival');
                     if (actualArrivalContainer) {
