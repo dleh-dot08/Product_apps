@@ -46,4 +46,11 @@ return [
         'timeout' => env('AKURASI_API_TIMEOUT', 30),
     ],
 
+    'nats' => [
+        'url' => env('NATS_URL'),
+        'production_subject' => env('NATS_PRODUCTION_SUBJECT'),
+        'connect_timeout' => (float) env('NATS_CONNECT_TIMEOUT', 5),
+        'timeout' => (float) env('NATS_TIMEOUT', 10),
+    ],
+
 ];

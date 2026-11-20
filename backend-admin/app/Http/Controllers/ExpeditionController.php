@@ -112,9 +112,10 @@ class ExpeditionController extends Controller
             $validated['proof_photo'] = $request->file('proof_photo')->store('expeditions/proofs', 'public');
         }
 
-        // Auto Generate Number EXP-YYYYMMDD-XXX
+        // Auto Generate Number EXP-YYYYMMDD-XXX (include trashed to prevent unique violation)
         $prefix = 'EXP-' . date('Ymd') . '-';
-        $latest = Expedition::where('expedition_number', 'like', $prefix . '%')
+        $latest = Expedition::withTrashed()
+            ->where('expedition_number', 'like', $prefix . '%')
             ->orderBy('expedition_number', 'desc')
             ->first();
         
@@ -123,6 +124,12 @@ class ExpeditionController extends Controller
             $parts = explode('-', $latest->expedition_number);
             $seq = intval(end($parts)) + 1;
         }
+
+        // Loop safety check to guarantee unused number
+        while (Expedition::withTrashed()->where('expedition_number', $prefix . str_pad($seq, 3, '0', STR_PAD_LEFT))->exists()) {
+            $seq++;
+        }
+
         $validated['expedition_number'] = $prefix . str_pad($seq, 3, '0', STR_PAD_LEFT);
         $validated['created_by'] = auth()->id();
 

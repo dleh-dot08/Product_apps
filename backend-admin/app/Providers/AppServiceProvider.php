@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Models\DeliveryAssignment;
+use App\Observers\DeliveryAssignmentObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\URL;
@@ -22,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        DeliveryAssignment::observe(DeliveryAssignmentObserver::class);
         Paginator::useBootstrapFive();
 
         // Force HTTPS on production to prevent Mixed Content errors
