@@ -271,6 +271,28 @@ Route::post('/internal/ota/publish', [
     'publish'
 ])->name('ota.publish');
 
+Route::middleware('api.router.key')->prefix('/internal/delivery-orders')->group(function () {
+    Route::post('/{deliveryOrder}/publish', [
+        \App\Http\Controllers\Internal\DeliveryOrderNatsController::class,
+        'publish',
+    ])->name('internal.delivery-orders.publish');
+
+    Route::post('/{deliveryOrder}/recalculate', [
+        \App\Http\Controllers\Internal\DeliveryOrderNatsController::class,
+        'recalculate',
+    ])->name('internal.delivery-orders.recalculate');
+
+    Route::get('/{deliveryOrder}/publish-status', [
+        \App\Http\Controllers\Internal\DeliveryOrderNatsController::class,
+        'status',
+    ])->name('internal.delivery-orders.publish-status');
+});
+
+Route::middleware('api.router.key')->post('/internal/nats-events/{event}/replay', [
+    \App\Http\Controllers\Internal\DeliveryOrderNatsController::class,
+    'replay',
+])->name('internal.nats-events.replay');
+
 
 Route::get('/app-version', function () {
 
