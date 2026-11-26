@@ -30,6 +30,58 @@ class LogisticsReportService
     /**
      * Parse date range filters
      */
+    private function fetchAndCacheAkurasiDoc(string $cleanRef): ?\App\Models\AkurasiDocumentCache
+    {
+        if ($cleanRef === '' || $cleanRef === '-') {
+            return null;
+        }
+
+        $docType = 'SO';
+        $customerOrVendor = null;
+        $amount = 0.0;
+        $found = false;
+
+        try {
+            $so = $this->akurasiService->detailSo($cleanRef);
+            if (!empty($so)) {
+                $found = true;
+                $customerOrVendor = $so['pelanggan'] ?? null;
+                $amount = (float) ($so['total_amount'] ?? 0);
+                if ($amount <= 0 && !empty($so['items'])) {
+                    foreach ($so['items'] as $it) {
+                        $amount += (float) ($it['amount'] ?? $it['subtotal'] ?? (($it['qty'] ?? 1) * ($it['unit_price'] ?? $it['harga_satuan'] ?? 0)));
+                    }
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        if (!$found) {
+            try {
+                $po = $this->akurasiService->detailPo($cleanRef);
+                if (!empty($po)) {
+                    $found = true;
+                    $docType = 'PO';
+                    $customerOrVendor = $po['pemasok'] ?? null;
+                    $amount = (float) ($po['total_amount'] ?? 0);
+                    if ($amount <= 0 && !empty($po['items'])) {
+                        foreach ($po['items'] as $it) {
+                            $amount += (float) ($it['amount'] ?? $it['subtotal'] ?? (($it['qty'] ?? 1) * ($it['harga_satuan'] ?? $it['unit_price'] ?? 0)));
+                        }
+                    }
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        return \App\Models\AkurasiDocumentCache::updateOrCreate(
+            ['doc_type' => $docType, 'doc_number' => $cleanRef],
+            [
+                'customer_or_vendor' => $customerOrVendor,
+                'total_amount' => $amount,
+                'last_synced_at' => now(),
+            ]
+        );
+    }
+
     public function parseDateRange($request): array
     {
         $startDate = $request->filled('start_date') 
@@ -339,53 +391,28 @@ class LogisticsReportService
                 }
             } catch (\Throwable $e) {}
 
-            // 4. Fallback realtime via AkurasiService jika belum ada di database lokal
-            foreach ($soPoData as $refKey => &$valRef) {
-                if ($valRef['item_value'] <= 0) {
+            // 4. Cek tabel cache lokal akurasi_document_caches; jika belum ada di cache, fetch sekali dari API lalu simpan
+            try {
+                $cachedDocs = \App\Models\AkurasiDocumentCache::whereIn('doc_number', array_keys($soPoData))->get()->keyBy('doc_number');
+                foreach ($soPoData as $refKey => &$valRef) {
                     $cleanRef = strtoupper(trim($refKey));
-                    try {
-                        // Coba Sales Order terlebih dahulu (karena nomor AI-PP di sistem ini bisa merupakan Sales Order)
-                        $soRes = null;
-                        try {
-                            $soRes = $this->akurasiService->detailSo($cleanRef);
-                        } catch (\Throwable $e) {}
+                    $cd = $cachedDocs->get($cleanRef);
 
-                        if (!empty($soRes)) {
-                            $v = (float)($soRes['total_amount'] ?? 0);
-                            if ($v <= 0 && !empty($soRes['items'])) {
-                                foreach ($soRes['items'] as $it) {
-                                    $v += (float)($it['amount'] ?? $it['subtotal'] ?? (($it['qty'] ?? 1) * ($it['unit_price'] ?? $it['harga_satuan'] ?? 0)));
-                                }
-                            }
-                            if ($v > 0) $valRef['item_value'] = $v;
-                            if ($valRef['customer'] === '-' && !empty($soRes['pelanggan'])) {
-                                $valRef['customer'] = $soRes['pelanggan'];
-                            }
+                    if (!$cd && $valRef['item_value'] <= 0) {
+                        $cd = $this->fetchAndCacheAkurasiDoc($cleanRef);
+                    }
+
+                    if ($cd) {
+                        if ($valRef['item_value'] <= 0 && (float) $cd->total_amount > 0) {
+                            $valRef['item_value'] = (float) $cd->total_amount;
                         }
-
-                        // Jika SO tidak dapat atau nilainya 0, coba sebagai Purchase Order
-                        if ($valRef['item_value'] <= 0) {
-                            $poRes = null;
-                            try {
-                                $poRes = $this->akurasiService->detailPo($cleanRef);
-                            } catch (\Throwable $e) {}
-
-                            if (!empty($poRes)) {
-                                $v = (float)($poRes['total_amount'] ?? 0);
-                                if ($v <= 0 && !empty($poRes['items'])) {
-                                    foreach ($poRes['items'] as $it) {
-                                        $v += (float)($it['amount'] ?? $it['subtotal'] ?? (($it['qty'] ?? 1) * ($it['harga_satuan'] ?? $it['unit_price'] ?? 0)));
-                                    }
-                                }
-                                if ($v > 0) $valRef['item_value'] = $v;
-                                if ($valRef['customer'] === '-' && !empty($poRes['pemasok'])) {
-                                    $valRef['customer'] = $poRes['pemasok'];
-                                }
-                            }
+                        if ($valRef['customer'] === '-' && !empty($cd->customer_or_vendor)) {
+                            $valRef['customer'] = $cd->customer_or_vendor;
                         }
-                    } catch (\Throwable $e) {}
+                    }
                 }
-            }
+                unset($valRef);
+            } catch (\Throwable $e) {}
         }
 
         // 3. Filter collection
@@ -585,47 +612,16 @@ class LogisticsReportService
                 }
             } catch (\Throwable $e) {}
 
-            // Jika masih belum ada di tabel lokal, panggil AkurasiService secara realtime
-            foreach ($refList as $singleRef) {
-                $cleanRef = strtoupper(trim($singleRef));
-                if (empty($refValues[$cleanRef])) {
-                    try {
-                        // Coba Sales Order terlebih dahulu (karena nomor AI-PP di sistem ini bisa merupakan Sales Order)
-                        $soDetail = null;
-                        try {
-                            $soDetail = $this->akurasiService->detailSo($cleanRef);
-                        } catch (\Throwable $e) {}
-
-                        if (!empty($soDetail)) {
-                            $soVal = (float)($soDetail['total_amount'] ?? 0);
-                            if ($soVal <= 0 && !empty($soDetail['items'])) {
-                                foreach ($soDetail['items'] as $it) {
-                                    $soVal += (float)($it['amount'] ?? $it['subtotal'] ?? (($it['qty'] ?? 1) * ($it['unit_price'] ?? $it['harga_satuan'] ?? 0)));
-                                }
-                            }
-                            if ($soVal > 0) $refValues[$cleanRef] = $soVal;
-                        }
-
-                        // Jika SO tidak dapat atau nilainya 0, coba sebagai Purchase Order
-                        if (empty($refValues[$cleanRef])) {
-                            $poDetail = null;
-                            try {
-                                $poDetail = $this->akurasiService->detailPo($cleanRef);
-                            } catch (\Throwable $e) {}
-
-                            if (!empty($poDetail)) {
-                                $poVal = (float)($poDetail['total_amount'] ?? 0);
-                                if ($poVal <= 0 && !empty($poDetail['items'])) {
-                                    foreach ($poDetail['items'] as $it) {
-                                        $poVal += (float)($it['amount'] ?? $it['subtotal'] ?? (($it['qty'] ?? 1) * ($it['harga_satuan'] ?? $it['unit_price'] ?? 0)));
-                                    }
-                                }
-                                if ($poVal > 0) $refValues[$cleanRef] = $poVal;
-                            }
-                        }
-                    } catch (\Throwable $e) {}
+            // Fallback dari tabel cache lokal akurasi_document_caches (tanpa HTTP realtime)
+            try {
+                $cachedDocs = \App\Models\AkurasiDocumentCache::whereIn('doc_number', array_map(fn($r) => strtoupper(trim($r)), $refList))->get();
+                foreach ($cachedDocs as $cd) {
+                    $cleanRef = strtoupper(trim($cd->doc_number));
+                    if (empty($refValues[$cleanRef]) && (float) $cd->total_amount > 0) {
+                        $refValues[$cleanRef] = (float) $cd->total_amount;
+                    }
                 }
-            }
+            } catch (\Throwable $e) {}
         }
 
         $rows = $items->map(function($exp) use ($refValues) {
