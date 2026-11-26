@@ -265,27 +265,27 @@
 
         <!-- FILTER TOOLBAR -->
         <div class="card border-0 shadow-sm rounded-4 mb-4 overflow-hidden">
-            <div class="card-body p-3 p-lg-4">
+            <div class="card-header bg-white border-bottom px-3 px-lg-4 py-3">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                        <span class="text-secondary small fw-bold me-1">
+                            <i class="fa-solid fa-calendar-week text-orange me-1"></i> Periode Cepat:
+                        </span>
+                        <a href="javascript:void(0)" onclick="setPreset('today')" class="preset-pill {{ $preset == 'today' ? 'active' : '' }}">Hari Ini</a>
+                        <a href="javascript:void(0)" onclick="setPreset('this_week')" class="preset-pill {{ $preset == 'this_week' ? 'active' : '' }}">Minggu Ini</a>
+                        <a href="javascript:void(0)" onclick="setPreset('this_month')" class="preset-pill {{ $preset == 'this_month' ? 'active' : '' }}">Bulan Ini</a>
+                        <a href="javascript:void(0)" onclick="setPreset('last_month')" class="preset-pill {{ $preset == 'last_month' ? 'active' : '' }}">Bulan Lalu</a>
+                        <a href="javascript:void(0)" onclick="setPreset('all')" class="preset-pill {{ $preset == 'all' ? 'active' : '' }}">Semua Riwayat</a>
+                        <a href="javascript:void(0)" onclick="setPreset('custom')" class="preset-pill {{ $preset == 'custom' ? 'active' : '' }}">Kustom</a>
+                    </div>
+                    <div class="d-none d-md-flex align-items-center text-muted small bg-light rounded-pill px-3 py-1 border">
+                        <i class="fa-solid fa-circle-info text-info me-1"></i> Pilih filter &amp; klik terapkan
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-3 p-lg-4" style="background-color: #fcfcfd;">
                 <form action="{{ route('reports.driver') }}" method="GET" id="driverReportFilterForm">
                     <input type="hidden" name="preset" id="presetInput" value="{{ $preset }}">
-
-                    <!-- Presets Header -->
-                    <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 pb-3 mb-3 border-bottom">
-                        <div class="d-flex flex-wrap align-items-center gap-2">
-                            <span class="text-secondary small fw-bold me-1">
-                                <i class="fa-solid fa-calendar-week text-orange me-1"></i> Periode Cepat:
-                            </span>
-                            <a href="javascript:void(0)" onclick="setPreset('today')" class="preset-pill {{ $preset == 'today' ? 'active' : '' }}">Hari Ini</a>
-                            <a href="javascript:void(0)" onclick="setPreset('this_week')" class="preset-pill {{ $preset == 'this_week' ? 'active' : '' }}">Minggu Ini</a>
-                            <a href="javascript:void(0)" onclick="setPreset('this_month')" class="preset-pill {{ $preset == 'this_month' ? 'active' : '' }}">Bulan Ini</a>
-                            <a href="javascript:void(0)" onclick="setPreset('last_month')" class="preset-pill {{ $preset == 'last_month' ? 'active' : '' }}">Bulan Lalu</a>
-                            <a href="javascript:void(0)" onclick="setPreset('all')" class="preset-pill {{ $preset == 'all' ? 'active' : '' }}">Semua Riwayat</a>
-                            <a href="javascript:void(0)" onclick="setPreset('custom')" class="preset-pill {{ $preset == 'custom' ? 'active' : '' }}">Kustom</a>
-                        </div>
-                        <div class="d-none d-md-flex align-items-center text-muted small">
-                            <i class="fa-solid fa-circle-info text-info me-1"></i> Pilih filter & klik terapkan
-                        </div>
-                    </div>
 
                     <div class="row g-3">
                         <!-- Date Filters -->
@@ -293,14 +293,14 @@
                             <label class="form-label text-secondary small fw-bold mb-1">
                                 <i class="fa-regular fa-calendar text-primary me-1"></i> Tanggal Mulai
                             </label>
-                            <input type="date" name="start_date" id="start_date" class="form-control form-control-sm rounded-3 py-2" value="{{ $startDate->toDateString() }}">
+                            <input type="date" name="start_date" id="start_date" class="form-control form-control-sm rounded-3 bg-white shadow-xs" style="height: 38px;" value="{{ $startDate->toDateString() }}">
                         </div>
 
                         <div class="col-sm-6 col-lg-3">
                             <label class="form-label text-secondary small fw-bold mb-1">
                                 <i class="fa-regular fa-calendar-check text-success me-1"></i> Tanggal Akhir
                             </label>
-                            <input type="date" name="end_date" id="end_date" class="form-control form-control-sm rounded-3 py-2" value="{{ $endDate->toDateString() }}">
+                            <input type="date" name="end_date" id="end_date" class="form-control form-control-sm rounded-3 bg-white shadow-xs" style="height: 38px;" value="{{ $endDate->toDateString() }}">
                         </div>
 
                         <!-- Status Filter -->
@@ -308,7 +308,7 @@
                             <label class="form-label text-secondary small fw-bold mb-1">
                                 <i class="fa-solid fa-circle-check text-info me-1"></i> Status Perjalanan
                             </label>
-                            <select name="status" id="status" class="form-select form-select-sm rounded-3 py-2">
+                            <select name="status" id="status" class="form-select form-select-sm rounded-3 bg-white shadow-xs" style="height: 38px;">
                                 <option value="">Semua Status (Selesai & Aktif)</option>
                                 <option value="completed" {{ ($status ?? '') === 'completed' ? 'selected' : '' }}>Selesai Saja (Check Out)</option>
                                 <option value="active" {{ ($status ?? '') === 'active' ? 'selected' : '' }}>Aktif Saja (Dalam Perjalanan)</option>
@@ -317,68 +317,72 @@
 
                         <!-- Action Buttons -->
                         <div class="col-sm-6 col-lg-3 d-flex gap-2 align-items-end">
-                            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold rounded-3 shadow-xs d-flex align-items-center justify-content-center gap-2" style="background: var(--report-orange-gradient); border: none; height: 38px;">
+                            <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold rounded-3 shadow-sm d-flex align-items-center justify-content-center gap-2" style="background: var(--report-orange-gradient); border: none; height: 38px;">
                                 <i class="fa-solid fa-filter"></i> Terapkan Filter
                             </button>
-                            <a href="{{ route('reports.driver') }}" class="btn btn-sm btn-light border rounded-3 px-3 d-flex align-items-center justify-content-center" title="Reset Filter" style="height: 38px;">
+                            <a href="{{ route('reports.driver') }}" class="btn btn-sm btn-white bg-white border rounded-3 px-3 d-flex align-items-center justify-content-center shadow-xs" title="Reset Filter" style="height: 38px;">
                                 <i class="fa-solid fa-rotate-right text-secondary"></i>
                             </a>
                         </div>
 
                         <!-- Multi-Select Driver Filter -->
                         <div class="col-lg-6">
-                            <div class="d-flex align-items-center justify-content-between mb-1">
-                                <label class="form-label text-secondary small fw-bold mb-0 d-flex align-items-center gap-1">
-                                    <i class="fa-solid fa-user-tie text-primary"></i> Filter Driver
-                                    <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary fw-semibold px-2" id="driver_count_badge" style="font-size: 0.7rem;">
-                                        {{ count((array)($driverIds ?? [])) > 0 ? count((array)$driverIds) . ' Dipilih' : 'Semua Driver' }}
-                                    </span>
-                                </label>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-primary me-2" onclick="selectAll('driver_id')" style="font-size: 0.75rem;">
-                                        <i class="fa-solid fa-check-double me-1"></i>Pilih Semua
-                                    </button>
-                                    <span class="text-muted small">|</span>
-                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-danger ms-2" onclick="clearAll('driver_id')" style="font-size: 0.75rem;">
-                                        <i class="fa-solid fa-xmark me-1"></i>Kosongkan
-                                    </button>
+                            <div class="bg-white rounded-3 border p-3 shadow-xs">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <label class="form-label text-secondary small fw-bold mb-0 d-flex align-items-center gap-2">
+                                        <i class="fa-solid fa-user-tie text-primary"></i> Filter Driver
+                                        <span class="badge rounded-pill bg-primary bg-opacity-10 text-primary fw-semibold px-2" id="driver_count_badge" style="font-size: 0.7rem;">
+                                            {{ count((array)($driverIds ?? [])) > 0 ? count((array)$driverIds) . ' Dipilih' : 'Semua Driver' }}
+                                        </span>
+                                    </label>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-primary me-2" onclick="selectAll('driver_id')" style="font-size: 0.75rem;">
+                                            <i class="fa-solid fa-check-double me-1"></i>Pilih Semua
+                                        </button>
+                                        <span class="text-muted small">|</span>
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-danger ms-2" onclick="clearAll('driver_id')" style="font-size: 0.75rem;">
+                                            <i class="fa-solid fa-xmark me-1"></i>Kosongkan
+                                        </button>
+                                    </div>
                                 </div>
+                                <select name="driver_id[]" id="driver_id" class="form-select select2-filter" multiple="multiple" data-placeholder="Cari driver (kosongkan = semua driver)...">
+                                    @foreach($drivers as $d)
+                                        <option value="{{ $d->id }}" {{ in_array($d->id, (array)($driverIds ?? [])) ? 'selected' : '' }}>
+                                            {{ $d->full_name ?? $d->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
-                            <select name="driver_id[]" id="driver_id" class="form-select select2-filter" multiple="multiple" data-placeholder="Cari driver (kosongkan = semua driver)...">
-                                @foreach($drivers as $d)
-                                    <option value="{{ $d->id }}" {{ in_array($d->id, (array)($driverIds ?? [])) ? 'selected' : '' }}>
-                                        {{ $d->full_name ?? $d->name }}
-                                    </option>
-                                @endforeach
-                            </select>
                         </div>
 
                         <!-- Multi-Select Vehicle Filter -->
                         <div class="col-lg-6">
-                            <div class="d-flex align-items-center justify-content-between mb-1">
-                                <label class="form-label text-secondary small fw-bold mb-0 d-flex align-items-center gap-1">
-                                    <i class="fa-solid fa-truck text-warning"></i> Filter Kendaraan / Armada
-                                    <span class="badge rounded-pill bg-warning bg-opacity-15 text-warning-emphasis fw-semibold px-2" id="vehicle_count_badge" style="font-size: 0.7rem;">
-                                        {{ count((array)($vehicleIds ?? [])) > 0 ? count((array)$vehicleIds) . ' Dipilih' : 'Semua Armada' }}
-                                    </span>
-                                </label>
-                                <div class="btn-group btn-group-sm" role="group">
-                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-primary me-2" onclick="selectAll('vehicle_id')" style="font-size: 0.75rem;">
-                                        <i class="fa-solid fa-check-double me-1"></i>Pilih Semua
-                                    </button>
-                                    <span class="text-muted small">|</span>
-                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-danger ms-2" onclick="clearAll('vehicle_id')" style="font-size: 0.75rem;">
-                                        <i class="fa-solid fa-xmark me-1"></i>Kosongkan
-                                    </button>
+                            <div class="bg-white rounded-3 border p-3 shadow-xs">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <label class="form-label text-secondary small fw-bold mb-0 d-flex align-items-center gap-2">
+                                        <i class="fa-solid fa-truck text-warning"></i> Filter Kendaraan / Armada
+                                        <span class="badge rounded-pill bg-warning bg-opacity-15 text-warning-emphasis fw-semibold px-2" id="vehicle_count_badge" style="font-size: 0.7rem;">
+                                            {{ count((array)($vehicleIds ?? [])) > 0 ? count((array)$vehicleIds) . ' Dipilih' : 'Semua Armada' }}
+                                        </span>
+                                    </label>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-primary me-2" onclick="selectAll('vehicle_id')" style="font-size: 0.75rem;">
+                                            <i class="fa-solid fa-check-double me-1"></i>Pilih Semua
+                                        </button>
+                                        <span class="text-muted small">|</span>
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none fw-semibold text-danger ms-2" onclick="clearAll('vehicle_id')" style="font-size: 0.75rem;">
+                                            <i class="fa-solid fa-xmark me-1"></i>Kosongkan
+                                        </button>
+                                    </div>
                                 </div>
+                                <select name="vehicle_id[]" id="vehicle_id" class="form-select select2-filter" multiple="multiple" data-placeholder="Cari plat nomor / tipe armada (kosongkan = semua)...">
+                                    @foreach($allVehicles as $v)
+                                        <option value="{{ $v->id }}" {{ in_array($v->id, (array)($vehicleIds ?? [])) ? 'selected' : '' }}>
+                                            {{ $v->plate_number }} ({{ $v->name }})
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
-                            <select name="vehicle_id[]" id="vehicle_id" class="form-select select2-filter" multiple="multiple" data-placeholder="Cari plat nomor / tipe armada (kosongkan = semua)...">
-                                @foreach($allVehicles as $v)
-                                    <option value="{{ $v->id }}" {{ in_array($v->id, (array)($vehicleIds ?? [])) ? 'selected' : '' }}>
-                                        {{ $v->plate_number }} ({{ $v->name }})
-                                    </option>
-                                @endforeach
-                            </select>
                         </div>
                     </div>
                 </form>
@@ -473,7 +477,7 @@
                         <div class="d-flex align-items-center justify-content-between">
                             <div>
                                 <h6 class="fw-bold mb-1"><i class="fa-solid fa-chart-pie text-orange me-2"></i>Persentase Pemakaian Kendaraan</h6>
-                                <p class="text-muted small mb-0">Rasio armada yang beroperasi vs standby pada periode ini.</p>
+                                <p class="text-muted small mb-0">Rasio armada yang beroperasi, service, vs standby pada periode ini.</p>
                             </div>
                             <span class="badge bg-light text-dark border">{{ $totalVehiclesCount }} Total Mobil</span>
                         </div>
@@ -483,11 +487,15 @@
                             <canvas id="chartVehiclePercentage"></canvas>
                         </div>
                         <div class="row w-100 mt-3 text-center border-top pt-3">
-                            <div class="col-6 border-end">
+                            <div class="col-4 border-end">
                                 <span class="text-success fw-bold fs-5">{{ $pctOperasional }}%</span>
                                 <div class="text-muted small">Operasional ({{ $operasionalVehiclesCount }} Unit)</div>
                             </div>
-                            <div class="col-6">
+                            <div class="col-4 border-end">
+                                <span class="text-warning fw-bold fs-5">{{ $pctService ?? 0 }}%</span>
+                                <div class="text-muted small">Service ({{ $serviceVehiclesCount ?? 0 }} Unit)</div>
+                            </div>
+                            <div class="col-4">
                                 <span class="text-secondary fw-bold fs-5">{{ $pctStandby }}%</span>
                                 <div class="text-muted small">Standby ({{ $standbyVehiclesCount }} Unit)</div>
                             </div>
@@ -569,20 +577,30 @@
 
         <!-- TABEL LIST SELURUH TUGAS & PERJALANAN DRIVER -->
         <div class="card border-0 shadow-sm rounded-4 mb-4">
-            <div class="card-header bg-transparent border-0 d-flex flex-wrap justify-content-between align-items-center p-4">
-                <div>
-                    <h5 class="fw-bold mb-1"><i class="fa-solid fa-table-list text-orange me-2"></i>Daftar Riwayat Perjalanan & Tugas Driver</h5>
-                    <p class="text-muted small mb-0">Rekapitulasi lengkap driver, mobil, odometer awal/akhir, total KM, jam berangkat/tiba, durasi, dan tugas terkait.</p>
+            <div class="card-header bg-white border-bottom d-flex flex-wrap justify-content-between align-items-center gap-3 p-4">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="bg-warning bg-opacity-10 text-orange rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                        <i class="fa-solid fa-table-list fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-dark">Daftar Riwayat Perjalanan &amp; Tugas Driver</h5>
+                        <p class="text-muted small mb-0 mt-1">Rekapitulasi lengkap driver, mobil, odometer awal/akhir, total KM, jam berangkat/tiba, durasi, dan tugas terkait.</p>
+                    </div>
                 </div>
-                <div class="d-flex align-items-center gap-2 mt-2 mt-md-0">
-                    <input type="text" id="tableSearchInput" onkeyup="filterTable()" placeholder="Cari driver / plat / tugas..." class="form-control form-control-sm" style="width: 220px;">
-                    <button type="button" onclick="exportDriverReportWithCharts()" class="btn btn-sm btn-success fw-bold rounded-3 text-nowrap">
-                        <i class="fa-solid fa-file-excel me-1"></i> Download Excel + Grafik
+                <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+                    <div class="input-group input-group-sm shadow-xs" style="width: 250px;">
+                        <span class="input-group-text bg-light border-end-0 rounded-start-3 text-muted">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                        </span>
+                        <input type="text" id="tableSearchInput" onkeyup="filterTable()" placeholder="Cari driver / plat / tugas..." class="form-control border-start-0 rounded-end-3 bg-light" style="height: 36px;">
+                    </div>
+                    <button type="button" onclick="exportDriverReportWithCharts()" class="btn btn-sm btn-success fw-bold rounded-3 text-nowrap px-3 shadow-xs d-flex align-items-center gap-1" style="height: 36px;">
+                        <i class="fa-solid fa-file-excel"></i> Download Excel + Grafik
                     </button>
                 </div>
             </div>
 
-            <div class="card-body p-0">
+            <div class="card-body px-3 px-md-4 pb-4 pt-2">
                 <div class="table-responsive" style="min-height: 250px;">
                     <table class="table table-hover align-middle mb-0" id="driverTasksTable">
                         <thead class="table-light text-uppercase small" style="font-size: 0.72rem; letter-spacing: 0.5px;">
@@ -603,7 +621,7 @@
                         </thead>
                         <tbody>
                             @forelse($tableData as $index => $row)
-                            <tr>
+                            <tr class="{{ !empty($row['odo_warning']) ? 'table-warning' : '' }}" @if(!empty($row['odo_warning_msg'])) title="{{ $row['odo_warning_msg'] }}" @endif>
                                 <td class="px-4 py-3 text-muted">{{ $index + 1 }}</td>
                                 <td class="py-3 fw-bold text-dark">
                                     <div class="d-flex align-items-center gap-2">
@@ -621,6 +639,9 @@
                                 </td>
                                 <td class="py-3 text-end font-monospace">
                                     {{ number_format($row['odo_start'], 0, ',', '.') }}
+                                    @if(!empty($row['odo_warning']))
+                                        <i class="fa-solid fa-triangle-exclamation text-warning ms-1" title="{{ $row['odo_warning_msg'] }}"></i>
+                                    @endif
                                 </td>
                                 <td class="py-3 text-end font-monospace">
                                     {{ number_format($row['odo_end'], 0, ',', '.') }}
@@ -651,15 +672,18 @@
                                         {{ $row['durasi'] }}
                                     </span>
                                 </td>
-                                <td class="py-3" style="max-width: 250px;">
+                                <td class="py-3">
                                     @if(count($row['tasks']) > 0)
-                                        <div class="d-flex flex-wrap gap-1">
-                                            @foreach($row['tasks'] as $t)
-                                                 <span class="badge bg-light text-dark border small" style="font-size: 0.72rem;">
-                                                    <strong class="{{ $t['type'] == 'Pickup' ? 'text-primary' : 'text-success' }}">{{ $t['type'] }}:</strong> {{ $t['ref'] }}
-                                                </span>
-                                            @endforeach
-                                        </div>
+                                        <button type="button"
+                                                class="btn btn-sm btn-light border rounded-pill px-3 py-1 fw-semibold text-nowrap"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#tasks-expand-{{ $index }}"
+                                                aria-expanded="false"
+                                                aria-controls="tasks-expand-{{ $index }}">
+                                            <i class="fa-solid fa-list-check me-1 text-primary"></i>
+                                            {{ count($row['tasks']) }} Tugas
+                                            <i class="fa-solid fa-chevron-down ms-1 small text-muted"></i>
+                                        </button>
                                     @else
                                         <span class="text-muted small fst-italic">Tanpa Tugas Terkait</span>
                                     @endif
@@ -676,19 +700,143 @@
                                     @endif
                                 </td>
                                 <td class="py-3 text-center px-3">
-                                    <button type="button" 
-                                            class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 text-nowrap shadow-xs" 
-                                            onclick='openUploadModal(@json($row))'
-                                            title="Lihat Data Upload & File">
-                                        <i class="fa-solid fa-paperclip me-1"></i> File 
-                                        @if(($row['files_count'] ?? 0) > 0)
-                                            <span class="badge bg-primary text-white rounded-pill ms-1">{{ $row['files_count'] }}</span>
-                                        @else
-                                            <span class="badge bg-secondary bg-opacity-25 text-secondary rounded-pill ms-1">0</span>
+                                    <div class="d-flex align-items-center justify-content-center gap-1">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-primary rounded-pill px-2 py-1 text-nowrap shadow-xs" 
+                                                onclick='openUploadModal(@json($row))'
+                                                title="Lihat Data Upload & File">
+                                            <i class="fa-solid fa-paperclip me-1"></i> File 
+                                            @if(($row['files_count'] ?? 0) > 0)
+                                                <span class="badge bg-primary text-white rounded-pill ms-1">{{ $row['files_count'] }}</span>
+                                            @else
+                                                <span class="badge bg-secondary bg-opacity-25 text-secondary rounded-pill ms-1">0</span>
+                                            @endif
+                                        </button>
+                                        @php
+                                            $u = auth()->user();
+                                            $uRole = strtolower($u?->role ?? '');
+                                            $uRelRole = strtolower($u?->roleRelation?->name ?? '');
+                                            $canEditSpv = $u && (
+                                                str_contains($uRole, 'spv') || str_contains($uRole, 'supervisor') || in_array($uRole, ['admin', 'super_admin', 'superadmin']) ||
+                                                str_contains($uRelRole, 'spv') || str_contains($uRelRole, 'supervisor') || in_array($uRelRole, ['admin', 'super_admin', 'superadmin'])
+                                            );
+                                        @endphp
+                                        @if($canEditSpv)
+                                            <button type="button"
+                                                    class="btn btn-sm btn-outline-warning rounded-pill px-2 py-1 text-nowrap shadow-xs"
+                                                    onclick='openEditShiftModal(@json($row))'
+                                                    title="Edit Odo, Jam, Tanggal & Tugas (SPV)">
+                                                <i class="fa-solid fa-pen-to-square"></i> Edit
+                                            </button>
                                         @endif
-                                    </button>
+                                    </div>
                                 </td>
                             </tr>
+                            @if(count($row['tasks']) > 0)
+                            <tr class="collapse" id="tasks-expand-{{ $index }}" style="background-color: #f8fafc;">
+                                <td colspan="12" class="p-3 p-md-4 border-bottom">
+                                    <div class="bg-white rounded-4 border border-primary border-opacity-10 shadow-sm overflow-hidden">
+                                        <div class="d-flex align-items-center justify-content-between px-4 py-3 border-bottom" style="background: linear-gradient(90deg, rgba(13,110,253,0.06) 0%, rgba(255,255,255,1) 100%);">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="bg-primary bg-opacity-10 text-primary rounded-3 d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
+                                                    <i class="fa-solid fa-route"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="fw-bold mb-0 text-dark" style="font-size: 0.9rem;">
+                                                        Detail Tugas &mdash; {{ $row['driver_name'] }}
+                                                    </h6>
+                                                    <div class="text-muted" style="font-size: 0.75rem;">Tanggal {{ $row['start_date'] }} &bull; {{ $row['vehicle_plate'] }}</div>
+                                                </div>
+                                            </div>
+                                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25 rounded-pill px-3 py-1.5 fw-semibold">
+                                                <i class="fa-solid fa-list-check me-1"></i> {{ count($row['tasks']) }} Tugas
+                                            </span>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-hover align-middle mb-0 small">
+                                                <thead style="background-color: #f8fafc;">
+                                                    <tr class="text-muted text-uppercase" style="font-size: 0.7rem; letter-spacing: 0.04em;">
+                                                        <th class="ps-4 py-2.5 text-center" style="width: 48px;">No</th>
+                                                        <th class="py-2.5">Tipe</th>
+                                                        <th class="py-2.5">No. Referensi</th>
+                                                        <th class="py-2.5 text-end">Odo Awal</th>
+                                                        <th class="py-2.5 text-end">Odo Akhir</th>
+                                                        <th class="py-2.5 text-center">Jam Mulai</th>
+                                                        <th class="py-2.5 text-center">Jam Selesai</th>
+                                                        <th class="py-2.5 text-center">Status</th>
+                                                        <th class="pe-4 py-2.5">Lampiran</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($row['tasks'] as $tIdx => $t)
+                                                    @php
+                                                        $st = strtolower($t['status'] ?? '');
+                                                        $stClass = match(true) {
+                                                            in_array($st, ['delivered', 'completed', 'selesai']) => 'bg-success bg-opacity-10 text-success border-success border-opacity-25',
+                                                            in_array($st, ['assigned', 'in_progress', 'on_the_way']) => 'bg-primary bg-opacity-10 text-primary border-primary border-opacity-25',
+                                                            in_array($st, ['pending', 'draft']) => 'bg-warning bg-opacity-10 text-warning border-warning border-opacity-25',
+                                                            default => 'bg-secondary bg-opacity-10 text-secondary border-secondary border-opacity-25',
+                                                        };
+                                                    @endphp
+                                                    <tr>
+                                                        <td class="ps-4 py-3 text-muted text-center fw-semibold">{{ $tIdx + 1 }}</td>
+                                                        <td class="py-3">
+                                                            <span class="badge rounded-pill px-2.5 py-1 {{ $t['type'] == 'Pickup' ? 'bg-primary bg-opacity-10 text-primary border border-primary border-opacity-25' : 'bg-success bg-opacity-10 text-success border border-success border-opacity-25' }}">
+                                                                <i class="fa-solid {{ $t['type'] == 'Pickup' ? 'fa-box-open' : 'fa-truck-fast' }} me-1"></i>{{ $t['type'] }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="py-3 fw-bold font-monospace text-dark">{{ $t['ref'] }}</td>
+                                                        <td class="py-3 text-end font-monospace text-dark">
+                                                            {{ $t['odo_start'] !== null ? number_format($t['odo_start'], 0, ',', '.') : '-' }}
+                                                        </td>
+                                                        <td class="py-3 text-end font-monospace fw-semibold text-primary">
+                                                            {{ $t['odo_end'] !== null ? number_format($t['odo_end'], 0, ',', '.') : '-' }}
+                                                        </td>
+                                                        <td class="py-3 text-center">
+                                                            @if(($t['start_time'] ?? '-') !== '-')
+                                                                <span class="badge bg-light text-dark border rounded-pill px-2 py-1">
+                                                                    <i class="fa-regular fa-clock me-1 text-primary"></i>{{ $t['start_time'] }}
+                                                                </span>
+                                                                <div class="text-muted mt-1" style="font-size: 0.68rem;">{{ $t['start_date'] }}</div>
+                                                            @else
+                                                                <span class="text-muted">-</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="py-3 text-center">
+                                                            @if(($t['end_time'] ?? '-') !== '-')
+                                                                <span class="badge bg-light text-dark border rounded-pill px-2 py-1">
+                                                                    <i class="fa-regular fa-circle-check me-1 text-success"></i>{{ $t['end_time'] }}
+                                                                </span>
+                                                                <div class="text-muted mt-1" style="font-size: 0.68rem;">{{ $t['end_date'] }}</div>
+                                                            @else
+                                                                <span class="text-muted">-</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="py-3 text-center">
+                                                            <span class="badge rounded-pill border px-2.5 py-1 text-capitalize {{ $stClass }}">{{ $t['status'] }}</span>
+                                                        </td>
+                                                        <td class="pe-4 py-3 text-center">
+                                                            @if(!empty($t['attachments']))
+                                                                <button type="button"
+                                                                        class="btn btn-sm btn-outline-info rounded-pill px-2.5 py-1 text-nowrap"
+                                                                        onclick='openTaskAttachmentsModal(@json($t))'
+                                                                        title="Lihat Lampiran Tugas">
+                                                                    <i class="fa-solid fa-paperclip me-1"></i> File
+                                                                    <span class="badge bg-info text-white rounded-pill ms-1">{{ count($t['attachments']) }}</span>
+                                                                </button>
+                                                            @else
+                                                                <span class="text-muted fst-italic">-</span>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endif
                             @empty
                             <tr>
                                 <td colspan="12" class="text-center py-5 text-muted">
@@ -704,6 +852,240 @@
         </div>
 
         <!-- MODAL DETAIL DATA UPLOAD / LAMPIRAN FILE -->
+        @php
+            $uModal = auth()->user();
+            $uModalRole = strtolower($uModal?->role ?? '');
+            $uModalRelRole = strtolower($uModal?->roleRelation?->name ?? '');
+            $canEditSpvModal = $uModal && (
+                str_contains($uModalRole, 'spv') || str_contains($uModalRole, 'supervisor') || in_array($uModalRole, ['admin', 'super_admin', 'superadmin']) ||
+                str_contains($uModalRelRole, 'spv') || str_contains($uModalRelRole, 'supervisor') || in_array($uModalRelRole, ['admin', 'super_admin', 'superadmin'])
+            );
+        @endphp
+        @if($canEditSpvModal)
+        <!-- MODAL EDIT SHIFT & TUGAS (SPV ONLY) -->
+        <div class="modal fade" id="modalEditShift" tabindex="-1" aria-labelledby="modalEditShiftLabel" aria-hidden="true">
+            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content rounded-4 border-0 shadow">
+                    <div class="modal-header border-bottom py-3 px-4">
+                        <h5 class="modal-title fw-bold text-dark" id="modalEditShiftLabel">
+                            <i class="fa-solid fa-pen-to-square text-warning me-2"></i>
+                            Edit Perjalanan & Tugas &mdash; <span id="editShiftDriverName"></span>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="formEditShift" onsubmit="submitEditShift(event)">
+                        <div class="modal-body p-4">
+                            <input type="hidden" id="editShiftId">
+                            <h6 class="fw-bold text-primary mb-3"><i class="fa-solid fa-truck me-1"></i> Data Shift / Perjalanan Utama</h6>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold">Odo Awal</label>
+                                    <input type="number" step="any" class="form-control form-control-sm" id="editOdoStart" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold">Odo Akhir</label>
+                                    <input type="number" step="any" class="form-control form-control-sm" id="editOdoEnd">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold">Tanggal Awal</label>
+                                    <input type="date" class="form-control form-control-sm" id="editStartDate">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold">Jam Awal</label>
+                                    <input type="time" class="form-control form-control-sm" id="editStartTime">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold">Tanggal Akhir</label>
+                                    <input type="date" class="form-control form-control-sm" id="editEndDate">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-semibold">Jam Akhir</label>
+                                    <input type="time" class="form-control form-control-sm" id="editEndTime">
+                                </div>
+                            </div>
+
+                            <h6 class="fw-bold text-primary mb-2"><i class="fa-solid fa-list-check me-1"></i> Detail Tugas Terkait</h6>
+                            <div id="editTasksContainer" class="table-responsive"></div>
+                        </div>
+                        <div class="modal-footer border-top py-3 px-4">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4" id="btnSaveEditShift">
+                                <i class="fa-solid fa-save me-1"></i> Simpan Perubahan
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <script>
+            function openEditShiftModal(row) {
+                document.getElementById('editShiftId').value = row.id;
+                document.getElementById('editShiftDriverName').textContent = row.driver_name + ' (' + row.vehicle_plate + ')';
+                document.getElementById('editOdoStart').value = row.odo_start ?? '';
+                document.getElementById('editOdoEnd').value = row.odo_end ?? '';
+                document.getElementById('editStartDate').value = row.start_date_raw || '';
+                document.getElementById('editStartTime').value = (row.start_time && row.start_time !== '-') ? row.start_time : '';
+                document.getElementById('editEndDate').value = row.end_date_raw || '';
+                document.getElementById('editEndTime').value = (row.end_time && row.end_time !== '-') ? row.end_time : '';
+
+                const container = document.getElementById('editTasksContainer');
+                if (!row.tasks || row.tasks.length === 0) {
+                    container.innerHTML = '<p class="text-muted small fst-italic mb-0">Tidak ada tugas terkait pada shift ini.</p>';
+                } else {
+                    let html = `
+                        <table class="table table-sm table-bordered align-middle small mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Tipe & Ref</th>
+                                    <th>Odo Awal</th>
+                                    <th>Odo Akhir</th>
+                                    <th>Tgl Mulai</th>
+                                    <th>Jam Mulai</th>
+                                    <th>Tgl Selesai</th>
+                                    <th>Jam Selesai</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    row.tasks.forEach((t, idx) => {
+                        const sTime = (t.start_time && t.start_time !== '-') ? t.start_time : '';
+                        const eTime = (t.end_time && t.end_time !== '-') ? t.end_time : '';
+                        html += `
+                            <tr class="edit-task-row" data-id="${t.id}" data-type="${t.type}">
+                                <td class="fw-semibold text-nowrap">
+                                    <span class="badge ${t.type === 'Pickup' ? 'bg-primary' : 'bg-success'} bg-opacity-10 ${t.type === 'Pickup' ? 'text-primary' : 'text-success'} border me-1">${t.type}</span>
+                                    <span class="font-monospace">${t.ref || '-'}</span>
+                                </td>
+                                <td><input type="number" step="any" class="form-control form-control-sm task-odo-start" value="${t.odo_start ?? ''}"></td>
+                                <td><input type="number" step="any" class="form-control form-control-sm task-odo-end" value="${t.odo_end ?? ''}"></td>
+                                <td><input type="date" class="form-control form-control-sm task-start-date" value="${t.start_date_raw || ''}"></td>
+                                <td><input type="time" class="form-control form-control-sm task-start-time" value="${sTime}"></td>
+                                <td><input type="date" class="form-control form-control-sm task-end-date" value="${t.end_date_raw || ''}"></td>
+                                <td><input type="time" class="form-control form-control-sm task-end-time" value="${eTime}"></td>
+                            </tr>
+                        `;
+                    });
+                    html += '</tbody></table>';
+                    container.innerHTML = html;
+                }
+
+                const modal = new bootstrap.Modal(document.getElementById('modalEditShift'));
+                modal.show();
+            }
+
+            async function submitEditShift(e) {
+                e.preventDefault();
+                const btn = document.getElementById('btnSaveEditShift');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin me-1"></i> Menyimpan...';
+
+                const shiftId = document.getElementById('editShiftId').value;
+                const tasks = [];
+                document.querySelectorAll('#editTasksContainer .edit-task-row').forEach(tr => {
+                    const odoStart = tr.querySelector('.task-odo-start').value;
+                    const odoEnd = tr.querySelector('.task-odo-end').value;
+                    tasks.push({
+                        id: tr.dataset.id,
+                        type: tr.dataset.type,
+                        odo_start: odoStart !== '' ? odoStart : null,
+                        odo_end: odoEnd !== '' ? odoEnd : null,
+                        start_date: tr.querySelector('.task-start-date').value || null,
+                        start_time: tr.querySelector('.task-start-time').value || null,
+                        end_date: tr.querySelector('.task-end-date').value || null,
+                        end_time: tr.querySelector('.task-end-time').value || null,
+                    });
+                });
+
+                const payload = {
+                    odo_start: document.getElementById('editOdoStart').value,
+                    odo_end: document.getElementById('editOdoEnd').value !== '' ? document.getElementById('editOdoEnd').value : null,
+                    start_date: document.getElementById('editStartDate').value || null,
+                    start_time: document.getElementById('editStartTime').value || null,
+                    end_date: document.getElementById('editEndDate').value || null,
+                    end_time: document.getElementById('editEndTime').value || null,
+                    tasks: tasks
+                };
+
+                try {
+                    const res = await fetch(`{{ url('/reports/driver') }}/${shiftId}/update`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+                    if (!res.ok) {
+                        alert(data.message || 'Gagal menyimpan perubahan.');
+                    } else {
+                        location.reload();
+                    }
+                } catch (err) {
+                    alert('Terjadi kesalahan jaringan saat menyimpan.');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-save me-1"></i> Simpan Perubahan';
+                }
+            }
+        </script>
+        @endif
+
+        <!-- MODAL LAMPIRAN PER TUGAS -->
+        <div class="modal fade" id="modalTaskAttachments" tabindex="-1" aria-labelledby="modalTaskAttachmentsLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+                <div class="modal-content rounded-4 border-0 shadow">
+                    <div class="modal-header border-bottom py-3 px-4">
+                        <h5 class="modal-title fw-bold text-dark" id="modalTaskAttachmentsLabel">
+                            <i class="fa-solid fa-paperclip text-info me-2"></i>
+                            Lampiran Tugas &mdash; <span id="taskAttTitle"></span>
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-4" id="taskAttBody"></div>
+                    <div class="modal-footer border-top py-2.5 px-4">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            function openTaskAttachmentsModal(task) {
+                document.getElementById('taskAttTitle').textContent = (task.type || '') + ' ' + (task.ref || '-');
+                const body = document.getElementById('taskAttBody');
+                const atts = task.attachments || [];
+                if (atts.length === 0) {
+                    body.innerHTML = '<p class="text-muted text-center py-4 mb-0">Tidak ada lampiran untuk tugas ini.</p>';
+                } else {
+                    let html = '<div class="list-group list-group-flush">';
+                    atts.forEach((att, idx) => {
+                        const cat = (att.category || 'Lampiran').replace(/_/g, ' ');
+                        html += `
+                            <div class="list-group-item px-0 py-3 d-flex align-items-center justify-content-between gap-3">
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="bg-info bg-opacity-10 text-info rounded-3 d-flex align-items-center justify-content-center" style="width: 38px; height: 38px;">
+                                        <i class="fa-solid fa-file-lines"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold text-dark text-capitalize">${cat}</div>
+                                        <div class="text-muted small">${att.file_name || '-'}</div>
+                                        ${att.notes ? `<div class="text-muted small fst-italic mt-0.5">${att.notes}</div>` : ''}
+                                    </div>
+                                </div>
+                                <a href="${att.url}" target="_blank" class="btn btn-sm btn-outline-primary rounded-pill px-3 text-nowrap">
+                                    <i class="fa-solid fa-arrow-up-right-from-square me-1"></i> Buka
+                                </a>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                    body.innerHTML = html;
+                }
+                new bootstrap.Modal(document.getElementById('modalTaskAttachments')).show();
+            }
+        </script>
+
         <div class="modal fade" id="modalUploadFiles" tabindex="-1" aria-labelledby="modalUploadFilesLabel" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                 <div class="modal-content rounded-4 border-0 shadow">
@@ -1015,7 +1397,7 @@
                         labels: @json($chartVehicleStatus['labels']),
                         datasets: [{
                             data: @json($chartVehicleStatus['data']),
-                            backgroundColor: ['#10b981', '#94a3b8'],
+                            backgroundColor: ['#10b981', '#f59e0b', '#94a3b8'],
                             borderWidth: 2,
                             borderColor: isDark ? '#111418' : '#ffffff'
                         }]

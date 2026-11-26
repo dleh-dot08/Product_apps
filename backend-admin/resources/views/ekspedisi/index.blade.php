@@ -493,8 +493,25 @@
                                     <td class="ps-3">
                                         <span class="fw-bold text-primary font-monospace d-block">{{ $item->expedition_number }}</span>
                                         <div class="d-flex align-items-center gap-1.5 flex-wrap mt-0.5">
+                                            @php
+                                                $resiList = collect(explode(',', (string) $item->tracking_number))
+                                                    ->map(fn($r) => trim($r))
+                                                    ->filter()
+                                                    ->values();
+                                            @endphp
                                             <span class="font-monospace small text-muted">
-                                                Resi: <strong class="text-dark">{{ $item->tracking_number ?: '-' }}</strong>
+                                                Resi:
+                                                @if($resiList->isEmpty())
+                                                    <strong class="text-dark">-</strong>
+                                                @elseif($resiList->count() === 1)
+                                                    <strong class="text-dark">{{ $resiList->first() }}</strong>
+                                                @else
+                                                    <span class="d-inline-flex flex-wrap gap-1 align-items-center">
+                                                        @foreach($resiList as $r)
+                                                            <span class="badge bg-light text-dark border font-monospace" style="font-size: 0.7rem;">{{ $r }}</span>
+                                                        @endforeach
+                                                    </span>
+                                                @endif
                                             </span>
                                             @if($item->tracking_number)
                                                 <button type="button" 
@@ -747,17 +764,39 @@
                                     <input type="text" name="service_type" id="create_service_type" class="form-control exp-form-control" placeholder="Cargo Darat / Laut / Charter">
                                 </div>
 
-                                <div class="col-12 col-md-4">
-                                    <label class="exp-form-label">Nomor Resi / AWB / Surat Jalan Vendor</label>
-                                    <input type="text" name="tracking_number" class="form-control exp-form-control font-monospace" placeholder="Cth: DKT-8891023">
-                                </div>
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-md-6">
                                     <label class="exp-form-label">Nama Pelanggan / Vendor Shipto</label>
                                     <input type="text" name="customer_vendor_name" id="create_customer_vendor_name" class="form-control exp-form-control" placeholder="Nama Customer / Supplier">
                                 </div>
-                                <div class="col-12 col-md-4">
+                                <div class="col-12 col-md-6">
                                     <label class="exp-form-label">Nomor DO Easy (Opsional)</label>
                                     <input type="text" name="do_easy" class="form-control exp-form-control font-monospace" placeholder="DO-EASY-...">
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="p-3 rounded-3 border" style="background: #f8fafc;">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <label class="exp-form-label mb-0 d-flex align-items-center gap-2">
+                                                <i class="fa-solid fa-barcode text-primary"></i>
+                                                <span>Nomor Resi / AWB / Surat Jalan Vendor</span>
+                                            </label>
+                                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1" id="btnAddCreateResi" style="font-size: 0.75rem; font-weight: 600;">
+                                                <i class="fa-solid fa-plus"></i>
+                                                <span>Tambah Resi</span>
+                                            </button>
+                                        </div>
+                                        <div id="createResiContainer" class="row g-2">
+                                            <div class="col-12 col-sm-6 col-md-4 resi-row">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-white text-muted font-monospace resi-index" style="font-size: 0.72rem;">#1</span>
+                                                    <input type="text" name="tracking_numbers[]" class="form-control exp-form-control font-monospace" placeholder="Cth: DKT-8891023">
+                                                    <button type="button" class="btn btn-light border text-muted btn-remove-resi d-none" title="Hapus Resi">
+                                                        <i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -980,10 +1019,6 @@
                                     <label class="exp-form-label">Layanan Kirim</label>
                                     <input type="text" name="service_type" id="edit_service_type" class="form-control exp-form-control">
                                 </div>
-                                <div class="col-12 col-md-4">
-                                    <label class="exp-form-label">No. Resi / AWB</label>
-                                    <input type="text" name="tracking_number" id="edit_tracking_number" class="form-control exp-form-control font-monospace">
-                                </div>
                                 <div class="col-6 col-md-4">
                                     <label class="exp-form-label">Tipe Tugas</label>
                                     <select name="task_type" id="edit_task_type" class="form-select exp-form-select">
@@ -998,6 +1033,31 @@
                                 <div class="col-12 col-md-4">
                                     <label class="exp-form-label">Nomor DO Easy</label>
                                     <input type="text" name="do_easy" id="edit_do_easy" class="form-control exp-form-control font-monospace" placeholder="DO-EASY-...">
+                                </div>
+                                <div class="col-12">
+                                    <div class="p-3 rounded-3 border" style="background: #f8fafc;">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <label class="exp-form-label mb-0 d-flex align-items-center gap-2">
+                                                <i class="fa-solid fa-barcode text-primary"></i>
+                                                <span>No. Resi / AWB</span>
+                                            </label>
+                                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 py-1 d-inline-flex align-items-center gap-1" id="btnAddEditResi" style="font-size: 0.75rem; font-weight: 600;">
+                                                <i class="fa-solid fa-plus"></i>
+                                                <span>Tambah Resi</span>
+                                            </button>
+                                        </div>
+                                        <div id="editResiContainer" class="row g-2">
+                                            <div class="col-12 col-sm-6 col-md-4 resi-row">
+                                                <div class="input-group input-group-sm">
+                                                    <span class="input-group-text bg-white text-muted font-monospace resi-index" style="font-size: 0.72rem;">#1</span>
+                                                    <input type="text" name="tracking_numbers[]" class="form-control exp-form-control font-monospace" placeholder="Cth: DKT-8891023">
+                                                    <button type="button" class="btn btn-light border text-muted btn-remove-resi d-none" title="Hapus Resi">
+                                                        <i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1913,7 +1973,7 @@
                     document.getElementById('edit_expedition_number').value = data.expedition_number || '';
                     document.getElementById('edit_vendor_name').value = data.vendor_name || '';
                     document.getElementById('edit_service_type').value = data.service_type || '';
-                    document.getElementById('edit_tracking_number').value = data.tracking_number || '';
+                    populateResiContainer('editResiContainer', data.tracking_number || '');
                     document.getElementById('edit_task_type').value = data.task_type || 'delivery';
                     document.getElementById('edit_reference_number').value = data.reference_number || '';
                     document.getElementById('edit_do_easy').value = data.do_easy || '';
@@ -2031,6 +2091,67 @@
             };
 
             const trackButtons = document.querySelectorAll('.btn-track-live');
+
+            // Multi-Resi Dynamic Fields Helper (Create & Edit Modal)
+            function updateResiRemoveButtons(container) {
+                if (!container) return;
+                const rows = container.querySelectorAll('.resi-row');
+                rows.forEach((row, idx) => {
+                    const indexBadge = row.querySelector('.resi-index');
+                    if (indexBadge) indexBadge.textContent = `#${idx + 1}`;
+                    const btn = row.querySelector('.btn-remove-resi');
+                    if (btn) {
+                        btn.classList.toggle('d-none', rows.length <= 1);
+                    }
+                });
+            }
+
+            function addResiRow(containerId, value = '') {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                const row = document.createElement('div');
+                row.className = 'col-12 col-sm-6 col-md-4 resi-row';
+                row.innerHTML = `
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-white text-muted font-monospace resi-index" style="font-size: 0.72rem;">#1</span>
+                        <input type="text" name="tracking_numbers[]" class="form-control exp-form-control font-monospace" placeholder="Cth: DKT-8891023" value="${escapeHtml(value)}">
+                        <button type="button" class="btn btn-light border text-muted btn-remove-resi" title="Hapus Resi">
+                            <i class="fa-solid fa-trash-can" style="font-size: 0.75rem;"></i>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+                updateResiRemoveButtons(container);
+                if (!value) {
+                    row.querySelector('input')?.focus();
+                }
+            }
+
+            function populateResiContainer(containerId, trackingNumberStr) {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+                container.innerHTML = '';
+                const parts = (trackingNumberStr || '').split(',').map(s => s.trim()).filter(Boolean);
+                if (parts.length === 0) {
+                    addResiRow(containerId, '');
+                } else {
+                    parts.forEach(p => addResiRow(containerId, p));
+                }
+            }
+
+            document.getElementById('btnAddCreateResi')?.addEventListener('click', () => addResiRow('createResiContainer'));
+            document.getElementById('btnAddEditResi')?.addEventListener('click', () => addResiRow('editResiContainer'));
+
+            document.addEventListener('click', function(e) {
+                const removeBtn = e.target.closest('.btn-remove-resi');
+                if (!removeBtn) return;
+                const row = removeBtn.closest('.resi-row');
+                const container = row?.parentElement;
+                if (row && container && container.querySelectorAll('.resi-row').length > 1) {
+                    row.remove();
+                    updateResiRemoveButtons(container);
+                }
+            });
             const trackModalEl = document.getElementById('liveTrackingModal');
             const trackModal = trackModalEl ? new bootstrap.Modal(trackModalEl) : null;
             const trackIframe = document.getElementById('trackIframe');
@@ -2153,7 +2274,25 @@
                         // Set info dasar modal
                         document.getElementById('track_modal_number').textContent = number || '-';
                         document.getElementById('track_modal_vendor').textContent = vendor || '-';
-                        document.getElementById('track_modal_resi').textContent = resi || '-';
+                        const resiEl = document.getElementById('track_modal_resi');
+                        const resiParts = (resi || '').split(',').map(r => r.trim()).filter(Boolean);
+                        if (resiParts.length <= 1) {
+                            resiEl.textContent = resiParts[0] || '-';
+                        } else {
+                            resiEl.innerHTML = resiParts.map(r =>
+                                `<button type="button" class="btn btn-xs btn-light border font-monospace fw-bold px-2 py-0.5 me-1 mb-1 btn-copy-single-resi" data-resi="${escapeHtml(r)}" title="Klik untuk salin resi ${escapeHtml(r)}">${escapeHtml(r)} <i class="fa-regular fa-copy ms-1 text-muted"></i></button>`
+                            ).join('');
+                            resiEl.querySelectorAll('.btn-copy-single-resi').forEach(copyBtn => {
+                                copyBtn.addEventListener('click', function() {
+                                    const val = this.getAttribute('data-resi');
+                                    navigator.clipboard.writeText(val).then(() => {
+                                        const orig = this.innerHTML;
+                                        this.innerHTML = `${escapeHtml(val)} <i class="fa-solid fa-check ms-1 text-success"></i>`;
+                                        setTimeout(() => { this.innerHTML = orig; }, 1200);
+                                    });
+                                });
+                            });
+                        }
                         document.getElementById('btnOpenVendorTab').href = currentTrackingUrl;
 
                         const badgeStatus = document.getElementById('track_current_status_badge');
