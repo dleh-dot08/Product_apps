@@ -105,12 +105,12 @@ class ReportController extends Controller
 
         // 1. QUERY SHIFTS / PERJALANAN
         $query = Shift::with([
-            'driver',
-            'vehicle',
+            'driver:id,name,full_name',
+            'vehicle:id,name,plate_number',
             'attachments',
             'expenses',
             'pickupTasks.attachments',
-            'deliveryAssignments.salesOrder',
+            'deliveryAssignments.salesOrder:id,so_number',
             'deliveryAssignments.attachments'
         ])
             ->whereBetween('work_date', [$startDate->toDateString(), $endDate->toDateString()]);
@@ -128,6 +128,26 @@ class ReportController extends Controller
         }
 
         $shifts = $query->orderBy('work_date', 'desc')->orderBy('check_in_at', 'desc')->get();
+
+        // Cek kontinuitas odometer per kendaraan (dari perjalanan terlama ke terbaru)
+        $odoWarningsByShiftId = [];
+        $lastOdoByVehicle = [];
+        foreach ($shifts->reverse() as $s) {
+            $vId = $s->vehicle_id;
+            if (!$vId) {
+                continue;
+            }
+            $sOdoStart = $s->start_odometer ?? 0;
+            $sOdoEnd = $s->end_odometer ?? 0;
+            if (isset($lastOdoByVehicle[$vId]) && $lastOdoByVehicle[$vId] > 0) {
+                if ((float) $sOdoStart !== (float) $lastOdoByVehicle[$vId]) {
+                    $odoWarningsByShiftId[$s->id] = 'Odo awal (' . number_format($sOdoStart, 0, ',', '.') . ') tidak sesuai odo akhir perjalanan sebelumnya (' . number_format($lastOdoByVehicle[$vId], 0, ',', '.') . ')';
+                }
+            }
+            if ($sOdoEnd > 0) {
+                $lastOdoByVehicle[$vId] = $sOdoEnd;
+            }
+        }
 
         // 2. MASTER DATA
         $allVehicles = Vehicle::where('active', true)->orderBy('name')->get();
@@ -196,20 +216,93 @@ class ReportController extends Controller
                 $durasiFormatted = 'Sedang Berjalan';
             }
 
-            // Tugas
-            $taskList = [];
+            // Tugas (urutkan kronologis agar odo awal/akhir berantai dari clock-in shift & tugas sebelumnya)
+            $rawTasks = [];
             foreach ($shift->pickupTasks as $p) {
-                $taskList[] = [
+                $pAttachments = [];
+                foreach ($p->attachments as $pAtt) {
+                    if ($pAtt->file_path) {
+                        $pAttachments[] = [
+                            'file_name' => $pAtt->file_name ?? basename($pAtt->file_path),
+                            'url' => $pAtt->file_path,
+                            'category' => $pAtt->category ?? $pAtt->document_type ?? 'Bukti Pickup',
+                            'notes' => $pAtt->notes ?? null,
+                        ];
+                    }
+                }
+                $rawTasks[] = [
+                    'id' => $p->id,
                     'type' => 'Pickup',
-                    'ref' => $p->reference_number,
-                    'status' => $p->status,
+                    'ref' => !empty($p->po_number)
+                        ? ($p->po_number . ' (DO: ' . ($p->reference_number ?? '-') . ')')
+                        : ($p->reference_number ?? '-'),
+                    'status' => $p->status ?? '-',
+                    'odo_start_raw' => $p->start_odometer ?? $p->odo_start ?? $p->odometer_start ?? null,
+                    'odo_end_raw' => $p->completed_odometer ?? $p->odo_end ?? $p->odometer_end ?? null,
+                    'start_time' => $p->started_at ? $p->started_at->format('H:i') : '-',
+                    'start_date' => $p->started_at ? $p->started_at->format('d/m/Y') : '-',
+                    'start_date_raw' => $p->started_at ? $p->started_at->format('Y-m-d') : '',
+                    'end_time' => $p->completed_at ? $p->completed_at->format('H:i') : '-',
+                    'end_date' => $p->completed_at ? $p->completed_at->format('d/m/Y') : '-',
+                    'end_date_raw' => $p->completed_at ? $p->completed_at->format('Y-m-d') : '',
+                    'attachments' => $pAttachments,
+                    'sort_ts' => ($p->started_at ?? $p->completed_at ?? $p->created_at)?->timestamp ?? 0,
                 ];
             }
             foreach ($shift->deliveryAssignments as $d) {
-                $taskList[] = [
+                $dAttachments = [];
+                foreach ($d->attachments as $dAtt) {
+                    if ($dAtt->file_path) {
+                        $dAttachments[] = [
+                            'file_name' => $dAtt->file_name ?? basename($dAtt->file_path),
+                            'url' => $dAtt->file_path,
+                            'category' => $dAtt->category ?? $dAtt->document_type ?? 'Bukti Delivery / BAST',
+                            'notes' => $dAtt->notes ?? null,
+                        ];
+                    }
+                }
+                $rawTasks[] = [
+                    'id' => $d->id,
                     'type' => 'Delivery',
-                    'ref' => $d->salesOrder->so_number ?? '-',
-                    'status' => $d->status,
+                    'ref' => ($d->salesOrder->so_number ?? '-') . (!empty($d->do_number ?? $d->reference_number) ? ' (DO: ' . ($d->do_number ?? $d->reference_number) . ')' : ''),
+                    'status' => $d->status ?? '-',
+                    'odo_start_raw' => $d->start_odometer ?? $d->odo_start ?? $d->odometer_start ?? null,
+                    'odo_end_raw' => $d->completed_odometer ?? $d->odo_end ?? $d->odometer_end ?? null,
+                    'start_time' => $d->started_at ? $d->started_at->format('H:i') : '-',
+                    'start_date' => $d->started_at ? $d->started_at->format('d/m/Y') : '-',
+                    'start_date_raw' => $d->started_at ? $d->started_at->format('Y-m-d') : '',
+                    'end_time' => $d->completed_at ? $d->completed_at->format('H:i') : '-',
+                    'end_date' => $d->completed_at ? $d->completed_at->format('d/m/Y') : '-',
+                    'end_date_raw' => $d->completed_at ? $d->completed_at->format('Y-m-d') : '',
+                    'attachments' => $dAttachments,
+                    'sort_ts' => ($d->started_at ?? $d->completed_at ?? $d->created_at)?->timestamp ?? 0,
+                ];
+            }
+
+            usort($rawTasks, fn($a, $b) => $a['sort_ts'] <=> $b['sort_ts']);
+
+            $taskList = [];
+            $currentOdo = $odoStart > 0 ? $odoStart : null;
+            foreach ($rawTasks as $rt) {
+                $taskOdoStart = $rt['odo_start_raw'] !== null ? $rt['odo_start_raw'] : $currentOdo;
+                $taskOdoEnd = $rt['odo_end_raw'];
+                if ($taskOdoEnd !== null) {
+                    $currentOdo = $taskOdoEnd;
+                }
+                $taskList[] = [
+                    'id' => $rt['id'],
+                    'type' => $rt['type'],
+                    'ref' => $rt['ref'],
+                    'status' => $rt['status'],
+                    'odo_start' => $taskOdoStart,
+                    'odo_end' => $taskOdoEnd,
+                    'start_time' => $rt['start_time'],
+                    'start_date' => $rt['start_date'],
+                    'start_date_raw' => $rt['start_date_raw'],
+                    'end_time' => $rt['end_time'],
+                    'end_date' => $rt['end_date'],
+                    'end_date_raw' => $rt['end_date_raw'],
+                    'attachments' => $rt['attachments'],
                 ];
             }
             $taskCount = count($taskList);
@@ -306,6 +399,17 @@ class ReportController extends Controller
                 }
             }
 
+            $rowWarnings = [];
+            if (isset($odoWarningsByShiftId[$shift->id])) {
+                $rowWarnings[] = $odoWarningsByShiftId[$shift->id];
+            }
+            if ($tripKm > 0 && $shift->check_in_at && $shift->check_out_at) {
+                $hours = $durasiMenit / 60;
+                if (($durasiMenit <= 0 && $tripKm > 5) || ($hours > 0 && ($tripKm / $hours) >= 90)) {
+                    $rowWarnings[] = 'Jarak tempuh tidak wajar (' . number_format($tripKm, 0, ',', '.') . ' KM dalam ' . $durasiFormatted . ')';
+                }
+            }
+
             $tableData[] = [
                 'id' => $shift->id,
                 'driver_name' => $driverName,
@@ -316,14 +420,18 @@ class ReportController extends Controller
                 'total_odo' => $tripKm,
                 'start_time' => $shift->check_in_at ? $shift->check_in_at->format('H:i') : '-',
                 'start_date' => $shift->check_in_at ? $shift->check_in_at->format('d/m/Y') : '-',
+                'start_date_raw' => $shift->check_in_at ? $shift->check_in_at->format('Y-m-d') : '',
                 'end_time' => $shift->check_out_at ? $shift->check_out_at->format('H:i') : '-',
                 'end_date' => $shift->check_out_at ? $shift->check_out_at->format('d/m/Y') : '-',
+                'end_date_raw' => $shift->check_out_at ? $shift->check_out_at->format('Y-m-d') : '',
                 'durasi' => $durasiFormatted,
                 'tasks' => $taskList,
                 'task_count' => $taskCount,
                 'status' => $shift->check_out_at ? 'Selesai' : 'Aktif',
                 'files' => $uploadedFiles,
                 'files_count' => count($uploadedFiles),
+                'odo_warning' => !empty($rowWarnings),
+                'odo_warning_msg' => !empty($rowWarnings) ? implode(' | ', $rowWarnings) : null,
             ];
         }
 
@@ -334,18 +442,34 @@ class ReportController extends Controller
         }
         unset($ops);
 
-        // GRAFIK 1: Persentase Pemakaian Kendaraan (Standby vs Operasional)
+        // GRAFIK 1: Persentase Pemakaian Kendaraan (Operasional vs Service vs Standby)
         $totalVehiclesCount = $targetVehicles->count();
-        $targetVehicleIds = $targetVehicles->pluck('id')->all();
-        $operasionalVehiclesCount = count(array_intersect(array_keys($usedVehicleIds), $targetVehicleIds));
-        $standbyVehiclesCount = max(0, $totalVehiclesCount - $operasionalVehiclesCount);
+        $operasionalVehiclesCount = 0;
+        $serviceVehiclesCount = 0;
+        $standbyVehiclesCount = 0;
+
+        foreach ($targetVehicles as $tv) {
+            if (isset($usedVehicleIds[$tv->id])) {
+                $operasionalVehiclesCount++;
+            } elseif (in_array(strtolower($tv->status ?? ''), ['service', 'maintenance', 'servis', 'perbaikan'])) {
+                $serviceVehiclesCount++;
+            } else {
+                $standbyVehiclesCount++;
+            }
+        }
+
         $pctOperasional = $totalVehiclesCount > 0 ? round(($operasionalVehiclesCount / $totalVehiclesCount) * 100, 1) : 0;
+        $pctService = $totalVehiclesCount > 0 ? round(($serviceVehiclesCount / $totalVehiclesCount) * 100, 1) : 0;
         $pctStandby = $totalVehiclesCount > 0 ? round(($standbyVehiclesCount / $totalVehiclesCount) * 100, 1) : 0;
 
         $chartVehicleStatus = [
-            'labels' => ['Operasional (' . $operasionalVehiclesCount . ' Armada)', 'Standby (' . $standbyVehiclesCount . ' Armada)'],
-            'data' => [$operasionalVehiclesCount, $standbyVehiclesCount],
-            'percentages' => [$pctOperasional, $pctStandby],
+            'labels' => [
+                'Operasional (' . $operasionalVehiclesCount . ' Armada)',
+                'Service (' . $serviceVehiclesCount . ' Armada)',
+                'Standby (' . $standbyVehiclesCount . ' Armada)',
+            ],
+            'data' => [$operasionalVehiclesCount, $serviceVehiclesCount, $standbyVehiclesCount],
+            'percentages' => [$pctOperasional, $pctService, $pctStandby],
         ];
 
         // Filter kendaraan untuk chart pemakaian
@@ -426,8 +550,10 @@ class ReportController extends Controller
             'totalDurasiMenitAll',
             'totalVehiclesCount',
             'operasionalVehiclesCount',
+            'serviceVehiclesCount',
             'standbyVehiclesCount',
             'pctOperasional',
+            'pctService',
             'pctStandby',
             'chartVehicleStatus',
             'chartUsagePerVehicle',
@@ -437,6 +563,144 @@ class ReportController extends Controller
             'hasDriverFilter',
             'hasVehicleFilter'
         ));
+    }
+
+    /**
+     * Update Shift & Tugas Terkait dari Laporan Driver (Khusus Role SPV)
+     */
+    public function updateDriverShift(Request $request, $shiftId)
+    {
+        $user = auth()->user();
+        $userRole = strtolower($user->role ?? '');
+        $relRole = strtolower($user->roleRelation->name ?? '');
+        $isSpv = $user && (
+            str_contains($userRole, 'spv') || str_contains($userRole, 'supervisor') || in_array($userRole, ['admin', 'super_admin', 'superadmin']) ||
+            str_contains($relRole, 'spv') || str_contains($relRole, 'supervisor') || in_array($relRole, ['admin', 'super_admin', 'superadmin'])
+        );
+        if (!$isSpv) {
+            abort(403, 'Hanya role SPV yang dapat mengubah data laporan driver.');
+        }
+
+        $shift = Shift::findOrFail($shiftId);
+
+        $validated = $request->validate([
+            'odo_start' => 'required|numeric|min:0',
+            'odo_end' => 'nullable|numeric|min:0',
+            'start_date' => 'nullable|date',
+            'start_time' => 'nullable|string',
+            'end_date' => 'nullable|date',
+            'end_time' => 'nullable|string',
+            'tasks' => 'nullable|array',
+            'tasks.*.id' => 'required',
+            'tasks.*.type' => 'required|in:Pickup,Delivery',
+            'tasks.*.odo_start' => 'nullable|numeric|min:0',
+            'tasks.*.odo_end' => 'nullable|numeric|min:0',
+            'tasks.*.start_date' => 'nullable|date',
+            'tasks.*.start_time' => 'nullable|string',
+            'tasks.*.end_date' => 'nullable|date',
+            'tasks.*.end_time' => 'nullable|string',
+        ]);
+
+        $shiftBefore = [
+            'odo_start' => $shift->start_odometer,
+            'odo_end' => $shift->end_odometer,
+            'check_in_at' => $shift->check_in_at?->toDateTimeString(),
+            'check_out_at' => $shift->check_out_at?->toDateTimeString(),
+        ];
+
+        $shift->start_odometer = $validated['odo_start'];
+        if (array_key_exists('odo_end', $validated)) {
+            $shift->end_odometer = $validated['odo_end'];
+        }
+
+        if (!empty($validated['start_date'])) {
+            $time = !empty($validated['start_time']) ? $validated['start_time'] : '00:00';
+            $shift->check_in_at = Carbon::parse($validated['start_date'] . ' ' . $time);
+            $shift->work_date = $validated['start_date'];
+        }
+
+        if (!empty($validated['end_date'])) {
+            $time = !empty($validated['end_time']) ? $validated['end_time'] : '00:00';
+            $shift->check_out_at = Carbon::parse($validated['end_date'] . ' ' . $time);
+        } elseif ($request->has('end_date') && empty($validated['end_date'])) {
+            $shift->check_out_at = null;
+        }
+
+        $shift->save();
+
+        $shiftAfter = [
+            'odo_start' => $shift->start_odometer,
+            'odo_end' => $shift->end_odometer,
+            'check_in_at' => $shift->check_in_at?->toDateTimeString(),
+            'check_out_at' => $shift->check_out_at?->toDateTimeString(),
+        ];
+
+        $tasksChanges = [];
+        if (!empty($validated['tasks'])) {
+            foreach ($validated['tasks'] as $tData) {
+                $model = $tData['type'] === 'Pickup'
+                    ? \App\Models\PickupTask::where('id', $tData['id'])->where('shift_id', $shift->id)->first()
+                    : \App\Models\DeliveryAssignment::where('id', $tData['id'])->where('shift_id', $shift->id)->first();
+
+                if (!$model) {
+                    continue;
+                }
+
+                $taskBefore = [
+                    'odo_start' => $model->start_odometer,
+                    'odo_end' => $model->completed_odometer,
+                    'started_at' => $model->started_at?->toDateTimeString(),
+                    'completed_at' => $model->completed_at?->toDateTimeString(),
+                ];
+
+                if (array_key_exists('odo_start', $tData)) {
+                    $model->start_odometer = $tData['odo_start'];
+                }
+                if (array_key_exists('odo_end', $tData)) {
+                    $model->completed_odometer = $tData['odo_end'];
+                }
+                if (!empty($tData['start_date'])) {
+                    $tStartTime = !empty($tData['start_time']) ? $tData['start_time'] : '00:00';
+                    $model->started_at = Carbon::parse($tData['start_date'] . ' ' . $tStartTime);
+                }
+                if (!empty($tData['end_date'])) {
+                    $tEndTime = !empty($tData['end_time']) ? $tData['end_time'] : '00:00';
+                    $model->completed_at = Carbon::parse($tData['end_date'] . ' ' . $tEndTime);
+                }
+
+                $model->save();
+
+                $tasksChanges[] = [
+                    'type' => $tData['type'],
+                    'id' => $model->id,
+                    'before' => $taskBefore,
+                    'after' => [
+                        'odo_start' => $model->start_odometer,
+                        'odo_end' => $model->completed_odometer,
+                        'started_at' => $model->started_at?->toDateTimeString(),
+                        'completed_at' => $model->completed_at?->toDateTimeString(),
+                    ],
+                ];
+            }
+        }
+
+        $shift->refresh();
+        $this->hppService->calculateProrata($shift);
+
+        \Illuminate\Support\Facades\Log::info('SPV Update Driver Shift', [
+            'user_id' => $user->id,
+            'user_name' => $user->full_name ?? $user->name ?? '-',
+            'user_role' => $user->role ?? $relRole,
+            'shift_id' => $shift->id,
+            'before' => $shiftBefore,
+            'after' => $shiftAfter,
+            'tasks_changes' => $tasksChanges,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data perjalanan dan tugas berhasil diperbarui.',
+        ]);
     }
 
     /**
@@ -480,6 +744,26 @@ class ReportController extends Controller
         }
 
         $shifts = $query->orderBy('work_date', 'desc')->orderBy('check_in_at', 'desc')->get();
+
+        // Cek kontinuitas odometer per kendaraan (dari perjalanan terlama ke terbaru)
+        $odoWarningsByShiftId = [];
+        $lastOdoByVehicle = [];
+        foreach ($shifts->reverse() as $s) {
+            $vId = $s->vehicle_id;
+            if (!$vId) {
+                continue;
+            }
+            $sOdoStart = $s->start_odometer ?? 0;
+            $sOdoEnd = $s->end_odometer ?? 0;
+            if (isset($lastOdoByVehicle[$vId]) && $lastOdoByVehicle[$vId] > 0) {
+                if ((float) $sOdoStart !== (float) $lastOdoByVehicle[$vId]) {
+                    $odoWarningsByShiftId[$s->id] = 'Odo awal (' . number_format($sOdoStart, 0, ',', '.') . ') tidak sesuai odo akhir perjalanan sebelumnya (' . number_format($lastOdoByVehicle[$vId], 0, ',', '.') . ')';
+                }
+            }
+            if ($sOdoEnd > 0) {
+                $lastOdoByVehicle[$vId] = $sOdoEnd;
+            }
+        }
 
         // Summary metrics
         $allVehicles = Vehicle::where('active', true)->get();
@@ -552,9 +836,26 @@ class ReportController extends Controller
             'status' => $request->input('status'),
         ];
 
-        $logistics = $this->logisticsService->getLogisticsReport($filters);
-        $expedition = $this->logisticsService->getExpeditionReport($filters);
-        $internal = $this->logisticsService->getInternalShippingReport($filters);
+        $cacheKey = 'logistics_report_' . md5(json_encode([
+            'start_date' => $startDate->toDateTimeString(),
+            'end_date' => $endDate->toDateTimeString(),
+            'search' => $filters['search'],
+            'customer' => $filters['customer'],
+            'task_type' => $filters['task_type'],
+            'status' => $filters['status'],
+        ]));
+
+        $reportData = \Illuminate\Support\Facades\Cache::remember($cacheKey, 60, function () use ($filters) {
+            return [
+                'logistics' => $this->logisticsService->getLogisticsReport($filters),
+                'expedition' => $this->logisticsService->getExpeditionReport($filters),
+                'internal' => $this->logisticsService->getInternalShippingReport($filters),
+            ];
+        });
+
+        $logistics = $reportData['logistics'];
+        $expedition = $reportData['expedition'];
+        $internal = $reportData['internal'];
 
         // Kumpulkan list customer unik untuk filter dropdown
         $allCustomers = collect($logistics['rows'])->pluck('customer')

@@ -76,7 +76,9 @@ class ExpeditionController extends Controller
             'vendor_id' => 'nullable|exists:expedition_vendors,id',
             'vendor_name' => 'required|string|max:150',
             'service_type' => 'nullable|string|max:100',
-            'tracking_number' => 'nullable|string|max:100',
+            'tracking_number' => 'nullable|string|max:1000',
+            'tracking_numbers' => 'nullable|array',
+            'tracking_numbers.*' => 'nullable|string|max:100',
             'task_type' => 'required|in:delivery,pickup',
             'reference_number' => 'nullable|string|max:100',
             'do_easy' => 'nullable|string|max:100',
@@ -107,6 +109,17 @@ class ExpeditionController extends Controller
             'items.*.unit' => 'nullable|string',
             'items.*.unit_price' => 'nullable|numeric|min:0',
         ]);
+
+        if ($request->has('tracking_numbers')) {
+            $resis = collect($request->input('tracking_numbers', []))
+                ->map(fn($r) => trim((string) $r))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $validated['tracking_number'] = count($resis) > 0 ? implode(', ', $resis) : null;
+        }
+        unset($validated['tracking_numbers']);
 
         if ($request->hasFile('proof_photo')) {
             $validated['proof_photo'] = $request->file('proof_photo')->store('expeditions/proofs', 'public');
@@ -185,7 +198,9 @@ class ExpeditionController extends Controller
             'vendor_id' => 'nullable|exists:expedition_vendors,id',
             'vendor_name' => 'required|string|max:150',
             'service_type' => 'nullable|string|max:100',
-            'tracking_number' => 'nullable|string|max:100',
+            'tracking_number' => 'nullable|string|max:1000',
+            'tracking_numbers' => 'nullable|array',
+            'tracking_numbers.*' => 'nullable|string|max:100',
             'task_type' => 'required|in:delivery,pickup',
             'reference_number' => 'nullable|string|max:100',
             'do_easy' => 'nullable|string|max:100',
@@ -217,6 +232,17 @@ class ExpeditionController extends Controller
             'items.*.unit' => 'nullable|string',
             'items.*.unit_price' => 'nullable|numeric|min:0',
         ]);
+
+        if ($request->has('tracking_numbers')) {
+            $resis = collect($request->input('tracking_numbers', []))
+                ->map(fn($r) => trim((string) $r))
+                ->filter()
+                ->unique()
+                ->values()
+                ->all();
+            $validated['tracking_number'] = count($resis) > 0 ? implode(', ', $resis) : null;
+        }
+        unset($validated['tracking_numbers']);
 
         if ($request->hasFile('proof_photo')) {
             if ($ekspedisi->proof_photo && Storage::disk('public')->exists($ekspedisi->proof_photo)) {

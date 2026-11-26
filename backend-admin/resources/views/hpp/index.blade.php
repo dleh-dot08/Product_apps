@@ -1611,14 +1611,22 @@
                                     <div class="d-flex flex-column gap-1">
                                         @foreach($shift->pickupTasks as $pt)
                                             <div class="delivery-code mb-1">
-                                                <span class="delivery-code-ref">{{ $pt->reference_number }} (#{{ $pt->id }})</span>
+                                                <span class="delivery-code-ref">
+                                                    @if(!empty($pt->po_number))
+                                                        {{ $pt->po_number }} (DO: {{ $pt->reference_number ?? '-' }})
+                                                    @else
+                                                        {{ $pt->reference_number ?? '-' }}
+                                                    @endif
+                                                </span>
                                                 <span class="delivery-type pickup">Ambil</span>
                                             </div>
                                         @endforeach
                                         
                                         @foreach($shift->deliveryAssignments as $da)
                                             <div class="delivery-code mb-1">
-                                                <span class="delivery-code-ref">{{ $da->salesOrder->so_number ?? '-' }} (#{{ $da->id }})</span>
+                                                <span class="delivery-code-ref">
+                                                    {{ $da->salesOrder->so_number ?? '-' }}@if(!empty($da->do_number ?? $da->reference_number)) (DO: {{ $da->do_number ?? $da->reference_number }})@endif
+                                                </span>
                                                 <span class="delivery-type delivery">Kirim</span>
                                             </div>
                                         @endforeach
