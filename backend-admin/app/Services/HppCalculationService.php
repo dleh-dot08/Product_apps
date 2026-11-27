@@ -59,12 +59,17 @@ class HppCalculationService
         $shift->loadMissing(['pickupTasks.items', 'deliveryAssignments.salesOrder.items', 'expenses']);
         $tasks = collect()->merge($shift->pickupTasks)->merge($shift->deliveryAssignments);
         
-        // 1. Hitung BBM (Otomatis)
+        // 1. Hitung BBM (Otomatis - Teoritis berdasarkan Master Vehicle)
         $fuelCost = 0;
         
         $shift->loadMissing(['vehicle', 'driver']);
-        $kmPerLiter = $shift->km_per_liter > 0 ? $shift->km_per_liter : ($shift->vehicle ? $shift->vehicle->km_per_liter : 0);
-        $fuelPrice = $shift->fuel_price_per_liter > 0 ? $shift->fuel_price_per_liter : ($shift->vehicle ? $shift->vehicle->fuel_price_per_liter : 0);
+        // Logic lama (prioritas snapshot shift saat check-in):
+        // $kmPerLiter = $shift->km_per_liter > 0 ? $shift->km_per_liter : ($shift->vehicle ? $shift->vehicle->km_per_liter : 0);
+        // $fuelPrice = $shift->fuel_price_per_liter > 0 ? $shift->fuel_price_per_liter : ($shift->vehicle ? $shift->vehicle->fuel_price_per_liter : 0);
+
+        // Logic baru (prioritas data master vehicle terbaru, fallback ke snapshot shift jika kosong):
+        $kmPerLiter = ($shift->vehicle && $shift->vehicle->km_per_liter > 0) ? $shift->vehicle->km_per_liter : ($shift->km_per_liter ?? 0);
+        $fuelPrice = ($shift->vehicle && $shift->vehicle->fuel_price_per_liter > 0) ? $shift->vehicle->fuel_price_per_liter : ($shift->fuel_price_per_liter ?? 0);
         
         if ($shift->end_odometer !== null && $shift->start_odometer !== null && $kmPerLiter > 0) {
             $distance = max(0, $shift->end_odometer - $shift->start_odometer);
